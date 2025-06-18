@@ -902,11 +902,11 @@ export default function DealsPage() {
                       <p>Asking Price: ${deal.askingPrice.toLocaleString()}</p>
                     </div>
 
-                    <h4 className="mb-2 font-medium text-gray-800">Seller Contact Information</h4>
+                    {/* <h4 className="mb-2 font-medium text-gray-800">Seller Contact Information</h4>
                     <div className="mb-4 space-y-1 text-sm text-gray-600">
                       <p>Phone Number: {phoneNumber?.phone ?? "Loading..."}</p>
                       <p>Email: {phoneNumber?.email ?? "Loading..."}</p>
-                    </div>
+                    </div> */}
 
                     <div className="flex justify-end space-x-2" onClick={(e) => e.stopPropagation()}>
                       <Button onClick={(e) => handleViewCIMClick(e, deal)} className="bg-teal-500 hover:bg-teal-600">
