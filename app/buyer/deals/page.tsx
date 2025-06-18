@@ -734,7 +734,7 @@ export default function DealsPage() {
         <aside className="w-56 border-r border-gray-200 bg-white">
           <nav className="flex flex-col p-4">
             <Link
-              href="/deals"
+              href="/buyer/deals"
               className="mb-2 flex items-center rounded-md bg-teal-500 px-4 py-3 text-white hover:bg-teal-600"
             >
               <Briefcase className="mr-3 h-5 w-5" />
