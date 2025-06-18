@@ -531,9 +531,9 @@ export default function ViewProfilePage() {
                     </div>
 
                     {/* Title - Read Only */}
-                    <div className="flex items-center gap-2 mb-4">
+                    {/* <div className="flex items-center gap-2 mb-4">
                       <div className="text-teal-600">{profile?.title || "CEO"}</div>
-                    </div>
+                    </div> */}
 
                     <div className="space-y-2">
                       {/* Email */}
