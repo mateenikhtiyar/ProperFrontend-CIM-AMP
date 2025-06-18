@@ -81,7 +81,7 @@ export default function DealsPage() {
         return []
       }
 
-      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
 
       // Map status to API endpoint
       let endpoint = ""
@@ -217,7 +217,7 @@ export default function DealsPage() {
       setApiError(null)
       const token = localStorage.getItem("token")
       const currentBuyerId = localStorage.getItem("userId")
-      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
 
       console.log("Token exists:", !!token)
       console.log("Buyer ID:", currentBuyerId)
@@ -434,7 +434,7 @@ export default function DealsPage() {
         return
       }
 
-      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
 
       const response = await fetch(`${apiUrl}/company-profiles/my-profile`, {
         method: "GET",
@@ -470,7 +470,7 @@ export default function DealsPage() {
         return
       }
 
-      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
 
       const response = await fetch(`${apiUrl}/buyers/profile`, {
         headers: {
@@ -510,35 +510,19 @@ export default function DealsPage() {
     }
   }
 
-  // Show deal details and fetch seller contact if active
-  const handleViewDealDetails = (deal: Deal) => {
-    setSelectedDeal(deal)
-    setDealDetailsOpen(true)
-
-    // Only fetch seller contact info if deal is active
-    if (deal.status === "active") {
-      fetchphoneNumber(deal)
-    } else {
-      setphoneNumber(null)
-    }
-  }
-
   // Fetch seller contact info for a deal
   const fetchphoneNumber = async (deal: Deal) => {
     try {
       const token = localStorage.getItem("token")
       if (!token) return
 
-      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
 
-      // Use the sellerId to fetch seller contact information
-      if (!deal.sellerId) {
-        console.error("No sellerId found for deal:", deal.id)
-        setphoneNumber({ phone: "N/A", email: "N/A" })
-        return
-      }
+      // Option 1: If you have sellerId in your deal object, use it
+      // const response = await fetch(`${apiUrl}/sellers/profile?sellerId=${deal.sellerId}`, {
 
-      const response = await fetch(`${apiUrl}/sellers/${deal.sellerId}`, {
+      // Option 2: Use deal ID to get seller info (recommended)
+      const response = await fetch(`${apiUrl}/deals/${deal.id}/seller-contact`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -546,7 +530,6 @@ export default function DealsPage() {
 
       if (!response.ok) {
         console.error(`Failed to fetch seller contact: ${response.status}`)
-        setphoneNumber({ phone: "N/A", email: "N/A" })
         return
       }
 
@@ -558,6 +541,18 @@ export default function DealsPage() {
     } catch (error) {
       console.error("Error fetching seller contact:", error)
       setphoneNumber({ phone: "N/A", email: "N/A" })
+    }
+  }
+
+  // Show deal details and fetch seller contact if active
+  const handleViewDealDetails = (deal: Deal) => {
+    if (deal.status === "active") {
+      setSelectedDeal(deal)
+      setDealDetailsOpen(true)
+      fetchphoneNumber(deal)
+    } else {
+      setphoneNumber(null)
+      handleGoToCIM(deal.id)
     }
   }
 
@@ -631,7 +626,7 @@ export default function DealsPage() {
   const getProfilePictureUrl = (path: string | null) => {
     if (!path) return null
 
-    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+    const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
 
     if (path.startsWith("http://") || path.startsWith("https://")) {
       return path
@@ -739,7 +734,7 @@ export default function DealsPage() {
         <aside className="w-56 border-r border-gray-200 bg-white">
           <nav className="flex flex-col p-4">
             <Link
-              href="/buyer/deals"
+              href="/deals"
               className="mb-2 flex items-center rounded-md bg-teal-500 px-4 py-3 text-white hover:bg-teal-600"
             >
               <Briefcase className="mr-3 h-5 w-5" />
@@ -907,15 +902,11 @@ export default function DealsPage() {
                       <p>Asking Price: ${deal.askingPrice.toLocaleString()}</p>
                     </div>
 
-                    {activeTab === "active" && (
-                      <>
-                        <h4 className="mb-2 font-medium text-gray-800">Seller Contact Information</h4>
-                        <div className="mb-4 space-y-1 text-sm text-gray-600">
-                          <p>Phone Number: {phoneNumber?.phone ?? "Loading..."}</p>
-                          <p>Email: {phoneNumber?.email ?? "Loading..."}</p>
-                        </div>
-                      </>
-                    )}
+                    {/* <h4 className="mb-2 font-medium text-gray-800">Seller Contact Information</h4>
+                    <div className="mb-4 space-y-1 text-sm text-gray-600">
+                      <p>Phone Number: {phoneNumber?.phone ?? "Loading..."}</p>
+                      <p>Email: {phoneNumber?.email ?? "Loading..."}</p>
+                    </div> */}
 
                     <div className="flex justify-end space-x-2" onClick={(e) => e.stopPropagation()}>
                       <Button onClick={(e) => handleViewCIMClick(e, deal)} className="bg-teal-500 hover:bg-teal-600">
@@ -1089,3 +1080,4 @@ export default function DealsPage() {
     </div>
   )
 }
+
