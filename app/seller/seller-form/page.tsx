@@ -911,7 +911,7 @@ export default function SellerFormPage() {
       })
 
       // Get API URL from localStorage or use default
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
 
       // Prepare FormData for multipart/form-data
       const multipartFormData = new FormData()
@@ -993,36 +993,37 @@ export default function SellerFormPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Seed Option */}
             <Card
-              className={`cursor-pointer border ${selectedReward === "seed" ? "border-[#3aafa9]" : "border-gray-200"} overflow-hidden`}
-              onClick={() => setSelectedReward("seed")}
-            >
-              <div className="flex flex-col h-full">
-                <div className="p-4">
-                  <div className=" flex justify-between overflow-hidden">
-                    <h3 className="font-semibold  text-[#3aafa9]">Seed</h3>
+  className={`cursor-pointer border-2 ${
+    selectedReward === "seed" ? "border-[#3aafa9]" : "border-gray-200"
+  } overflow-hidden`}
+  onClick={() => setSelectedReward("seed")}
+>
+  <div className="flex flex-col h-full">
+    <div className="p-4">
+      <div className="flex justify-between overflow-hidden">
+        <h3 className="font-semibold text-[#3aafa9]">Seed</h3>
+        <Image width={100} height={100} src="/seed.svg" alt="seed" className="w-20 h-20" />
+      </div>
+      <p className="text-sm mt-2 text-gray-600">
+        This deal will be marketed widely on other deal sites. Most of our buyers chase deals from this level.
+      </p>
+    </div>
+    <div className="mt-auto">
+      <div className="flex justify-between items-center">
+        <div className="p-4">
+          <div className="bg-[#3aafa9] text-white text-xs rounded-md px-3 py-3 inline-block">
+            <span className="text-[#F4E040]">$10</span> Amazon Gift Card for posting with us
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</Card>
 
-                    <Image width={100} height={100} src="/seed.svg" alt="seed" className="w-20 h-20 " />
-                  </div>{" "}
-                  <p className="text-sm mt-2 text-gray-600">
-                    This deal will be marketed widely on other deal sites. Most of our buyers chase deals from this
-                    level.
-                  </p>
-                </div>
-                <div className="mt-auto">
-                  <div className="flex justify-between items-center">
-                    <div className="p-4">
-                      <div className="bg-[#3aafa9] text-white text-xs rounded-md px-3 py-3 inline-block">
-                        <span className="text-[#F4E040]">$10</span> Amazon Gift Card for posting with us
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </Card>
 
             {/* Bloom Option */}
             <Card
-              className={`cursor-pointer border ${selectedReward === "bloom" ? "border-[#3aafa9]" : "border-gray-200"} overflow-hidden`}
+              className={`cursor-pointer border-2 ${selectedReward === "bloom" ? "border-[#3aafa9]" : "border-gray-200"} overflow-hidden`}
               onClick={() => setSelectedReward("bloom")}
             >
               <div className="flex flex-col h-full">
@@ -1053,7 +1054,7 @@ export default function SellerFormPage() {
 
             {/* Fruit Option */}
             <Card
-              className={`cursor-pointer border ${selectedReward === "fruit" ? "border-[#3aafa9]" : "border-gray-200"} overflow-hidden`}
+              className={`cursor-pointer border-2 ${selectedReward === "fruit" ? "border-[#3aafa9]" : "border-gray-200"} overflow-hidden`}
               onClick={() => setSelectedReward("fruit")}
             >
               <div className="flex flex-col h-full">
@@ -1120,7 +1121,7 @@ export default function SellerFormPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Geography Selector */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Geography Selector</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Company Location</label>
                 <div className="border border-[#d0d5dd] rounded-md p-4 h-80 flex flex-col">
                   <div className="relative mb-4">
                     <Search className="absolute left-2 top-2.5 h-4 w-4 text-[#667085]" />
@@ -1229,7 +1230,7 @@ export default function SellerFormPage() {
               </label>
               <Input
                 id="yearsInBusiness"
-                type="number"
+                type="number" required="true"
                 min="0"
                 value={formData.yearsInBusiness || ""}
                 onChange={(e) => handleNumberChange(e, "yearsInBusiness")}
@@ -1310,32 +1311,37 @@ export default function SellerFormPage() {
               </div>
 
               <div>
-                <label htmlFor="revenueGrowth" className="block text-sm font-medium text-gray-700 mb-1">
-                  Average 3 year revenue growth in %
-                </label>
-                <Input
-                  id="revenueGrowth"
-                  type="text"
-                  value={formData.revenueGrowth ? formatNumberWithCommas(formData.revenueGrowth) : ""}
-                  onChange={(e) => {
-                    const rawValue = e.target.value.replace(/,/g, "")
-                    if (rawValue === "" || /^-?\d*$/.test(rawValue)) {
-                      handleNumberChange(
-                        { target: { value: rawValue } } as React.ChangeEvent<HTMLInputElement>,
-                        "revenueGrowth",
-                      )
-                    }
-                  }}
-                  className="w-full"
-                />
-              </div>
+  <label htmlFor="revenueGrowth" className="block text-sm font-medium text-gray-700 mb-1">
+    Average 3 year revenue growth in %
+  </label>
+  <Input
+    id="revenueGrowth"
+    type="text"
+    value={
+      formData.revenueGrowth !== undefined && formData.revenueGrowth !== null
+        ? formatNumberWithCommas(formData.revenueGrowth)
+        : ""
+    }
+    onChange={(e) => {
+      const rawValue = e.target.value.replace(/,/g, "")
+      if (rawValue === "" || /^-?\d*$/.test(rawValue)) {
+        handleNumberChange(
+          { target: { value: rawValue } } as React.ChangeEvent<HTMLInputElement>,
+          "revenueGrowth",
+        )
+      }
+    }}
+    className="w-full"
+  />
+</div>
+
             </div>
           </div>
         </section>
 
         {/* Optional Information */}
         <section className="bg-[#f9f9f9] p-6 rounded-lg">
-          <h2 className="text-xl font-semibold mb-6">Optional Information</h2>
+          <h2 className="text-xl font-semibold mb-6">Optional Financial Information</h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div>
@@ -1423,10 +1429,10 @@ export default function SellerFormPage() {
 
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-3">Business Models</label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4" required="true">
               <div className="flex items-center space-x-2">
                 <Checkbox
-                  id="recurring-revenue"
+                  id="recurring-revenue" 
                   checked={formData.businessModels.includes("recurring-revenue")}
                   onCheckedChange={(checked) =>
                     handleCheckboxChange(checked === true, "recurring-revenue", "businessModels")

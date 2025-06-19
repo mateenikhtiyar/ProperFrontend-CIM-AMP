@@ -1,16 +1,22 @@
-"use client"
-import Image from "next/image"
-import type React from "react"
-import { useState, useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import Link from "next/link"
-import type { CompanyProfile } from "@/types/company-profile"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+"use client";
+import Image from "next/image";
+import type React from "react";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import type { CompanyProfile } from "@/types/company-profile";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   PlusCircle,
   Trash2,
@@ -22,12 +28,24 @@ import {
   LogOut,
   Settings,
   Briefcase,
-} from "lucide-react"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { toast } from "@/components/ui/use-toast"
+} from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { toast } from "@/components/ui/use-toast";
 
-import { getGeoData, type GeoData, type Continent, type Region, type SubRegion } from "@/lib/geography-data"
-import { getIndustryData, type IndustryData, type Sector, type IndustryGroup, type Industry } from "@/lib/industry-data"
+import {
+  getGeoData,
+  type GeoData,
+  type Continent,
+  type Region,
+  type SubRegion,
+} from "@/lib/geography-data";
+import {
+  getIndustryData,
+  type IndustryData,
+  type Sector,
+  type IndustryGroup,
+  type Industry,
+} from "@/lib/industry-data";
 
 const COMPANY_TYPES = [
   "Buy Side Mandate",
@@ -38,199 +56,238 @@ const COMPANY_TYPES = [
   "Private Equity",
   "Single Acquisition Search",
   "Strategic Operating Company",
-]
+];
 
-const CAPITAL_ENTITIES = ["Fund", "Holding Company", "SPV", "Direct Investment"]
+const CAPITAL_ENTITIES = [
+  "Fund",
+  "Holding Company",
+  "SPV",
+  "Direct Investment",
+];
 
-const BUSINESS_MODELS = ["Recurring Revenue", "Project-Based", "Asset Light", "Asset Heavy"]
+const BUSINESS_MODELS = [
+  "Recurring Revenue",
+  "Project-Based",
+  "Asset Light",
+  "Asset Heavy",
+];
 
-const MANAGEMENT_PREFERENCES = ["Owner(s) Departing", "Owner(s) Staying", "Management Team Staying"]
+const MANAGEMENT_PREFERENCES = [
+  "Owner(s) Departing",
+  "Owner(s) Staying",
+  "Management Team Staying",
+];
 
 // Default API URL
-const DEFAULT_API_URL = "https://api.cimamplify.com"
+const DEFAULT_API_URL = "http://localhost:3001";
 
 // Type for hierarchical selection
 interface HierarchicalSelection {
-  continents: Record<string, boolean>
-  regions: Record<string, boolean>
-  subRegions: Record<string, boolean>
+  continents: Record<string, boolean>;
+  regions: Record<string, boolean>;
+  subRegions: Record<string, boolean>;
 }
 
 interface IndustrySelection {
-  sectors: Record<string, boolean>
-  industryGroups: Record<string, boolean>
-  industries: Record<string, boolean>
+  sectors: Record<string, boolean>;
+  industryGroups: Record<string, boolean>;
+  industries: Record<string, boolean>;
 }
 
 // Store selected management preferences separately from the form data
 interface ExtendedFormState {
-  selectedManagementPreferences: string[]
+  selectedManagementPreferences: string[];
 }
 
 // Add BuyerProfile interface
 interface BuyerProfile {
-  _id: string
-  fullName: string
-  email: string
-  companyName: string
-  role: string
-  profilePicture: string | null
+  _id: string;
+  fullName: string;
+  email: string;
+  companyName: string;
+  role: string;
+  profilePicture: string | null;
 }
 
 export default function CompanyProfilePage() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle")
-  const [errorMessage, setErrorMessage] = useState("")
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<
+    "idle" | "success" | "error"
+  >("idle");
+  const [errorMessage, setErrorMessage] = useState("");
 
   // API configuration
-  const [apiUrl, setApiUrl] = useState(DEFAULT_API_URL)
+  const [apiUrl, setApiUrl] = useState(DEFAULT_API_URL);
 
   // Authentication state
-  const [authToken, setAuthToken] = useState("")
-  const [buyerId, setBuyerId] = useState("")
-  const [isClient, setIsClient] = useState(false)
+  const [authToken, setAuthToken] = useState("");
+  const [buyerId, setBuyerId] = useState("");
+  const [isClient, setIsClient] = useState(false);
 
-  const [geoData, setGeoData] = useState<GeoData | null>(null)
-  const [industryData, setIndustryData] = useState<IndustryData | null>(null)
+  const [geoData, setGeoData] = useState<GeoData | null>(null);
+  const [industryData, setIndustryData] = useState<IndustryData | null>(null);
 
   // Add buyerProfile state
-  const [buyerProfile, setBuyerProfile] = useState<BuyerProfile | null>(null)
+  const [buyerProfile, setBuyerProfile] = useState<BuyerProfile | null>(null);
 
   // Hierarchical selection state
   const [geoSelection, setGeoSelection] = useState<HierarchicalSelection>({
     continents: {},
     regions: {},
     subRegions: {},
-  })
+  });
 
-  const [industrySelection, setIndustrySelection] = useState<IndustrySelection>({
-    sectors: {},
-    industryGroups: {},
-    industries: {},
-  })
+  const [industrySelection, setIndustrySelection] = useState<IndustrySelection>(
+    {
+      sectors: {},
+      industryGroups: {},
+      industries: {},
+    }
+  );
 
   // UI state for expanded sections
-  const [expandedContinents, setExpandedContinents] = useState<Record<string, boolean>>({})
-  const [expandedRegions, setExpandedRegions] = useState<Record<string, boolean>>({})
-  const [expandedSectors, setExpandedSectors] = useState<Record<string, boolean>>({})
-  const [expandedIndustryGroups, setExpandedIndustryGroups] = useState<Record<string, boolean>>({})
+  const [expandedContinents, setExpandedContinents] = useState<
+    Record<string, boolean>
+  >({});
+  const [expandedRegions, setExpandedRegions] = useState<
+    Record<string, boolean>
+  >({});
+  const [expandedSectors, setExpandedSectors] = useState<
+    Record<string, boolean>
+  >({});
+  const [expandedIndustryGroups, setExpandedIndustryGroups] = useState<
+    Record<string, boolean>
+  >({});
 
   // Search terms
-  const [countrySearchTerm, setCountrySearchTerm] = useState("")
-  const [industrySearchTerm, setIndustrySearchTerm] = useState("")
+  const [countrySearchTerm, setCountrySearchTerm] = useState("");
+  const [industrySearchTerm, setIndustrySearchTerm] = useState("");
 
   // Available currencies
-  const CURRENCIES = ["USD", "EUR", "GBP", "CAD", "AUD"]
+  const CURRENCIES = ["USD", "EUR", "GBP", "CAD", "AUD"];
 
   // Extended form state for fields not in the CompanyProfile type
-  const [extendedFormState, setExtendedFormState] = useState<ExtendedFormState>({
-    selectedManagementPreferences: [],
-  })
+  const [extendedFormState, setExtendedFormState] = useState<ExtendedFormState>(
+    {
+      selectedManagementPreferences: [],
+    }
+  );
 
   // Add a state variable to store the company profile ID
-  const [profileId, setProfileId] = useState<string | null>(null)
+  const [profileId, setProfileId] = useState<string | null>(null);
 
   // Add a new state for field-specific errors
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   // Check if we're on the client side
   useEffect(() => {
-    setIsClient(true)
-  }, [])
+    setIsClient(true);
+  }, []);
 
   // Format number with commas
   const formatNumberWithCommas = (value: number | undefined) => {
-    if (value === undefined) return ""
-    return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-  }
+    if (value === undefined) return "";
+    return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  };
 
   // Check for token on mount and from URL parameters
   useEffect(() => {
-    if (!isClient) return
+    if (!isClient) return;
 
     // Get token and userId from URL parameters
-    const urlToken = searchParams?.get("token")
-    const urlUserId = searchParams?.get("userId")
+    const urlToken = searchParams?.get("token");
+    const urlUserId = searchParams?.get("userId");
 
     // Set token from URL or localStorage
     if (urlToken) {
-      const cleanToken = urlToken.trim()
-      localStorage.setItem("token", cleanToken)
-      setAuthToken(cleanToken)
-      console.log("Company Profile - Token set from URL:", cleanToken.substring(0, 10) + "...")
+      const cleanToken = urlToken.trim();
+      localStorage.setItem("token", cleanToken);
+      setAuthToken(cleanToken);
+      console.log(
+        "Company Profile - Token set from URL:",
+        cleanToken.substring(0, 10) + "..."
+      );
     } else {
-      const storedToken = localStorage.getItem("token")
+      const storedToken = localStorage.getItem("token");
       if (storedToken) {
-        const cleanToken = storedToken.trim()
-        setAuthToken(cleanToken)
-        console.log("Company Profile - Token set from localStorage:", cleanToken.substring(0, 10) + "...")
+        const cleanToken = storedToken.trim();
+        setAuthToken(cleanToken);
+        console.log(
+          "Company Profile - Token set from localStorage:",
+          cleanToken.substring(0, 10) + "..."
+        );
       } else {
-        console.warn("Company Profile - No token found, redirecting to login")
+        console.warn("Company Profile - No token found, redirecting to login");
         toast({
           title: "Authentication Required",
           description: "Please log in to access this page.",
           variant: "destructive",
-        })
-        router.push("/buyer/login")
-        return
+        });
+        router.push("/buyer/login");
+        return;
       }
     }
 
     // Set userId from URL or localStorage
     if (urlUserId) {
-      const cleanUserId = urlUserId.trim()
-      localStorage.setItem("userId", cleanUserId)
-      setBuyerId(cleanUserId)
-      console.log("Company Profile - Buyer ID set from URL:", cleanUserId)
+      const cleanUserId = urlUserId.trim();
+      localStorage.setItem("userId", cleanUserId);
+      setBuyerId(cleanUserId);
+      console.log("Company Profile - Buyer ID set from URL:", cleanUserId);
     } else {
-      const storedUserId = localStorage.getItem("userId")
+      const storedUserId = localStorage.getItem("userId");
       if (storedUserId) {
-        const cleanUserId = storedUserId.trim()
-        setBuyerId(cleanUserId)
-        console.log("Company Profile - Buyer ID set from localStorage:", cleanUserId)
+        const cleanUserId = storedUserId.trim();
+        setBuyerId(cleanUserId);
+        console.log(
+          "Company Profile - Buyer ID set from localStorage:",
+          cleanUserId
+        );
       }
     }
 
     // Set API URL from localStorage or use default
-    const storedApiUrl = localStorage.getItem("apiUrl")
+    const storedApiUrl = localStorage.getItem("apiUrl");
     if (storedApiUrl) {
-      setApiUrl(storedApiUrl)
+      setApiUrl(storedApiUrl);
     }
-  }, [searchParams, router, isClient])
+  }, [searchParams, router, isClient]);
 
   useEffect(() => {
-    if (!isClient || !authToken) return
+    if (!isClient || !authToken) return;
 
     const fetchData = async () => {
       try {
         // Fetch geography data
-        const geo = await getGeoData()
-        setGeoData(geo)
+        const geo = await getGeoData();
+        setGeoData(geo);
 
         // Fetch industry data
-        const industry = await getIndustryData()
-        setIndustryData(industry)
+        const industry = await getIndustryData();
+        setIndustryData(industry);
 
         // After loading the reference data, fetch the user's profile
-        await fetchUserProfile()
-        await fetchBuyerProfile()
+        await fetchUserProfile();
+        await fetchBuyerProfile();
       } catch (error) {
-        console.error("Error fetching data:", error)
+        console.error("Error fetching data:", error);
         toast({
           title: "Data Loading Error",
           description: "Failed to load geography and industry data.",
           variant: "destructive",
-        })
+        });
       }
-    }
+    };
 
-    fetchData()
-  }, [authToken, isClient])
+    fetchData();
+  }, [authToken, isClient]);
 
   // Form state
-  const [formData, setFormData] = useState<CompanyProfile & { selectedCurrency: string; capitalAvailability: string }>({
+  const [formData, setFormData] = useState<
+    CompanyProfile & { selectedCurrency: string; capitalAvailability: string }
+  >({
     companyName: "",
     website: "",
     contacts: [{ name: "", email: "", phone: "" }],
@@ -267,14 +324,14 @@ export default function CompanyProfilePage() {
     },
     selectedCurrency: "USD",
     capitalAvailability: "need_to_raise",
-  })
+  });
 
   // Fetch user's existing profile data
   const fetchUserProfile = async () => {
-    if (!authToken || !isClient) return
+    if (!authToken || !isClient) return;
 
     try {
-      setIsSubmitting(true)
+      setIsSubmitting(true);
 
       const response = await fetch(`${apiUrl}/company-profiles/my-profile`, {
         method: "GET",
@@ -282,24 +339,26 @@ export default function CompanyProfilePage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${authToken}`,
         },
-      })
+      });
 
       if (!response.ok) {
         if (response.status === 404) {
-          console.log("No existing profile found, showing empty form")
-          return
+          console.log("No existing profile found, showing empty form");
+          return;
         }
 
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(`API Error: ${response.status} - ${JSON.stringify(errorData)}`)
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          `API Error: ${response.status} - ${JSON.stringify(errorData)}`
+        );
       }
 
-      const profileData = await response.json()
-      console.log("Existing profile loaded:", profileData)
+      const profileData = await response.json();
+      console.log("Existing profile loaded:", profileData);
 
       if (profileData && profileData._id) {
-        setProfileId(profileData._id)
-        console.log("Company Profile ID stored for updates:", profileData._id)
+        setProfileId(profileData._id);
+        console.log("Company Profile ID stored for updates:", profileData._id);
       }
 
       if (profileData) {
@@ -319,214 +378,247 @@ export default function CompanyProfilePage() {
             ...(profileData.agreements || {}),
           },
           selectedCurrency: profileData.selectedCurrency || "USD",
-          capitalEntity: profileData.capitalEntity || profileData.capitalAvailability || "need_to_raise",
-          capitalAvailability: profileData.capitalAvailability || profileData.capitalEntity || "need_to_raise",
-        }
+          capitalEntity:
+            profileData.capitalEntity ||
+            profileData.capitalAvailability ||
+            "need_to_raise",
+          capitalAvailability:
+            profileData.capitalAvailability ||
+            profileData.capitalEntity ||
+            "need_to_raise",
+        };
 
-        setFormData(updatedProfile)
+        setFormData(updatedProfile);
 
         // Update geography selections
         if (profileData.targetCriteria?.countries?.length > 0 && geoData) {
-          const newGeoSelection = { ...geoSelection }
+          const newGeoSelection = { ...geoSelection };
 
           geoData.continents.forEach((continent) => {
             if (profileData.targetCriteria.countries.includes(continent.name)) {
-              newGeoSelection.continents[continent.id] = true
+              newGeoSelection.continents[continent.id] = true;
             }
 
             continent.regions.forEach((region) => {
               if (profileData.targetCriteria.countries.includes(region.name)) {
-                newGeoSelection.regions[region.id] = true
+                newGeoSelection.regions[region.id] = true;
               }
 
               if (region.subRegions) {
                 region.subRegions.forEach((subRegion) => {
-                  if (profileData.targetCriteria.countries.includes(subRegion.name)) {
-                    newGeoSelection.subRegions[subRegion.id] = true
+                  if (
+                    profileData.targetCriteria.countries.includes(
+                      subRegion.name
+                    )
+                  ) {
+                    newGeoSelection.subRegions[subRegion.id] = true;
                   }
-                })
+                });
               }
-            })
-          })
+            });
+          });
 
-          setGeoSelection(newGeoSelection)
+          setGeoSelection(newGeoSelection);
         }
 
         // Update industry selections
-        if (profileData.targetCriteria?.industrySectors?.length > 0 && industryData) {
-          const newIndustrySelection = { ...industrySelection }
+        if (
+          profileData.targetCriteria?.industrySectors?.length > 0 &&
+          industryData
+        ) {
+          const newIndustrySelection = { ...industrySelection };
 
           industryData.sectors.forEach((sector) => {
-            if (profileData.targetCriteria.industrySectors.includes(sector.name)) {
-              newIndustrySelection.sectors[sector.id] = true
+            if (
+              profileData.targetCriteria.industrySectors.includes(sector.name)
+            ) {
+              newIndustrySelection.sectors[sector.id] = true;
             }
 
             sector.industryGroups.forEach((group) => {
-              if (profileData.targetCriteria.industrySectors.includes(group.name)) {
-                newIndustrySelection.industryGroups[group.id] = true
+              if (
+                profileData.targetCriteria.industrySectors.includes(group.name)
+              ) {
+                newIndustrySelection.industryGroups[group.id] = true;
               }
 
               group.industries.forEach((industry) => {
-                if (profileData.targetCriteria.industrySectors.includes(industry.name)) {
-                  newIndustrySelection.industries[industry.id] = true
+                if (
+                  profileData.targetCriteria.industrySectors.includes(
+                    industry.name
+                  )
+                ) {
+                  newIndustrySelection.industries[industry.id] = true;
                 }
-              })
-            })
-          })
+              });
+            });
+          });
 
-          setIndustrySelection(newIndustrySelection)
+          setIndustrySelection(newIndustrySelection);
         }
 
         // Update management preferences
         if (profileData.targetCriteria?.managementTeamPreference) {
-          const preferences = Array.isArray(profileData.targetCriteria.managementTeamPreference)
+          const preferences = Array.isArray(
+            profileData.targetCriteria.managementTeamPreference
+          )
             ? profileData.targetCriteria.managementTeamPreference
-            : [profileData.targetCriteria.managementTeamPreference]
+            : [profileData.targetCriteria.managementTeamPreference];
 
           setExtendedFormState({
             ...extendedFormState,
             selectedManagementPreferences: preferences,
-          })
+          });
         }
-
-
       }
     } catch (error) {
-      console.error("Error fetching profile:", error)
-
+      console.error("Error fetching profile:", error);
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   // Fetch buyer profile
   const fetchBuyerProfile = async () => {
-    if (!isClient) return
+    if (!isClient) return;
 
     try {
-      const token = localStorage.getItem("token")
+      const token = localStorage.getItem("token");
       if (!token) {
-        console.warn("Company Profile - Missing token for profile fetch")
-        return
+        console.warn("Company Profile - Missing token for profile fetch");
+        return;
       }
 
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
       const response = await fetch(`${apiUrl}/buyers/profile`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      })
+      });
 
       if (!response.ok) {
         if (response.status === 401) {
-          localStorage.removeItem("token")
-          localStorage.removeItem("userId")
-          router.push("/buyer/login?session=expired")
-          return
+          localStorage.removeItem("token");
+          localStorage.removeItem("userId");
+          router.push("/buyer/login?session=expired");
+          return;
         }
-        throw new Error(`Failed to fetch buyer profile: ${response.status}`)
+        throw new Error(`Failed to fetch buyer profile: ${response.status}`);
       }
 
-      const data = await response.json()
-      setBuyerProfile(data)
-      console.log("Company Profile - Buyer profile fetched:", data)
+      const data = await response.json();
+      setBuyerProfile(data);
+      console.log("Company Profile - Buyer profile fetched:", data);
     } catch (error) {
-      console.error("Error fetching buyer profile:", error)
+      console.error("Error fetching buyer profile:", error);
     }
-  }
+  };
 
   // Add a function to validate individual fields
   const validateField = (field: string, value: any): string | null => {
     switch (field) {
       case "companyName":
-        return !value?.trim() ? "Company name is required" : null
+        return !value?.trim() ? "Company name is required" : null;
       case "website":
         try {
-          const websiteUrl = new URL(value.startsWith("http") ? value : `https://${value}`)
+          const websiteUrl = new URL(
+            value.startsWith("http") ? value : `https://${value}`
+          );
           if (!websiteUrl.hostname.includes(".")) {
-            return "Please enter a valid website URL (e.g., example.com)"
+            return "Please enter a valid website URL (e.g., example.com)";
           }
         } catch (e) {
-          return "Please enter a valid website URL (e.g., example.com)"
+          return "Please enter a valid website URL (e.g., example.com)";
         }
-        return null
+        return null;
       case "companyType":
-        return !value ? "Please select a company type" : null
+        return !value ? "Please select a company type" : null;
       case "capitalEntity":
-        return !value ? "Please select a capital entity" : null
+        return !value ? "Please select a capital entity" : null;
       case "contact.name":
-        return !value?.trim() ? "Contact name is required" : null
+        return !value?.trim() ? "Contact name is required" : null;
       case "contact.email":
-        if (!value?.trim()) return "Contact email is required"
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-        return !emailRegex.test(value) ? "Please enter a valid email address (e.g., name@example.com)" : null
+        if (!value?.trim()) return "Contact email is required";
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return !emailRegex.test(value)
+          ? "Please enter a valid email address (e.g., name@example.com)"
+          : null;
       case "contact.phone":
-        if (!value?.trim()) return "Contact phone is required"
-        const phoneRegex = /^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/
-        return !phoneRegex.test(value) ? "Please enter a valid phone number (e.g., 123-456-7890)" : null
+        if (!value?.trim()) return "Contact phone is required";
+        const phoneRegex =
+          /^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/;
+        return !phoneRegex.test(value)
+          ? "Please enter a valid phone number (e.g., 123-456-7890)"
+          : null;
       case "agreements.termsAndConditions":
-        return value ? null : "You must accept the terms and conditions"
+        return value ? null : "You must accept the terms and conditions";
       case "agreements.nda":
-        return value ? null : "You must accept the NDA"
+        return value ? null : "You must accept the NDA";
       case "agreements.feeAgreement":
-        return value ? null : "You must accept the fee agreement"
+        return value ? null : "You must accept the fee agreement";
       default:
-        return null
+        return null;
     }
-  }
+  };
 
   // Handle form field changes
   const handleChange = (field: string, value: any) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
-    }))
+    }));
 
-    const error = validateField(field, value)
+    const error = validateField(field, value);
     setFieldErrors((prev) => ({
       ...prev,
       [field]: error || "",
-    }))
-  }
+    }));
+  };
 
   // Handle nested field changes
   const handleNestedChange = (parent: string, field: string, value: any) => {
     setFormData((prev) => ({
       ...prev,
       [parent]: {
-        ...prev[parent as keyof CompanyProfile],
+        ...(typeof prev[parent as keyof CompanyProfile] === "object" &&
+        prev[parent as keyof CompanyProfile] !== null
+          ? (prev[parent as keyof CompanyProfile] as Record<string, any>)
+          : {}),
         [field]: value,
       },
-    }))
+    }));
 
-    const error = validateField(`${parent}.${field}`, value)
+    const error = validateField(`${parent}.${field}`, value);
     setFieldErrors((prev) => ({
       ...prev,
       [`${parent}.${field}`]: error || "",
-    }))
-  }
+    }));
+  };
 
   // Handle contact changes
   const handleContactChange = (index: number, field: string, value: string) => {
-    const updatedContacts = [...formData.contacts]
+    const updatedContacts = [...formData.contacts];
     updatedContacts[index] = {
       ...updatedContacts[index],
       [field]: value,
-    }
-    handleChange("contacts", updatedContacts)
+    };
+    handleChange("contacts", updatedContacts);
 
-    const error = validateField(`contact.${field}`, value)
+    const error = validateField(`contact.${field}`, value);
     setFieldErrors((prev) => ({
       ...prev,
       [`contacts[${index}].${field}`]: error || "",
-    }))
-  }
+    }));
+  };
 
   // Add new contact
   const addContact = () => {
     if (formData.contacts.length < 3) {
-      handleChange("contacts", [...formData.contacts, { name: "", email: "", phone: "" }])
+      handleChange("contacts", [
+        ...formData.contacts,
+        { name: "", email: "", phone: "" },
+      ]);
     } else {
       // toast({
       //   title: "Maximum contacts reached",
@@ -534,559 +626,645 @@ export default function CompanyProfilePage() {
       //   variant: "destructive",
       // })
     }
-  }
+  };
 
   // Remove contact
   const removeContact = (index: number) => {
-    const updatedContacts = formData.contacts.filter((_, i) => i !== index)
-    handleChange("contacts", updatedContacts)
-  }
+    const updatedContacts = formData.contacts.filter((_, i) => i !== index);
+    handleChange("contacts", updatedContacts);
+  };
 
   // Toggle business model selection
   const toggleBusinessModel = (model: string) => {
-    const currentModels = formData.targetCriteria.preferredBusinessModels
+    const currentModels = formData.targetCriteria.preferredBusinessModels;
     if (currentModels.includes(model)) {
       handleNestedChange(
         "targetCriteria",
         "preferredBusinessModels",
-        currentModels.filter((m) => m !== model),
-      )
+        currentModels.filter((m) => m !== model)
+      );
     } else {
-      handleNestedChange("targetCriteria", "preferredBusinessModels", [...currentModels, model])
+      handleNestedChange("targetCriteria", "preferredBusinessModels", [
+        ...currentModels,
+        model,
+      ]);
     }
-  }
+  };
 
   // Toggle management preference selection
   const toggleManagementPreference = (preference: string) => {
-    const currentPreferences = [...extendedFormState.selectedManagementPreferences]
-    const preferenceIndex = currentPreferences.indexOf(preference)
+    const currentPreferences = [
+      ...extendedFormState.selectedManagementPreferences,
+    ];
+    const preferenceIndex = currentPreferences.indexOf(preference);
 
     if (preferenceIndex >= 0) {
-      currentPreferences.splice(preferenceIndex, 1)
+      currentPreferences.splice(preferenceIndex, 1);
     } else {
-      currentPreferences.push(preference)
+      currentPreferences.push(preference);
     }
 
     setExtendedFormState({
       ...extendedFormState,
       selectedManagementPreferences: currentPreferences,
-    })
+    });
 
-    handleNestedChange("targetCriteria", "managementTeamPreference", currentPreferences)
-  }
+    handleNestedChange(
+      "targetCriteria",
+      "managementTeamPreference",
+      currentPreferences
+    );
+  };
 
   // Geography selection handlers
   const toggleContinent = (continent: Continent) => {
-    const newGeoSelection = { ...geoSelection }
-    const isSelected = !geoSelection.continents[continent.id]
+    const newGeoSelection = { ...geoSelection };
+    const isSelected = !geoSelection.continents[continent.id];
 
-    newGeoSelection.continents[continent.id] = isSelected
+    newGeoSelection.continents[continent.id] = isSelected;
 
     continent.regions.forEach((region) => {
-      newGeoSelection.regions[region.id] = isSelected
+      newGeoSelection.regions[region.id] = isSelected;
 
       if (region.subRegions) {
         region.subRegions.forEach((subRegion) => {
-          newGeoSelection.subRegions[subRegion.id] = isSelected
-        })
+          newGeoSelection.subRegions[subRegion.id] = isSelected;
+        });
       }
-    })
+    });
 
-    setGeoSelection(newGeoSelection)
-    updateCountriesInFormData(newGeoSelection)
-  }
+    setGeoSelection(newGeoSelection);
+    updateCountriesInFormData(newGeoSelection);
+  };
 
   const toggleRegion = (region: Region, continent: Continent) => {
-    const newGeoSelection = { ...geoSelection }
-    const isSelected = !geoSelection.regions[region.id]
+    const newGeoSelection = { ...geoSelection };
+    const isSelected = !geoSelection.regions[region.id];
 
-    newGeoSelection.regions[region.id] = isSelected
+    newGeoSelection.regions[region.id] = isSelected;
 
     if (region.subRegions) {
       region.subRegions.forEach((subRegion) => {
-        newGeoSelection.subRegions[subRegion.id] = isSelected
-      })
+        newGeoSelection.subRegions[subRegion.id] = isSelected;
+      });
     }
 
     const allRegionsSelected = continent.regions.every((r) =>
-      r.id === region.id ? isSelected : newGeoSelection.regions[r.id],
-    )
+      r.id === region.id ? isSelected : newGeoSelection.regions[r.id]
+    );
 
     const allRegionsDeselected = continent.regions.every((r) =>
-      r.id === region.id ? !isSelected : !newGeoSelection.regions[r.id],
-    )
+      r.id === region.id ? !isSelected : !newGeoSelection.regions[r.id]
+    );
 
     if (allRegionsSelected) {
-      newGeoSelection.continents[continent.id] = true
+      newGeoSelection.continents[continent.id] = true;
     } else if (allRegionsDeselected) {
-      newGeoSelection.continents[continent.id] = false
+      newGeoSelection.continents[continent.id] = false;
     }
 
-    setGeoSelection(newGeoSelection)
-    updateCountriesInFormData(newGeoSelection)
-  }
+    setGeoSelection(newGeoSelection);
+    updateCountriesInFormData(newGeoSelection);
+  };
 
-  const toggleSubRegion = (subRegion: SubRegion, region: Region, continent: Continent) => {
-    const newGeoSelection = { ...geoSelection }
-    const isSelected = !geoSelection.subRegions[subRegion.id]
+  const toggleSubRegion = (
+    subRegion: SubRegion,
+    region: Region,
+    continent: Continent
+  ) => {
+    const newGeoSelection = { ...geoSelection };
+    const isSelected = !geoSelection.subRegions[subRegion.id];
 
-    newGeoSelection.subRegions[subRegion.id] = isSelected
+    newGeoSelection.subRegions[subRegion.id] = isSelected;
 
     const allSubRegionsSelected = region.subRegions?.every((sr) =>
-      sr.id === subRegion.id ? isSelected : newGeoSelection.subRegions[sr.id],
-    )
+      sr.id === subRegion.id ? isSelected : newGeoSelection.subRegions[sr.id]
+    );
 
     if (allSubRegionsSelected) {
-      newGeoSelection.regions[region.id] = true
+      newGeoSelection.regions[region.id] = true;
     } else {
-      newGeoSelection.regions[region.id] = false
+      newGeoSelection.regions[region.id] = false;
     }
 
-    const allRegionsSelected = continent.regions.every((r) => newGeoSelection.regions[r.id])
+    const allRegionsSelected = continent.regions.every(
+      (r) => newGeoSelection.regions[r.id]
+    );
 
     if (allRegionsSelected) {
-      newGeoSelection.continents[continent.id] = true
+      newGeoSelection.continents[continent.id] = true;
     } else {
-      newGeoSelection.continents[continent.id] = false
+      newGeoSelection.continents[continent.id] = false;
     }
 
-    setGeoSelection(newGeoSelection)
-    updateCountriesInFormData(newGeoSelection)
-  }
+    setGeoSelection(newGeoSelection);
+    updateCountriesInFormData(newGeoSelection);
+  };
 
   // Update the countries array in formData based on the hierarchical selection
   const updateCountriesInFormData = (selection: HierarchicalSelection) => {
-    if (!geoData) return
+    if (!geoData) return;
 
-    const selectedCountries: string[] = []
+    const selectedCountries: string[] = [];
 
     geoData.continents.forEach((continent) => {
-      const continentSelected = selection.continents[continent.id]
+      const continentSelected = selection.continents[continent.id];
 
       // Check if all regions in this continent are selected
       const allRegionsSelected = continent.regions.every((region) => {
         if (region.subRegions && region.subRegions.length > 0) {
-          return region.subRegions.every((subRegion) => selection.subRegions[subRegion.id])
+          return region.subRegions.every(
+            (subRegion) => selection.subRegions[subRegion.id]
+          );
         }
-        return selection.regions[region.id]
-      })
+        return selection.regions[region.id];
+      });
 
       if (continentSelected && allRegionsSelected) {
         // If continent is selected and all its regions are selected, send only the continent
-        selectedCountries.push(continent.name)
+        selectedCountries.push(continent.name);
       } else {
         // Otherwise, check individual regions and subregions
         continent.regions.forEach((region) => {
-          const regionSelected = selection.regions[region.id]
+          const regionSelected = selection.regions[region.id];
 
           if (region.subRegions && region.subRegions.length > 0) {
             // Check if all subregions in this region are selected
-            const allSubRegionsSelected = region.subRegions.every((subRegion) => selection.subRegions[subRegion.id])
+            const allSubRegionsSelected = region.subRegions.every(
+              (subRegion) => selection.subRegions[subRegion.id]
+            );
 
             if (regionSelected && allSubRegionsSelected) {
               // If region is selected and all its subregions are selected, send only the region
-              selectedCountries.push(region.name)
+              selectedCountries.push(region.name);
             } else {
               // Otherwise, send only the selected subregions
               region.subRegions.forEach((subRegion) => {
                 if (selection.subRegions[subRegion.id]) {
-                  selectedCountries.push(subRegion.name)
+                  selectedCountries.push(subRegion.name);
                 }
-              })
+              });
             }
           } else {
             // Region has no subregions, add it if selected
             if (regionSelected) {
-              selectedCountries.push(region.name)
+              selectedCountries.push(region.name);
             }
           }
-        })
+        });
       }
-    })
+    });
 
-    handleNestedChange("targetCriteria", "countries", selectedCountries)
-  }
+    handleNestedChange("targetCriteria", "countries", selectedCountries);
+  };
 
   const removeCountry = (countryToRemove: string) => {
-    if (!geoData) return
+    if (!geoData) return;
 
-    const newGeoSelection = { ...geoSelection }
+    const newGeoSelection = { ...geoSelection };
 
     geoData.continents.forEach((continent) => {
       if (continent.name === countryToRemove) {
-        newGeoSelection.continents[continent.id] = false
+        newGeoSelection.continents[continent.id] = false;
       }
 
       continent.regions.forEach((region) => {
         if (region.name === countryToRemove) {
-          newGeoSelection.regions[region.id] = false
+          newGeoSelection.regions[region.id] = false;
         }
 
         if (region.subRegions) {
           region.subRegions.forEach((subRegion) => {
             if (subRegion.name === countryToRemove) {
-              newGeoSelection.subRegions[subRegion.id] = false
+              newGeoSelection.subRegions[subRegion.id] = false;
             }
-          })
+          });
         }
-      })
-    })
+      });
+    });
 
-    setGeoSelection(newGeoSelection)
-    updateCountriesInFormData(newGeoSelection)
-  }
+    setGeoSelection(newGeoSelection);
+    updateCountriesInFormData(newGeoSelection);
+  };
 
   // Industry selection handlers
   const toggleSector = (sector: Sector) => {
-    const newIndustrySelection = { ...industrySelection }
-    const isSelected = !industrySelection.sectors[sector.id]
+    const newIndustrySelection = { ...industrySelection };
+    const isSelected = !industrySelection.sectors[sector.id];
 
-    newIndustrySelection.sectors[sector.id] = isSelected
+    newIndustrySelection.sectors[sector.id] = isSelected;
 
     sector.industryGroups.forEach((group) => {
-      newIndustrySelection.industryGroups[group.id] = isSelected
+      newIndustrySelection.industryGroups[group.id] = isSelected;
 
       group.industries.forEach((industry) => {
-        newIndustrySelection.industries[industry.id] = isSelected
-      })
-    })
+        newIndustrySelection.industries[industry.id] = isSelected;
+      });
+    });
 
-    setIndustrySelection(newIndustrySelection)
-    updateIndustriesInFormData(newIndustrySelection)
-  }
+    setIndustrySelection(newIndustrySelection);
+    updateIndustriesInFormData(newIndustrySelection);
+  };
 
   const toggleIndustryGroup = (group: IndustryGroup, sector: Sector) => {
-    const newIndustrySelection = { ...industrySelection }
-    const isSelected = !industrySelection.industryGroups[group.id]
+    const newIndustrySelection = { ...industrySelection };
+    const isSelected = !industrySelection.industryGroups[group.id];
 
-    newIndustrySelection.industryGroups[group.id] = isSelected
+    newIndustrySelection.industryGroups[group.id] = isSelected;
 
     group.industries.forEach((industry) => {
-      newIndustrySelection.industries[industry.id] = isSelected
-    })
+      newIndustrySelection.industries[industry.id] = isSelected;
+    });
 
     const allGroupsSelected = sector.industryGroups.every((g) =>
-      g.id === group.id ? isSelected : newIndustrySelection.industryGroups[g.id],
-    )
+      g.id === group.id ? isSelected : newIndustrySelection.industryGroups[g.id]
+    );
 
     const allGroupsDeselected = sector.industryGroups.every((g) =>
-      g.id === group.id ? !isSelected : !newIndustrySelection.industryGroups[g.id],
-    )
+      g.id === group.id
+        ? !isSelected
+        : !newIndustrySelection.industryGroups[g.id]
+    );
 
     if (allGroupsSelected) {
-      newIndustrySelection.sectors[sector.id] = true
+      newIndustrySelection.sectors[sector.id] = true;
     } else if (allGroupsDeselected) {
-      newIndustrySelection.sectors[sector.id] = false
+      newIndustrySelection.sectors[sector.id] = false;
     }
 
-    setIndustrySelection(newIndustrySelection)
-    updateIndustriesInFormData(newIndustrySelection)
-  }
+    setIndustrySelection(newIndustrySelection);
+    updateIndustriesInFormData(newIndustrySelection);
+  };
 
-  const toggleIndustry = (industry: Industry, group: IndustryGroup, sector: Sector) => {
-    const newIndustrySelection = { ...industrySelection }
-    const isSelected = !industrySelection.industries[industry.id]
+  const toggleIndustry = (
+    industry: Industry,
+    group: IndustryGroup,
+    sector: Sector
+  ) => {
+    const newIndustrySelection = { ...industrySelection };
+    const isSelected = !industrySelection.industries[industry.id];
 
-    newIndustrySelection.industries[industry.id] = isSelected
+    newIndustrySelection.industries[industry.id] = isSelected;
 
     const allIndustriesSelected = group.industries.every((i) =>
-      i.id === industry.id ? isSelected : newIndustrySelection.industries[i.id],
-    )
+      i.id === industry.id ? isSelected : newIndustrySelection.industries[i.id]
+    );
 
     const allIndustriesDeselected = group.industries.every((i) =>
-      i.id === industry.id ? !isSelected : newIndustrySelection.industries[i.id],
-    )
+      i.id === industry.id ? !isSelected : newIndustrySelection.industries[i.id]
+    );
 
     if (allIndustriesSelected) {
-      newIndustrySelection.industryGroups[group.id] = true
+      newIndustrySelection.industryGroups[group.id] = true;
     } else if (allIndustriesDeselected) {
-      newIndustrySelection.industryGroups[group.id] = false
+      newIndustrySelection.industryGroups[group.id] = false;
     }
 
     const allGroupsSelected = sector.industryGroups.every((g) =>
-      g.id === group.id ? newIndustrySelection.industryGroups[g.id] : newIndustrySelection.industryGroups[g.id],
-    )
+      g.id === group.id
+        ? newIndustrySelection.industryGroups[g.id]
+        : newIndustrySelection.industryGroups[g.id]
+    );
 
     const allGroupsDeselected = sector.industryGroups.every((g) =>
-      g.id === group.id ? !newIndustrySelection.industryGroups[g.id] : !newIndustrySelection.industryGroups[g.id],
-    )
+      g.id === group.id
+        ? !newIndustrySelection.industryGroups[g.id]
+        : !newIndustrySelection.industryGroups[g.id]
+    );
 
     if (allGroupsSelected) {
-      newIndustrySelection.sectors[sector.id] = true
+      newIndustrySelection.sectors[sector.id] = true;
     } else if (allGroupsDeselected) {
-      newIndustrySelection.sectors[sector.id] = false
+      newIndustrySelection.sectors[sector.id] = false;
     }
 
-    setIndustrySelection(newIndustrySelection)
-    updateIndustriesInFormData(newIndustrySelection)
-  }
+    setIndustrySelection(newIndustrySelection);
+    updateIndustriesInFormData(newIndustrySelection);
+  };
 
   // Update the industries array in formData based on the hierarchical selection
   const updateIndustriesInFormData = (selection: IndustrySelection) => {
-    if (!industryData) return
+    if (!industryData) return;
 
-    const selectedIndustries: string[] = []
+    const selectedIndustries: string[] = [];
 
     industryData.sectors.forEach((sector) => {
-      const sectorSelected = selection.sectors[sector.id]
+      const sectorSelected = selection.sectors[sector.id];
 
       // Check if all industry groups in this sector are selected
       const allGroupsSelected = sector.industryGroups.every((group) => {
-        return group.industries.every((industry) => selection.industries[industry.id])
-      })
+        return group.industries.every(
+          (industry) => selection.industries[industry.id]
+        );
+      });
 
       if (sectorSelected && allGroupsSelected) {
         // If sector is selected and all its groups/industries are selected, send only the sector
-        selectedIndustries.push(sector.name)
+        selectedIndustries.push(sector.name);
       } else {
         // Otherwise, check individual groups and industries
         sector.industryGroups.forEach((group) => {
-          const groupSelected = selection.industryGroups[group.id]
+          const groupSelected = selection.industryGroups[group.id];
 
           // Check if all industries in this group are selected
-          const allIndustriesSelected = group.industries.every((industry) => selection.industries[industry.id])
+          const allIndustriesSelected = group.industries.every(
+            (industry) => selection.industries[industry.id]
+          );
 
           if (groupSelected && allIndustriesSelected) {
             // If group is selected and all its industries are selected, send only the group
-            selectedIndustries.push(group.name)
+            selectedIndustries.push(group.name);
           } else {
             // Otherwise, send only the selected industries
             group.industries.forEach((industry) => {
               if (selection.industries[industry.id]) {
-                selectedIndustries.push(industry.name)
+                selectedIndustries.push(industry.name);
               }
-            })
+            });
           }
-        })
+        });
       }
-    })
+    });
 
-    handleNestedChange("targetCriteria", "industrySectors", selectedIndustries)
-  }
+    handleNestedChange("targetCriteria", "industrySectors", selectedIndustries);
+  };
 
   const removeIndustry = (industryToRemove: string) => {
-    if (!industryData) return
+    if (!industryData) return;
 
-    const newIndustrySelection = { ...industrySelection }
-    let found = false
+    const newIndustrySelection = { ...industrySelection };
+    let found = false;
 
     industryData.sectors.forEach((sector) => {
       if (sector.name === industryToRemove) {
-        newIndustrySelection.sectors[sector.id] = false
-        found = true
+        newIndustrySelection.sectors[sector.id] = false;
+        found = true;
 
         sector.industryGroups.forEach((group) => {
-          newIndustrySelection.industryGroups[group.id] = false
+          newIndustrySelection.industryGroups[group.id] = false;
 
           group.industries.forEach((industry) => {
-            newIndustrySelection.industries[industry.id] = false
-          })
-        })
+            newIndustrySelection.industries[industry.id] = false;
+          });
+        });
       }
 
       if (!found) {
         sector.industryGroups.forEach((group) => {
           if (group.name === industryToRemove) {
-            newIndustrySelection.industryGroups[group.id] = false
-            found = true
+            newIndustrySelection.industryGroups[group.id] = false;
+            found = true;
 
             group.industries.forEach((industry) => {
-              newIndustrySelection.industries[industry.id] = false
-            })
+              newIndustrySelection.industries[industry.id] = false;
+            });
 
-            const allGroupsDeselected = sector.industryGroups.every((g) => !newIndustrySelection.industryGroups[g.id])
+            const allGroupsDeselected = sector.industryGroups.every(
+              (g) => !newIndustrySelection.industryGroups[g.id]
+            );
 
             if (allGroupsDeselected) {
-              newIndustrySelection.sectors[sector.id] = false
+              newIndustrySelection.sectors[sector.id] = false;
             }
           }
 
           if (!found) {
             group.industries.forEach((industry) => {
               if (industry.name === industryToRemove) {
-                newIndustrySelection.industries[industry.id] = false
-                found = true
+                newIndustrySelection.industries[industry.id] = false;
+                found = true;
 
-                const allIndustriesDeselected = group.industries.every((i) => !newIndustrySelection.industries[i.id])
+                const allIndustriesDeselected = group.industries.every(
+                  (i) => !newIndustrySelection.industries[i.id]
+                );
 
                 if (allIndustriesDeselected) {
-                  newIndustrySelection.industryGroups[group.id] = false
+                  newIndustrySelection.industryGroups[group.id] = false;
 
                   const allGroupsDeselected = sector.industryGroups.every(
-                    (g) => !newIndustrySelection.industryGroups[g.id],
-                  )
+                    (g) => !newIndustrySelection.industryGroups[g.id]
+                  );
 
                   if (allGroupsDeselected) {
-                    newIndustrySelection.sectors[sector.id] = false
+                    newIndustrySelection.sectors[sector.id] = false;
                   }
                 }
               }
-            })
+            });
           }
-        })
+        });
       }
-    })
+    });
 
-    setIndustrySelection(newIndustrySelection)
-    updateIndustriesInFormData(newIndustrySelection)
-  }
+    setIndustrySelection(newIndustrySelection);
+    updateIndustriesInFormData(newIndustrySelection);
+  };
 
   // Toggle expansion of UI sections
   const toggleContinentExpansion = (continentId: string) => {
     setExpandedContinents((prev) => ({
       ...prev,
       [continentId]: !prev[continentId],
-    }))
-  }
+    }));
+  };
 
   const toggleRegionExpansion = (regionId: string) => {
     setExpandedRegions((prev) => ({
       ...prev,
       [regionId]: !prev[regionId],
-    }))
-  }
+    }));
+  };
 
   const toggleSectorExpansion = (sectorId: string) => {
     setExpandedSectors((prev) => ({
       ...prev,
       [sectorId]: !prev[sectorId],
-    }))
-  }
+    }));
+  };
 
   const toggleIndustryGroupExpansion = (groupId: string) => {
     setExpandedIndustryGroups((prev) => ({
       ...prev,
       [groupId]: !prev[groupId],
-    }))
-  }
+    }));
+  };
 
   // Filter geography data based on search term
   const filterGeographyData = () => {
-    if (!geoData || !countrySearchTerm) return geoData
+    if (!geoData || !countrySearchTerm) return geoData;
 
-    const filteredContinents: Continent[] = []
+    const filteredContinents: Continent[] = [];
 
     geoData.continents.forEach((continent) => {
       const filteredRegions = continent.regions.filter((region) =>
-        region.name.toLowerCase().includes(countrySearchTerm.toLowerCase()),
-      )
+        region.name.toLowerCase().includes(countrySearchTerm.toLowerCase())
+      );
 
       if (filteredRegions.length > 0) {
         filteredContinents.push({
           ...continent,
           regions: filteredRegions,
-        })
+        });
       }
-    })
+    });
 
-    return { continents: filteredContinents }
-  }
+    return { continents: filteredContinents };
+  };
 
   const selectSearchedCountry = (countryName: string) => {
-    if (!geoData) return
+    if (!geoData) return;
 
-    let found = false
+    let found = false;
 
     geoData.continents.forEach((continent) => {
       if (continent.name.toLowerCase().includes(countryName.toLowerCase())) {
-        toggleContinent(continent)
-        found = true
-        return
+        toggleContinent(continent);
+        found = true;
+        return;
       }
 
       continent.regions.forEach((region) => {
         if (region.name.toLowerCase().includes(countryName.toLowerCase())) {
-          toggleRegion(region, continent)
-          found = true
-          return
+          toggleRegion(region, continent);
+          found = true;
+          return;
         }
 
         if (region.subRegions) {
           region.subRegions.forEach((subRegion) => {
-            if (subRegion.name.toLowerCase().includes(countryName.toLowerCase())) {
-              toggleSubRegion(subRegion, region, continent)
-              found = true
-              return
+            if (
+              subRegion.name.toLowerCase().includes(countryName.toLowerCase())
+            ) {
+              toggleSubRegion(subRegion, region, continent);
+              found = true;
+              return;
             }
-          })
+          });
         }
-      })
-    })
+      });
+    });
 
     if (found) {
-      setCountrySearchTerm("")
+      setCountrySearchTerm("");
     }
-  }
+  };
 
   // Filter industry data based on search term
   const filterIndustryData = () => {
-    if (!industryData || !industrySearchTerm) return industryData
+    if (!industryData || !industrySearchTerm) return industryData;
 
-    const filteredSectors: Sector[] = []
+    const filteredSectors: Sector[] = [];
 
     industryData.sectors.forEach((sector) => {
-      const filteredGroups: IndustryGroup[] = []
+      const filteredGroups: IndustryGroup[] = [];
 
       sector.industryGroups.forEach((group) => {
-        const filteredIndustries: Industry[] = []
+        const filteredIndustries: Industry[] = [];
 
         group.industries.forEach((industry) => {
-          if (industry.name.toLowerCase().includes(industrySearchTerm.toLowerCase())) {
-            filteredIndustries.push(industry)
+          if (
+            industry.name
+              .toLowerCase()
+              .includes(industrySearchTerm.toLowerCase())
+          ) {
+            filteredIndustries.push(industry);
           }
-        })
+        });
 
-        if (filteredIndustries.length > 0 || group.name.toLowerCase().includes(industrySearchTerm.toLowerCase())) {
+        if (
+          filteredIndustries.length > 0 ||
+          group.name.toLowerCase().includes(industrySearchTerm.toLowerCase())
+        ) {
           filteredGroups.push({
             ...group,
-            industries: filteredIndustries.length > 0 ? filteredIndustries : group.industries,
-          })
+            industries:
+              filteredIndustries.length > 0
+                ? filteredIndustries
+                : group.industries,
+          });
         }
-      })
+      });
 
-      if (filteredGroups.length > 0 || sector.name.toLowerCase().includes(industrySearchTerm.toLowerCase())) {
+      if (
+        filteredGroups.length > 0 ||
+        sector.name.toLowerCase().includes(industrySearchTerm.toLowerCase())
+      ) {
         filteredSectors.push({
           ...sector,
-          industryGroups: filteredGroups.length > 0 ? filteredGroups : sector.industryGroups,
-        })
+          industryGroups:
+            filteredGroups.length > 0 ? filteredGroups : sector.industryGroups,
+        });
       }
-    })
+    });
 
-    return { sectors: filteredSectors }
-  }
+    return { sectors: filteredSectors };
+  };
 
   // Form validation
   const validateForm = () => {
-    const errors: Record<string, string> = {}
+    const errors: Record<string, string> = {};
 
-    errors["companyName"] = validateField("companyName", formData.companyName) || ""
-    errors["website"] = validateField("website", formData.website) || ""
-    errors["companyType"] = validateField("companyType", formData.companyType) || ""
-    errors["capitalEntity"] = validateField("capitalEntity", formData.capitalEntity) || ""
+    errors["companyName"] =
+      validateField("companyName", formData.companyName) || "";
+    errors["website"] = validateField("website", formData.website) || "";
+    errors["companyType"] =
+      validateField("companyType", formData.companyType) || "";
+    errors["capitalEntity"] =
+      validateField("capitalEntity", formData.capitalEntity) || "";
 
+    // Contact validation
     if (formData.contacts.length === 0) {
-      errors["contacts"] = "At least one contact is required"
+      errors["contacts"] = "At least one contact is required";
     } else {
+      const emailCount: Record<string, number> = {};
+
+      // Step 1: Validate fields and count emails
       formData.contacts.forEach((contact, index) => {
-        errors[`contacts[${index}].name`] = validateField("contact.name", contact.name) || ""
-        errors[`contacts[${index}].email`] = validateField("contact.email", contact.email) || ""
-        errors[`contacts[${index}].phone`] = validateField("contact.phone", contact.phone) || ""
-      })
+        const nameError = validateField("contact.name", contact.name);
+        const emailError = validateField("contact.email", contact.email);
+        const phoneError = validateField("contact.phone", contact.phone);
+
+        errors[`contacts[${index}].name`] = nameError || "";
+        errors[`contacts[${index}].email`] = emailError || "";
+        errors[`contacts[${index}].phone`] = phoneError || "";
+
+        const email = contact.email?.trim().toLowerCase();
+        if (email) {
+          emailCount[email] = (emailCount[email] || 0) + 1;
+        }
+      });
+
+      // Step 2: Add duplicate email errors
+      formData.contacts.forEach((contact, index) => {
+        const email = contact.email?.trim().toLowerCase();
+        if (email && emailCount[email] > 1) {
+          errors[`contacts[${index}].email`] = "Duplicate email is not allowed";
+        }
+      });
     }
 
     errors["agreements.termsAndConditionsAccepted"] =
-      validateField("agreements.termsAndConditions", formData.agreements.termsAndConditionsAccepted) || ""
-    errors["agreements.ndaAccepted"] = validateField("agreements.nda", formData.agreements.ndaAccepted) || ""
+      validateField(
+        "agreements.termsAndConditions",
+        formData.agreements.termsAndConditionsAccepted
+      ) || "";
+    errors["agreements.ndaAccepted"] =
+      validateField("agreements.nda", formData.agreements.ndaAccepted) || "";
     errors["agreements.feeAgreementAccepted"] =
-      validateField("agreements.feeAgreement", formData.agreements.feeAgreementAccepted) || ""
+      validateField(
+        "agreements.feeAgreement",
+        formData.agreements.feeAgreementAccepted
+      ) || "";
 
     if (
       formData.targetCriteria.revenueMin !== undefined &&
       formData.targetCriteria.revenueMax !== undefined &&
       formData.targetCriteria.revenueMin > formData.targetCriteria.revenueMax
     ) {
-      errors["targetCriteria.revenueMin"] = "Minimum revenue cannot be greater than maximum revenue"
-      errors["targetCriteria.revenueMax"] = "Maximum revenue cannot be less than minimum revenue"
+      errors["targetCriteria.revenueMin"] =
+        "Minimum revenue cannot be greater than maximum revenue";
+      errors["targetCriteria.revenueMax"] =
+        "Maximum revenue cannot be less than minimum revenue";
     }
 
     if (
@@ -1094,39 +1272,42 @@ export default function CompanyProfilePage() {
       formData.targetCriteria.ebitdaMax !== undefined &&
       formData.targetCriteria.ebitdaMin > formData.targetCriteria.ebitdaMax
     ) {
-      errors["targetCriteria.ebitdaMin"] = "Minimum EBITDA cannot be greater than maximum EBITDA"
-      errors["targetCriteria.ebitdaMax"] = "Maximum EBITDA cannot be less than minimum EBITDA"
+      errors["targetCriteria.ebitdaMin"] =
+        "Minimum EBITDA cannot be greater than maximum EBITDA";
+      errors["targetCriteria.ebitdaMax"] =
+        "Maximum EBITDA cannot be less than minimum EBITDA";
     }
 
     if (
       formData.targetCriteria.transactionSizeMin !== undefined &&
       formData.targetCriteria.transactionSizeMax !== undefined &&
-      formData.targetCriteria.transactionSizeMin > formData.targetCriteria.transactionSizeMax
+      formData.targetCriteria.transactionSizeMin >
+        formData.targetCriteria.transactionSizeMax
     ) {
       errors["targetCriteria.transactionSizeMin"] =
-        "Minimum transaction size cannot be greater than maximum transaction size"
+        "Minimum transaction size cannot be greater than maximum transaction size";
       errors["targetCriteria.transactionSizeMax"] =
-        "Maximum transaction size cannot be less than minimum transaction size"
+        "Maximum transaction size cannot be less than minimum transaction size";
     }
 
-    setFieldErrors(errors)
+    setFieldErrors(errors);
 
-    const hasErrors = Object.values(errors).some((error) => error !== "")
-    return hasErrors ? "Please correct the errors in the form" : null
-  }
+    const hasErrors = Object.values(errors).some((error) => error !== "");
+    return hasErrors ? "Please correct the errors in the form" : null;
+  };
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (!authToken || !isClient) {
       toast({
         title: "Authentication Required",
         description: "Please log in again to submit your profile.",
         variant: "destructive",
-      })
-      router.push("/buyer/login")
-      return
+      });
+      router.push("/buyer/login");
+      return;
     }
 
     if (!profileId) {
@@ -1134,57 +1315,71 @@ export default function CompanyProfilePage() {
         title: "Profile Not Found",
         description: "Please refresh the page and try again.",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
-    const validationError = validateForm()
+    const validationError = validateForm();
     if (validationError) {
       toast({
         title: "Validation Error",
         description: "Please correct the errors in the form before submitting.",
         variant: "destructive",
-      })
+      });
 
-      const firstErrorField = Object.keys(fieldErrors).find((key) => fieldErrors[key])
+      const firstErrorField = Object.keys(fieldErrors).find(
+        (key) => fieldErrors[key]
+      );
       if (firstErrorField) {
-        const element = document.getElementById(firstErrorField.replace(/\[|\]|\./g, "-"))
+        const element = document.getElementById(
+          firstErrorField.replace(/\[|\]|\./g, "-")
+        );
         if (element) {
-          element.scrollIntoView({ behavior: "smooth", block: "center" })
-          element.focus()
+          element.scrollIntoView({ behavior: "smooth", block: "center" });
+          element.focus();
         }
       }
 
-      return
+      return;
     }
 
-    setIsSubmitting(true)
-    setSubmitStatus("idle")
-    setErrorMessage("")
+    setIsSubmitting(true);
+    setSubmitStatus("idle");
+    setErrorMessage("");
 
     try {
       if (!Array.isArray(formData.targetCriteria.managementTeamPreference)) {
-        formData.targetCriteria.managementTeamPreference = formData.targetCriteria.managementTeamPreference
+        formData.targetCriteria.managementTeamPreference = formData
+          .targetCriteria.managementTeamPreference
           ? [formData.targetCriteria.managementTeamPreference]
-          : []
+          : [];
       }
 
       const profileData = {
         ...formData,
-      }
+      };
 
-      console.log("Company Profile - Updating profile at:", `${apiUrl}/company-profiles/${profileId}`)
-      console.log("Company Profile - Using token:", authToken.substring(0, 10) + "...")
-      console.log("Company Profile - Profile ID:", profileId)
+      console.log(
+        "Company Profile - Updating profile at:",
+        `${apiUrl}/company-profiles/${profileId}`
+      );
+      console.log(
+        "Company Profile - Using token:",
+        authToken.substring(0, 10) + "..."
+      );
+      console.log("Company Profile - Profile ID:", profileId);
 
-      const updateData = { ...profileData }
-      delete (updateData as any)._id
-      delete (updateData as any).createdAt
-      delete (updateData as any).updatedAt
-      delete (updateData as any).__v
-      delete (updateData as any).buyer
+      const updateData = { ...profileData };
+      delete (updateData as any)._id;
+      delete (updateData as any).createdAt;
+      delete (updateData as any).updatedAt;
+      delete (updateData as any).__v;
+      delete (updateData as any).buyer;
 
-      console.log("Company Profile - Update data:", JSON.stringify(updateData, null, 2))
+      console.log(
+        "Company Profile - Update data:",
+        JSON.stringify(updateData, null, 2)
+      );
 
       const response = await fetch(`${apiUrl}/company-profiles/${profileId}`, {
         method: "PATCH",
@@ -1193,37 +1388,39 @@ export default function CompanyProfilePage() {
           Authorization: `Bearer ${authToken}`,
         },
         body: JSON.stringify(updateData),
-      })
+      });
 
-      console.log("Company Profile - Response status:", response.status)
+      console.log("Company Profile - Response status:", response.status);
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        console.error("API Error Response:", errorData)
+        const errorData = await response.json().catch(() => ({}));
+        console.error("API Error Response:", errorData);
 
         if (response.status === 401) {
-          localStorage.removeItem("token")
-          localStorage.removeItem("userId")
+          localStorage.removeItem("token");
+          localStorage.removeItem("userId");
           toast({
             title: "Authentication Error",
             description: "Your session has expired. Please log in again.",
             variant: "destructive",
-          })
+          });
 
           setTimeout(() => {
-            router.push("/buyer/login?session=expired")
-          }, 2000)
+            router.push("/buyer/login?session=expired");
+          }, 2000);
 
-          throw new Error("Authentication expired. Please log in again.")
+          throw new Error("Authentication expired. Please log in again.");
         }
 
-        throw new Error(`API Error: ${response.status} - ${JSON.stringify(errorData)}`)
+        throw new Error(
+          `API Error: ${response.status} - ${JSON.stringify(errorData)}`
+        );
       }
 
-      const result = await response.json()
-      console.log("Company Profile - Update successful:", result)
+      const result = await response.json();
+      console.log("Company Profile - Update successful:", result);
 
-      setSubmitStatus("success")
+      setSubmitStatus("success");
       // toast({
       //   title: "Profile Updated",
       //   description: "Your company profile has been successfully updated.",
@@ -1231,12 +1428,14 @@ export default function CompanyProfilePage() {
       // })
 
       setTimeout(() => {
-        router.push("/buyer/company-profile?profileSubmitted=true")
-      }, 2000)
+        router.push("/buyer/company-profile?profileSubmitted=true");
+      }, 2000);
     } catch (error: any) {
-      console.error("Update error:", error)
-      setSubmitStatus("error")
-      setErrorMessage(error.message || "An error occurred while updating your profile.")
+      console.error("Update error:", error);
+      setSubmitStatus("error");
+      setErrorMessage(
+        error.message || "An error occurred while updating your profile."
+      );
 
       // toast({
       //   title: "Update Failed",
@@ -1244,14 +1443,14 @@ export default function CompanyProfilePage() {
       //   variant: "destructive",
       // })
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   // Render the hierarchical geography selection
   const renderGeographySelection = () => {
-    const filteredData = filterGeographyData()
-    if (!filteredData) return <div>Loading geography data...</div>
+    const filteredData = filterGeographyData();
+    if (!filteredData) return <div>Loading geography data...</div>;
 
     return (
       <div className="space-y-2 font-poppins">
@@ -1262,7 +1461,7 @@ export default function CompanyProfilePage() {
                 id={`continent-${continent.id}`}
                 checked={!!geoSelection.continents[continent.id]}
                 onCheckedChange={(checked) => {
-                  toggleContinent(continent)
+                  toggleContinent(continent);
                 }}
                 className="mr-2 border-[#d0d5dd]"
               />
@@ -1275,7 +1474,10 @@ export default function CompanyProfilePage() {
                 ) : (
                   <ChevronRight className="h-4 w-4 mr-1 text-gray-500" />
                 )}
-                <Label htmlFor={`continent-${continent.id}`} className="text-[#344054] cursor-pointer font-medium">
+                <Label
+                  htmlFor={`continent-${continent.id}`}
+                  className="text-[#344054] cursor-pointer font-medium"
+                >
                   {continent.name}
                 </Label>
               </div>
@@ -1290,7 +1492,7 @@ export default function CompanyProfilePage() {
                         id={`region-${region.id}`}
                         checked={!!geoSelection.regions[region.id]}
                         onCheckedChange={(checked) => {
-                          toggleRegion(region, continent)
+                          toggleRegion(region, continent);
                         }}
                         className="mr-2 border-[#d0d5dd]"
                       />
@@ -1304,12 +1506,18 @@ export default function CompanyProfilePage() {
                           ) : (
                             <ChevronRight className="h-3 w-3 mr-1 text-gray-400" />
                           )}
-                          <Label htmlFor={`region-${region.id}`} className="text-[#344054] cursor-pointer">
+                          <Label
+                            htmlFor={`region-${region.id}`}
+                            className="text-[#344054] cursor-pointer"
+                          >
                             {region.name}
                           </Label>
                         </div>
                       ) : (
-                        <Label htmlFor={`region-${region.id}`} className="text-[#344054] cursor-pointer">
+                        <Label
+                          htmlFor={`region-${region.id}`}
+                          className="text-[#344054] cursor-pointer"
+                        >
                           {region.name}
                         </Label>
                       )}
@@ -1323,7 +1531,7 @@ export default function CompanyProfilePage() {
                               id={`subregion-${subRegion.id}`}
                               checked={!!geoSelection.subRegions[subRegion.id]}
                               onCheckedChange={(checked) => {
-                                toggleSubRegion(subRegion, region, continent)
+                                toggleSubRegion(subRegion, region, continent);
                               }}
                               className="mr-2 border-[#d0d5dd]"
                             />
@@ -1344,13 +1552,13 @@ export default function CompanyProfilePage() {
           </div>
         ))}
       </div>
-    )
-  }
+    );
+  };
 
   // Render the hierarchical industry selection
   const renderIndustrySelection = () => {
-    const filteredData = filterIndustryData()
-    if (!filteredData) return <div>Loading industry data...</div>
+    const filteredData = filterIndustryData();
+    if (!filteredData) return <div>Loading industry data...</div>;
 
     return (
       <div className="space-y-2">
@@ -1361,17 +1569,23 @@ export default function CompanyProfilePage() {
                 id={`sector-${sector.id}`}
                 checked={!!industrySelection.sectors[sector.id]}
                 onCheckedChange={(checked) => {
-                  toggleSector(sector)
+                  toggleSector(sector);
                 }}
                 className="mr-2 border-[#d0d5dd]"
               />
-              <div className="flex items-center cursor-pointer flex-1" onClick={() => toggleSectorExpansion(sector.id)}>
+              <div
+                className="flex items-center cursor-pointer flex-1"
+                onClick={() => toggleSectorExpansion(sector.id)}
+              >
                 {expandedSectors[sector.id] ? (
                   <ChevronDown className="h-4 w-4 mr-1 text-gray-500" />
                 ) : (
                   <ChevronRight className="h-4 w-4 mr-1 text-gray-500" />
                 )}
-                <Label htmlFor={`sector-${sector.id}`} className="text-[#344054] cursor-pointer font-medium">
+                <Label
+                  htmlFor={`sector-${sector.id}`}
+                  className="text-[#344054] cursor-pointer font-medium"
+                >
                   {sector.name}
                 </Label>
               </div>
@@ -1386,7 +1600,7 @@ export default function CompanyProfilePage() {
                         id={`group-${group.id}`}
                         checked={!!industrySelection.industryGroups[group.id]}
                         onCheckedChange={(checked) => {
-                          toggleIndustryGroup(group, sector)
+                          toggleIndustryGroup(group, sector);
                         }}
                         className="mr-2 border-[#d0d5dd]"
                       />
@@ -1399,7 +1613,10 @@ export default function CompanyProfilePage() {
                         ) : (
                           <ChevronRight className="h-3 w-3 mr-1 text-gray-400" />
                         )}
-                        <Label htmlFor={`group-${group.id}`} className="text-[#344054] cursor-pointer">
+                        <Label
+                          htmlFor={`group-${group.id}`}
+                          className="text-[#344054] cursor-pointer"
+                        >
                           {group.name}
                         </Label>
                       </div>
@@ -1412,9 +1629,11 @@ export default function CompanyProfilePage() {
                             <div className="flex items-center">
                               <Checkbox
                                 id={`industry-${industry.id}`}
-                                checked={!!industrySelection.industries[industry.id]}
+                                checked={
+                                  !!industrySelection.industries[industry.id]
+                                }
                                 onCheckedChange={(checked) => {
-                                  toggleIndustry(industry, group, sector)
+                                  toggleIndustry(industry, group, sector);
                                 }}
                                 className="mr-2 border-[#d0d5dd]"
                               />
@@ -1436,36 +1655,38 @@ export default function CompanyProfilePage() {
           </div>
         ))}
       </div>
-    )
-  }
+    );
+  };
 
   // Function to get the complete profile picture URL
   const getProfilePictureUrl = (path: string | null) => {
-    if (!path) return null
+    if (!path) return null;
 
-    const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
     if (path.startsWith("http://") || path.startsWith("https://")) {
-      return path
+      return path;
     }
 
-    const formattedPath = path.replace(/\\/g, "/")
+    const formattedPath = path.replace(/\\/g, "/");
 
-    return `${apiUrl}/${formattedPath.startsWith("/") ? formattedPath.substring(1) : formattedPath}`
-  }
+    return `${apiUrl}/${
+      formattedPath.startsWith("/") ? formattedPath.substring(1) : formattedPath
+    }`;
+  };
 
   // Handle logout
   const handleLogout = () => {
-    if (!isClient) return
+    if (!isClient) return;
 
-    console.log("Company Profile - Logging out")
-    localStorage.removeItem("token")
-    localStorage.removeItem("userId")
-    router.push("/buyer/login")
-  }
+    console.log("Company Profile - Logging out");
+    localStorage.removeItem("token");
+    localStorage.removeItem("userId");
+    router.push("/buyer/login");
+  };
 
   if (!isClient) {
-    return <div>Loading...</div>
+    return <div>Loading...</div>;
   }
 
   return (
@@ -1476,31 +1697,46 @@ export default function CompanyProfilePage() {
           <div className="flex items-center space-x-10 pt-3 pb-1">
             <Link href="/buyer/deals">
               <div className="flex items-center">
-                <Image src="/logo.svg" width={200} height={400} alt="CIM Amplify" className="h-10" />
+                <Image
+                  src="/logo.svg"
+                  width={200}
+                  height={400}
+                  alt="CIM Amplify"
+                  className="h-10"
+                />
               </div>
             </Link>
-            <h1 className="text-2xl font-semibold text-gray-800">Company Profile</h1>
+            <h1 className="text-2xl font-semibold text-gray-800">
+              Company Profile
+            </h1>
           </div>
 
           <div className="flex items-center space-x-4">
             <div className="flex items-center">
               <div className="mr-2 text-right">
-                <div className="text-sm font-medium">{buyerProfile?.fullName || "User"}</div>
+                <div className="text-sm font-medium">
+                  {buyerProfile?.fullName || "User"}
+                </div>
                 {/* <div className="text-xs text-gray-500">{buyerProfile?.companyName || "Company"}</div> */}
               </div>
               <div className="relative">
                 {buyerProfile?.profilePicture ? (
                   <img
-                    src={getProfilePictureUrl(buyerProfile.profilePicture) || "/placeholder.svg"}
+                    src={
+                      getProfilePictureUrl(buyerProfile.profilePicture) ||
+                      "/placeholder.svg"
+                    }
                     alt={buyerProfile.fullName}
                     className="h-8 w-8 rounded-full object-cover"
                     onError={(e) => {
-                      ; (e.target as HTMLImageElement).src = "/placeholder.svg"
+                      (e.target as HTMLImageElement).src = "/placeholder.svg";
                     }}
                   />
                 ) : (
                   <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
-                    <span className="text-gray-600 text-sm">{buyerProfile?.fullName?.charAt(0) || "U"}</span>
+                    <span className="text-gray-600 text-sm">
+                      {buyerProfile?.fullName?.charAt(0) || "U"}
+                    </span>
                   </div>
                 )}
               </div>
@@ -1513,7 +1749,10 @@ export default function CompanyProfilePage() {
         {/* Sidebar */}
         <aside className="w-56 border-r border-gray-200 bg-white">
           <nav className="flex flex-col p-4">
-            <Link href="/buyer/deals" className="mb-2 flex items-center rounded-md px-4 py-3 text-gray-700 hover:bg-gray-100">
+            <Link
+              href="/buyer/deals"
+              className="mb-2 flex items-center rounded-md px-4 py-3 text-gray-700 hover:bg-gray-100"
+            >
               <Briefcase className="mr-3 h-5 w-5" />
               <span>All Deals</span>
             </Link>
@@ -1560,53 +1799,90 @@ export default function CompanyProfilePage() {
             <form onSubmit={handleSubmit}>
               {/* Company Information */}
               <div className="bg-white rounded-lg p-6 shadow-sm mb-6">
-                <h2 className="text-[#2f2b43] text-lg font-poppins font-semibold mb-4">About Your Company</h2>
+                <h2 className="text-[#2f2b43] text-lg font-poppins font-semibold mb-4">
+                  About Your Company
+                </h2>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                   <div>
-                    <Label htmlFor="companyName" className="text-[#667085] text-sm mb-1.5 block">
+                    <Label
+                      htmlFor="companyName"
+                      className="text-[#667085] text-sm mb-1.5 block"
+                    >
                       Company Name <span className="text-red-500">*</span>
                     </Label>
                     <Input
                       id="companyName"
                       placeholder="Company Name"
-                      className={`border-[#d0d5dd] ${fieldErrors["companyName"] ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                      className={`border-[#d0d5dd] ${
+                        fieldErrors["companyName"]
+                          ? "border-red-500 focus-visible:ring-red-500"
+                          : ""
+                      }`}
                       value={formData.companyName}
-                      onChange={(e) => handleChange("companyName", e.target.value)}
+                      onChange={(e) =>
+                        handleChange("companyName", e.target.value)
+                      }
                       required
                     />
                     {fieldErrors["companyName"] && (
-                      <p className="text-red-500 text-sm mt-1">{fieldErrors["companyName"]}</p>
+                      <p className="text-red-500 text-sm mt-1">
+                        {fieldErrors["companyName"]}
+                      </p>
                     )}
                   </div>
                   <div>
-                    <Label htmlFor="website" className="text-[#667085] text-sm mb-1.5 block">
+                    <Label
+                      htmlFor="website"
+                      className="text-[#667085] text-sm mb-1.5 block"
+                    >
                       Company Website <span className="text-red-500">*</span>
                     </Label>
                     <Input
                       id="website"
                       placeholder="https://example.com"
-                      className={`border-[#d0d5dd] ${fieldErrors["website"] ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                      className={`border-[#d0d5dd] ${
+                        fieldErrors["website"]
+                          ? "border-red-500 focus-visible:ring-red-500"
+                          : ""
+                      }`}
                       value={formData.website}
                       onChange={(e) => handleChange("website", e.target.value)}
                       required
                     />
-                    {fieldErrors["website"] && <p className="text-red-500 text-sm mt-1">{fieldErrors["website"]}</p>}
+                    {fieldErrors["website"] && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {fieldErrors["website"]}
+                      </p>
+                    )}
                     <p className="text-gray-500 text-xs mt-1">
-                      Enter a valid URL (e.g., example.com or https://example.com)
+                      Enter a valid URL (e.g., example.com or
+                      https://example.com)
                     </p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 gap-6 mb-6">
                   <div>
-                    <Label htmlFor="companyType" className="text-[#667085] text-sm mb-1.5 block">
+                    <Label
+                      htmlFor="companyType"
+                      className="text-[#667085] text-sm mb-1.5 block"
+                    >
                       Company Type <span className="text-red-500">*</span>
                     </Label>
-                    <Select value={formData.companyType} onValueChange={(value) => handleChange("companyType", value)}>
+                    <Select
+                      value={formData.companyType}
+                      onValueChange={(value) =>
+                        handleChange("companyType", value)
+                      }
+                    >
                       <SelectTrigger
                         id="companyType"
-                        className={`border-[#d0d5dd] ${fieldErrors["companyType"] ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                        className={`border-[#d0d5dd] ${
+                          fieldErrors["companyType"]
+                            ? "border-red-500 focus-visible:ring-red-500"
+                            : ""
+                        }`}
                       >
                         <SelectValue placeholder="Select Company Type" />
                       </SelectTrigger>
@@ -1619,12 +1895,15 @@ export default function CompanyProfilePage() {
                       </SelectContent>
                     </Select>
                     {fieldErrors["companyType"] && (
-                      <p className="text-red-500 text-sm mt-1">{fieldErrors["companyType"]}</p>
+                      <p className="text-red-500 text-sm mt-1">
+                        {fieldErrors["companyType"]}
+                      </p>
                     )}
                   </div>
                   <div>
                     <Label className="text-[#667085] text-sm mb-1.5 block">
-                      Capital Availability <span className="text-red-500">*</span>
+                      Capital Availability{" "}
+                      <span className="text-red-500">*</span>
                     </Label>
                     <div className="flex flex-col space-y-2 mt-1">
                       <div className="flex items-center space-x-2">
@@ -1638,12 +1917,15 @@ export default function CompanyProfilePage() {
                             formData.capitalAvailability === "ready_to_deploy"
                           }
                           onChange={(e) => {
-                            handleChange("capitalEntity", e.target.value)
-                            handleChange("capitalAvailability", e.target.value)
+                            handleChange("capitalEntity", e.target.value);
+                            handleChange("capitalAvailability", e.target.value);
                           }}
                           className="text-[#3aafa9] focus:ring-[#3aafa9] h-4 w-4"
                         />
-                        <Label htmlFor="capital_ready" className="text-[#344054] cursor-pointer">
+                        <Label
+                          htmlFor="capital_ready"
+                          className="text-[#344054] cursor-pointer"
+                        >
                           Ready to deploy immediately
                         </Label>
                       </div>
@@ -1658,61 +1940,93 @@ export default function CompanyProfilePage() {
                             formData.capitalAvailability === "need_to_raise"
                           }
                           onChange={(e) => {
-                            handleChange("capitalEntity", e.target.value)
-                            handleChange("capitalAvailability", e.target.value)
+                            handleChange("capitalEntity", e.target.value);
+                            handleChange("capitalAvailability", e.target.value);
                           }}
                           className="text-[#3aafa9] focus:ring-[#3aafa9] h-4 w-4"
                         />
-                        <Label htmlFor="capital_need" className="text-[#344054] cursor-pointer">
+                        <Label
+                          htmlFor="capital_need"
+                          className="text-[#344054] cursor-pointer"
+                        >
                           Need to raise
                         </Label>
                       </div>
                     </div>
                     {fieldErrors["capitalEntity"] && (
-                      <p className="text-red-500 text-sm mt-1">{fieldErrors["capitalEntity"]}</p>
+                      <p className="text-red-500 text-sm mt-1">
+                        {fieldErrors["capitalEntity"]}
+                      </p>
                     )}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
                       <div>
-                        <Label htmlFor="dealsCompletedLast5Years" className="text-[#667085] text-sm mb-1.5 block">
-                          Number of deals completed in last 5 years <span className="text-red-500">*</span>
+                        <Label
+                          htmlFor="dealsCompletedLast5Years"
+                          className="text-[#667085] text-sm mb-1.5 block"
+                        >
+                          Number of deals completed in last 5 years{" "}
+                          <span className="text-red-500">*</span>
                         </Label>
                         <Input
                           id="dealsCompletedLast5Years"
                           type="number"
                           min={0} // <-- allow 0 as a valid value
-                          className={`border-[#d0d5dd] ${fieldErrors["dealsCompletedLast5Years"] ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                          className={`border-[#d0d5dd] ${
+                            fieldErrors["dealsCompletedLast5Years"]
+                              ? "border-red-500 focus-visible:ring-red-500"
+                              : ""
+                          }`}
                           value={formData.dealsCompletedLast5Years ?? ""}
                           onChange={(e) =>
                             handleChange(
                               "dealsCompletedLast5Years",
-                              e.target.value === "" ? undefined : Number(e.target.value)
+                              e.target.value === ""
+                                ? undefined
+                                : Number(e.target.value)
                             )
                           }
                           required
                         />
                         {fieldErrors["dealsCompletedLast5Years"] && (
-                          <p className="text-red-500 text-sm mt-1">{fieldErrors["dealsCompletedLast5Years"]}</p>
+                          <p className="text-red-500 text-sm mt-1">
+                            {fieldErrors["dealsCompletedLast5Years"]}
+                          </p>
                         )}
                       </div>
                       <div>
-                        <Label htmlFor="averageDealSize" className="text-[#667085] text-sm mb-1.5 block">
-                          Average Transaction Value <span className="text-red-500">*</span>
+                        <Label
+                          htmlFor="averageDealSize"
+                          className="text-[#667085] text-sm mb-1.5 block"
+                        >
+                          Average Transaction Value{" "}
+                          <span className="text-red-500">*</span>
                         </Label>
                         <Input
                           id="averageDealSize"
                           type="text"
-                          className={`border-[#d0d5dd] ${fieldErrors["averageDealSize"] ? "border-red-500 focus-visible:ring-red-500" : ""}`}
-                          value={formatNumberWithCommas(formData.averageDealSize)}
+                          className={`border-[#d0d5dd] ${
+                            fieldErrors["averageDealSize"]
+                              ? "border-red-500 focus-visible:ring-red-500"
+                              : ""
+                          }`}
+                          value={formatNumberWithCommas(
+                            formData.averageDealSize
+                          )}
                           onChange={(e) => {
-                            const value = e.target.value.replace(/,/g, "")
+                            const value = e.target.value.replace(/,/g, "");
                             if (value === "" || /^\d+$/.test(value)) {
-                              handleChange("averageDealSize", value ? Number(value) : undefined)
+                              handleChange(
+                                "averageDealSize",
+                                value ? Number(value) : undefined
+                              );
                             }
                           }}
                           required
                         />
                         {fieldErrors["averageDealSize"] && (
-                          <p className="text-red-500 text-sm mt-1">{fieldErrors["averageDealSize"]}</p>
+                          <p className="text-red-500 text-sm mt-1">
+                            {fieldErrors["averageDealSize"]}
+                          </p>
                         )}
                       </div>
                     </div>
@@ -1720,14 +2034,19 @@ export default function CompanyProfilePage() {
                 </div>
                 <div className="mb-4 mt-4">
                   <Label className="text-[#667085] text-sm mb-1.5 block">
-                    Contact Information (up to 3 contacts) <span className="text-red-500">*</span>
+                    Contact Information (up to 3 contacts){" "}
+                    <span className="text-red-500">*</span>
                   </Label>
                   <div className="border border-[#d0d5dd] rounded-md p-4">
                     {formData.contacts.map((contact, index) => (
                       <div key={index} className="mb-4">
-                        {index > 0 && <div className="h-px bg-gray-200 my-4"></div>}
+                        {index > 0 && (
+                          <div className="h-px bg-gray-200 my-4"></div>
+                        )}
                         <div className="flex justify-between items-center mb-2">
-                          <h3 className="text-sm font-medium">Contact {index + 1}</h3>
+                          <h3 className="text-sm font-medium">
+                            Contact {index + 1}
+                          </h3>
                           {index > 0 && (
                             <Button
                               type="button"
@@ -1743,49 +2062,94 @@ export default function CompanyProfilePage() {
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                           <div>
-                            <Label htmlFor={`contact-name-${index}`} className="text-[#667085] text-sm mb-1.5 block">
+                            <Label
+                              htmlFor={`contact-name-${index}`}
+                              className="text-[#667085] text-sm mb-1.5 block"
+                            >
                               Name <span className="text-red-500">*</span>
                             </Label>
                             <Input
                               id={`contact-name-${index}`}
-                              className={`border-[#d0d5dd] ${fieldErrors[`contacts[${index}].name`] ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                              className={`border-[#d0d5dd] ${
+                                fieldErrors[`contacts[${index}].name`]
+                                  ? "border-red-500 focus-visible:ring-red-500"
+                                  : ""
+                              }`}
                               value={contact.name}
-                              onChange={(e) => handleContactChange(index, "name", e.target.value)}
+                              onChange={(e) =>
+                                handleContactChange(
+                                  index,
+                                  "name",
+                                  e.target.value
+                                )
+                              }
                               required
                             />
                             {fieldErrors[`contacts[${index}].name`] && (
-                              <p className="text-red-500 text-sm mt-1">{fieldErrors[`contacts[${index}].name`]}</p>
+                              <p className="text-red-500 text-sm mt-1">
+                                {fieldErrors[`contacts[${index}].name`]}
+                              </p>
                             )}
                           </div>
                           <div>
-                            <Label htmlFor={`contact-email-${index}`} className="text-[#667085] text-sm mb-1.5 block">
+                            <Label
+                              htmlFor={`contact-email-${index}`}
+                              className="text-[#667085] text-sm mb-1.5 block"
+                            >
                               Email <span className="text-red-500">*</span>
                             </Label>
                             <Input
                               id={`contact-email-${index}`}
                               type="email"
-                              className={`border-[#d0d5dd] ${fieldErrors[`contacts[${index}].email`] ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                              className={`border-[#d0d5dd] ${
+                                fieldErrors[`contacts[${index}].email`]
+                                  ? "border-red-500 focus-visible:ring-red-500"
+                                  : ""
+                              }`}
                               value={contact.email}
-                              onChange={(e) => handleContactChange(index, "email", e.target.value)}
+                              onChange={(e) =>
+                                handleContactChange(
+                                  index,
+                                  "email",
+                                  e.target.value
+                                )
+                              }
                               required
                             />
                             {fieldErrors[`contacts[${index}].email`] && (
-                              <p className="text-red-500 text-sm mt-1">{fieldErrors[`contacts[${index}].email`]}</p>
+                              <p className="text-red-500 text-sm mt-1">
+                                {fieldErrors[`contacts[${index}].email`]}
+                              </p>
                             )}
                           </div>
                           <div>
-                            <Label htmlFor={`contact-phone-${index}`} className="text-[#667085] text-sm mb-1.5 block">
+                            <Label
+                              htmlFor={`contact-phone-${index}`}
+                              className="text-[#667085] text-sm mb-1.5 block"
+                            >
                               Phone <span className="text-red-500">*</span>
                             </Label>
                             <Input
                               id={`contact-phone-${index}`}
-                              className={`border-[#d0d5dd] ${fieldErrors[`contacts[${index}].phone`] ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                              className={`border-[#d0d5dd] ${
+                                fieldErrors[`contacts[${index}].phone`]
+                                  ? "border-red-500 focus-visible:ring-red-500"
+                                  : ""
+                              }`}
                               value={contact.phone}
-                              onChange={(e) => handleContactChange(index, "phone", e.target.value)}
+                              onChange={(e) =>
+                                handleContactChange(
+                                  index,
+                                  "phone",
+                                  e.target.value
+                                )
+                              }
                               required
                             />
                             {fieldErrors[`contacts[${index}].phone`] && (
-                              <p className="text-red-500 text-sm mt-1">{fieldErrors[`contacts[${index}].phone`]}</p>
+                              <p className="text-red-500 text-sm mt-1">
+                                {fieldErrors[`contacts[${index}].phone`]}
+                              </p>
                             )}
                           </div>
                         </div>
@@ -1808,11 +2172,15 @@ export default function CompanyProfilePage() {
 
               {/* Target Criteria */}
               <div className="bg-white rounded-lg p-6 shadow-sm mb-6">
-                <h2 className="text-[#2f2b43] text-lg font-medium mb-4">Target Criteria</h2>
+                <h2 className="text-[#2f2b43] text-lg font-medium mb-4">
+                  Target Criteria
+                </h2>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                   <div>
-                    <Label className="text-[#667085] text-sm mb-1.5 block">Countries</Label>
+                    <Label className="text-[#667085] text-sm mb-1.5 block">
+                      Geographies
+                    </Label>
                     <div className="border border-[#d0d5dd] rounded-md p-4 h-80 flex flex-col">
                       <div className="relative mb-4">
                         <Search className="absolute left-2 top-2.5 h-4 w-4 text-[#667085]" />
@@ -1821,18 +2189,23 @@ export default function CompanyProfilePage() {
                             placeholder="Search countries..."
                             className="pl-8 border-[#d0d5dd] rounded-r-none"
                             value={countrySearchTerm}
-                            onChange={(e) => setCountrySearchTerm(e.target.value)}
+                            onChange={(e) =>
+                              setCountrySearchTerm(e.target.value)
+                            }
                             onKeyDown={(e) => {
                               if (e.key === "Enter" && countrySearchTerm) {
-                                e.preventDefault()
-                                selectSearchedCountry(countrySearchTerm)
+                                e.preventDefault();
+                                selectSearchedCountry(countrySearchTerm);
                               }
                             }}
                           />
                           <Button
                             type="button"
                             className="rounded-l-none"
-                            onClick={() => countrySearchTerm && selectSearchedCountry(countrySearchTerm)}
+                            onClick={() =>
+                              countrySearchTerm &&
+                              selectSearchedCountry(countrySearchTerm)
+                            }
                             disabled={!countrySearchTerm}
                           >
                             Select
@@ -1842,44 +2215,52 @@ export default function CompanyProfilePage() {
 
                       {formData.targetCriteria.countries.length > 0 && (
                         <div className="mb-4">
-                          <div className="text-sm text-[#667085] mb-1">Selected Countries</div>
+                          <div className="text-sm text-[#667085] mb-1">
+                            Selected Countries
+                          </div>
                           <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
-                            {formData.targetCriteria.countries.map((country, index) => (
-                              <span
-                                key={`selected-country-${index}`}
-                                className="bg-gray-100 text-[#344054] text-xs rounded-full px-2 py-0.5 flex items-center group"
-                              >
-                                {country}
-                                <button
-                                  type="button"
-                                  onClick={() => removeCountry(country)}
-                                  className="ml-1 text-gray-400 hover:text-gray-600 focus:outline-none"
+                            {formData.targetCriteria.countries.map(
+                              (country, index) => (
+                                <span
+                                  key={`selected-country-${index}`}
+                                  className="bg-gray-100 text-[#344054] text-xs rounded-full px-2 py-0.5 flex items-center group"
                                 >
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    className="h-3 w-3"
-                                    viewBox="0 0 20 20"
-                                    fill="currentColor"
+                                  {country}
+                                  <button
+                                    type="button"
+                                    onClick={() => removeCountry(country)}
+                                    className="ml-1 text-gray-400 hover:text-gray-600 focus:outline-none"
                                   >
-                                    <path
-                                      fillRule="evenodd"
-                                      d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                                      clipRule="evenodd"
-                                    />
-                                  </svg>
-                                </button>
-                              </span>
-                            ))}
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      className="h-3 w-3"
+                                      viewBox="0 0 20 20"
+                                      fill="currentColor"
+                                    >
+                                      <path
+                                        fillRule="evenodd"
+                                        d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                        clipRule="evenodd"
+                                      />
+                                    </svg>
+                                  </button>
+                                </span>
+                              )
+                            )}
                           </div>
                         </div>
                       )}
 
-                      <div className="flex-1 overflow-y-auto">{renderGeographySelection()}</div>
+                      <div className="flex-1 overflow-y-auto">
+                        {renderGeographySelection()}
+                      </div>
                     </div>
                   </div>
 
                   <div>
-                    <Label className="text-[#667085] text-sm mb-1.5 block">Industry Sectors</Label>
+                    <Label className="text-[#667085] text-sm mb-1.5 block">
+                      Industry Sectors
+                    </Label>
                     <div className="border border-[#d0d5dd] rounded-md p-4 h-80 flex flex-col">
                       <div className="relative mb-4">
                         <Search className="absolute left-2 top-2.5 h-4 w-4 text-[#667085]" />
@@ -1887,45 +2268,53 @@ export default function CompanyProfilePage() {
                           placeholder="Search industries..."
                           className="pl-8 border-[#d0d5dd]"
                           value={industrySearchTerm}
-                          onChange={(e) => setIndustrySearchTerm(e.target.value)}
+                          onChange={(e) =>
+                            setIndustrySearchTerm(e.target.value)
+                          }
                         />
                       </div>
 
                       {formData.targetCriteria.industrySectors.length > 0 && (
                         <div className="mb-4">
-                          <div className="text-sm text-[#667085] mb-1">Selected Industries</div>
+                          <div className="text-sm text-[#667085] mb-1">
+                            Selected Industries
+                          </div>
                           <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
-                            {formData.targetCriteria.industrySectors.map((industry, index) => (
-                              <span
-                                key={`selected-industry-${index}`}
-                                className="bg-gray-100 text-[#344054] text-xs rounded-full px-2 py-0.5 flex items-center group"
-                              >
-                                {industry}
-                                <button
-                                  type="button"
-                                  onClick={() => removeIndustry(industry)}
-                                  className="ml-1 text-gray-400 hover:text-gray-600 focus:outline-none"
+                            {formData.targetCriteria.industrySectors.map(
+                              (industry, index) => (
+                                <span
+                                  key={`selected-industry-${index}`}
+                                  className="bg-gray-100 text-[#344054] text-xs rounded-full px-2 py-0.5 flex items-center group"
                                 >
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    className="h-3 w-3"
-                                    viewBox="0 0 20 20"
-                                    fill="currentColor"
+                                  {industry}
+                                  <button
+                                    type="button"
+                                    onClick={() => removeIndustry(industry)}
+                                    className="ml-1 text-gray-400 hover:text-gray-600 focus:outline-none"
                                   >
-                                    <path
-                                      fillRule="evenodd"
-                                      d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                                      clipRule="evenodd"
-                                    />
-                                  </svg>
-                                </button>
-                              </span>
-                            ))}
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      className="h-3 w-3"
+                                      viewBox="0 0 20 20"
+                                      fill="currentColor"
+                                    >
+                                      <path
+                                        fillRule="evenodd"
+                                        d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                        clipRule="evenodd"
+                                      />
+                                    </svg>
+                                  </button>
+                                </span>
+                              )
+                            )}
                           </div>
                         </div>
                       )}
 
-                      <div className="flex-1 overflow-y-auto">{renderIndustrySelection()}</div>
+                      <div className="flex-1 overflow-y-auto">
+                        {renderIndustrySelection()}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1933,10 +2322,14 @@ export default function CompanyProfilePage() {
                 <div className="space-y-6">
                   <div>
                     <div className="flex justify-between items-center mb-1.5">
-                      <Label className="text-[#667085] text-sm">Revenue Size Range</Label>
+                      <Label className="text-[#667085] text-sm">
+                        Revenue Size Range
+                      </Label>
                       <Select
                         value={formData.selectedCurrency}
-                        onValueChange={(value) => handleChange("selectedCurrency", value)}
+                        onValueChange={(value) =>
+                          handleChange("selectedCurrency", value)
+                        }
                       >
                         <SelectTrigger className="w-24 h-8">
                           <SelectValue placeholder="Currency" />
@@ -1952,7 +2345,10 @@ export default function CompanyProfilePage() {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="flex items-center">
-                        <Label htmlFor="revenueMin" className="text-[#667085] text-sm w-10">
+                        <Label
+                          htmlFor="revenueMin"
+                          className="text-[#667085] text-sm w-10"
+                        >
                           Min
                         </Label>
                         <div className="relative flex-1">
@@ -1960,31 +2356,49 @@ export default function CompanyProfilePage() {
                             {formData.selectedCurrency === "USD"
                               ? "$"
                               : formData.selectedCurrency === "EUR"
-                                ? "€"
-                                : formData.selectedCurrency === "GBP"
-                                  ? "£"
-                                  : formData.selectedCurrency}
+                              ? "€"
+                              : formData.selectedCurrency === "GBP"
+                              ? "£"
+                              : formData.selectedCurrency}
                           </div>
                           <Input
                             id="revenueMin"
                             type="text"
-                            className={`border-[#d0d5dd] ${formData.selectedCurrency.length > 2 ? "pl-12" : "pl-8"
-                              } ${fieldErrors["targetCriteria.revenueMin"] ? "border-red-500 focus-visible:ring-red-500" : ""}`}
-                            value={formatNumberWithCommas(formData.targetCriteria.revenueMin)}
+                            className={`border-[#d0d5dd] ${
+                              formData.selectedCurrency.length > 2
+                                ? "pl-12"
+                                : "pl-8"
+                            } ${
+                              fieldErrors["targetCriteria.revenueMin"]
+                                ? "border-red-500 focus-visible:ring-red-500"
+                                : ""
+                            }`}
+                            value={formatNumberWithCommas(
+                              formData.targetCriteria.revenueMin
+                            )}
                             onChange={(e) => {
-                              const value = e.target.value.replace(/,/g, "")
+                              const value = e.target.value.replace(/,/g, "");
                               if (value === "" || /^\d+$/.test(value)) {
-                                handleNestedChange("targetCriteria", "revenueMin", value ? Number(value) : undefined)
+                                handleNestedChange(
+                                  "targetCriteria",
+                                  "revenueMin",
+                                  value ? Number(value) : undefined
+                                );
                               }
                             }}
                           />
                           {fieldErrors["targetCriteria.revenueMin"] && (
-                            <p className="text-red-500 text-sm mt-1">{fieldErrors["targetCriteria.revenueMin"]}</p>
+                            <p className="text-red-500 text-sm mt-1">
+                              {fieldErrors["targetCriteria.revenueMin"]}
+                            </p>
                           )}
                         </div>
                       </div>
                       <div className="flex items-center">
-                        <Label htmlFor="revenueMax" className="text-[#667085] text-sm w-10">
+                        <Label
+                          htmlFor="revenueMax"
+                          className="text-[#667085] text-sm w-10"
+                        >
                           Max
                         </Label>
                         <div className="relative flex-1">
@@ -1992,26 +2406,41 @@ export default function CompanyProfilePage() {
                             {formData.selectedCurrency === "USD"
                               ? "$"
                               : formData.selectedCurrency === "EUR"
-                                ? "€"
-                                : formData.selectedCurrency === "GBP"
-                                  ? "£"
-                                  : formData.selectedCurrency}
+                              ? "€"
+                              : formData.selectedCurrency === "GBP"
+                              ? "£"
+                              : formData.selectedCurrency}
                           </div>
                           <Input
                             id="revenueMax"
                             type="text"
-                            className={`border-[#d0d5dd] ${formData.selectedCurrency.length > 2 ? "pl-12" : "pl-8"
-                              } ${fieldErrors["targetCriteria.revenueMax"] ? "border-red-500 focus-visible:ring-red-500" : ""}`}
-                            value={formatNumberWithCommas(formData.targetCriteria.revenueMax)}
+                            className={`border-[#d0d5dd] ${
+                              formData.selectedCurrency.length > 2
+                                ? "pl-12"
+                                : "pl-8"
+                            } ${
+                              fieldErrors["targetCriteria.revenueMax"]
+                                ? "border-red-500 focus-visible:ring-red-500"
+                                : ""
+                            }`}
+                            value={formatNumberWithCommas(
+                              formData.targetCriteria.revenueMax
+                            )}
                             onChange={(e) => {
-                              const value = e.target.value.replace(/,/g, "")
+                              const value = e.target.value.replace(/,/g, "");
                               if (value === "" || /^\d+$/.test(value)) {
-                                handleNestedChange("targetCriteria", "revenueMax", value ? Number(value) : undefined)
+                                handleNestedChange(
+                                  "targetCriteria",
+                                  "revenueMax",
+                                  value ? Number(value) : undefined
+                                );
                               }
                             }}
                           />
                           {fieldErrors["targetCriteria.revenueMax"] && (
-                            <p className="text-red-500 text-sm mt-1">{fieldErrors["targetCriteria.revenueMax"]}</p>
+                            <p className="text-red-500 text-sm mt-1">
+                              {fieldErrors["targetCriteria.revenueMax"]}
+                            </p>
                           )}
                         </div>
                       </div>
@@ -2024,7 +2453,10 @@ export default function CompanyProfilePage() {
                     </Label>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="flex items-center">
-                        <Label htmlFor="ebitdaMin" className="text-[#667085] text-sm w-10">
+                        <Label
+                          htmlFor="ebitdaMin"
+                          className="text-[#667085] text-sm w-10"
+                        >
                           Min
                         </Label>
                         <div className="relative flex-1">
@@ -2032,31 +2464,49 @@ export default function CompanyProfilePage() {
                             {formData.selectedCurrency === "USD"
                               ? "$"
                               : formData.selectedCurrency === "EUR"
-                                ? "€"
-                                : formData.selectedCurrency === "GBP"
-                                  ? "£"
-                                  : formData.selectedCurrency}
+                              ? "€"
+                              : formData.selectedCurrency === "GBP"
+                              ? "£"
+                              : formData.selectedCurrency}
                           </div>
                           <Input
                             id="ebitdaMin"
                             type="text"
-                            className={`border-[#d0d5dd] ${formData.selectedCurrency.length > 2 ? "pl-12" : "pl-8"
-                              } ${fieldErrors["targetCriteria.ebitdaMin"] ? "border-red-500 focus-visible:ring-red-500" : ""}`}
-                            value={formatNumberWithCommas(formData.targetCriteria.ebitdaMin)}
+                            className={`border-[#d0d5dd] ${
+                              formData.selectedCurrency.length > 2
+                                ? "pl-12"
+                                : "pl-8"
+                            } ${
+                              fieldErrors["targetCriteria.ebitdaMin"]
+                                ? "border-red-500 focus-visible:ring-red-500"
+                                : ""
+                            }`}
+                            value={formatNumberWithCommas(
+                              formData.targetCriteria.ebitdaMin
+                            )}
                             onChange={(e) => {
-                              const value = e.target.value.replace(/,/g, "")
+                              const value = e.target.value.replace(/,/g, "");
                               if (value === "" || /^\d+$/.test(value)) {
-                                handleNestedChange("targetCriteria", "ebitdaMin", value ? Number(value) : undefined)
+                                handleNestedChange(
+                                  "targetCriteria",
+                                  "ebitdaMin",
+                                  value ? Number(value) : undefined
+                                );
                               }
                             }}
                           />
                           {fieldErrors["targetCriteria.ebitdaMin"] && (
-                            <p className="text-red-500 text-sm mt-1">{fieldErrors["targetCriteria.ebitdaMin"]}</p>
+                            <p className="text-red-500 text-sm mt-1">
+                              {fieldErrors["targetCriteria.ebitdaMin"]}
+                            </p>
                           )}
                         </div>
                       </div>
                       <div className="flex items-center">
-                        <Label htmlFor="ebitdaMax" className="text-[#667085] text-sm w-10">
+                        <Label
+                          htmlFor="ebitdaMax"
+                          className="text-[#667085] text-sm w-10"
+                        >
                           Max
                         </Label>
                         <div className="relative flex-1">
@@ -2064,20 +2514,30 @@ export default function CompanyProfilePage() {
                             {formData.selectedCurrency === "USD"
                               ? "$"
                               : formData.selectedCurrency === "EUR"
-                                ? "€"
-                                : formData.selectedCurrency === "GBP"
-                                  ? "£"
-                                  : formData.selectedCurrency}
+                              ? "€"
+                              : formData.selectedCurrency === "GBP"
+                              ? "£"
+                              : formData.selectedCurrency}
                           </div>
                           <Input
                             id="ebitdaMax"
                             type="text"
-                            className={`border-[#d0d5dd] ${formData.selectedCurrency.length > 2 ? "pl-12" : "pl-8"}`}
-                            value={formatNumberWithCommas(formData.targetCriteria.ebitdaMax)}
+                            className={`border-[#d0d5dd] ${
+                              formData.selectedCurrency.length > 2
+                                ? "pl-12"
+                                : "pl-8"
+                            }`}
+                            value={formatNumberWithCommas(
+                              formData.targetCriteria.ebitdaMax
+                            )}
                             onChange={(e) => {
-                              const value = e.target.value.replace(/,/g, "")
+                              const value = e.target.value.replace(/,/g, "");
                               if (value === "" || /^\d+$/.test(value)) {
-                                handleNestedChange("targetCriteria", "ebitdaMax", value ? Number(value) : undefined)
+                                handleNestedChange(
+                                  "targetCriteria",
+                                  "ebitdaMax",
+                                  value ? Number(value) : undefined
+                                );
                               }
                             }}
                           />
@@ -2087,10 +2547,15 @@ export default function CompanyProfilePage() {
                   </div>
 
                   <div>
-                    <Label className="text-[#667085] text-sm mb-1.5 block">Transaction Size Range</Label>
+                    <Label className="text-[#667085] text-sm mb-1.5 block">
+                      Transaction Size Range
+                    </Label>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="flex items-center">
-                        <Label htmlFor="transactionSizeMin" className="text-[#667085] text-sm w-10">
+                        <Label
+                          htmlFor="transactionSizeMin"
+                          className="text-[#667085] text-sm w-10"
+                        >
                           Min
                         </Label>
                         <div className="relative flex-1">
@@ -2098,25 +2563,34 @@ export default function CompanyProfilePage() {
                             {formData.selectedCurrency === "USD"
                               ? "$"
                               : formData.selectedCurrency === "EUR"
-                                ? "€"
-                                : formData.selectedCurrency === "GBP"
-                                  ? "£"
-                                  : formData.selectedCurrency}
+                              ? "€"
+                              : formData.selectedCurrency === "GBP"
+                              ? "£"
+                              : formData.selectedCurrency}
                           </div>
                           <Input
                             id="transactionSizeMin"
                             type="text"
-                            className={`border-[#d0d5dd] ${formData.selectedCurrency.length > 2 ? "pl-12" : "pl-8"
-                              } ${fieldErrors["targetCriteria.transactionSizeMin"] ? "border-red-500 focus-visible:ring-red-500" : ""}`}
-                            value={formatNumberWithCommas(formData.targetCriteria.transactionSizeMin)}
+                            className={`border-[#d0d5dd] ${
+                              formData.selectedCurrency.length > 2
+                                ? "pl-12"
+                                : "pl-8"
+                            } ${
+                              fieldErrors["targetCriteria.transactionSizeMin"]
+                                ? "border-red-500 focus-visible:ring-red-500"
+                                : ""
+                            }`}
+                            value={formatNumberWithCommas(
+                              formData.targetCriteria.transactionSizeMin
+                            )}
                             onChange={(e) => {
-                              const value = e.target.value.replace(/,/g, "")
+                              const value = e.target.value.replace(/,/g, "");
                               if (value === "" || /^\d+$/.test(value)) {
                                 handleNestedChange(
                                   "targetCriteria",
                                   "transactionSizeMin",
-                                  value ? Number(value) : undefined,
-                                )
+                                  value ? Number(value) : undefined
+                                );
                               }
                             }}
                           />
@@ -2128,7 +2602,10 @@ export default function CompanyProfilePage() {
                         </div>
                       </div>
                       <div className="flex items-center">
-                        <Label htmlFor="transactionSizeMax" className="text-[#667085] text-sm w-10">
+                        <Label
+                          htmlFor="transactionSizeMax"
+                          className="text-[#667085] text-sm w-10"
+                        >
                           Max
                         </Label>
                         <div className="relative flex-1">
@@ -2136,24 +2613,30 @@ export default function CompanyProfilePage() {
                             {formData.selectedCurrency === "USD"
                               ? "$"
                               : formData.selectedCurrency === "EUR"
-                                ? "€"
-                                : formData.selectedCurrency === "GBP"
-                                  ? "£"
-                                  : formData.selectedCurrency}
+                              ? "€"
+                              : formData.selectedCurrency === "GBP"
+                              ? "£"
+                              : formData.selectedCurrency}
                           </div>
                           <Input
                             id="transactionSizeMax"
                             type="text"
-                            className={`border-[#d0d5dd] ${formData.selectedCurrency.length > 2 ? "pl-12" : "pl-8"}`}
-                            value={formatNumberWithCommas(formData.targetCriteria.transactionSizeMax)}
+                            className={`border-[#d0d5dd] ${
+                              formData.selectedCurrency.length > 2
+                                ? "pl-12"
+                                : "pl-8"
+                            }`}
+                            value={formatNumberWithCommas(
+                              formData.targetCriteria.transactionSizeMax
+                            )}
                             onChange={(e) => {
-                              const value = e.target.value.replace(/,/g, "")
+                              const value = e.target.value.replace(/,/g, "");
                               if (value === "" || /^\d+$/.test(value)) {
                                 handleNestedChange(
                                   "targetCriteria",
                                   "transactionSizeMax",
-                                  value ? Number(value) : undefined,
-                                )
+                                  value ? Number(value) : undefined
+                                );
                               }
                             }}
                           />
@@ -2163,38 +2646,54 @@ export default function CompanyProfilePage() {
                   </div>
 
                   <div>
-                    <Label className="text-[#667085] text-sm mb-1.5 block">3 Year Average Revenue Growth rate (%)</Label>
+                    <Label className="text-[#667085] text-sm mb-1.5 block">
+                      Minimum 3 Year Average Revenue Growth (%)
+                    </Label>
                     <div className="flex items-center">
                       <Input
                         id="revenueGrowth"
                         type="text"
                         className="border-[#d0d5dd]"
-                        value={formatNumberWithCommas(formData.targetCriteria.revenueGrowth)}
+                        value={formatNumberWithCommas(
+                          formData.targetCriteria.revenueGrowth
+                        )}
                         onChange={(e) => {
-                          const value = e.target.value.replace(/,/g, "")
+                          const value = e.target.value.replace(/,/g, "");
                           if (value === "" || /^\d+$/.test(value)) {
-                            handleNestedChange("targetCriteria", "revenueGrowth", value ? Number(value) : undefined)
+                            handleNestedChange(
+                              "targetCriteria",
+                              "revenueGrowth",
+                              value ? Number(value) : undefined
+                            );
                           }
                         }}
                       />
                     </div>
                   </div>
-
                   <div>
-                    <Label htmlFor="minYearsInBusiness" className="text-[#667085] text-sm mb-1.5 block">
+                    <Label
+                      htmlFor="minYearsInBusiness"
+                      className="text-[#667085] text-sm mb-1.5 block"
+                    >
                       Minimum Years in Business
+                      <span className="text-red-500">*</span>
                     </Label>
                     <Input
                       id="minYearsInBusiness"
                       type="number"
-                      min="0"
-                      className="border-[#d0d5dd]"
-                      value={formData.targetCriteria.minYearsInBusiness || ""}
+                      className={`border-[#d0d5dd] ${
+                        fieldErrors["targetCriteria.minYearsInBusiness"]
+                          ? "border-red-500 focus-visible:ring-red-500"
+                          : ""
+                      }`}
+                      value={formData.targetCriteria.minYearsInBusiness ?? ""}
                       onChange={(e) =>
                         handleNestedChange(
                           "targetCriteria",
                           "minYearsInBusiness",
-                          e.target.value ? Number(e.target.value) : undefined,
+                          e.target.value === ""
+                            ? undefined
+                            : Number(e.target.value)
                         )
                       }
                     />
@@ -2204,17 +2703,24 @@ export default function CompanyProfilePage() {
 
               {/* Preferred Business Models */}
               <div className="bg-white rounded-lg p-6 shadow-sm mb-6">
-                <h2 className="text-[#2f2b43] text-lg font-medium mb-4">Preferred Business Models</h2>
+                <h2 className="text-[#2f2b43] text-lg font-medium mb-4">
+                  Preferred Business Models
+                </h2>
                 <div className="flex flex-wrap gap-6">
                   {BUSINESS_MODELS.map((model) => (
                     <div key={model} className="flex items-center space-x-2">
                       <Checkbox
                         id={`model-${model}`}
                         className="border-[#d0d5dd]"
-                        checked={formData.targetCriteria.preferredBusinessModels.includes(model)}
+                        checked={formData.targetCriteria.preferredBusinessModels.includes(
+                          model
+                        )}
                         onCheckedChange={() => toggleBusinessModel(model)}
                       />
-                      <Label htmlFor={`model-${model}`} className="text-[#344054]">
+                      <Label
+                        htmlFor={`model-${model}`}
+                        className="text-[#344054]"
+                      >
                         {model}
                       </Label>
                     </div>
@@ -2224,17 +2730,29 @@ export default function CompanyProfilePage() {
 
               {/* Management Team Preference */}
               <div className="bg-white rounded-lg p-6 shadow-sm mb-6">
-                <h2 className="text-[#2f2b43] text-lg font-medium mb-4">Management Future Preferences</h2>
+                <h2 className="text-[#2f2b43] text-lg font-medium mb-4">
+                  Management Future Preferences
+                </h2>
                 <div className="flex flex-wrap gap-6">
                   {MANAGEMENT_PREFERENCES.map((preference) => (
-                    <div key={preference} className="flex items-center space-x-2">
+                    <div
+                      key={preference}
+                      className="flex items-center space-x-2"
+                    >
                       <Checkbox
                         id={`preference-${preference}`}
                         className="border-[#d0d5dd]"
-                        checked={extendedFormState.selectedManagementPreferences.includes(preference)}
-                        onCheckedChange={() => toggleManagementPreference(preference)}
+                        checked={extendedFormState.selectedManagementPreferences.includes(
+                          preference
+                        )}
+                        onCheckedChange={() =>
+                          toggleManagementPreference(preference)
+                        }
                       />
-                      <Label htmlFor={`preference-${preference}`} className="text-[#344054]">
+                      <Label
+                        htmlFor={`preference-${preference}`}
+                        className="text-[#344054]"
+                      >
                         {preference}
                       </Label>
                     </div>
@@ -2244,18 +2762,28 @@ export default function CompanyProfilePage() {
 
               {/* Description of Ideal Target(s) */}
               <div className="bg-white rounded-lg p-6 shadow-sm mb-6">
-                <h2 className="text-[#2f2b43] text-lg font-medium mb-4">Description of Ideal Target(s)</h2>
+                <h2 className="text-[#2f2b43] text-lg font-medium mb-4">
+                  Description of Ideal Target(s)
+                </h2>
                 <Textarea
                   placeholder="Add additional information about company types you are pursuing especially specific industries and activities."
                   className="min-h-[100px] border-[#d0d5dd]"
                   value={formData.targetCriteria.description || ""}
-                  onChange={(e) => handleNestedChange("targetCriteria", "description", e.target.value)}
+                  onChange={(e) =>
+                    handleNestedChange(
+                      "targetCriteria",
+                      "description",
+                      e.target.value
+                    )
+                  }
                 />
               </div>
 
               {/* General Preferences */}
               <div className="bg-white rounded-lg p-6 shadow-sm mb-6">
-                <h2 className="text-[#2f2b43] text-lg font-medium mb-4">General Preferences</h2>
+                <h2 className="text-[#2f2b43] text-lg font-medium mb-4">
+                  General Preferences
+                </h2>
                 <div className="space-y-4">
                   <div className="flex items-end space-x-2">
                     <Checkbox
@@ -2263,10 +2791,17 @@ export default function CompanyProfilePage() {
                       className="mt-1 border-[#d0d5dd]"
                       checked={formData.preferences.stopSendingDeals}
                       onCheckedChange={(checked) =>
-                        handleNestedChange("preferences", "stopSendingDeals", checked === true)
+                        handleNestedChange(
+                          "preferences",
+                          "stopSendingDeals",
+                          checked === true
+                        )
                       }
                     />
-                    <Label htmlFor="stopSendingDeals" className="text-[#344054]">
+                    <Label
+                      htmlFor="stopSendingDeals"
+                      className="text-[#344054]"
+                    >
                       Stop sending deals
                     </Label>
                   </div>
@@ -2277,11 +2812,16 @@ export default function CompanyProfilePage() {
                       className="mt-1 border-[#d0d5dd]"
                       checked={formData.preferences.dontShowMyDeals}
                       onCheckedChange={(checked) =>
-                        handleNestedChange("preferences", "dontShowMyDeals", checked === true)
+                        handleNestedChange(
+                          "preferences",
+                          "dontShowMyDeals",
+                          checked === true
+                        )
                       }
                     />
                     <Label htmlFor="dontShowMyDeals" className="text-[#344054]">
-                      Don't show sellers your company details until you engage. You will show as "Anonymous Buyer"
+                      Don't show sellers your company details until you engage.
+                      You will show as "Anonymous Buyer"
                     </Label>
                   </div>
 
@@ -2289,13 +2829,23 @@ export default function CompanyProfilePage() {
                     <Checkbox
                       id="dontSendDealsToMyCompetitors"
                       className="mt-1 border-[#d0d5dd]"
-                      checked={formData.preferences.dontSendDealsToMyCompetitors}
+                      checked={
+                        formData.preferences.dontSendDealsToMyCompetitors
+                      }
                       onCheckedChange={(checked) =>
-                        handleNestedChange("preferences", "dontSendDealsToMyCompetitors", checked === true)
+                        handleNestedChange(
+                          "preferences",
+                          "dontSendDealsToMyCompetitors",
+                          checked === true
+                        )
                       }
                     />
-                    <Label htmlFor="dontSendDealsToMyCompetitors" className="text-[#344054]">
-                      Do not send deals that are currently marketed on other deal marketplaces
+                    <Label
+                      htmlFor="dontSendDealsToMyCompetitors"
+                      className="text-[#344054]"
+                    >
+                      Do not send deals that are currently marketed on other
+                      deal marketplaces
                     </Label>
                   </div>
 
@@ -2305,11 +2855,19 @@ export default function CompanyProfilePage() {
                       className="mt-1 border-[#d0d5dd]"
                       checked={formData.preferences.allowBuyerLikeDeals}
                       onCheckedChange={(checked) =>
-                        handleNestedChange("preferences", "allowBuyerLikeDeals", checked === true)
+                        handleNestedChange(
+                          "preferences",
+                          "allowBuyerLikeDeals",
+                          checked === true
+                        )
                       }
                     />
-                    <Label htmlFor="allowBuyerLikeDeals" className="text-[#344054]">
-                      Allow buy side fee deals (charged by seller above CIM Amplify Fees)
+                    <Label
+                      htmlFor="allowBuyerLikeDeals"
+                      className="text-[#344054]"
+                    >
+                      Allow buy side fee deals (charged by seller above CIM
+                      Amplify Fees)
                     </Label>
                   </div>
                   <div className="mt-4 text-sm text-[#667085] border-t pt-4">
@@ -2341,8 +2899,13 @@ export default function CompanyProfilePage() {
                       >
                         CIM Amplify Terms and Conditions
                       </Link>{" "}
-                      were agreed to by {buyerProfile?.fullName || "(insert buyer's name)"} on{" "}
-                      {new Date().toLocaleString() || "(insert date and time of submission)"}.
+                      were agreed to by{" "}
+                      {buyerProfile?.fullName || "(insert buyer's name)"} on{" "}
+                      {profileId && formData.updatedAt
+  ? new Date(formData.updatedAt).toLocaleString()
+  : "(insert date and time of submission)"}
+
+                      .
                     </p>
                   </div>
                 </div>
@@ -2350,7 +2913,11 @@ export default function CompanyProfilePage() {
 
               {/* Submit Button */}
               <div className="flex justify-end">
-                <Button type="submit" className="bg-[#3aafa9] hover:bg-[#2a9d8f] text-white" disabled={isSubmitting}>
+                <Button
+                  type="submit"
+                  className="bg-[#3aafa9] hover:bg-[#2a9d8f] text-white"
+                  disabled={isSubmitting}
+                >
                   {isSubmitting ? (
                     <div className="flex items-center">
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
@@ -2366,5 +2933,5 @@ export default function CompanyProfilePage() {
         </main>
       </div>
     </div>
-  )
+  );
 }

@@ -1,129 +1,145 @@
-"use client"
+"use client";
 
-import type React from "react"
-import Image from "next/image"
-import { useState, useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import Link from "next/link"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { EyeIcon, EyeOffIcon } from "lucide-react"
-import { toast } from "@/components/ui/use-toast"
-import { Toaster } from "@/components/ui/toaster"
+import type React from "react";
+import Image from "next/image";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { EyeIcon, EyeOffIcon } from "lucide-react";
+import { toast } from "@/components/ui/use-toast";
+import { Toaster } from "@/components/ui/toaster";
 
 interface RegisterFormData {
-  fullName: string
-  email: string
-  password: string
-  confirmPassword: string
-  
+  fullName: string;
+  phone: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
 }
 
 export default function BuyerRegisterPage() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [formData, setFormData] = useState<RegisterFormData>({
     fullName: "",
+    phone: "",
     email: "",
     password: "",
     confirmPassword: "",
-    
-  })
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [errors, setErrors] = useState<Partial<RegisterFormData & { general: string }>>({})
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [errors, setErrors] = useState<
+    Partial<RegisterFormData & { general: string }>
+  >({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Check for token and userId in URL parameters
   useEffect(() => {
-    const urlToken = searchParams?.get("token")
-    const urlUserId = searchParams?.get("userId")
+    const urlToken = searchParams?.get("token");
+    const urlUserId = searchParams?.get("userId");
 
     if (urlToken) {
-      const cleanToken = urlToken.trim()
-      localStorage.setItem("token", cleanToken)
-      console.log("Register page - Token set from URL:", cleanToken.substring(0, 10) + "...")
+      const cleanToken = urlToken.trim();
+      localStorage.setItem("token", cleanToken);
+      console.log(
+        "Register page - Token set from URL:",
+        cleanToken.substring(0, 10) + "..."
+      );
     }
 
     if (urlUserId) {
-      const cleanUserId = urlUserId.trim()
-      localStorage.setItem("userId", cleanUserId)
-      console.log("Register page - User ID set from URL:", cleanUserId)
+      const cleanUserId = urlUserId.trim();
+      localStorage.setItem("userId", cleanUserId);
+      console.log("Register page - User ID set from URL:", cleanUserId);
     }
 
     // If both token and userId are provided, redirect to deals
     if (urlToken && urlUserId) {
-      console.log("Register page - Redirecting to acquireprofile with token and userId from URL")
-      localStorage.setItem("userRole", "buyer")
-      router.push("/buyer/acquireprofile")
-      return
+      console.log(
+        "Register page - Redirecting to acquireprofile with token and userId from URL"
+      );
+      localStorage.setItem("userRole", "buyer");
+      router.push("/buyer/acquireprofile");
+      return;
     }
 
     // Check if already logged in
-    const storedToken = localStorage.getItem("token")
+    const storedToken = localStorage.getItem("token");
     if (storedToken) {
-      console.log("Register page - Token found in localStorage, redirecting to acquireprofile")
-      router.push("/buyer/acquireprofile")
+      console.log(
+        "Register page - Token found in localStorage, redirecting to acquireprofile"
+      );
+      router.push("/buyer/acquireprofile");
     }
-  }, [searchParams, router])
+  }, [searchParams, router]);
 
   // Handle form input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
 
     // Clear error when user types
     if (errors[name as keyof typeof errors]) {
-      setErrors((prev) => ({ ...prev, [name]: undefined }))
+      setErrors((prev) => ({ ...prev, [name]: undefined }));
     }
-  }
+  };
 
   // Validate form data
   const validateForm = () => {
-    const newErrors: Partial<RegisterFormData & { general: string }> = {}
+    const newErrors: Partial<RegisterFormData & { general: string }> = {};
 
     if (!formData.fullName.trim()) {
-      newErrors.fullName = "Full name is required"
+      newErrors.fullName = "Full name is required";
     }
 
     if (!formData.email.trim()) {
-      newErrors.email = "Email is required"
+      newErrors.email = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "Email is invalid"
+      newErrors.email = "Email is invalid";
     }
 
     if (!formData.password) {
-      newErrors.password = "Password is required"
+      newErrors.password = "Password is required";
     } else if (formData.password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters"
+      newErrors.password = "Password must be at least 6 characters";
     }
 
     if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = "Passwords do not match"
+      newErrors.confirmPassword = "Passwords do not match";
     }
 
-  
+    if (formData.phone && !/^03\d{9}$/.test(formData.phone)) {
+      newErrors.phone = "Phone number must be valid (e.g. 03XXXXXXXXX)";
+    }
+    {errors.phone && (
+      <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
+    )}
+        
 
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   // Handle traditional registration
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setErrors({})
+    e.preventDefault();
+    setErrors({});
 
     if (!validateForm()) {
-      return
+      return;
     }
 
-    setIsSubmitting(true)
+    setIsSubmitting(true);
 
     try {
       // Get API URL from localStorage or use default
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
-      console.log("Register page - Submitting registration to:", apiUrl)
+      console.log("Register page - Submitting registration to:", apiUrl);
+      console.log("POST to:", `${apiUrl}/buyer/register`);
 
       const response = await fetch(`${apiUrl}/buyers/register`, {
         method: "POST",
@@ -133,18 +149,21 @@ export default function BuyerRegisterPage() {
         body: JSON.stringify({
           fullName: formData.fullName,
           email: formData.email,
+          phone: formData.phone || null, // Allow phone to be optional
           password: formData.password,
-          
         }),
-      })
+      });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.message || `Registration failed with status: ${response.status}`)
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.message ||
+            `Registration failed with status: ${response.status}`
+        );
       }
 
-      const data = await response.json()
-      console.log("Registration response:", data)
+      const data = await response.json();
+      console.log("Registration response:", data);
 
       // The backend should return the user data and we'll generate a login token
       if (data) {
@@ -158,73 +177,93 @@ export default function BuyerRegisterPage() {
             email: formData.email,
             password: formData.password,
           }),
-        })
+        });
 
         if (!loginResponse.ok) {
-          throw new Error("Registration successful but automatic login failed. Please log in manually.")
+          throw new Error(
+            "Registration successful but automatic login failed. Please log in manually."
+          );
         }
 
-        const loginData = await loginResponse.json()
+        const loginData = await loginResponse.json();
 
         // Store token - adapt this to match your API response format
         if (loginData.token) {
-          localStorage.setItem("token", loginData.token)
-          console.log("Register page - Token stored from login:", loginData.token.substring(0, 10) + "...")
+          localStorage.setItem("token", loginData.token);
+          console.log(
+            "Register page - Token stored from login:",
+            loginData.token.substring(0, 10) + "..."
+          );
         } else if (loginData.access_token) {
-          localStorage.setItem("token", loginData.access_token)
-          console.log("Register page - Token stored from login:", loginData.access_token.substring(0, 10) + "...")
+          localStorage.setItem("token", loginData.access_token);
+          console.log(
+            "Register page - Token stored from login:",
+            loginData.access_token.substring(0, 10) + "..."
+          );
         } else {
-          console.warn("Register page - Login response missing token")
+          console.warn("Register page - Login response missing token");
         }
 
         // Store userId - adapt this to match your API response format
         if (loginData.userId) {
-          localStorage.setItem("userId", loginData.userId)
-          console.log("Register page - User ID stored from login:", loginData.userId)
+          localStorage.setItem("userId", loginData.userId);
+          console.log(
+            "Register page - User ID stored from login:",
+            loginData.userId
+          );
         } else if (loginData.user && loginData.user.id) {
-          localStorage.setItem("userId", loginData.user.id)
-          console.log("Register page - User ID stored from login:", loginData.user.id)
+          localStorage.setItem("userId", loginData.user.id);
+          console.log(
+            "Register page - User ID stored from login:",
+            loginData.user.id
+          );
         } else {
-          console.warn("Register page - Login response missing userId")
+          console.warn("Register page - Login response missing userId");
         }
 
         // Set user role
-        localStorage.setItem("userRole", "buyer")
+        localStorage.setItem("userRole", "buyer");
 
         toast({
           title: "Registration Successful",
           description: "Your account has been created successfully.",
-        })
+        });
 
         // Redirect to company profile page
         setTimeout(() => {
-          router.push("/buyer/acquireprofile")
-        }, 1500)
+          router.push("/buyer/acquireprofile");
+        }, 1500);
       } else {
-        throw new Error("Registration response missing user data")
+        throw new Error("Registration response missing user data");
       }
     } catch (error: any) {
-      console.error("Registration error:", error)
-      setErrors({ general: error.message || "Registration failed. Please try again." })
+      console.error("Registration error:", error);
+      setErrors({
+        general: error.message || "Registration failed. Please try again.",
+      });
       toast({
         title: "Registration Failed",
         description: error.message || "Registration failed. Please try again.",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   // Handle Google OAuth login
   const handleGoogleLogin = () => {
     // Get API URL from localStorage or use default
-    const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
-    console.log("Register page - Redirecting to Google OAuth:", `${apiUrl}/buyers/google`)
+    const apiUrl =
+      localStorage.getItem("apiUrl") || "http://localhost:3001";
+    console.log(
+      "Register page - Redirecting to Google OAuth:",
+      `${apiUrl}/buyers/google`
+    );
 
     // Redirect to Google OAuth endpoint
-    window.location.href = `${apiUrl}/buyers/google`
-  }
+    window.location.href = `${apiUrl}/buyers/google`;
+  };
 
   return (
     <div className="">
@@ -244,7 +283,9 @@ export default function BuyerRegisterPage() {
         {/* Right side - Registration form */}
         <div className="w-full md:w-2/3 bg-white rounded-l-[30px] flex items-center justify-center p-8">
           <div className="w-full max-w-md space-y-3">
-            <h1 className="text-3xl font-bold mb-8 text-center">Create an Account</h1>
+            <h1 className="text-3xl font-bold mb-8 text-center">
+              Buyer Registration
+            </h1>
 
             {errors.general && (
               <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">
@@ -290,7 +331,10 @@ export default function BuyerRegisterPage() {
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Email Address
                 </label>
                 <Input
@@ -302,11 +346,16 @@ export default function BuyerRegisterPage() {
                   placeholder=""
                   className={`${errors.email ? "border-red-300" : ""} py-5`}
                 />
-                {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
+                {errors.email && (
+                  <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+                )}
               </div>
 
               <div>
-                <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="fullName"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Full Name
                 </label>
                 <Input
@@ -317,11 +366,33 @@ export default function BuyerRegisterPage() {
                   placeholder=""
                   className={`${errors.fullName ? "border-red-300" : ""} py-5`}
                 />
-                {errors.fullName && <p className="mt-1 text-sm text-red-600">{errors.fullName}</p>}
+                {errors.fullName && (
+                  <p className="mt-1 text-sm text-red-600">{errors.fullName}</p>
+                )}
+              </div>
+              <div className="mb-4">
+                <label
+                  htmlFor="phone"
+                  className="text-[#667085] text-sm mb-1.5 block"
+                >
+                  Phone{" "}
+                  <span className="text-gray-400 text-sm">(optional)</span>
+                </label>
+                <Input
+                  id="phone"
+                  name="phone"
+                  value={formData.phone || ""}
+                  onChange={handleChange}
+                  placeholder="03XXXXXXXXX"
+                  className="py-5"
+                />
               </div>
 
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Password
                 </label>
                 <div className="relative">
@@ -332,21 +403,32 @@ export default function BuyerRegisterPage() {
                     value={formData.password}
                     onChange={handleChange}
                     placeholder=""
-                    className={`${errors.password ? "border-red-300 pr-10" : "pr-10"} py-5`}
+                    className={`${
+                      errors.password ? "border-red-300 pr-10" : "pr-10"
+                    } py-5`}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
                   >
-                    {showPassword ? <EyeOffIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
+                    {showPassword ? (
+                      <EyeOffIcon className="h-5 w-5" />
+                    ) : (
+                      <EyeIcon className="h-5 w-5" />
+                    )}
                   </button>
                 </div>
-                {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password}</p>}
+                {errors.password && (
+                  <p className="mt-1 text-sm text-red-600">{errors.password}</p>
+                )}
               </div>
 
               <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="confirmPassword"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Confirm Password
                 </label>
                 <div className="relative">
@@ -357,20 +439,28 @@ export default function BuyerRegisterPage() {
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     placeholder=""
-                    className={`${errors.confirmPassword ? "border-red-300 pr-10" : "pr-10"} py-5`}
+                    className={`${
+                      errors.confirmPassword ? "border-red-300 pr-10" : "pr-10"
+                    } py-5`}
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
                   >
-                    {showConfirmPassword ? <EyeOffIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
+                    {showConfirmPassword ? (
+                      <EyeOffIcon className="h-5 w-5" />
+                    ) : (
+                      <EyeIcon className="h-5 w-5" />
+                    )}
                   </button>
                 </div>
-                {errors.confirmPassword && <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>}
+                {errors.confirmPassword && (
+                  <p className="mt-1 text-sm text-red-600">
+                    {errors.confirmPassword}
+                  </p>
+                )}
               </div>
-
-             
 
               <Button
                 type="submit"
@@ -383,7 +473,10 @@ export default function BuyerRegisterPage() {
 
             <p className="mt-6 text-center text-sm text-gray-600">
               Already have an account?{" "}
-              <Link href="/buyer/login" className="text-[#3aafa9] hover:underline font-medium">
+              <Link
+                href="/buyer/login"
+                className="text-[#3aafa9] hover:underline font-medium"
+              >
                 Login
               </Link>
             </p>
@@ -394,5 +487,5 @@ export default function BuyerRegisterPage() {
       {/* Toast notifications */}
       <Toaster />
     </div>
-  )
+  );
 }
