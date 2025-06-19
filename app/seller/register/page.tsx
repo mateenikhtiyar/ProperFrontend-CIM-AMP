@@ -162,7 +162,7 @@ export default function SellerRegisterPage() {
   // Handle Google OAuth login
   const handleGoogleLogin = () => {
     console.log("Register page - Redirecting to Google OAuth")
-    window.location.href = "https://api.cimamplify.com/sellers/google/callback"
+    window.location.href = "http://localhost:3001/sellers/google/callback"
   }
 
   return (
@@ -183,7 +183,7 @@ export default function SellerRegisterPage() {
         {/* Right side - Registration form */}
         <div className="w-full md:w-2/3 bg-white rounded-l-[30px] flex items-center justify-center p-8">
           <div className="w-full max-w-md space-y-3">
-            <h1 className="text-3xl font-bold mb-8 text-center">Create an Account</h1>
+            <h1 className="text-3xl font-bold mb-8 text-center">Seller Registration</h1>
 
             {errors.general && (
               <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">
