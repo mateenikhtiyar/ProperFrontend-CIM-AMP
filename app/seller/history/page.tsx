@@ -164,6 +164,12 @@ export default function DealsHistoryPage() {
       (deal.description?.toLowerCase() || "").includes(searchTerm.toLowerCase()),
   )
 
+  const getProfilePictureUrl = (path: string | null) => {
+    if (!path) return null
+    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+    const formattedPath = path.replace(/\\/g, "/")
+    return `${apiUrl}/${formattedPath.startsWith("/") ? formattedPath.slice(1) : formattedPath}`
+  }
   // Add router hook at the top of the component
   const router = useRouter()
 
@@ -360,35 +366,19 @@ export default function DealsHistoryPage() {
                 </div> */}
               </div>
               <div className="relative h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center text-white font-medium overflow-hidden">
-                {userProfile?.profilePicture || sellerProfile?.profilePicture ? (
-                  <img
-                    src={userProfile?.profilePicture || sellerProfile?.profilePicture || "/placeholder.svg"}
-                    alt={userProfile?.fullName || sellerProfile?.fullName}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  (sellerProfile?.fullName || "U").charAt(0)
-                )}
-                <div
-                  className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-30 flex items-center justify-center transition-all cursor-pointer"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  {isUploading ? (
-                    <div className="bg-white p-1 rounded-full">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-800"></div>
-                    </div>
-                  ) : (
-                    <Pencil className="h-4 w-4 text-white opacity-0 hover:opacity-100 transition-opacity" />
-                  )}
-                </div>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  className="hidden"
-                  accept="image/*"
-                  onChange={handleProfileImageUpload}
-                />
-              </div>
+  {sellerProfile?.profilePicture ? (
+    <img
+      src={getProfilePictureUrl(sellerProfile.profilePicture) || "/placeholder.svg"}
+      alt={sellerProfile.fullName}
+      className="h-full w-full object-cover"
+      onError={(e) => {
+        (e.currentTarget as HTMLImageElement).src = "/placeholder.svg"
+      }}
+    />
+  ) : (
+    (sellerProfile?.fullName || "U").charAt(0)
+  )}
+</div>
             </div>
           </div>
         </header>
