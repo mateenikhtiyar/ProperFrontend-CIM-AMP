@@ -286,10 +286,15 @@ export default function CompanyProfilePage() {
 
   // Form state
   const [formData, setFormData] = useState<
-    CompanyProfile & { selectedCurrency: string; capitalAvailability: string }
+    CompanyProfile & {
+      selectedCurrency: string;
+      capitalAvailability: string;
+      updatedAt?: string;
+    }
   >({
     companyName: "",
     website: "",
+    updatedAt: undefined,
     contacts: [{ name: "", email: "", phone: "" }],
     companyType: "",
     capitalEntity: "",
@@ -386,6 +391,7 @@ export default function CompanyProfilePage() {
             profileData.capitalAvailability ||
             profileData.capitalEntity ||
             "need_to_raise",
+          updatedAt: profileData.updatedAt,
         };
 
         setFormData(updatedProfile);
@@ -2902,9 +2908,10 @@ export default function CompanyProfilePage() {
                       were agreed to by{" "}
                       {buyerProfile?.fullName || "(insert buyer's name)"} on{" "}
                       {profileId && formData.updatedAt
-  ? new Date(formData.updatedAt).toLocaleString()
-  : "(insert date and time of submission)"}
-
+                        ? new Date(formData.updatedAt).toLocaleString("en-US", {
+                            timeZone: "UTC",
+                          })
+                        : "(insert date and time of submission)"}
                       .
                     </p>
                   </div>

@@ -162,6 +162,7 @@ export default function EditDealPage() {
   const [fileError, setFileError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [existingDocuments, setExistingDocuments] = useState<DealDocument[]>([])
+  const [newFiles, setNewFiles] = useState<File[]>([])
 
   // Hierarchical selection state
   const [geoSelection, setGeoSelection] = useState<GeographySelection>({
@@ -196,7 +197,7 @@ export default function EditDealPage() {
     businessModels: [],
     managementPreferences: [],
     capitalAvailability: "ready",
-    companyType: "", // Add this line
+    companyType: "",
     minPriorAcquisitions: 0,
     minTransactionSize: 0,
     documents: [],
@@ -207,17 +208,20 @@ export default function EditDealPage() {
   // Add to state
   const [dealData, setDealData] = useState<Deal | null>(null)
 
+  // Add fieldErrors state for validation errors
+  const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
+
   // Flatten geography data for searchable dropdown
   const flattenGeoData = (items: Continent[] | Region[] | SubRegion[], parentPath = "", result: GeoItem[] = []) => {
     items.forEach((item) => {
       const path = parentPath ? `${parentPath} > ${item.name}` : item.name
       result.push({ id: item.id, name: item.name, path })
 
-      if ("regions" in item && item.regions) {
-        flattenGeoData(item.regions, path, result)
+      if ("regions" in item && Array.isArray(item.regions) && item.regions.length > 0) {
+        flattenGeoData(item.regions as Continent[] | Region[] | SubRegion[], path, result)
       }
-      if ("subRegions" in item && item.subRegions) {
-        flattenGeoData(item.subRegions, path, result)
+      if ("subRegions" in item && Array.isArray(item.subRegions) && item.subRegions.length > 0) {
+        flattenGeoData(item.subRegions as Continent[] | Region[] | SubRegion[], path, result)
       }
     })
     return result
@@ -394,16 +398,19 @@ export default function EditDealPage() {
   const handleCheckboxChange = (
     checked: boolean,
     value: string,
-    fieldName: "businessModels" | "managementPreferences",
+    fieldName: "businessModels" | "managementPreferences"
   ) => {
     setFormData((prev) => {
       if (checked) {
-        return { ...prev, [fieldName]: [...prev[fieldName], value] }
+        return { ...prev, [fieldName]: [...prev[fieldName], value] };
       } else {
-        return { ...prev, [fieldName]: prev[fieldName].filter((item) => item !== value) }
+        return {
+          ...prev,
+          [fieldName]: prev[fieldName].filter((item) => item !== value),
+        };
       }
-    })
-  }
+    });
+  };
 
   // Geography selection handlers
   const selectGeography = (id: string, name: string) => {
@@ -996,170 +1003,193 @@ export default function EditDealPage() {
     )
   }
 
-  // Handle file selection
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const newFiles: File[] = []
-      let hasError = false
+// Handle file selection
+const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  if (!e.target.files || e.target.files.length === 0) return
 
-      // Check each file
-      for (let i = 0; i < e.target.files.length; i++) {
-        const file = e.target.files[i]
+  const filesArray = Array.from(e.target.files)
+  let hasError = false
+  const validFiles: File[] = []
 
-        // Check file size (10MB limit)
-        if (file.size > 10 * 1024 * 1024) {
-          setFileError(`File ${file.name} exceeds 10MB limit`)
-          hasError = true
-          break
-        }
-
-        newFiles.push(file)
-      }
-
-      if (!hasError) {
-        setSelectedFile(e.target.files[0]) // Show first file name for UI
-        setFileError(null)
-
-        // Add to documents array
-        setFormData((prev) => ({
-          ...prev,
-          documents: [...prev.documents, ...newFiles],
-        }))
-      }
+  for (const file of filesArray) {
+    // Check file size (10MB limit)
+    if (file.size > 10 * 1024 * 1024) {
+      setFileError(`File ${file.name} exceeds 10MB limit`)
+      hasError = true
+      break
     }
+    validFiles.push(file)
   }
 
-  // Handle form submission
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  if (!hasError) {
+    setSelectedFile(validFiles[0]) // Show first file for UI
+    setFileError(null)
 
-    if (!dealId) {
-      toast({
-        title: "Error",
-        description: "No deal ID provided",
-        variant: "destructive",
-      })
-      return
+    // Append new files to newFiles state
+    setNewFiles((prev) => [...prev, ...validFiles])
+
+    // Clear file input to allow uploading the same file again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
+    }
+  }
+}
+
+// Handle form submission
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  if (!dealId) {
+    toast({
+      title: "Error",
+      description: "No deal ID provided",
+      variant: "destructive",
+    })
+    return;
+  }
+
+  setIsSaving(true)
+
+  try {
+    // Basic validation
+    if (!formData.dealTitle.trim()) throw new Error("Deal title is required")
+    if (!formData.companyDescription.trim()) throw new Error("Company description is required")
+    if (formData.geographySelections.length === 0) throw new Error("Please select a geography")
+    if (formData.industrySelections.length === 0) throw new Error("Please select at least one industry")
+    // Validation errors object
+    const errors: { [key: string]: string } = {};
+    // Validate business models
+    if (formData.businessModels.length === 0) {
+      errors.businessModels = "Please select at least one business model.";
     }
 
-    setIsSaving(true)
+    // Validate management preferences
+    if (formData.managementPreferences.length === 0) {
+      errors.managementPreferences =
+        "Please select at least one management preference.";
+    }
 
-    try {
-      // Validate form
-      if (!formData.dealTitle.trim()) throw new Error("Deal title is required")
-      if (!formData.companyDescription.trim()) throw new Error("Company description is required")
-      if (formData.geographySelections.length === 0) throw new Error("Please select a geography")
-      if (formData.industrySelections.length === 0) throw new Error("Please select at least one industry")
+    // If there are errors, set them and prevent submit
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      setIsLoading(false);
+      return;
+    }
 
-      // Get token and sellerId from localStorage
-      const token = localStorage.getItem("token")
-      const sellerId = localStorage.getItem("userId")
-      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+    // Get auth & API setup
+    const token = localStorage.getItem("token")
+    const sellerId = localStorage.getItem("userId")
+    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+    if (!token || !sellerId) throw new Error("Authentication required")
 
-      if (!token || !sellerId) throw new Error("Authentication required")
+    // Map business models & preferences
+    const businessModel = {
+      recurringRevenue: formData.businessModels.includes("recurring-revenue"),
+      projectBased: formData.businessModels.includes("project-based"),
+      assetLight: formData.businessModels.includes("asset-light"),
+      assetHeavy: formData.businessModels.includes("asset-heavy"),
+    }
 
-      // Map business models to booleans
-      const businessModel = {
+    const managementPreferences = {
+      retiringDivesting: formData.managementPreferences.includes("retiring-divesting"),
+      staffStay: formData.managementPreferences.includes("key-staff-stay"),
+    }
+
+    // Build payload
+    const payload = {
+      title: formData.dealTitle,
+      companyDescription: formData.companyDescription,
+      companyType: formData.companyType,
+      visibility: selectedReward || "seed",
+      industrySector: formData.industrySelections[0], 
+      geographySelection: formData.geographySelections[0],
+      yearsInBusiness: Number(formData.yearsInBusiness),
+    
+      financialDetails: {
+        trailingRevenueCurrency: formData.currency,
+        trailingRevenueAmount: Number(formData.trailingRevenue),
+        trailingEBITDACurrency: formData.currency,
+        trailingEBITDAAmount: Number(formData.trailingEBITDA),
+        avgRevenueGrowth: Number(formData.revenueGrowth),
+        netIncome: Number(formData.netIncome),
+        askingPrice: Number(formData.askingPrice),
+        t12FreeCashFlow: Number(formData.t12FreeCashFlow),
+        t12NetIncome: Number(formData.t12NetIncome),
+      },
+    
+      businessModel: {
         recurringRevenue: formData.businessModels.includes("recurring-revenue"),
         projectBased: formData.businessModels.includes("project-based"),
         assetLight: formData.businessModels.includes("asset-light"),
         assetHeavy: formData.businessModels.includes("asset-heavy"),
-      }
-
-      // Map management preferences to booleans
-      const managementPreferences = {
+      },
+    
+      managementPreferences: {
         retiringDivesting: formData.managementPreferences.includes("retiring-divesting"),
         staffStay: formData.managementPreferences.includes("key-staff-stay"),
-      }
-
-      // Compose the payload
-      const payload = {
-        title: formData.dealTitle,
-        companyDescription: formData.companyDescription,
-        visibility: selectedReward || "seed",
-        industrySector: formData.industrySelections[0] || "",
-        geographySelection: formData.geographySelections[0] || "",
-        yearsInBusiness: formData.yearsInBusiness,
-        companyType: formData.companyType, // Add this line
-        financialDetails: {
-          trailingRevenueCurrency: formData.currency,
-          trailingRevenueAmount: formData.trailingRevenue,
-          trailingEBITDACurrency: formData.currency,
-          trailingEBITDAAmount: formData.trailingEBITDA,
-          avgRevenueGrowth: formData.revenueGrowth,
-          netIncome: formData.netIncome,
-          askingPrice: formData.askingPrice,
-          t12FreeCashFlow: formData.t12FreeCashFlow || 0, // <-- Add this line
-          t12NetIncome: formData.t12NetIncome || 0, // <-- Add this line
-        },
-        businessModel,
-        managementPreferences,
-        buyerFit: {
-          capitalAvailability:
-            formData.capitalAvailability === "ready" ? "Ready to deploy immediately" : "Need to raise",
-          minPriorAcquisitions: formData.minPriorAcquisitions,
-          minTransactionSize: formData.minTransactionSize,
-        },
-        dealType: dealData?.dealType || "acquisition",
-        status: dealData?.status || "draft",
-      }
-
-      console.log("Updating deal payload:", payload)
-
-      // Submit to API
-      const response = await fetch(`${apiUrl}/deals/${dealId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      })
-
-      if (!response.ok) {
-        throw new Error(`Failed to update deal: ${response.statusText}`)
-      }
-
-      // Handle document uploads if there are any new documents
-      if (formData.documents.length > 0) {
-        const uploadFormData = new FormData()
-
-        Array.from(formData.documents).forEach((file) => {
-          uploadFormData.append("files", file)
-        })
-
-        const uploadResponse = await fetch(`${apiUrl}/deals/${dealId}/upload-documents`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: uploadFormData,
-        })
-
-        if (!uploadResponse.ok) {
-          throw new Error(`Failed to upload documents: ${uploadResponse.statusText}`)
-        }
-      }
-
-      toast({
-        title: "Success",
-        description: "Your deal has been updated successfully.",
-      })
-
-      setTimeout(() => {
-        router.push("/seller/dashboard")
-      }, 2000)
-    } catch (error: any) {
-      console.error("Form submission error:", error)
-      toast({
-        title: "Update Failed",
-        description: error.message || "Failed to update deal. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsSaving(false)
+      },
+    
+      buyerFit: {
+        capitalAvailability: formData.capitalAvailability === "ready"
+          ? "Ready to deploy immediately"
+          : "Need to raise",
+        minPriorAcquisitions: Number(formData.minPriorAcquisitions),
+        minTransactionSize: Number(formData.minTransactionSize),
+      },
+    
+      dealType: dealData?.dealType || "acquisition",
+      status: dealData?.status || "draft",
+      // ⚠️ Remove `documents: existingDocuments` — or pass just the file paths like:
+      // documents: existingDocuments.map((doc) => doc.path)  // if your backend accepts this
     }
+    
+
+    // PATCH deal data
+    const response = await fetch(`${apiUrl}/deals/${dealId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    })
+    if (!response.ok) throw new Error(`Failed to update deal: ${response.statusText}`)
+
+    // Only upload new files if there are newFiles
+    if (newFiles.length > 0) {
+      const uploadFormData = new FormData()
+      newFiles.forEach((file) => {
+        uploadFormData.append("files", file)
+      })
+      const uploadResponse = await fetch(`${apiUrl}/deals/${dealId}/upload-documents`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: uploadFormData,
+      })
+      if (!uploadResponse.ok) {
+        throw new Error(`Failed to upload documents: ${uploadResponse.statusText}`)
+      }
+      // Clear newFiles after successful upload
+      setNewFiles([])
+    }
+
+    toast({
+      title: "Success",
+      description: "Your deal has been updated successfully.",
+    })
+    setTimeout(() => router.push("/seller/dashboard"), 2000)
+  } catch (error: any) {
+    console.error("Error in handleSubmit:", error)
+    toast({
+      title: "Update Failed",
+      description: error.message || "Failed to update deal. Please try again.",
+      variant: "destructive",
+    })
+  } finally {
+    setIsSaving(false)
   }
+}
+
 
   // Handle document download
   const handleDocumentDownload = (doc: DealDocument) => {
@@ -1236,7 +1266,7 @@ export default function EditDealPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Seed Option */}
               <Card
-                className={`cursor-pointer border ${selectedReward === "seed" ? "border-[#3aafa9]" : "border-gray-200"} overflow-hidden`}
+                className={`cursor-pointer border-4 ${selectedReward === "seed" ? "border-[#3aafa9]" : "border-gray-200"} overflow-hidden`}
                 onClick={() => setSelectedReward("seed")}
               >
                 <div className="flex flex-col h-full">
@@ -1265,7 +1295,7 @@ export default function EditDealPage() {
 
               {/* Bloom Option */}
               <Card
-                className={`cursor-pointer border ${selectedReward === "bloom" ? "border-[#3aafa9]" : "border-gray-200"} overflow-hidden`}
+                className={`cursor-pointer border-4 ${selectedReward === "bloom" ? "border-[#3aafa9]" : "border-gray-200"} overflow-hidden`}
                 onClick={() => setSelectedReward("bloom")}
               >
                 <div className="flex flex-col h-full">
@@ -1296,7 +1326,7 @@ export default function EditDealPage() {
 
               {/* Fruit Option */}
               <Card
-                className={`cursor-pointer border ${selectedReward === "fruit" ? "border-[#3aafa9]" : "border-gray-200"} overflow-hidden`}
+                className={`cursor-pointer border-4 ${selectedReward === "fruit" ? "border-[#3aafa9]" : "border-gray-200"} overflow-hidden`}
                 onClick={() => setSelectedReward("fruit")}
               >
                 <div className="flex flex-col h-full">
@@ -1467,18 +1497,22 @@ export default function EditDealPage() {
               </div>
 
               <div>
-                <label htmlFor="yearsInBusiness" className="block text-sm font-medium text-gray-700 mb-1">
-                  Number of years in business
-                </label>
-                <Input
-                  id="yearsInBusiness"
-                  type="number"
-                  min="0"
-                  value={formData.yearsInBusiness || ""}
-                  onChange={(e) => handleNumberChange(e, "yearsInBusiness")}
-                  className="w-full"
-                />
-              </div>
+              <label
+                htmlFor="yearsInBusiness"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Number of years in business
+              </label>
+              <Input
+                id="yearsInBusiness"
+                type="number"
+                required
+                min="0"
+                value={formData.yearsInBusiness || ""}
+                onChange={(e) => handleNumberChange(e, "yearsInBusiness")}
+                className="w-full"
+              />
+            </div>
             </div>
           </section>
 
@@ -1553,25 +1587,35 @@ export default function EditDealPage() {
                 </div>
 
                 <div>
-                  <label htmlFor="revenueGrowth" className="block text-sm font-medium text-gray-700 mb-1">
-                    Average 3 year revenue growth in %
-                  </label>
-                  <Input
-                    id="revenueGrowth"
-                    type="text"
-                    value={formData.revenueGrowth ? formatNumberWithCommas(formData.revenueGrowth) : ""}
-                    onChange={(e) => {
-                      const rawValue = e.target.value.replace(/,/g, "")
-                      if (rawValue === "" || /^-?\d*$/.test(rawValue)) {
-                        handleNumberChange(
-                          { target: { value: rawValue } } as React.ChangeEvent<HTMLInputElement>,
-                          "revenueGrowth",
-                        )
-                      }
-                    }}
-                    className="w-full"
-                  />
-                </div>
+                <label
+                  htmlFor="revenueGrowth"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Average 3 year revenue growth in %
+                </label>
+                <Input
+                  id="revenueGrowth"
+                  type="text"
+                  value={
+                    formData.revenueGrowth !== undefined &&
+                    formData.revenueGrowth !== null
+                      ? formatNumberWithCommas(formData.revenueGrowth)
+                      : ""
+                  }
+                  onChange={(e) => {
+                    const rawValue = e.target.value.replace(/,/g, "");
+                    if (rawValue === "" || /^-?\d*$/.test(rawValue)) {
+                      handleNumberChange(
+                        {
+                          target: { value: rawValue },
+                        } as React.ChangeEvent<HTMLInputElement>,
+                        "revenueGrowth"
+                      );
+                    }
+                  }}
+                  className="w-full"
+                />
+              </div>
               </div>
             </div>
           </section>
@@ -1665,90 +1709,135 @@ export default function EditDealPage() {
             </div>
 
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-3">Business Models</label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="flex items-center">
-                  <Checkbox
-                    id="recurring-revenue"
-                    checked={formData.businessModels.includes("recurring-revenue")}
-                    onCheckedChange={(checked) => handleCheckboxChange(checked, "recurring-revenue", "businessModels")}
-                    className="mr-2 border-[#d0d5dd]"
-                  />
-                  <Label htmlFor="recurring-revenue" className="cursor-pointer">
-                    Recurring Revenue
-                  </Label>
-                </div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Business Models <span className="text-red-500">*</span>
+            </label>
+             {/* ... checkbox group */}
+  {fieldErrors.businessModels && (
+    <p className="text-red-500 text-sm mt-2">{fieldErrors.businessModels}</p>
+  )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="recurring-revenue"
+                  checked={formData.businessModels.includes(
+                    "recurring-revenue"
+                  )}
+                  onCheckedChange={(checked) =>
+                    handleCheckboxChange(
+                      checked === true,
+                      "recurring-revenue",
+                      "businessModels"
+                    )
+                  }
+                />
+                <label htmlFor="recurring-revenue" className="text-sm">
+                  Recurring Revenue
+                </label>
+              </div>
 
-                <div className="flex items-center">
-                  <Checkbox
-                    id="project-based"
-                    checked={formData.businessModels.includes("project-based")}
-                    onCheckedChange={(checked) => handleCheckboxChange(checked, "project-based", "businessModels")}
-                    className="mr-2 border-[#d0d5dd]"
-                  />
-                  <Label htmlFor="project-based" className="cursor-pointer">
-                    Project Based
-                  </Label>
-                </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="project-based"
+                  checked={formData.businessModels.includes("project-based")}
+                  onCheckedChange={(checked) =>
+                    handleCheckboxChange(
+                      checked === true,
+                      "project-based",
+                      "businessModels"
+                    )
+                  }
+                />
+                <label htmlFor="project-based" className="text-sm">
+                  Project-Based
+                </label>
+              </div>
 
-                <div className="flex items-center">
-                  <Checkbox
-                    id="asset-light"
-                    checked={formData.businessModels.includes("asset-light")}
-                    onCheckedChange={(checked) => handleCheckboxChange(checked, "asset-light", "businessModels")}
-                    className="mr-2 border-[#d0d5dd]"
-                  />
-                  <Label htmlFor="asset-light" className="cursor-pointer">
-                    Asset Light
-                  </Label>
-                </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="asset-light"
+                  checked={formData.businessModels.includes("asset-light")}
+                  onCheckedChange={(checked) =>
+                    handleCheckboxChange(
+                      checked === true,
+                      "asset-light",
+                      "businessModels"
+                    )
+                  }
+                />
+                <label htmlFor="asset-light" className="text-sm">
+                  Asset Light
+                </label>
+              </div>
 
-                <div className="flex items-center">
-                  <Checkbox
-                    id="asset-heavy"
-                    checked={formData.businessModels.includes("asset-heavy")}
-                    onCheckedChange={(checked) => handleCheckboxChange(checked, "asset-heavy", "businessModels")}
-                    className="mr-2 border-[#d0d5dd]"
-                  />
-                  <Label htmlFor="asset-heavy" className="cursor-pointer">
-                    Asset Heavy
-                  </Label>
-                </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="asset-heavy"
+                  checked={formData.businessModels.includes("asset-heavy")}
+                  onCheckedChange={(checked) =>
+                    handleCheckboxChange(
+                      checked === true,
+                      "asset-heavy",
+                      "businessModels"
+                    )
+                  }
+                />
+                <label htmlFor="asset-heavy" className="text-sm">
+                  Asset Heavy
+                </label>
               </div>
             </div>
+          </div>
 
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-3">Management Preferences</label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="flex items-center">
-                  <Checkbox
-                    id="retiring-divesting"
-                    checked={formData.managementPreferences.includes("retiring-divesting")}
-                    onCheckedChange={(checked) =>
-                      handleCheckboxChange(checked, "retiring-divesting", "managementPreferences")
-                    }
-                    className="mr-2 border-[#d0d5dd]"
-                  />
-                  <Label htmlFor="retiring-divesting" className="cursor-pointer">
-                    Retiring / Divesting
-                  </Label>
-                </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Management Future Preferences{" "}
+              <span className="text-red-500">*</span>
+            </label>
+              {/* ... checkbox group */}
+  {fieldErrors.managementPreferences && (
+    <p className="text-red-500 text-sm mt-2">{fieldErrors.managementPreferences}</p>
+  )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="retiring-divesting"
+                  checked={formData.managementPreferences.includes(
+                    "retiring-divesting"
+                  )}
+                  onCheckedChange={(checked) =>
+                    handleCheckboxChange(
+                      checked === true,
+                      "retiring-divesting",
+                      "managementPreferences"
+                    )
+                  }
+                />
+                <label htmlFor="retiring-divesting" className="text-sm">
+                  Retiring to divesting
+                </label>
+              </div>
 
-                <div className="flex items-center">
-                  <Checkbox
-                    id="key-staff-stay"
-                    checked={formData.managementPreferences.includes("key-staff-stay")}
-                    onCheckedChange={(checked) =>
-                      handleCheckboxChange(checked, "key-staff-stay", "managementPreferences")
-                    }
-                    className="mr-2 border-[#d0d5dd]"
-                  />
-                  <Label htmlFor="key-staff-stay" className="cursor-pointer">
-                    Key Staff Stay
-                  </Label>
-                </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="key-staff-stay"
+                  checked={formData.managementPreferences.includes(
+                    "key-staff-stay"
+                  )}
+                  onCheckedChange={(checked) =>
+                    handleCheckboxChange(
+                      checked === true,
+                      "key-staff-stay",
+                      "managementPreferences"
+                    )
+                  }
+                />
+                <label htmlFor="key-staff-stay" className="text-sm">
+                  Other Key Staff Will Stay
+                </label>
               </div>
             </div>
+          </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>

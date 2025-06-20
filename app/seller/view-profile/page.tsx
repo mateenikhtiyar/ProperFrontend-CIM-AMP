@@ -60,17 +60,17 @@ export default function ViewProfilePage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Helper function to get profile picture URL
-  const getProfilePictureUrl = (profilePicture: string | null) => {
-    if (!profilePicture) return null
-    // If it's already a full URL, return as is
-    if (profilePicture.startsWith("http")) return profilePicture
-    // Otherwise, construct the full URL
-    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
-    // Replace backslashes with forward slashes for URL compatibility
-    const formattedPath = profilePicture.replace(/\\/g, "/")
-    // Check if path already starts with a slash
-    return `${apiUrl}/${formattedPath.startsWith("/") ? formattedPath.substring(1) : formattedPath}`
-  }
+ const getProfilePictureUrl = (profilePicture: string | null) => {
+  if (!profilePicture) return null
+
+  if (profilePicture.startsWith("http")) return profilePicture
+
+  const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+  const formattedPath = profilePicture.replace(/\\/g, "/")
+
+  return `${apiUrl}/${formattedPath.startsWith("/") ? formattedPath.substring(1) : formattedPath}`
+}
+
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -433,9 +433,21 @@ export default function ViewProfilePage() {
                     <div className="text-right">
                       <div className="font-medium">{profile?.fullName || "User"}</div>
                     </div>
-                    <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center text-white font-medium">
-                      {profile?.fullName ? profile.fullName.charAt(0) : "U"}
-                    </div>
+          <div className="relative h-10 w-10 rounded-full bg-gray-300 overflow-hidden flex items-center justify-center text-white font-medium">
+  {profile?.profilePicture ? (
+    <img
+     src={getProfilePictureUrl(profile.profilePicture) || undefined}
+      alt={profile.fullName || "User"}
+      className="h-full w-full object-cover"
+      onError={(e) => {
+        (e.target as HTMLImageElement).src = "/placeholder.svg"
+      }}
+    />
+  ) : (
+    <span>{profile?.fullName ? profile.fullName.charAt(0) : "U"}</span>
+  )}
+</div>
+
                   </>
                 )}
               </div>
@@ -477,86 +489,115 @@ export default function ViewProfilePage() {
               </div>
             ) : (
               <div className="bg-white rounded-lg shadow">
-                {/* Profile header */}
-                <div className="p-6 flex gap-6">
-                  <div className="relative h-40 w-40 rounded-lg bg-gray-200 overflow-hidden">
-                    {profile?.profilePicture ? (
-                      <img
-                        src={getProfilePictureUrl(profile.profilePicture) || "/placeholder.svg"}
-                        alt={profile?.fullName || "Profile"}
-                        className="h-40 w-40 rounded-lg object-cover"
-                        onError={(e) => {
-                          // Fallback to placeholder on error
-                          ;(e.target as HTMLImageElement).src = "/placeholder.svg"
-                        }}
-                      />
-                    ) : (
-                      <img src="/placeholder.svg" alt="Profile" className="h-40 w-40 rounded-lg object-cover" />
-                    )}
+              <div className="p-6 flex flex-col md:flex-row gap-6">
+  {/* Profile Picture */}
+  <div className="relative h-40 w-40 rounded-lg bg-gray-200 overflow-hidden shrink-0">
+    {profile?.profilePicture ? (
+      <img
+        src={getProfilePictureUrl(profile.profilePicture) || "/placeholder.svg"}
+        alt={profile?.fullName || "Profile"}
+        className="h-40 w-40 rounded-lg object-cover"
+        onError={(e) => {
+          (e.target as HTMLImageElement).src = "/placeholder.svg"
+        }}
+      />
+    ) : (
+      <img src="/placeholder.svg" alt="Profile" className="h-40 w-40 rounded-lg object-cover" />
+    )}
+    <button
+      onClick={triggerFileInput}
+      className="absolute bottom-2 right-2 bg-teal-500 hover:bg-teal-600 text-white p-2 rounded-full shadow-md"
+      disabled={uploadingImage}
+    >
+      {uploadingImage ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
+    </button>
+    <input
+      type="file"
+      ref={fileInputRef}
+      onChange={handleProfilePictureUpload}
+      className="hidden"
+      accept="image/*"
+    />
+  </div>
 
-                    {/* Upload button overlay */}
-                    <button
-                      onClick={triggerFileInput}
-                      className="absolute bottom-2 right-2 bg-teal-500 hover:bg-teal-600 text-white p-2 rounded-full shadow-md"
-                      disabled={uploadingImage}
-                    >
-                      {uploadingImage ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
-                    </button>
+  {/* Profile Info */}
+  <div className="flex-1 flex flex-col justify-center space-y-3 text-gray-800 text-sm">
+    <div className="flex items-center gap-2">
+      <span className="font-medium w-24">Name:</span>
+      {editMode ? (
+        <Input
+          value={editValues.fullName || ""}
+          onChange={(e) => setEditValues((prev) => ({ ...prev, fullName: e.target.value }))}
+          placeholder="Enter your full name"
+        />
+      ) : (
+        <span>{profile?.fullName || "Ivana Hug"}</span>
+      )}
+    </div>
 
-                    {/* Hidden file input */}
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      onChange={handleProfilePictureUpload}
-                      className="hidden"
-                      accept="image/*"
-                    />
-                  </div>
+    <div className="flex items-center gap-2">
+      <span className="font-medium w-24">Company:</span>
+      {editMode ? (
+        <Input
+          value={editValues.companyName || ""}
+          onChange={(e) => setEditValues((prev) => ({ ...prev, companyName: e.target.value }))}
+          placeholder="Enter company name"
+        />
+      ) : (
+        <span>{profile?.companyName || "Sell Co"}</span>
+      )}
+    </div>
 
-                  <div className="flex-1">
-                    {/* Full Name */}
-                    <div className="flex items-center gap-2 mb-1">
-                      {editMode ? (
-                        <div className="flex-1">
-                          <Input
-                            value={editValues.fullName || ""}
-                            onChange={(e) => setEditValues((prev) => ({ ...prev, fullName: e.target.value }))}
-                            className="text-2xl font-bold"
-                            placeholder="Enter your full name"
-                          />
-                        </div>
-                      ) : (
-                        <h2 className="text-2xl font-bold">{profile?.fullName || "User"}</h2>
-                      )}
-                    </div>
+    <div className="flex items-center gap-2">
+      <span className="font-medium w-24">Title:</span>
+      <span>{profile?.title || "CEO"}</span>
+    </div>
 
-                    {/* Title - Read Only */}
-                    {/* <div className="flex items-center gap-2 mb-4">
-                      <div className="text-teal-600">{profile?.title || "CEO"}</div>
-                    </div> */}
 
-                    <div className="space-y-2">
-                      {/* Email */}
-                      <div className="flex items-center gap-2">
-                        {editMode ? (
-                          <div className="flex items-center gap-2 flex-1">
-                            <Input
-                              type="email"
-                              value={editValues.email || ""}
-                              onChange={(e) => setEditValues((prev) => ({ ...prev, email: e.target.value }))}
-                              className="text-gray-600"
-                              placeholder="Enter your email"
-                            />
-                          </div>
-                        ) : (
-                          <div className="text-gray-600">{profile?.email || "Email not provided"}</div>
-                        )}
-                      </div>
-                    </div>
 
-                    {/* Change Password Button */}
-                    <div className="mt-4">
-                      <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+    <div className="flex items-center gap-2">
+      <span className="font-medium w-24">Email:</span>
+      {editMode ? (
+        <Input
+          type="email"
+          value={editValues.email || ""}
+          onChange={(e) => setEditValues((prev) => ({ ...prev, email: e.target.value }))}
+          placeholder="Enter email"
+        />
+      ) : (
+        <span>{profile?.email || "jmacinnes@mzzamplify.com"}</span>
+      )}
+    </div>
+
+    <div className="flex items-center gap-2">
+      <span className="font-medium w-24">Phone:</span>
+      {editMode ? (
+        <Input
+          value={editValues.phoneNumber || ""}
+          onChange={(e) => setEditValues((prev) => ({ ...prev, phoneNumber: e.target.value }))}
+          placeholder="Enter phone number"
+        />
+      ) : (
+        <span>{profile?.phoneNumber || "+1 403 689-7627"}</span>
+      )}
+    </div>
+
+    <div className="flex items-center gap-2">
+      <span className="font-medium w-24">Website:</span>
+      {editMode ? (
+        <Input
+          value={editValues.website || ""}
+          onChange={(e) => setEditValues((prev) => ({ ...prev, website: e.target.value }))}
+          placeholder="Enter website"
+        />
+      ) : (
+        <span>{profile?.website || "www.sellco.com"}</span>
+      )}
+      
+    </div>
+    <div className="mt-4">
+      <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+ 
                         <DialogTrigger asChild>
                           <Button variant="outline" size="sm">
                             Change Password
@@ -619,49 +660,22 @@ export default function ViewProfilePage() {
                             </div>
                           </div>
                         </DialogContent>
-                      </Dialog>
-                    </div>
-                  </div>
-                </div>
+                     
+      </Dialog>
+    </div>
+  </div>
+  
+</div>
 
-                {/* Company information */}
-                <div className="border-t border-gray-200 p-6">
-                  <h3 className="text-lg font-semibold mb-4">Company Information</h3>
 
-                  <div className="grid grid-cols-2 gap-6">
-                    {/* Company Name */}
-                    <div>
-                      <div className="text-sm text-gray-500 mb-1">Company Name:</div>
-                      {editMode ? (
-                        <Input
-                          value={editValues.companyName || ""}
-                          onChange={(e) => setEditValues((prev) => ({ ...prev, companyName: e.target.value }))}
-                          placeholder="Enter company name"
-                        />
-                      ) : (
-                        <div className="font-medium">{profile?.companyName || "Not provided"}</div>
-                      )}
-                    </div>
-
-                    {/* Phone Number */}
-                    <div>
-                      <div className="text-sm text-gray-500 mb-1">Phone Number:</div>
-                      {editMode ? (
-                        <Input
-                          value={editValues.phoneNumber || ""}
-                          onChange={(e) => setEditValues((prev) => ({ ...prev, phoneNumber: e.target.value }))}
-                          placeholder="+1 (555) 123-4567"
-                        />
-                      ) : (
-                        <div className="font-medium">{profile?.phoneNumber || "Not provided"}</div>
-                      )}
-                    </div>
-                  </div>
-                </div>
+              
               </div>
             )}
+
           </div>
+          
         </div>
+        
       </div>
       <Toaster />
     </SellerProtectedRoute>
