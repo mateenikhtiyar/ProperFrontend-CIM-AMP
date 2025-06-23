@@ -851,7 +851,7 @@ export default function DealDetailsPage() {
                                 </div>
                                 <div className="col-span-2">
                                   <span className="text-gray-500">Description of ideal targets: </span>
-                                  {buyer.description || "Not provided"}
+                                  {buyer.targetCriteria?.description || "Not provided"}
                                 </div>
                               </div>
                             </div>
