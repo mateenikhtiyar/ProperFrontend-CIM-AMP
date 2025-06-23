@@ -606,6 +606,39 @@ export default function DealDetailsPage() {
     await handleSendInvite([buyerId])
   }
 
+  const handleInviteBuyersClick = async () => {
+    setShowBuyersForNewDeal(true)
+
+    const fetchMatchingBuyers = async () => {
+      try {
+        setLoadingBuyers(true)
+        const token = localStorage.getItem("token")
+        const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+
+        const response = await fetch(`${apiUrl}/deals/${dealId}/matching-buyers`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        })
+
+        if (response.ok) {
+          const buyers = await response.json()
+          setMatchedBuyers(buyers)
+        } else {
+          setMatchedBuyers([])
+        }
+      } catch (error) {
+        console.error("Error fetching matching buyers:", error)
+        setMatchedBuyers([])
+      } finally {
+        setLoadingBuyers(false)
+      }
+    }
+
+    await fetchMatchingBuyers()
+  }
+
   return (
     <SellerProtectedRoute>
       <div className="flex min-h-screen bg-gray-50">
@@ -825,7 +858,7 @@ export default function DealDetailsPage() {
                           </div>
                         </div>
 
-                        <div className="bg-gray-50 p-3 text-right">
+                        {/* <div className="bg-gray-50 p-3 text-right">
                           <Button
                             variant="default"
                             className="bg-teal-500 hover:bg-teal-600"
@@ -834,7 +867,7 @@ export default function DealDetailsPage() {
                           >
                             {sending ? "Sending..." : "Send Invite"}
                           </Button>
-                        </div>
+                        </div> */}
                       </div>
                     ))}
                   </div>
@@ -1101,17 +1134,18 @@ export default function DealDetailsPage() {
                         )}
 
                         {/* No buyers case */}
-                        {statusSummary.summary.totalTargeted === 0 && (
+                        {/* {statusSummary.summary.totalTargeted === 0 && ( */}
                           <div className="text-center py-8">
-                            <p className="text-gray-500 mb-4">No buyers have been invited yet</p>
+                            {/* <p className="text-gray-500 mb-4">No buyers have been invited yet</p> */}
                             <Button
                               className="bg-teal-500 hover:bg-teal-600"
-                              onClick={() => router.push(`/seller/dashboard?newDeal=${dealId}&success=true`)}
+                              onClick={handleInviteBuyersClick}
+                              disabled={loadingBuyers}
                             >
-                              Invite Buyers
+                              {loadingBuyers ? "Loading..." : "Invite Buyers"}
                             </Button>
                           </div>
-                        )}
+                        {/* )} */}
                       </div>
                     ) : (
                       <div className="text-center py-8">
