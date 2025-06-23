@@ -1,8 +1,21 @@
 import axios from "axios"
 
+// Get API URL with fallback and validation
+const getApiUrl = () => {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL
+
+  if (!apiUrl) {
+    console.warn("NEXT_PUBLIC_API_URL not set, using default backend URL")
+    return "http://localhost:3001" // Default backend URL
+  }
+
+  console.log("Using API URL:", apiUrl)
+  return apiUrl
+}
+
 // Create axios instance with base configuration
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  baseURL: getApiUrl(),
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",
@@ -40,9 +53,11 @@ api.interceptors.response.use(
 // Seller API functions
 export const sellerLogin = async (credentials: { email: string; password: string }) => {
   try {
+    console.log("Making login request to:", api.defaults.baseURL + "/auth/seller/login")
+
     const response = await api.post("/auth/seller/login", {
       ...credentials,
-      userType: "seller"
+      userType: "seller",
     })
 
     const { access_token, user } = response.data
@@ -59,6 +74,8 @@ export const sellerLogin = async (credentials: { email: string; password: string
     return response.data
   } catch (error: any) {
     console.error("Seller login error:", error)
+    console.error("Request URL:", error.config?.url)
+    console.error("Base URL:", api.defaults.baseURL)
     throw error
   }
 }
@@ -75,7 +92,7 @@ export const sellerRegister = async (userData: {
     // Auto-login after registration
     const loginResponse = await sellerLogin({
       email: userData.email,
-      password: userData.password
+      password: userData.password,
     })
 
     return loginResponse
@@ -158,7 +175,7 @@ export const register = async (userData: {
     // Auto-login after registration
     const loginResponse = await login({
       email: userData.email,
-      password: userData.password
+      password: userData.password,
     })
 
     return loginResponse
