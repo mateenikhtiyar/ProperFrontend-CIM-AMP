@@ -14,6 +14,7 @@ import { toast } from "@/components/ui/use-toast"
 import { Toaster } from "@/components/ui/toaster"
 import { ChevronDown, ChevronRight, Search, ArrowLeft, FileText, X, Download } from "lucide-react"
 import { getGeoData, type Continent, type Region, type SubRegion, type GeoData } from "@/lib/geography-data"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import {
   getIndustryData,
   type Sector,
@@ -23,6 +24,14 @@ import {
   type IndustryData,
 } from "@/lib/industry-data"
 import SellerProtectedRoute from "@/components/seller/protected-route"
+
+// ✅ Define the exact enum values as constants to match backend schema
+const CAPITAL_AVAILABILITY_OPTIONS = {
+  READY: "Ready to deploy immediately",
+  NEED: "Need to raise",
+} as const
+
+type CapitalAvailabilityType = (typeof CAPITAL_AVAILABILITY_OPTIONS)[keyof typeof CAPITAL_AVAILABILITY_OPTIONS]
 
 interface SellerFormData {
   dealTitle: string
@@ -38,8 +47,8 @@ interface SellerFormData {
   askingPrice: number
   businessModels: string[]
   managementPreferences: string[]
-  capitalAvailability: string
-  companyType: string
+  capitalAvailability: CapitalAvailabilityType[] // ✅ Use the exact type
+  companyType: string[]
   minPriorAcquisitions: number
   minTransactionSize: number
   documents: File[]
@@ -85,7 +94,7 @@ interface Deal {
   title: string
   companyDescription: string
   dealType?: string
-  companyType?: string
+  companyType?: string[]
   status: string
   visibility?: string
   industrySector: string
@@ -115,7 +124,7 @@ interface Deal {
     staffStay?: boolean
   }
   buyerFit: {
-    capitalAvailability?: string
+    capitalAvailability?: CapitalAvailabilityType[]
     minPriorAcquisitions?: number
     minTransactionSize?: number
   }
@@ -141,7 +150,7 @@ const formatNumberWithCommas = (num: number): string => {
   return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
 }
 
-export default function EditDealPage() {
+export default function EditDealPageFixed() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const dealId = searchParams.get("id")
@@ -196,8 +205,8 @@ export default function EditDealPage() {
     askingPrice: 0,
     businessModels: [],
     managementPreferences: [],
-    capitalAvailability: "ready",
-    companyType: "",
+    capitalAvailability: [], // ✅ Initialize as empty array with correct type
+    companyType: [],
     minPriorAcquisitions: 0,
     minTransactionSize: 0,
     documents: [],
@@ -247,6 +256,18 @@ export default function EditDealPage() {
     return result
   }
 
+  // ✅ Helper function to normalize capital availability values
+  const normalizeCapitalAvailability = (value: string): CapitalAvailabilityType | null => {
+    const trimmedValue = value.trim()
+    if (trimmedValue === CAPITAL_AVAILABILITY_OPTIONS.READY) {
+      return CAPITAL_AVAILABILITY_OPTIONS.READY
+    }
+    if (trimmedValue === CAPITAL_AVAILABILITY_OPTIONS.NEED) {
+      return CAPITAL_AVAILABILITY_OPTIONS.NEED
+    }
+    return null
+  }
+
   // Fetch deal data
   const fetchDealData = async () => {
     if (!dealId) {
@@ -275,16 +296,32 @@ export default function EditDealPage() {
         throw new Error(`Failed to fetch deal: ${response.statusText}`)
       }
 
-      const dealData: Deal = await response.json()
-      setDealData(dealData)
+      const dealData = await response.json()
 
-      // Set existing documents
-      setExistingDocuments(dealData.documents || [])
+      // ✅ Fixed: Proper capitalAvailability parsing with normalization
+      let capitalAvailabilityArray: CapitalAvailabilityType[] = []
+      if (Array.isArray(dealData.buyerFit?.capitalAvailability)) {
+        capitalAvailabilityArray = dealData.buyerFit.capitalAvailability
+          .map(normalizeCapitalAvailability)
+          .filter((item): item is CapitalAvailabilityType => item !== null)
+      } else if (typeof dealData.buyerFit?.capitalAvailability === "string") {
+        const normalized = normalizeCapitalAvailability(dealData.buyerFit.capitalAvailability)
+        if (normalized) {
+          capitalAvailabilityArray = [normalized]
+        }
+      }
 
-      // Set reward level
-      setSelectedReward(dealData.visibility || "seed")
+      // ✅ Improved: Robust companyType parsing
+      let companyTypeArray: string[] = []
+      if (Array.isArray(dealData.companyType)) {
+        companyTypeArray = dealData.companyType.filter(Boolean)
+      } else if (typeof dealData.companyType === "string" && dealData.companyType.trim()) {
+        companyTypeArray = dealData.companyType
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean)
+      }
 
-      // Map deal data to form data
       setFormData({
         dealTitle: dealData.title || "",
         companyDescription: dealData.companyDescription || "",
@@ -307,8 +344,8 @@ export default function EditDealPage() {
           ...(dealData.managementPreferences?.retiringDivesting ? ["retiring-divesting"] : []),
           ...(dealData.managementPreferences?.staffStay ? ["key-staff-stay"] : []),
         ],
-        capitalAvailability: dealData.buyerFit?.capitalAvailability?.includes("Ready") ? "ready" : "need-raise",
-        companyType: dealData.companyType || "",
+        capitalAvailability: capitalAvailabilityArray, // ✅ Fixed: Normalized array format
+        companyType: [...new Set(companyTypeArray)],
         minPriorAcquisitions: dealData.buyerFit?.minPriorAcquisitions || 0,
         minTransactionSize: dealData.buyerFit?.minTransactionSize || 0,
         documents: [],
@@ -316,16 +353,16 @@ export default function EditDealPage() {
         t12NetIncome: dealData.financialDetails?.t12NetIncome || 0,
       })
 
-      // Set geography selection
+      setDealData(dealData)
+      setExistingDocuments(dealData.documents || [])
+      setSelectedReward(dealData.visibility || "seed")
+
       if (dealData.geographySelection) {
         setGeoSelection({
-          selectedId: null, // We don't have the ID from the API, just the name
+          selectedId: null,
           selectedName: dealData.geographySelection,
         })
       }
-
-      // Set industry selection - this is more complex and would require matching names to IDs
-      // For now, we'll just display the selected industry in the UI
     } catch (error: any) {
       console.error("Error fetching deal:", error)
       toast({
@@ -340,17 +377,27 @@ export default function EditDealPage() {
 
   // Fetch geography and industry data
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchInitialData = async () => {
       try {
+        const token = localStorage.getItem("token")
+        const userRole = localStorage.getItem("userRole")
+
+        if (!token || userRole !== "seller") {
+          router.push("/seller/login")
+          return
+        }
+
+        // Fetch geo and industry data in parallel
         const [geoResponse, industryResponse] = await Promise.all([getGeoData(), getIndustryData()])
+
         setGeoData(geoResponse)
         setIndustryData(industryResponse)
 
-        // Flatten the hierarchical data for searchable dropdowns
+        // Flatten for searchable dropdowns
         setFlatGeoData(flattenGeoData(geoResponse.continents))
         setFlatIndustryData(flattenIndustryData(industryResponse.sectors))
 
-        // After loading the reference data, fetch the deal data
+        // Then fetch the existing deal data (for edit)
         await fetchDealData()
       } catch (error) {
         console.error("Error fetching data:", error)
@@ -363,15 +410,7 @@ export default function EditDealPage() {
       }
     }
 
-    fetchData()
-
-    // Check if user is authenticated
-    const token = localStorage.getItem("token")
-    const userRole = localStorage.getItem("userRole")
-
-    if (!token || userRole !== "seller") {
-      router.push("/seller/login")
-    }
+    fetchInitialData()
   }, [router, dealId])
 
   // Handle text input changes
@@ -395,13 +434,34 @@ export default function EditDealPage() {
   const handleCheckboxChange = (
     checked: boolean,
     value: string,
-    fieldName: "businessModels" | "managementPreferences",
+    fieldName: "companyType" | "businessModels" | "managementPreferences",
   ) => {
     setFormData((prev) => {
-      if (checked) {
-        return { ...prev, [fieldName]: [...prev[fieldName], value] }
-      } else {
-        return { ...prev, [fieldName]: prev[fieldName].filter((item) => item !== value) }
+      const currentValues = Array.isArray(prev[fieldName]) ? prev[fieldName] : []
+
+      const newValues = checked
+        ? [...new Set([...currentValues, value])] // add if checked
+        : currentValues.filter((v) => v !== value) // remove if unchecked
+
+      return {
+        ...prev,
+        [fieldName]: newValues,
+      }
+    })
+  }
+
+  // ✅ Fixed: Handle capital availability changes with exact enum values
+  const handleCapitalAvailabilityChange = (checked: boolean, value: CapitalAvailabilityType) => {
+    setFormData((prev) => {
+      const currentValues = Array.isArray(prev.capitalAvailability) ? prev.capitalAvailability : []
+
+      const newValues = checked
+        ? [...new Set([...currentValues, value])] // add if checked
+        : currentValues.filter((v) => v !== value) // remove if unchecked
+
+      return {
+        ...prev,
+        capitalAvailability: newValues,
       }
     })
   }
@@ -984,8 +1044,9 @@ export default function EditDealPage() {
       if (!formData.companyDescription.trim()) throw new Error("Company description is required")
       if (formData.geographySelections.length === 0) throw new Error("Please select a geography")
       if (formData.industrySelections.length === 0) throw new Error("Please select at least one industry")
+      if (formData.capitalAvailability.length === 0)
+        throw new Error("Please select at least one capital availability option")
 
-      // Get token and sellerId from localStorage
       const token = localStorage.getItem("token")
       const sellerId = localStorage.getItem("userId")
       const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
@@ -1006,7 +1067,10 @@ export default function EditDealPage() {
         staffStay: formData.managementPreferences.includes("key-staff-stay"),
       }
 
-      // Compose the payload (excluding documents to preserve existing ones)
+      // ✅ Ensure capitalAvailability is never empty and uses exact enum values
+      const validCapitalAvailability =
+        formData.capitalAvailability.length > 0 ? formData.capitalAvailability : [CAPITAL_AVAILABILITY_OPTIONS.READY] // Default fallback
+
       const payload = {
         title: formData.dealTitle,
         companyDescription: formData.companyDescription,
@@ -1014,7 +1078,7 @@ export default function EditDealPage() {
         industrySector: formData.industrySelections[0] || "",
         geographySelection: formData.geographySelections[0] || "",
         yearsInBusiness: formData.yearsInBusiness,
-        companyType: formData.companyType,
+        companyType: Array.isArray(formData.companyType) ? formData.companyType.join(", ") : "",
         financialDetails: {
           trailingRevenueCurrency: formData.currency,
           trailingRevenueAmount: formData.trailingRevenue,
@@ -1029,19 +1093,16 @@ export default function EditDealPage() {
         businessModel,
         managementPreferences,
         buyerFit: {
-          capitalAvailability:
-            formData.capitalAvailability === "ready" ? "Ready to deploy immediately" : "Need to raise",
+          capitalAvailability: validCapitalAvailability, // ✅ Fixed: Always valid array with exact enum values
           minPriorAcquisitions: formData.minPriorAcquisitions,
           minTransactionSize: formData.minTransactionSize,
         },
         dealType: dealData?.dealType || "acquisition",
         status: dealData?.status || "draft",
-        // Explicitly preserve existing documents by not including documents field
       }
 
-      console.log("Updating deal payload:", payload)
+      console.log("Updating deal payload:", JSON.stringify(payload, null, 2))
 
-      // Submit to API
       const response = await fetch(`${apiUrl}/deals/${dealId}`, {
         method: "PATCH",
         headers: {
@@ -1052,6 +1113,8 @@ export default function EditDealPage() {
       })
 
       if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        console.error("API Error Response:", errorData)
         throw new Error(`Failed to update deal: ${response.statusText}`)
       }
 
@@ -1160,6 +1223,23 @@ export default function EditDealPage() {
     toast({
       title: "Document removed",
       description: "Document has been removed from upload queue.",
+    })
+  }
+
+  // Function to handle multi-select changes for company type
+  const handleMultiSelectChange = (option: string) => {
+    setFormData((prev) => {
+      const currentValues = Array.isArray(prev.companyType) ? prev.companyType : []
+      const isChecked = currentValues.includes(option)
+
+      const newValues = isChecked
+        ? currentValues.filter((v) => v !== option) // remove if unchecked
+        : [...currentValues, option] // add if checked
+
+      return {
+        ...prev,
+        companyType: newValues,
+      }
     })
   }
 
@@ -1703,78 +1783,238 @@ export default function EditDealPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label htmlFor="capitalAvailability" className="block text-sm font-medium text-gray-700 mb-1">
-                  Capital Availability
-                </label>
-                <Select
-                  value={formData.capitalAvailability}
-                  onValueChange={(value) => handleSelectChange(value, "capitalAvailability")}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select availability" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ready">Ready to deploy immediately</SelectItem>
-                    <SelectItem value="need-raise">Need to raise</SelectItem>
-                  </SelectContent>
-                </Select>
+            {/* ✅ Fixed: Capital Availability with exact enum values */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Capital Availability <span className="text-red-500">*</span>
+              </label>
+              <div className="space-y-3">
+                <div className="flex items-center space-x-3">
+                  <Checkbox
+                    id="ready-capital"
+                    checked={formData.capitalAvailability.includes(CAPITAL_AVAILABILITY_OPTIONS.READY)}
+                    onCheckedChange={(checked) =>
+                      handleCapitalAvailabilityChange(checked, CAPITAL_AVAILABILITY_OPTIONS.READY)
+                    }
+                    className="border-[#d0d5dd]"
+                  />
+                  <label htmlFor="ready-capital" className="text-sm cursor-pointer">
+                    {CAPITAL_AVAILABILITY_OPTIONS.READY}
+                  </label>
+                </div>
+
+                <div className="flex items-center space-x-3">
+                  <Checkbox
+                    id="need-raise"
+                    checked={formData.capitalAvailability.includes(CAPITAL_AVAILABILITY_OPTIONS.NEED)}
+                    onCheckedChange={(checked) =>
+                      handleCapitalAvailabilityChange(checked, CAPITAL_AVAILABILITY_OPTIONS.NEED)
+                    }
+                    className="border-[#d0d5dd]"
+                  />
+                  <label htmlFor="need-raise" className="text-sm cursor-pointer">
+                    {CAPITAL_AVAILABILITY_OPTIONS.NEED}
+                  </label>
+                </div>
               </div>
 
-              <div className="mb-6">
-                <label htmlFor="companyType" className="block text-sm font-medium text-gray-700 mb-1">
-                  Company Type
-                </label>
-                <Select
-                  value={formData.companyType}
-                  onValueChange={(value) => handleSelectChange(value, "companyType")}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select company type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Buy Side Mandate">Buy Side Mandate</SelectItem>
-                    <SelectItem value="Entrepreneurship through Acquisition">
-                      Entrepreneurship through Acquisition
-                    </SelectItem>
-                    <SelectItem value="Family Office">Family Office</SelectItem>
-                    <SelectItem value="Holding Company">Holding Company</SelectItem>
-                    <SelectItem value="Independent Sponsor">Independent Sponsor</SelectItem>
-                    <SelectItem value="Private Equity">Private Equity</SelectItem>
-                    <SelectItem value="Single Acquisition Search">Single Acquisition Search</SelectItem>
-                    <SelectItem value="Strategic Operating Company">Strategic Operating Company</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <label htmlFor="minPriorAcquisitions" className="block text-sm font-medium text-gray-700 mb-1">
-                  Minimum Prior Acquisitions
-                </label>
-                <Input
-                  id="minPriorAcquisitions"
-                  type="number"
-                  min="0"
-                  value={formData.minPriorAcquisitions || ""}
-                  onChange={(e) => handleNumberChange(e, "minPriorAcquisitions")}
-                  className="w-full"
-                />
-              </div>
+              {/* Show selected values */}
+              {formData.capitalAvailability.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {formData.capitalAvailability.map((item) => (
+                    <span
+                      key={item}
+                      className="flex items-center bg-green-100 text-green-800 text-sm px-3 py-1 rounded-full"
+                    >
+                      {item}
+                      <button
+                        type="button"
+                        onClick={() => handleCapitalAvailabilityChange(false, item)}
+                        className="ml-2 text-green-600 hover:text-green-800 focus:outline-none"
+                        aria-label={`Remove ${item}`}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
-            <div>
-              <label htmlFor="minTransactionSize" className="block text-sm font-medium text-gray-700 mb-1">
-                Minimum Transaction Size
-              </label>
-              <Input
-                id="minTransactionSize"
-                type="number"
-                min="0"
-                value={formData.minTransactionSize || ""}
-                onChange={(e) => handleNumberChange(e, "minTransactionSize")}
-                className="w-full"
-              />
+            {/* Company Type - spans full width on md+ */}
+            <div className="md:col-span-2 w-full">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Company Type</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-between text-left h-auto min-h-11 px-3 py-2 border border-gray-300 hover:border-gray-400 focus:border-[#3aafa9] focus:ring-2 focus:ring-[#3aafa9]/20 rounded-md overflow-hidden"
+                  >
+                    <span
+                      className={`${Array.isArray(formData.companyType) && formData.companyType.length > 0 ? "text-gray-900" : "text-gray-500"} truncate block pr-2`}
+                    >
+                      {Array.isArray(formData.companyType) && formData.companyType.length > 0
+                        ? formData.companyType.join(", ")
+                        : "Select company types"}
+                    </span>
+                    <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+
+                <PopoverContent
+                  align="start"
+                  sideOffset={4}
+                  className="max-w-full w-[--radix-popover-trigger-width] p-0 border border-gray-200 rounded-md shadow-lg bg-white"
+                >
+                  <div className="p-3 border-b border-gray-100 bg-gray-50">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-sm font-medium text-gray-900">Select Company Types</h3>
+                      <span className="text-xs text-gray-500">
+                        {Array.isArray(formData.companyType) ? formData.companyType.length : 0} selected
+                      </span>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const allOptions = [
+                            "Buy Side Mandate",
+                            "Entrepreneurship through Acquisition",
+                            "Family Office",
+                            "Holding Company",
+                            "Independent Sponsor",
+                            "Private Equity",
+                            "Single Acquisition Search",
+                            "Strategic Operating Company",
+                          ]
+                          setFormData((prev) => ({ ...prev, companyType: allOptions }))
+                        }}
+                        className="flex-1 px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded transition-colors"
+                      >
+                        Select All
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormData((prev) => ({ ...prev, companyType: [] }))}
+                        className="flex-1 px-2 py-1 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded transition-colors"
+                      >
+                        Clear All
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="max-h-60 overflow-y-auto">
+                    {[
+                      "Buy Side Mandate",
+                      "Entrepreneurship through Acquisition",
+                      "Family Office",
+                      "Holding Company",
+                      "Independent Sponsor",
+                      "Private Equity",
+                      "Single Acquisition Search",
+                      "Strategic Operating Company",
+                    ].map((option) => {
+                      const isChecked = Array.isArray(formData.companyType) && formData.companyType.includes(option)
+
+                      return (
+                        <div
+                          key={option}
+                          className={`flex items-center space-x-3 p-3 cursor-pointer transition-colors ${
+                            isChecked ? "bg-blue-50 hover:bg-blue-100" : "hover:bg-gray-50"
+                          }`}
+                          onClick={() => handleMultiSelectChange(option)}
+                        >
+                          <div className="relative">
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => {}} // Controlled by onClick above
+                              className="h-4 w-4 border-gray-300 rounded appearance-none border-2 checked:bg-[#3aafa9] checked:border-[#3aafa9] focus:ring-[#3aafa9] focus:ring-2 transition-colors"
+                            />
+                            {isChecked && (
+                              <svg
+                                className="absolute inset-0 h-4 w-4 text-white pointer-events-none"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </div>
+                          <label
+                            className={`text-sm cursor-pointer flex-1 select-none ${
+                              isChecked ? "font-medium text-blue-900" : "text-gray-700"
+                            }`}
+                          >
+                            {option}
+                          </label>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </PopoverContent>
+              </Popover>
+
+              {/* Display selected items as removable tags */}
+              {Array.isArray(formData.companyType) && formData.companyType.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {formData.companyType.map((item) => (
+                    <span
+                      key={item}
+                      className="flex items-center bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full transition-colors hover:bg-blue-200"
+                    >
+                      <span className="truncate max-w-xs">{item}</span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleMultiSelectChange(item)
+                        }}
+                        className="ml-2 text-blue-600 hover:text-blue-800 focus:outline-none transition-colors"
+                        aria-label={`Remove ${item}`}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="md:col-span-2">
+              <div className="flex flex-col md:flex-row w-full gap-4">
+                {/* Minimum Prior Acquisitions */}
+                <div className="w-full">
+                  <label htmlFor="minPriorAcquisitions" className="block text-sm font-medium text-gray-700 mb-1">
+                    Minimum Prior Acquisitions
+                  </label>
+                  <Input
+                    id="minPriorAcquisitions"
+                    type="number"
+                    min="0"
+                    value={formData.minPriorAcquisitions || ""}
+                    onChange={(e) => handleNumberChange(e, "minPriorAcquisitions")}
+                    className="w-full"
+                  />
+                </div>
+
+                {/* Minimum Transaction Size */}
+                <div className="w-full">
+                  <label htmlFor="minTransactionSize" className="block text-sm font-medium text-gray-700 mb-1">
+                    Minimum Transaction Size
+                  </label>
+                  <Input
+                    id="minTransactionSize"
+                    type="number"
+                    min="0"
+                    value={formData.minTransactionSize || ""}
+                    onChange={(e) => handleNumberChange(e, "minTransactionSize")}
+                    className="w-full"
+                  />
+                </div>
+              </div>
             </div>
           </section>
 

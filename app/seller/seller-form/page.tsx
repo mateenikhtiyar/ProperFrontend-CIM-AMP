@@ -884,7 +884,7 @@ export default function SellerFormPage() {
         errors.capitalAvailability = "Please select capital availability."
       }
       if (!formData.companyType || formData.companyType.length === 0) {
-        errors.companyType = "Please choose at least one company type."
+        errors.companyType = "Please select at least one company type."
       }
 
       // Set field errors and return early if any
@@ -932,11 +932,9 @@ export default function SellerFormPage() {
           staffStay: formData.managementPreferences.includes("key-staff-stay"),
         },
         buyerFit: {
-          capitalAvailability: formData.capitalAvailability.includes("ready")
-            ? "Ready to deploy immediately"
-            : formData.capitalAvailability.includes("need-raise")
-              ? "Need to raise"
-              : "",
+          capitalAvailability: formData.capitalAvailability.map((item) =>
+            item === "ready" ? "Ready to deploy immediately" : item === "need-raise" ? "Need to raise" : item,
+          ),
           minPriorAcquisitions: formData.minPriorAcquisitions || 0,
           minTransactionSize: formData.minTransactionSize || 0,
         },
@@ -1601,12 +1599,17 @@ export default function SellerFormPage() {
             </label>
             <div className="flex flex-wrap gap-4">
               <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
+                <Checkbox
                   id="ready-capital"
                   checked={formData.capitalAvailability.includes("ready")}
-                  onChange={() => handleMultiSelectChange("ready", "capitalAvailability")}
-                  className="h-4 w-4 text-[#3aafa9]"
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      handleMultiSelectChange("ready", "capitalAvailability")
+                    } else {
+                      handleMultiSelectChange("ready", "capitalAvailability")
+                    }
+                  }}
+                  className="border-[#d0d5dd]"
                 />
                 <label htmlFor="ready-capital" className="text-sm">
                   Ready to deploy immediately
@@ -1614,12 +1617,17 @@ export default function SellerFormPage() {
               </div>
 
               <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
+                <Checkbox
                   id="need-raise"
                   checked={formData.capitalAvailability.includes("need-raise")}
-                  onChange={() => handleMultiSelectChange("need-raise", "capitalAvailability")}
-                  className="h-4 w-4 text-[#3aafa9]"
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      handleMultiSelectChange("need-raise", "capitalAvailability")
+                    } else {
+                      handleMultiSelectChange("need-raise", "capitalAvailability")
+                    }
+                  }}
+                  className="border-[#d0d5dd]"
                 />
                 <label htmlFor="need-raise" className="text-sm">
                   Need to raise
@@ -1632,48 +1640,148 @@ export default function SellerFormPage() {
             )}
           </div>
 
-          <div className="mb-6">
+          <div className="md:col-span-2 w-full">
             <label className="block text-sm font-medium text-gray-700 mb-1">Company Type</label>
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="w-full justify-between text-left">
-                  {formData.companyType.length > 0 ? formData.companyType.join(", ") : "Select company types"}
+                <Button
+                  variant="outline"
+                  className="w-full justify-between text-left h-auto min-h-11 px-3 py-2 border border-gray-300 hover:border-gray-400 focus:border-[#3aafa9] focus:ring-2 focus:ring-[#3aafa9]/20 rounded-md overflow-hidden"
+                >
+                  <span
+                    className={`${Array.isArray(formData.companyType) && formData.companyType.length > 0 ? "text-gray-900" : "text-gray-500"} truncate block pr-2`}
+                  >
+                    {Array.isArray(formData.companyType) && formData.companyType.length > 0
+                      ? formData.companyType.join(", ")
+                      : "Select company types"}
+                  </span>
+                  <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-64 p-2 max-h-60 overflow-y-auto">
-                {[
-                  "Buy Side Mandate",
-                  "Entrepreneurship through Acquisition",
-                  "Family Office",
-                  "Holding Company",
-                  "Independent Sponsor",
-                  "Private Equity",
-                  "Single Acquisition Search",
-                  "Strategic Operating Company",
-                ].map((option) => (
-                  <div
-                    key={option}
-                    className="flex items-center space-x-2 p-1 cursor-pointer hover:bg-gray-50"
-                    onClick={() => handleMultiSelectChange(option, "companyType")}
-                  >
-                    <input
-                      type="checkbox"
-                      id={`company-type-${option}`}
-                      checked={formData.companyType.includes(option)}
-                      readOnly
-                      className="h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9]"
-                    />
-                    <label htmlFor={`company-type-${option}`} className="text-sm cursor-pointer flex-1">
-                      {option}
-                    </label>
+
+              <PopoverContent
+                align="start"
+                sideOffset={4}
+                className="max-w-full w-[--radix-popover-trigger-width] p-0 border border-gray-200 rounded-md shadow-lg bg-white"
+              >
+                <div className="p-3 border-b border-gray-100 bg-gray-50">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-medium text-gray-900">Select Company Types</h3>
+                    <span className="text-xs text-gray-500">
+                      {Array.isArray(formData.companyType) ? formData.companyType.length : 0} selected
+                    </span>
                   </div>
-                ))}
+
+                  {/* ✨ NEW: Bulk action buttons */}
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const allOptions = [
+                          "Buy Side Mandate",
+                          "Entrepreneurship through Acquisition",
+                          "Family Office",
+                          "Holding Company",
+                          "Independent Sponsor",
+                          "Private Equity",
+                          "Single Acquisition Search",
+                          "Strategic Operating Company",
+                        ]
+                        setFormData((prev) => ({ ...prev, companyType: allOptions }))
+                      }}
+                      className="flex-1 px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded transition-colors"
+                    >
+                      Select All
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData((prev) => ({ ...prev, companyType: [] }))}
+                      className="flex-1 px-2 py-1 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded transition-colors"
+                    >
+                      Clear All
+                    </button>
+                  </div>
+                </div>
+
+                <div className="max-h-60 overflow-y-auto">
+                  {[
+                    "Buy Side Mandate",
+                    "Entrepreneurship through Acquisition",
+                    "Family Office",
+                    "Holding Company",
+                    "Independent Sponsor",
+                    "Private Equity",
+                    "Single Acquisition Search",
+                    "Strategic Operating Company",
+                  ].map((option) => {
+                    const isChecked = Array.isArray(formData.companyType) && formData.companyType.includes(option)
+
+                    return (
+                      <div
+                        key={option}
+                        className={`flex items-center space-x-3 p-3 cursor-pointer transition-colors ${
+                          isChecked ? "bg-blue-50 hover:bg-blue-100" : "hover:bg-gray-50"
+                        }`}
+                        onClick={() => handleMultiSelectChange(option, "companyType")}
+                      >
+                        <div className="relative">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => {}} // Controlled by onClick above
+                            className="h-4 w-4 border-gray-300 rounded appearance-none border-2 checked:bg-[#3aafa9] checked:border-[#3aafa9] focus:ring-[#3aafa9] focus:ring-2 transition-colors"
+                          />
+                          {isChecked && (
+                            <svg
+                              className="absolute inset-0 h-4 w-4 text-white pointer-events-none"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </div>
+                        <label
+                          className={`text-sm cursor-pointer flex-1 select-none ${
+                            isChecked ? "font-medium text-blue-900" : "text-gray-700"
+                          }`}
+                        >
+                          {option}
+                        </label>
+                      </div>
+                    )
+                  })}
+                </div>
               </PopoverContent>
             </Popover>
 
-            {fieldErrors.companyType && <p className="text-red-500 text-sm mt-1">{fieldErrors.companyType}</p>}
+            {/* ✅ IMPROVED: Display selected items as removable tags */}
+            {Array.isArray(formData.companyType) && formData.companyType.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {formData.companyType.map((item) => (
+                  <span
+                    key={item}
+                    className="flex items-center bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full transition-colors hover:bg-blue-200"
+                  >
+                    <span className="truncate max-w-xs">{item}</span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleMultiSelectChange(item, "companyType")
+                      }}
+                      className="ml-2 text-blue-600 hover:text-blue-800 focus:outline-none transition-colors"
+                      aria-label={`Remove ${item}`}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
-
+          {fieldErrors.companyType && <p className="text-red-500 text-sm mt-2">{fieldErrors.companyType}</p>}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label htmlFor="minPriorAcquisitions" className="block text-sm font-medium text-gray-700 mb-1">
