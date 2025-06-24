@@ -31,7 +31,7 @@ interface SellerProfile {
 }
 
 // Define which fields are editable based on backend DTO
-const EDITABLE_FIELDS = ["fullName", "email", "companyName", "phoneNumber", "website"] as const
+const EDITABLE_FIELDS = ["fullName", "email", "companyName", "phoneNumber", "website", "title"] as const
 type EditableField = (typeof EDITABLE_FIELDS)[number]
 
 export default function ViewProfilePage() {
@@ -178,6 +178,7 @@ export default function ViewProfilePage() {
         companyName: editValues.companyName?.trim() || "",
         phoneNumber: editValues.phoneNumber?.trim() || "",
         website: editValues.website?.trim() || "",
+        title: editValues.title?.trim() || "",
       }
 
       const response = await fetch("http://localhost:3001/sellers/me", {
@@ -246,6 +247,7 @@ export default function ViewProfilePage() {
         companyName: editValues.companyName?.trim() || profile?.companyName || "",
         phoneNumber: editValues.phoneNumber?.trim() || profile?.phoneNumber || "",
         website: editValues.website?.trim() || profile?.website || "",
+        title: editValues.title?.trim() || profile?.title || "",
         password: passwordData.newPassword,
       }
 
@@ -605,7 +607,21 @@ export default function ViewProfilePage() {
 
                     <div className="flex items-center gap-2">
                       <span className="font-medium w-24">Title:</span>
-                      <span>{profile?.title || "CEO"}</span>
+                      {editMode ? (
+                        <div className="flex-1">
+                          <Input
+                            value={editValues.title || ""}
+                            onChange={(e) => setEditValues((prev) => ({ ...prev, title: e.target.value }))}
+                            placeholder="Enter your title"
+                            className={validationErrors.title ? "border-red-500" : ""}
+                          />
+                          {validationErrors.title && (
+                            <p className="text-red-500 text-xs mt-1">{validationErrors.title}</p>
+                          )}
+                        </div>
+                      ) : (
+                        <span>{profile?.title || "CEO"}</span>
+                      )}
                     </div>
 
                     <div className="flex items-center gap-2">
