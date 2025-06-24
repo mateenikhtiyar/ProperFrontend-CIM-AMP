@@ -25,22 +25,6 @@ function DealCard({ deal }: { deal: Deal }) {
     <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
       <h3 className="text-lg font-semibold text-gray-900 mb-2">{deal.title}</h3>
       <p className="text-gray-600 text-sm mb-4">{deal.description}</p>
-
-      <div className="flex items-center gap-6 mb-4">
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-teal-500"></div>
-          <span className="text-sm text-gray-600">
-            Buyers Active: <span className="font-medium text-teal-600">{deal.buyersActive}</span>
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-gray-400"></div>
-          <span className="text-sm text-gray-600">
-            Buyers Passed: <span className="font-medium">{deal.buyersPassed}</span>
-          </span>
-        </div>
-      </div>
-
       <div className="space-y-2 text-sm">
         <div>
           <span className="text-gray-500">Closing Date: </span>

@@ -31,7 +31,7 @@ interface SellerProfile {
 }
 
 // Define which fields are editable based on backend DTO
-const EDITABLE_FIELDS = ["fullName", "email", "companyName", "phoneNumber"] as const
+const EDITABLE_FIELDS = ["fullName", "email", "companyName", "phoneNumber", "website"] as const
 type EditableField = (typeof EDITABLE_FIELDS)[number]
 
 export default function ViewProfilePage() {
@@ -54,23 +54,53 @@ export default function ViewProfilePage() {
   const [updating, setUpdating] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
   const router = useRouter()
   const { logout } = useAuth()
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Helper function to get profile picture URL
- const getProfilePictureUrl = (profilePicture: string | null) => {
-  if (!profilePicture) return null
+  const getProfilePictureUrl = (profilePicture: string | null) => {
+    if (!profilePicture) return null
 
-  if (profilePicture.startsWith("http")) return profilePicture
+    if (profilePicture.startsWith("http")) return profilePicture
 
-  const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
-  const formattedPath = profilePicture.replace(/\\/g, "/")
+    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+    const formattedPath = profilePicture.replace(/\\/g, "/")
 
-  return `${apiUrl}/${formattedPath.startsWith("/") ? formattedPath.substring(1) : formattedPath}`
-}
+    return `${apiUrl}/${formattedPath.startsWith("/") ? formattedPath.substring(1) : formattedPath}`
+  }
 
+  // Validation function for website URL
+  const validateWebsite = (url: string): boolean => {
+    if (!url.trim()) return true // Empty is valid (optional field)
+
+    try {
+      const urlPattern = /^https?:\/\/.+/
+      return urlPattern.test(url.trim())
+    } catch {
+      return false
+    }
+  }
+
+  // Validate all fields
+  const validateFields = (): boolean => {
+    const errors: Record<string, string> = {}
+
+    // Validate email
+    if (editValues.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editValues.email.trim())) {
+      errors.email = "Please enter a valid email address"
+    }
+
+    // Validate website
+    if (editValues.website && !validateWebsite(editValues.website)) {
+      errors.website = "Website must be a valid URL (e.g., https://example.com)"
+    }
+
+    setValidationErrors(errors)
+    return Object.keys(errors).length === 0
+  }
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -121,21 +151,33 @@ export default function ViewProfilePage() {
     if (editMode) {
       // Reset values when canceling
       setEditValues(profile || {})
+      setValidationErrors({})
     }
     setEditMode(!editMode)
   }
 
   const handleSaveAll = async () => {
+    // Validate fields before saving
+    if (!validateFields()) {
+      toast({
+        title: "Validation Error",
+        description: "Please fix the errors before saving",
+        variant: "destructive",
+      })
+      return
+    }
+
     try {
       setUpdating(true)
       const token = localStorage.getItem("token")
 
-      // Always send all editable fields
+      // Always send all editable fields including website
       const updatePayload: any = {
         fullName: editValues.fullName?.trim() || "",
         email: editValues.email?.trim() || "",
         companyName: editValues.companyName?.trim() || "",
         phoneNumber: editValues.phoneNumber?.trim() || "",
+        website: editValues.website?.trim() || "",
       }
 
       const response = await fetch("http://localhost:3001/sellers/me", {
@@ -156,6 +198,7 @@ export default function ViewProfilePage() {
       setProfile(updatedProfile)
       setEditValues(updatedProfile)
       setEditMode(false)
+      setValidationErrors({})
 
       toast({
         title: "Success",
@@ -196,12 +239,13 @@ export default function ViewProfilePage() {
       setUpdating(true)
       const token = localStorage.getItem("token")
 
-      // Send all editable fields + password
+      // Send all editable fields + password including website
       const updatePayload: any = {
         fullName: editValues.fullName?.trim() || profile?.fullName || "",
         email: editValues.email?.trim() || profile?.email || "",
         companyName: editValues.companyName?.trim() || profile?.companyName || "",
         phoneNumber: editValues.phoneNumber?.trim() || profile?.phoneNumber || "",
+        website: editValues.website?.trim() || profile?.website || "",
         password: passwordData.newPassword,
       }
 
@@ -433,21 +477,20 @@ export default function ViewProfilePage() {
                     <div className="text-right">
                       <div className="font-medium">{profile?.fullName || "User"}</div>
                     </div>
-          <div className="relative h-10 w-10 rounded-full bg-gray-300 overflow-hidden flex items-center justify-center text-white font-medium">
-  {profile?.profilePicture ? (
-    <img
-     src={getProfilePictureUrl(profile.profilePicture) || undefined}
-      alt={profile.fullName || "User"}
-      className="h-full w-full object-cover"
-      onError={(e) => {
-        (e.target as HTMLImageElement).src = "/placeholder.svg"
-      }}
-    />
-  ) : (
-    <span>{profile?.fullName ? profile.fullName.charAt(0) : "U"}</span>
-  )}
-</div>
-
+                    <div className="relative h-10 w-10 rounded-full bg-gray-300 overflow-hidden flex items-center justify-center text-white font-medium">
+                      {profile?.profilePicture ? (
+                        <img
+                          src={getProfilePictureUrl(profile.profilePicture) || undefined}
+                          alt={profile.fullName || "User"}
+                          className="h-full w-full object-cover"
+                          onError={(e) => {
+                            ;(e.target as HTMLImageElement).src = "/placeholder.svg"
+                          }}
+                        />
+                      ) : (
+                        <span>{profile?.fullName ? profile.fullName.charAt(0) : "U"}</span>
+                      )}
+                    </div>
                   </>
                 )}
               </div>
@@ -489,115 +532,155 @@ export default function ViewProfilePage() {
               </div>
             ) : (
               <div className="bg-white rounded-lg shadow">
-              <div className="p-6 flex flex-col md:flex-row gap-6">
-  {/* Profile Picture */}
-  <div className="relative h-40 w-40 rounded-lg bg-gray-200 overflow-hidden shrink-0">
-    {profile?.profilePicture ? (
-      <img
-        src={getProfilePictureUrl(profile.profilePicture) || "/placeholder.svg"}
-        alt={profile?.fullName || "Profile"}
-        className="h-40 w-40 rounded-lg object-cover"
-        onError={(e) => {
-          (e.target as HTMLImageElement).src = "/placeholder.svg"
-        }}
-      />
-    ) : (
-      <img src="/placeholder.svg" alt="Profile" className="h-40 w-40 rounded-lg object-cover" />
-    )}
-    <button
-      onClick={triggerFileInput}
-      className="absolute bottom-2 right-2 bg-teal-500 hover:bg-teal-600 text-white p-2 rounded-full shadow-md"
-      disabled={uploadingImage}
-    >
-      {uploadingImage ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
-    </button>
-    <input
-      type="file"
-      ref={fileInputRef}
-      onChange={handleProfilePictureUpload}
-      className="hidden"
-      accept="image/*"
-    />
-  </div>
+                <div className="p-6 flex flex-col md:flex-row gap-6">
+                  {/* Profile Picture */}
+                  <div className="relative h-40 w-40 rounded-lg bg-gray-200 overflow-hidden shrink-0">
+                    {profile?.profilePicture ? (
+                      <img
+                        src={getProfilePictureUrl(profile.profilePicture) || "/placeholder.svg"}
+                        alt={profile?.fullName || "Profile"}
+                        className="h-40 w-40 rounded-lg object-cover"
+                        onError={(e) => {
+                          ;(e.target as HTMLImageElement).src = "/placeholder.svg"
+                        }}
+                      />
+                    ) : (
+                      <img src="/placeholder.svg" alt="Profile" className="h-40 w-40 rounded-lg object-cover" />
+                    )}
+                    <button
+                      onClick={triggerFileInput}
+                      className="absolute bottom-2 right-2 bg-teal-500 hover:bg-teal-600 text-white p-2 rounded-full shadow-md"
+                      disabled={uploadingImage}
+                    >
+                      {uploadingImage ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
+                    </button>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleProfilePictureUpload}
+                      className="hidden"
+                      accept="image/*"
+                    />
+                  </div>
 
-  {/* Profile Info */}
-  <div className="flex-1 flex flex-col justify-center space-y-3 text-gray-800 text-sm">
-    <div className="flex items-center gap-2">
-      <span className="font-medium w-24">Name:</span>
-      {editMode ? (
-        <Input
-          value={editValues.fullName || ""}
-          onChange={(e) => setEditValues((prev) => ({ ...prev, fullName: e.target.value }))}
-          placeholder="Enter your full name"
-        />
-      ) : (
-        <span>{profile?.fullName || "Ivana Hug"}</span>
-      )}
-    </div>
+                  {/* Profile Info */}
+                  <div className="flex-1 flex flex-col justify-center space-y-3 text-gray-800 text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium w-24">Name:</span>
+                      {editMode ? (
+                        <div className="flex-1">
+                          <Input
+                            value={editValues.fullName || ""}
+                            onChange={(e) => setEditValues((prev) => ({ ...prev, fullName: e.target.value }))}
+                            placeholder="Enter your full name"
+                            className={validationErrors.fullName ? "border-red-500" : ""}
+                          />
+                          {validationErrors.fullName && (
+                            <p className="text-red-500 text-xs mt-1">{validationErrors.fullName}</p>
+                          )}
+                        </div>
+                      ) : (
+                        <span>{profile?.fullName || "Ivana Hug"}</span>
+                      )}
+                    </div>
 
-    <div className="flex items-center gap-2">
-      <span className="font-medium w-24">Company:</span>
-      {editMode ? (
-        <Input
-          value={editValues.companyName || ""}
-          onChange={(e) => setEditValues((prev) => ({ ...prev, companyName: e.target.value }))}
-          placeholder="Enter company name"
-        />
-      ) : (
-        <span>{profile?.companyName || "Sell Co"}</span>
-      )}
-    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium w-24">Company:</span>
+                      {editMode ? (
+                        <div className="flex-1">
+                          <Input
+                            value={editValues.companyName || ""}
+                            onChange={(e) => setEditValues((prev) => ({ ...prev, companyName: e.target.value }))}
+                            placeholder="Enter company name"
+                            className={validationErrors.companyName ? "border-red-500" : ""}
+                          />
+                          {validationErrors.companyName && (
+                            <p className="text-red-500 text-xs mt-1">{validationErrors.companyName}</p>
+                          )}
+                        </div>
+                      ) : (
+                        <span>{profile?.companyName || "Sell Co"}</span>
+                      )}
+                    </div>
 
-    <div className="flex items-center gap-2">
-      <span className="font-medium w-24">Title:</span>
-      <span>{profile?.title || "CEO"}</span>
-    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium w-24">Title:</span>
+                      <span>{profile?.title || "CEO"}</span>
+                    </div>
 
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium w-24">Email:</span>
+                      {editMode ? (
+                        <div className="flex-1">
+                          <Input
+                            type="email"
+                            value={editValues.email || ""}
+                            onChange={(e) => setEditValues((prev) => ({ ...prev, email: e.target.value }))}
+                            placeholder="Enter email"
+                            className={validationErrors.email ? "border-red-500" : ""}
+                          />
+                          {validationErrors.email && (
+                            <p className="text-red-500 text-xs mt-1">{validationErrors.email}</p>
+                          )}
+                        </div>
+                      ) : (
+                        <span>{profile?.email || "jmacinnes@mzzamplify.com"}</span>
+                      )}
+                    </div>
 
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium w-24">Phone:</span>
+                      {editMode ? (
+                        <div className="flex-1">
+                          <Input
+                            value={editValues.phoneNumber || ""}
+                            onChange={(e) => setEditValues((prev) => ({ ...prev, phoneNumber: e.target.value }))}
+                            placeholder="Enter phone number"
+                            className={validationErrors.phoneNumber ? "border-red-500" : ""}
+                          />
+                          {validationErrors.phoneNumber && (
+                            <p className="text-red-500 text-xs mt-1">{validationErrors.phoneNumber}</p>
+                          )}
+                        </div>
+                      ) : (
+                        <span>{profile?.phoneNumber || "+1 403 689-7627"}</span>
+                      )}
+                    </div>
 
-    <div className="flex items-center gap-2">
-      <span className="font-medium w-24">Email:</span>
-      {editMode ? (
-        <Input
-          type="email"
-          value={editValues.email || ""}
-          onChange={(e) => setEditValues((prev) => ({ ...prev, email: e.target.value }))}
-          placeholder="Enter email"
-        />
-      ) : (
-        <span>{profile?.email || "jmacinnes@mzzamplify.com"}</span>
-      )}
-    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium w-24">Website:</span>
+                      {editMode ? (
+                        <div className="flex-1">
+                          <Input
+                            value={editValues.website || ""}
+                            onChange={(e) => setEditValues((prev) => ({ ...prev, website: e.target.value }))}
+                            placeholder="Enter website (e.g., https://example.com)"
+                            className={validationErrors.website ? "border-red-500" : ""}
+                          />
+                          {validationErrors.website && (
+                            <p className="text-red-500 text-xs mt-1">{validationErrors.website}</p>
+                          )}
+                        </div>
+                      ) : (
+                        <span>
+                          {profile?.website ? (
+                            <a
+                              href={profile.website.startsWith("http") ? profile.website : `https://${profile.website}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-teal-600 hover:text-teal-800 underline"
+                            >
+                              {profile.website}
+                            </a>
+                          ) : (
+                            "www.sellco.com"
+                          )}
+                        </span>
+                      )}
+                    </div>
 
-    <div className="flex items-center gap-2">
-      <span className="font-medium w-24">Phone:</span>
-      {editMode ? (
-        <Input
-          value={editValues.phoneNumber || ""}
-          onChange={(e) => setEditValues((prev) => ({ ...prev, phoneNumber: e.target.value }))}
-          placeholder="Enter phone number"
-        />
-      ) : (
-        <span>{profile?.phoneNumber || "+1 403 689-7627"}</span>
-      )}
-    </div>
-
-    <div className="flex items-center gap-2">
-      <span className="font-medium w-24">Website:</span>
-      {editMode ? (
-        <Input
-          value={editValues.website || ""}
-          onChange={(e) => setEditValues((prev) => ({ ...prev, website: e.target.value }))}
-          placeholder="Enter website"
-        />
-      ) : (
-        <span>{profile?.website || "www.sellco.com"}</span>
-      )}
-      
-    </div>
-    <div className="mt-4">
-      <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
- 
+                    <div className="mt-4">
+                      <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
                         <DialogTrigger asChild>
                           <Button variant="outline" size="sm">
                             Change Password
@@ -660,22 +743,14 @@ export default function ViewProfilePage() {
                             </div>
                           </div>
                         </DialogContent>
-                     
-      </Dialog>
-    </div>
-  </div>
-  
-</div>
-
-
-              
+                      </Dialog>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
-
           </div>
-          
         </div>
-        
       </div>
       <Toaster />
     </SellerProtectedRoute>
