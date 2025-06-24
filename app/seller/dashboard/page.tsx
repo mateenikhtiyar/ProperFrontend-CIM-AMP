@@ -415,7 +415,9 @@ function DealCard({
                   <FileText className="h-4 w-4 text-gray-500" />
                   <span className="text-sm">{doc.originalName}</span>
                   <span className="text-xs text-gray-400">
-                    ({(doc.size / 1024 / 1024).toFixed(2)} MB)
+                    ({typeof doc.size === "number" && !isNaN(doc.size)
+                      ? (doc.size / 1024 / 1024).toFixed(2)
+                      : "?"} MB)
                   </span>
                 </div>
                 <Button

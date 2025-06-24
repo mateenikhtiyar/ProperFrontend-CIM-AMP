@@ -150,8 +150,8 @@ export default function SellerFormPage() {
     askingPrice: 0,
     businessModels: [],
     managementPreferences: [],
-    capitalAvailability: [],
-    companyType: [],
+    capitalAvailability: [] as string[],
+    companyType: [] as string[],
     minPriorAcquisitions: 0,
     minTransactionSize: 0,
     documents: [],
@@ -1000,7 +1000,7 @@ export default function SellerFormPage() {
       const dealData: any = {
         title: formData.dealTitle,
         companyDescription: formData.companyDescription,
-        companyType: formData.companyType.length > 0 ? formData.companyType.join(", ") : "Other",
+        companyType: formData.companyType,
         dealType: "acquisition",
         status: "draft",
         visibility: selectedReward || "seed",
@@ -1031,15 +1031,11 @@ export default function SellerFormPage() {
           staffStay: formData.managementPreferences.includes("key-staff-stay"),
         },
         buyerFit: {
-          capitalAvailability:
-            formData.capitalAvailability.includes("ready")
-              ? "Ready to deploy immediately"
-              : formData.capitalAvailability.includes("need-raise")
-              ? "Need to raise"
-              : "",
+          capitalAvailability: formData.capitalAvailability, // it's an array of strings
           minPriorAcquisitions: formData.minPriorAcquisitions || 0,
           minTransactionSize: formData.minTransactionSize || 0,
         },
+        
         targetedBuyers: [],
         interestedBuyers: [],
         tags: [],
