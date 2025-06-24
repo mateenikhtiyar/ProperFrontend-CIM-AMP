@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { useSearchParams, useRouter } from "next/navigation"
-import { Eye, Clock, LogOut, Plus, FileText, Download } from "lucide-react"
+import { Eye, Clock, LogOut, Plus, FileText, Download } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -579,10 +579,23 @@ export default function SellerDashboardPage() {
     setCompleteDealDialogOpen(true)
   }
 
+  const formatTransactionValue = (value: string) => {
+    // Remove all non-digits
+    const numericValue = value.replace(/\D/g, '')
+    // Add commas for thousands
+    return numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+  }
+
   const handleDialogResponse = (key: string, value: boolean) => {
     setOffMarketData((prev) => ({ ...prev, [key]: value }))
     if (key === "dealSold") {
-      setCurrentDialogStep(2)
+      if (value === false) {
+        // Close dialog if deal didn't sell
+        setOffMarketDialogOpen(false)
+      } else {
+        // Go to next step if deal sold
+        setCurrentDialogStep(2)
+      }
     }
   }
 
@@ -813,6 +826,13 @@ export default function SellerDashboardPage() {
     }
   }, [completeDealDialogOpen, selectedDealForCompletion])
 
+  // Utility to format numbers with commas for display
+  const formatWithCommas = (value: string | number) => {
+    const num = typeof value === "string" ? Number(value.replace(/,/g, "")) : value
+    if (isNaN(num)) return ""
+    return num.toLocaleString()
+  }
+
   return (
     <SellerProtectedRoute>
       <div className="flex min-h-screen bg-gray-50">
@@ -1002,90 +1022,74 @@ export default function SellerDashboardPage() {
                   </Button>
                 </div>
               </>
+            ) : currentDialogStep === 2 ? (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="text-center text-lg font-medium">What was the transaction value?</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 mt-4">
+                  <Input
+                    value={
+                      offMarketData.transactionValue && offMarketData.transactionValue !== "0"
+                        ? formatWithCommas(offMarketData.transactionValue)
+                        : ""
+                    }
+                    onChange={(e) => {
+                      // Remove commas before storing in state
+                      const rawValue = e.target.value.replace(/,/g, "")
+                      setOffMarketData((prev) => ({
+                        ...prev,
+                        transactionValue: rawValue,
+                      }))
+                    }}
+                    placeholder="Enter transaction value"
+                    className="w-full"
+                  />
+                  <div className="flex justify-center">
+                    <Button
+                      onClick={() => setCurrentDialogStep(3)}
+                      className="px-8 bg-teal-500 hover:bg-teal-600"
+                      disabled={!offMarketData.transactionValue}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              </>
             ) : (
               <>
                 <DialogHeader>
                   <DialogTitle className="text-center text-teal-500 text-lg font-medium">
-                    Please answer these questions
+                    Did the buyer come from CIM Amplify?
                   </DialogTitle>
                 </DialogHeader>
                 <div className="space-y-6 mt-4">
-                  {/* Did the deal sell */}
-                  <div>
-                    <Label className="text-base font-medium mb-3 block">Did the deal sell?</Label>
-                    <div className="flex gap-4">
-                      <Button
-                        variant={offMarketData.dealSold === false ? "default" : "outline"}
-                        onClick={() =>
-                          setOffMarketData((prev) => ({
-                            ...prev,
-                            dealSold: false,
-                          }))
-                        }
-                        className="flex-1"
-                      >
-                        No
-                      </Button>
-                      <Button
-                        variant={offMarketData.dealSold === true ? "default" : "outline"}
-                        onClick={() =>
-                          setOffMarketData((prev) => ({
-                            ...prev,
-                            dealSold: true,
-                          }))
-                        }
-                        className="flex-1 bg-teal-500 hover:bg-teal-600"
-                      >
-                        Yes
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Transaction value */}
-                  <div>
-                    <Label className="text-base font-medium mb-3 block">What was the transaction value?</Label>
-                    <Input
-                      value={offMarketData.transactionValue}
-                      onChange={(e) =>
+                  {/* Buyer from CIM Amplify */}
+                  <div className="flex gap-4">
+                    <Button
+                      variant={offMarketData.buyerFromCIM === false ? "default" : "outline"}
+                      onClick={() =>
                         setOffMarketData((prev) => ({
                           ...prev,
-                          transactionValue: e.target.value,
+                          buyerFromCIM: false,
                         }))
                       }
-                      placeholder="Enter transaction value"
-                      className="w-full"
-                    />
-                  </div>
-
-                  {/* Buyer from CIM Amplify */}
-                  <div>
-                    <Label className="text-base font-medium mb-3 block">Did the buyer come from CIM Amplify?</Label>
-                    <div className="flex gap-4">
-                      <Button
-                        variant={offMarketData.buyerFromCIM === false ? "default" : "outline"}
-                        onClick={() =>
-                          setOffMarketData((prev) => ({
-                            ...prev,
-                            buyerFromCIM: false,
-                          }))
-                        }
-                        className="flex-1"
-                      >
-                        No
-                      </Button>
-                      <Button
-                        variant={offMarketData.buyerFromCIM === true ? "default" : "outline"}
-                        onClick={() =>
-                          setOffMarketData((prev) => ({
-                            ...prev,
-                            buyerFromCIM: true,
-                          }))
-                        }
-                        className="flex-1 bg-teal-500 hover:bg-teal-600 text-white hover:text-white"
-                      >
-                        Yes
-                      </Button>
-                    </div>
+                      className="flex-1"
+                    >
+                      No
+                    </Button>
+                    <Button
+                      variant={offMarketData.buyerFromCIM === true ? "default" : "outline"}
+                      onClick={() =>
+                        setOffMarketData((prev) => ({
+                          ...prev,
+                          buyerFromCIM: true,
+                        }))
+                      }
+                      className="flex-1 bg-teal-500 hover:bg-teal-600 text-white hover:text-white"
+                    >
+                      Yes
+                    </Button>
                   </div>
 
                   {/* Show buyers list if buyer came from CIM Amplify */}
@@ -1137,15 +1141,17 @@ export default function SellerDashboardPage() {
                     </div>
                   )}
 
-                  {/* Submit buttons */}
-                  <div className="flex justify-between pt-4">
-                    <Button variant="outline" onClick={() => setOffMarketDialogOpen(false)}>
-                      Skip
-                    </Button>
-                    <Button onClick={handleOffMarketSubmit} className="bg-teal-500 hover:bg-teal-600">
-                      Submit
-                    </Button>
-                  </div>
+                  {/* Submit buttons - only show when buyer question is answered */}
+                  {offMarketData.buyerFromCIM !== null && (
+                    <div className="flex justify-end pt-4">
+                      {/* <Button variant="outline" onClick={() => setOffMarketDialogOpen(false)}>
+                        Skip
+                      </Button> */}
+                      <Button onClick={handleOffMarketSubmit} className="bg-teal-500 hover:bg-teal-600">
+                        Submit
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </>
             )}
