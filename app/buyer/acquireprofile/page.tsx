@@ -81,7 +81,7 @@ const MANAGEMENT_PREFERENCES = [
 ];
 
 // Default API URL
-const DEFAULT_API_URL = "http://localhost:3001";
+const DEFAULT_API_URL = "https://api.cimamplify.com";
 
 // Type for hierarchical selection
 interface HierarchicalSelection {
