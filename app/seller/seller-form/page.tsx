@@ -975,7 +975,7 @@ export default function SellerFormPage() {
       })
 
       // Get API URL from localStorage or use default
-      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001/"
+      const apiUrl = localStorage.getItem("apiUrl") || "https://buyer.cimamplify.com/"
 
       // Prepare FormData for multipart/form-data
       const multipartFormData = new FormData()
