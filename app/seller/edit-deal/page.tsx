@@ -1,39 +1,20 @@
-"use client";
-import Image from "next/image";
-import type React from "react";
-import { useState, useEffect, useRef } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Card } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { toast } from "@/components/ui/use-toast";
-import { Toaster } from "@/components/ui/toaster";
-import {
-  ChevronDown,
-  ChevronRight,
-  Search,
-  ArrowLeft,
-  FileText,
-  X,
-  Download,
-} from "lucide-react";
-import {
-  getGeoData,
-  type Continent,
-  type Region,
-  type SubRegion,
-  type GeoData,
-} from "@/lib/geography-data";
+"use client"
+import Image from "next/image"
+import type React from "react"
+import { useState, useEffect, useRef } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Textarea } from "@/components/ui/textarea"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Card } from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { toast } from "@/components/ui/use-toast"
+import { Toaster } from "@/components/ui/toaster"
+import { ChevronDown, ChevronRight, Search, ArrowLeft, FileText, X, Download } from "lucide-react"
+import { getGeoData, type Continent, type Region, type SubRegion, type GeoData } from "@/lib/geography-data"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import {
   getIndustryData,
   type Sector,
@@ -41,30 +22,38 @@ import {
   type Industry,
   type SubIndustry,
   type IndustryData,
-} from "@/lib/industry-data";
-import SellerProtectedRoute from "@/components/seller/protected-route";
+} from "@/lib/industry-data"
+import SellerProtectedRoute from "@/components/seller/protected-route"
+
+// ✅ Define the exact enum values as constants to match backend schema
+const CAPITAL_AVAILABILITY_OPTIONS = {
+  READY: "Ready to deploy immediately",
+  NEED: "Need to raise",
+} as const
+
+type CapitalAvailabilityType = (typeof CAPITAL_AVAILABILITY_OPTIONS)[keyof typeof CAPITAL_AVAILABILITY_OPTIONS]
 
 interface SellerFormData {
-  dealTitle: string;
-  companyDescription: string;
-  geographySelections: string[];
-  industrySelections: string[];
-  yearsInBusiness: number;
-  trailingRevenue: number;
-  trailingEBITDA: number;
-  revenueGrowth: number;
-  currency: string;
-  netIncome: number;
-  askingPrice: number;
-  businessModels: string[];
-  managementPreferences: string[];
-  capitalAvailability: string[]; // <- array of enums
-  companyType: string[]; // <- array of strings
-  minPriorAcquisitions: number;
-  minTransactionSize: number;
-  documents: File[];
-  t12FreeCashFlow?: number; // <-- Add this line
-  t12NetIncome?: number; // <-- Add this line
+  dealTitle: string
+  companyDescription: string
+  geographySelections: string[]
+  industrySelections: string[]
+  yearsInBusiness: number
+  trailingRevenue: number
+  trailingEBITDA: number
+  revenueGrowth: number
+  currency: string
+  netIncome: number
+  askingPrice: number
+  businessModels: string[]
+  managementPreferences: string[]
+  capitalAvailability: CapitalAvailabilityType[] // ✅ Use the exact type
+  companyType: string[]
+  minPriorAcquisitions: number
+  minTransactionSize: number
+  documents: File[]
+  t12FreeCashFlow?: number
+  t12NetIncome?: number
 }
 
 interface GeoItem {
@@ -101,29 +90,29 @@ interface DealDocument {
 }
 
 interface Deal {
-  _id: string;
-  title: string;
-  companyDescription: string;
-  dealType?: string;
-  companyType?: string;
-  status: string;
-  visibility?: string;
-  industrySector: string;
-  geographySelection: string;
-  yearsInBusiness: number;
-  employeeCount?: number;
+  _id: string
+  title: string
+  companyDescription: string
+  dealType?: string
+  companyType?: string[]
+  status: string
+  visibility?: string
+  industrySector: string
+  geographySelection: string
+  yearsInBusiness: number
+  employeeCount?: number
   financialDetails: {
-    trailingRevenueCurrency?: string;
-    trailingRevenueAmount?: number;
-    trailingEBITDACurrency?: string;
-    trailingEBITDAAmount?: number;
-    avgRevenueGrowth?: number;
-    netIncome?: number;
-    askingPrice?: number;
-    finalSalePrice?: number;
-    t12FreeCashFlow?: number;
-    t12NetIncome?: number;
-  };
+    trailingRevenueCurrency?: string
+    trailingRevenueAmount?: number
+    trailingEBITDACurrency?: string
+    trailingEBITDAAmount?: number
+    avgRevenueGrowth?: number
+    netIncome?: number
+    askingPrice?: number
+    finalSalePrice?: number
+    t12FreeCashFlow?: number
+    t12NetIncome?: number
+  }
   businessModel: {
     recurringRevenue?: boolean;
     projectBased?: boolean;
@@ -135,17 +124,17 @@ interface Deal {
     staffStay?: boolean;
   };
   buyerFit: {
-    capitalAvailability?: string;
-    minPriorAcquisitions?: number;
-    minTransactionSize?: number;
-  };
-  targetedBuyers: string[];
-  interestedBuyers: string[];
-  tags?: string[];
-  isPublic: boolean;
-  isFeatured?: boolean;
-  stakePercentage?: number;
-  documents: DealDocument[];
+    capitalAvailability?: CapitalAvailabilityType[]
+    minPriorAcquisitions?: number
+    minTransactionSize?: number
+  }
+  targetedBuyers: string[]
+  interestedBuyers: string[]
+  tags?: string[]
+  isPublic: boolean
+  isFeatured?: boolean
+  stakePercentage?: number
+  documents: DealDocument[]
   timeline: {
     createdAt: string;
     updatedAt: string;
@@ -161,29 +150,28 @@ const formatNumberWithCommas = (num: number): string => {
   return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 };
 
-export default function EditDealPage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const dealId = searchParams.get("id");
+export default function EditDealPageFixed() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const dealId = searchParams.get("id")
 
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [geoData, setGeoData] = useState<GeoData | null>(null);
-  const [industryData, setIndustryData] = useState<IndustryData | null>(null);
-  const [flatGeoData, setFlatGeoData] = useState<GeoItem[]>([]);
-  const [flatIndustryData, setFlatIndustryData] = useState<IndustryItem[]>([]);
-  const [geoSearchTerm, setGeoSearchTerm] = useState("");
-  const [industrySearchTerm, setIndustrySearchTerm] = useState("");
-  const [geoOpen, setGeoOpen] = useState(false);
-  const [industryOpen, setIndustryOpen] = useState(false);
-  const [selectedReward, setSelectedReward] = useState<string | null>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [fileError, setFileError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [existingDocuments, setExistingDocuments] = useState<DealDocument[]>(
-    []
-  );
-  const [newFiles, setNewFiles] = useState<File[]>([]);
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+  const [geoData, setGeoData] = useState<GeoData | null>(null)
+  const [industryData, setIndustryData] = useState<IndustryData | null>(null)
+  const [flatGeoData, setFlatGeoData] = useState<GeoItem[]>([])
+  const [flatIndustryData, setFlatIndustryData] = useState<IndustryItem[]>([])
+  const [geoSearchTerm, setGeoSearchTerm] = useState("")
+  const [industrySearchTerm, setIndustrySearchTerm] = useState("")
+  const [geoOpen, setGeoOpen] = useState(false)
+  const [industryOpen, setIndustryOpen] = useState(false)
+  const [selectedReward, setSelectedReward] = useState<string | null>(null)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [fileError, setFileError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Document management state
+  const [existingDocuments, setExistingDocuments] = useState<DealDocument[]>([])
 
   // Hierarchical selection state
   const [geoSelection, setGeoSelection] = useState<GeographySelection>({
@@ -227,7 +215,7 @@ export default function EditDealPage() {
     askingPrice: 0,
     businessModels: [],
     managementPreferences: [],
-    capitalAvailability: [],
+    capitalAvailability: [], // ✅ Initialize as empty array with correct type
     companyType: [],
     minPriorAcquisitions: 0,
     minTransactionSize: 0,
@@ -237,10 +225,7 @@ export default function EditDealPage() {
   });
 
   // Add to state
-  const [dealData, setDealData] = useState<Deal | null>(null);
-
-  // Add fieldErrors state for validation errors
-  const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
+  const [dealData, setDealData] = useState<Deal | null>(null)
 
   // Flatten geography data for searchable dropdown
   const flattenGeoData = (
@@ -252,27 +237,11 @@ export default function EditDealPage() {
       const path = parentPath ? `${parentPath} > ${item.name}` : item.name;
       result.push({ id: item.id, name: item.name, path });
 
-      if (
-        "regions" in item &&
-        Array.isArray(item.regions) &&
-        item.regions.length > 0
-      ) {
-        flattenGeoData(
-          item.regions as Continent[] | Region[] | SubRegion[],
-          path,
-          result
-        );
+      if ("regions" in item && item.regions) {
+        flattenGeoData(item.regions, path, result)
       }
-      if (
-        "subRegions" in item &&
-        Array.isArray(item.subRegions) &&
-        item.subRegions.length > 0
-      ) {
-        flattenGeoData(
-          item.subRegions as Continent[] | Region[] | SubRegion[],
-          path,
-          result
-        );
+      if ("subRegions" in item && item.subRegions) {
+        flattenGeoData(item.subRegions, path, result)
       }
     });
     return result;
@@ -297,9 +266,21 @@ export default function EditDealPage() {
       if ("subIndustries" in item && item.subIndustries) {
         flattenIndustryData(item.subIndustries, path, result);
       }
-    });
-    return result;
-  };
+    })
+    return result
+  }
+
+  // ✅ Helper function to normalize capital availability values
+  const normalizeCapitalAvailability = (value: string): CapitalAvailabilityType | null => {
+    const trimmedValue = value.trim()
+    if (trimmedValue === CAPITAL_AVAILABILITY_OPTIONS.READY) {
+      return CAPITAL_AVAILABILITY_OPTIONS.READY
+    }
+    if (trimmedValue === CAPITAL_AVAILABILITY_OPTIONS.NEED) {
+      return CAPITAL_AVAILABILITY_OPTIONS.NEED
+    }
+    return null
+  }
 
   // Fetch deal data
   const fetchDealData = async () => {
@@ -314,9 +295,9 @@ export default function EditDealPage() {
     }
 
     try {
-      setIsLoading(true);
-      const token = localStorage.getItem("token");
-      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
+      setIsLoading(true)
+      const token = localStorage.getItem("token")
+      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
 
       const response = await fetch(`${apiUrl}/deals/${dealId}`, {
         headers: {
@@ -331,16 +312,32 @@ export default function EditDealPage() {
         throw new Error(`Failed to update deal: ${response.statusText}`); // Then throw
       }
 
-      const dealData: Deal = await response.json();
-      setDealData(dealData); // <-- Add this line
+      const dealData = await response.json()
 
-      // Set existing documents
-      setExistingDocuments(dealData.documents || []);
+      // ✅ Fixed: Proper capitalAvailability parsing with normalization
+      let capitalAvailabilityArray: CapitalAvailabilityType[] = []
+      if (Array.isArray(dealData.buyerFit?.capitalAvailability)) {
+        capitalAvailabilityArray = dealData.buyerFit.capitalAvailability
+          .map(normalizeCapitalAvailability)
+          .filter((item): item is CapitalAvailabilityType => item !== null)
+      } else if (typeof dealData.buyerFit?.capitalAvailability === "string") {
+        const normalized = normalizeCapitalAvailability(dealData.buyerFit.capitalAvailability)
+        if (normalized) {
+          capitalAvailabilityArray = [normalized]
+        }
+      }
 
-      // Set reward level
-      setSelectedReward(dealData.visibility || "seed");
+      // ✅ Improved: Robust companyType parsing
+      let companyTypeArray: string[] = []
+      if (Array.isArray(dealData.companyType)) {
+        companyTypeArray = dealData.companyType.filter(Boolean)
+      } else if (typeof dealData.companyType === "string" && dealData.companyType.trim()) {
+        companyTypeArray = dealData.companyType
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean)
+      }
 
-      // Map deal data to form data
       setFormData({
         dealTitle: dealData.title || "",
         companyDescription: dealData.companyDescription || "",
@@ -374,35 +371,25 @@ export default function EditDealPage() {
             ? ["key-staff-stay"]
             : []),
         ],
-        capitalAvailability: Array.isArray(
-          dealData.buyerFit?.capitalAvailability
-        )
-          ? dealData.buyerFit.capitalAvailability
-          : dealData.buyerFit?.capitalAvailability
-          ? [dealData.buyerFit.capitalAvailability]
-          : [],
-        companyType: Array.isArray(dealData.companyType)
-          ? dealData.companyType
-          : dealData.companyType
-          ? [dealData.companyType]
-          : [],
+        capitalAvailability: capitalAvailabilityArray, // ✅ Fixed: Normalized array format
+        companyType: [...new Set(companyTypeArray)],
         minPriorAcquisitions: dealData.buyerFit?.minPriorAcquisitions || 0,
         minTransactionSize: dealData.buyerFit?.minTransactionSize || 0,
         documents: [],
-        t12FreeCashFlow: dealData.financialDetails?.t12FreeCashFlow || 0, // <-- Add this line
-        t12NetIncome: dealData.financialDetails?.t12NetIncome || 0, // <-- Add this line
-      });
+        t12FreeCashFlow: dealData.financialDetails?.t12FreeCashFlow || 0,
+        t12NetIncome: dealData.financialDetails?.t12NetIncome || 0,
+      })
 
-      // Set geography selection
+      setDealData(dealData)
+      setExistingDocuments(dealData.documents || [])
+      setSelectedReward(dealData.visibility || "seed")
+
       if (dealData.geographySelection) {
         setGeoSelection({
-          selectedId: null, // We don't have the ID from the API, just the name
+          selectedId: null,
           selectedName: dealData.geographySelection,
         });
       }
-
-      // Set industry selection - this is more complex and would require matching names to IDs
-      // For now, we'll just display the selected industry in the UI
     } catch (error: any) {
       console.error("Error fetching deal:", error);
       toast({
@@ -417,21 +404,28 @@ export default function EditDealPage() {
 
   // Fetch geography and industry data
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchInitialData = async () => {
       try {
-        const [geoResponse, industryResponse] = await Promise.all([
-          getGeoData(),
-          getIndustryData(),
-        ]);
-        setGeoData(geoResponse);
-        setIndustryData(industryResponse);
+        const token = localStorage.getItem("token")
+        const userRole = localStorage.getItem("userRole")
 
-        // Flatten the hierarchical data for searchable dropdowns
-        setFlatGeoData(flattenGeoData(geoResponse.continents));
-        setFlatIndustryData(flattenIndustryData(industryResponse.sectors));
+        if (!token || userRole !== "seller") {
+          router.push("/seller/login")
+          return
+        }
 
-        // After loading the reference data, fetch the deal data
-        await fetchDealData();
+        // Fetch geo and industry data in parallel
+        const [geoResponse, industryResponse] = await Promise.all([getGeoData(), getIndustryData()])
+
+        setGeoData(geoResponse)
+        setIndustryData(industryResponse)
+
+        // Flatten for searchable dropdowns
+        setFlatGeoData(flattenGeoData(geoResponse.continents))
+        setFlatIndustryData(flattenIndustryData(industryResponse.sectors))
+
+        // Then fetch the existing deal data (for edit)
+        await fetchDealData()
       } catch (error) {
         console.error("Error fetching data:", error);
         toast({
@@ -443,16 +437,8 @@ export default function EditDealPage() {
       }
     };
 
-    fetchData();
-
-    // Check if user is authenticated
-    const token = localStorage.getItem("token");
-    const userRole = localStorage.getItem("userRole");
-
-    if (!token || userRole !== "seller") {
-      router.push("/seller/login");
-    }
-  }, [router, dealId]);
+    fetchInitialData()
+  }, [router, dealId])
 
   // Handle text input changes
   const handleInputChange = (
@@ -480,19 +466,37 @@ export default function EditDealPage() {
   const handleCheckboxChange = (
     checked: boolean,
     value: string,
-    fieldName: "businessModels" | "managementPreferences"
+    fieldName: "companyType" | "businessModels" | "managementPreferences",
   ) => {
     setFormData((prev) => {
-      if (checked) {
-        return { ...prev, [fieldName]: [...prev[fieldName], value] };
-      } else {
-        return {
-          ...prev,
-          [fieldName]: prev[fieldName].filter((item) => item !== value),
-        };
+      const currentValues = Array.isArray(prev[fieldName]) ? prev[fieldName] : []
+
+      const newValues = checked
+        ? [...new Set([...currentValues, value])] // add if checked
+        : currentValues.filter((v) => v !== value) // remove if unchecked
+
+      return {
+        ...prev,
+        [fieldName]: newValues,
       }
-    });
-  };
+    })
+  }
+
+  // ✅ Fixed: Handle capital availability changes with exact enum values
+  const handleCapitalAvailabilityChange = (checked: boolean, value: CapitalAvailabilityType) => {
+    setFormData((prev) => {
+      const currentValues = Array.isArray(prev.capitalAvailability) ? prev.capitalAvailability : []
+
+      const newValues = checked
+        ? [...new Set([...currentValues, value])] // add if checked
+        : currentValues.filter((v) => v !== value) // remove if unchecked
+
+      return {
+        ...prev,
+        capitalAvailability: newValues,
+      }
+    })
+  }
 
   // Geography selection handlers
   const selectGeography = (id: string, name: string) => {
@@ -961,60 +965,17 @@ export default function EditDealPage() {
                             </Label>
                           </div>
                         ))}
-
-                        {/* {region.subRegions.map((subRegion) => (
-                          <div key={subRegion.id} className="flex items-center">
-                            <input
-                              type="radio"
-                              id={`subregion-${subRegion.id}`}
-                              name="geography"
-                              checked={geoSelection.selectedId === subRegion.id}
-                              onChange={() => selectGeography(subRegion.id, subRegion.name)}
-                              className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9]"
-                            />
-                            <Label
-                              htmlFor={`subregion-${subRegion.id}`}
-                              className="text-[#344054] cursor-pointer text-sm"
-                            >
-                              {subRegion.name}
-                            </Label>
-                          </div>
-                        ))} */}
                       </div>
                     )}
                   </div>
                 ))}
-
-                {/* {continent.regions.map((region) => (
-                  <div key={region.id} className="pl-2">
-                    <div className="flex items-center">
-                      <input
-                        type="radio"
-                        id={`region-${region.id}`}
-                        name="geography"
-                        checked={geoSelection.selectedId === region.id}
-                        onChange={() => selectGeography(region.id, region.name)}
-                        className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9]"
-                      />
-                      <Label htmlFor={`region-${region.id}`} className="text-[#344054] cursor-pointer">
-                        {region.name}
-                      </Label>
-                    </div>
-                  </div>
-                ))} */}
               </div>
             )}
           </div>
         ))}
-
-        {/* {filteredData.continents.length === 0 && (
-          <div className="text-center py-4 text-gray-500">
-            No results found for your search.
-          </div>
-        )} */}
       </div>
-    );
-  };
+    )
+  }
 
   // Render the hierarchical industry selection
   const renderIndustrySelection = () => {
@@ -1109,197 +1070,127 @@ export default function EditDealPage() {
                     )}
                   </div>
                 ))}
-
-                {/* {sector.industryGroups.map((group) => (
-                  <div key={group.id} className="pl-2">
-                    <div className="flex items-center">
-                      <Checkbox
-                        id={`group-${group.id}`}
-                        checked={!!industrySelection.industryGroups[group.id]}
-                        onCheckedChange={() => {
-                          toggleIndustryGroup(group, sector)
-                        }}
-                        className="mr-2 border-[#d0d5dd]"
-                      />
-                      <Label htmlFor={`group-${group.id}`} className="text-[#344054] cursor-pointer">
-                        {group.name}
-                      </Label>
-                    </div>
-                  </div>
-                ))} */}
               </div>
             )}
           </div>
         ))}
-
-        {/* {filteredData.sectors.length === 0 && (
-          <div className="text-center py-4 text-gray-500">
-            No results found for your search.
-          </div>
-        )} */}
       </div>
-    );
-  };
+    )
+  }
 
   // Handle file selection
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0) return;
+    if (e.target.files && e.target.files.length > 0) {
+      const newFiles: File[] = []
+      let hasError = false
 
-    const filesArray = Array.from(e.target.files);
-    let hasError = false;
-    const validFiles: File[] = [];
+      // Check each file
+      for (let i = 0; i < e.target.files.length; i++) {
+        const file = e.target.files[i]
 
-    for (const file of filesArray) {
-      // Check file size (10MB limit)
-      if (file.size > 10 * 1024 * 1024) {
-        setFileError(`File ${file.name} exceeds 10MB limit`);
-        hasError = true;
-        break;
+        // Check file size (10MB limit)
+        if (file.size > 10 * 1024 * 1024) {
+          setFileError(`File ${file.name} exceeds 10MB limit`)
+          hasError = true
+          break
+        }
+
+        newFiles.push(file)
       }
-      validFiles.push(file);
-    }
 
-    if (!hasError) {
-      setSelectedFile(validFiles[0]); // Show first file for UI
-      setFileError(null);
+      if (!hasError) {
+        setSelectedFile(e.target.files[0]) // Show first file name for UI
+        setFileError(null)
 
-      // Append new files to newFiles state
-      setNewFiles((prev) => [...prev, ...validFiles]);
-
-      // Clear file input to allow uploading the same file again
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
+        // Add to documents array
+        setFormData((prev) => ({
+          ...prev,
+          documents: [...prev.documents, ...newFiles],
+        }))
       }
     }
-  };
+  }
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault()
 
     if (!dealId) {
       toast({
         title: "Error",
         description: "No deal ID provided",
         variant: "destructive",
-      });
-      return;
+      })
+      return
     }
 
-    setIsSaving(true);
+    setIsSaving(true)
 
     try {
-      // Basic validation
-      if (!formData.dealTitle.trim()) throw new Error("Deal title is required");
-      if (!formData.companyDescription.trim())
-        throw new Error("Company description is required");
-      if (formData.geographySelections.length === 0)
-        throw new Error("Please select a geography");
-      if (formData.industrySelections.length === 0)
-        throw new Error("Please select at least one industry");
-      // Validation errors object
-      const errors: { [key: string]: string } = {};
-      // Validate business models
-      if (formData.businessModels.length === 0) {
-        errors.businessModels = "Please select at least one business model.";
-      }
+      // Validate form
+      if (!formData.dealTitle.trim()) throw new Error("Deal title is required")
+      if (!formData.companyDescription.trim()) throw new Error("Company description is required")
+      if (formData.geographySelections.length === 0) throw new Error("Please select a geography")
+      if (formData.industrySelections.length === 0) throw new Error("Please select at least one industry")
+      if (formData.capitalAvailability.length === 0)
+        throw new Error("Please select at least one capital availability option")
 
-      // Validate management preferences
-      if (formData.managementPreferences.length === 0) {
-        errors.managementPreferences =
-          "Please select at least one management preference.";
-      }
+      const token = localStorage.getItem("token")
+      const sellerId = localStorage.getItem("userId")
+      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
 
-      // If there are errors, set them and prevent submit
-      setFieldErrors(errors);
-      if (Object.keys(errors).length > 0) {
-        setIsSaving(false);
-        return;
-      }
+      if (!token || !sellerId) throw new Error("Authentication required")
 
-      // Get auth & API setup
-      const token = localStorage.getItem("token");
-      const sellerId = localStorage.getItem("userId");
-      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
-      if (!token || !sellerId) throw new Error("Authentication required");
-
-      // Map business models & preferences
+      // Map business models to booleans
       const businessModel = {
         recurringRevenue: formData.businessModels.includes("recurring-revenue"),
         projectBased: formData.businessModels.includes("project-based"),
         assetLight: formData.businessModels.includes("asset-light"),
         assetHeavy: formData.businessModels.includes("asset-heavy"),
-      };
+      }
 
+      // Map management preferences to booleans
       const managementPreferences = {
-        retiringDivesting:
-          formData.managementPreferences.includes("retiring-divesting"),
+        retiringDivesting: formData.managementPreferences.includes("retiring-divesting"),
         staffStay: formData.managementPreferences.includes("key-staff-stay"),
-      };
+      }
 
-      const allowedCapitalAvailability = [
-        "Ready to deploy immediately",
-        "Need to raise"
-      ];
+      // ✅ Ensure capitalAvailability is never empty and uses exact enum values
+      const validCapitalAvailability =
+        formData.capitalAvailability.length > 0 ? formData.capitalAvailability : [CAPITAL_AVAILABILITY_OPTIONS.READY] // Default fallback
 
-      // Build payload
       const payload = {
         title: formData.dealTitle,
         companyDescription: formData.companyDescription,
-        companyType: formData.companyType,
         visibility: selectedReward || "seed",
-        industrySector: formData.industrySelections[0],
-        geographySelection: formData.geographySelections[0],
-        yearsInBusiness: Number(formData.yearsInBusiness),
-        
-
+        industrySector: formData.industrySelections[0] || "",
+        geographySelection: formData.geographySelections[0] || "",
+        yearsInBusiness: formData.yearsInBusiness,
+        companyType: Array.isArray(formData.companyType) ? formData.companyType.join(", ") : "",
         financialDetails: {
           trailingRevenueCurrency: formData.currency,
-          trailingRevenueAmount: Number(formData.trailingRevenue),
+          trailingRevenueAmount: formData.trailingRevenue,
           trailingEBITDACurrency: formData.currency,
-          trailingEBITDAAmount: Number(formData.trailingEBITDA),
-          avgRevenueGrowth: Number(formData.revenueGrowth),
-          netIncome: Number(formData.netIncome),
-          askingPrice: Number(formData.askingPrice),
-          t12FreeCashFlow: Number(formData.t12FreeCashFlow),
-          t12NetIncome: Number(formData.t12NetIncome),
+          trailingEBITDAAmount: formData.trailingEBITDA,
+          avgRevenueGrowth: formData.revenueGrowth,
+          netIncome: formData.netIncome,
+          askingPrice: formData.askingPrice,
+          t12FreeCashFlow: formData.t12FreeCashFlow || 0,
+          t12NetIncome: formData.t12NetIncome || 0,
         },
-
-        businessModel: {
-          recurringRevenue:
-            formData.businessModels.includes("recurring-revenue"),
-          projectBased: formData.businessModels.includes("project-based"),
-          assetLight: formData.businessModels.includes("asset-light"),
-          assetHeavy: formData.businessModels.includes("asset-heavy"),
-        },
-
-        managementPreferences: {
-          retiringDivesting:
-            formData.managementPreferences.includes("retiring-divesting"),
-          staffStay: formData.managementPreferences.includes("key-staff-stay"),
-        },
-
+        businessModel,
+        managementPreferences,
         buyerFit: {
-          capitalAvailability: formData.capitalAvailability
-            .filter((v) => allowedCapitalAvailability.includes(v)),
-          minPriorAcquisitions: Number(formData.minPriorAcquisitions),
-          minTransactionSize: Number(formData.minTransactionSize),
+          capitalAvailability: validCapitalAvailability, // ✅ Fixed: Always valid array with exact enum values
+          minPriorAcquisitions: formData.minPriorAcquisitions,
+          minTransactionSize: formData.minTransactionSize,
         },
-
         dealType: dealData?.dealType || "acquisition",
         status: dealData?.status || "draft",
-        // ⚠️ Remove `documents: existingDocuments` — or pass just the file paths like:
-        documents: existingDocuments.map((doc) => doc.filename).filter(Boolean),
-          // if your backend accepts this
-      };
-
-      // Only add documents to the payload if existingDocuments is defined and not empty
-      if (existingDocuments && existingDocuments.length > 0) {
-        payload.documents = existingDocuments.map((doc) => doc.filename).filter(Boolean);
-        console.log('[PATCH] Sending payload.documents:', payload.documents);
       }
 
-      // PATCH deal data
+      console.log("Updating deal payload:", JSON.stringify(payload, null, 2))
+
       const response = await fetch(`${apiUrl}/deals/${dealId}`, {
         method: "PATCH",
         headers: {
@@ -1307,101 +1198,71 @@ export default function EditDealPage() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(payload),
-      });
-      if (!response.ok){
-        const errorText = await response.text(); // ⬅ Capture response body
-        console.error('Error text:', errorText);  // ⬅ Log what the server responded
-        throw new Error(`Failed to update deal: ${response.statusText}`); // Then throw
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        console.error("API Error Response:", errorData)
+        throw new Error(`Failed to update deal: ${response.statusText}`)
       }
 
-      // Always fetch the updated deal after PATCH
-      const updatedDeal = await fetch(`${apiUrl}/deals/${dealId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const updatedDealData = await updatedDeal.json();
-      setExistingDocuments(updatedDealData.documents || []);
+      // Handle document uploads if there are any new documents
+      if (formData.documents.length > 0) {
+        const uploadFormData = new FormData()
 
-      // Only upload new files if there are newFiles
-      if (newFiles.length > 0) {
-        const uploadFormData = new FormData();
-        newFiles.forEach((file) => {
-          uploadFormData.append("files", file);
-        });
-        const uploadResponse = await fetch(
-          `${apiUrl}/deals/${dealId}/upload-documents`,
-          {
-            method: "POST",
-            headers: { Authorization: `Bearer ${token}` },
-            body: uploadFormData,
-          }
-        );
+        Array.from(formData.documents).forEach((file) => {
+          uploadFormData.append("files", file)
+        })
+
+        const uploadResponse = await fetch(`${apiUrl}/deals/${dealId}/upload-documents`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: uploadFormData,
+        })
+
         if (!uploadResponse.ok) {
-          throw new Error(
-            `Failed to upload documents: ${uploadResponse.statusText}`
-          );
+          throw new Error(`Failed to upload documents: ${uploadResponse.statusText}`)
         }
-        // Fetch the updated deal to get the new documents array
-        const updatedDealAfterUpload = await fetch(`${apiUrl}/deals/${dealId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const updatedDealDataAfterUpload = await updatedDealAfterUpload.json();
-        setExistingDocuments(updatedDealDataAfterUpload.documents || []);
-        // Clear newFiles after successful upload
-        setNewFiles([]);
       }
 
       toast({
         title: "Success",
         description: "Your deal has been updated successfully.",
-      });
-      setTimeout(() => router.push("/seller/dashboard"), 2000);
+      })
+
+      setTimeout(() => {
+        router.push("/seller/dashboard")
+      }, 2000)
     } catch (error: any) {
-      console.error("Error in handleSubmit:", error);
+      console.error("Form submission error:", error)
       toast({
         title: "Update Failed",
-        description:
-          error.message || "Failed to update deal. Please try again.",
+        description: error.message || "Failed to update deal. Please try again.",
         variant: "destructive",
-      });
+      })
     } finally {
-      setIsSaving(false);
+      setIsSaving(false)
     }
-  };
-
-  // Handle document download
-  const handleDocumentDownload = (doc: DealDocument) => {
-    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
-    const link = document.createElement("a");
-    link.href = `${apiUrl}/uploads/deal-documents/${doc.filename}`;
-    link.download = doc.originalName;
-    link.target = "_blank";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+  }
 
   // Handle document deletion
   const handleDocumentDelete = async (doc: DealDocument) => {
     if (!dealId) return;
   
     try {
-      const token = localStorage.getItem("token");
-      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
-  
-      const docIndex = existingDocuments.findIndex(
-        (d) => d.filename === doc.filename
-      );
-  
-      const response = await fetch(
-        `${apiUrl}/deals/${dealId}/documents/${docIndex}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-  
+      const token = localStorage.getItem("token")
+      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+
+      const docIndex = existingDocuments.findIndex((d) => d.filename === doc.filename)
+      const response = await fetch(`${apiUrl}/deals/${dealId}/documents/${docIndex}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(`Failed to delete document: ${errorText}`);
@@ -1424,8 +1285,54 @@ export default function EditDealPage() {
         variant: "destructive",
       });
     }
-  };
-  
+  }
+
+  // Handle document download
+  const handleDocumentDownload = (doc: DealDocument) => {
+    const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+    const link = document.createElement("a")
+    link.href = `${apiUrl}/uploads/deal-documents/${doc.filename}`
+    link.download = doc.originalName
+    link.target = "_blank"
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  // Handle new document deletion (remove from formData.documents)
+  const handleNewDocumentDelete = (indexToRemove: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      documents: prev.documents.filter((_, index) => index !== indexToRemove),
+    }))
+
+    // Clear selected file display if it was the last one
+    if (formData.documents.length === 1) {
+      setSelectedFile(null)
+    }
+
+    toast({
+      title: "Document removed",
+      description: "Document has been removed from upload queue.",
+    })
+  }
+
+  // Function to handle multi-select changes for company type
+  const handleMultiSelectChange = (option: string) => {
+    setFormData((prev) => {
+      const currentValues = Array.isArray(prev.companyType) ? prev.companyType : []
+      const isChecked = currentValues.includes(option)
+
+      const newValues = isChecked
+        ? currentValues.filter((v) => v !== option) // remove if unchecked
+        : [...currentValues, option] // add if checked
+
+      return {
+        ...prev,
+        companyType: newValues,
+      }
+    })
+  }
 
   if (isLoading) {
     return (
@@ -1460,11 +1367,7 @@ export default function EditDealPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Seed Option */}
               <Card
-                className={`cursor-pointer border-4 ${
-                  selectedReward === "seed"
-                    ? "border-[#3aafa9]"
-                    : "border-gray-200"
-                } overflow-hidden`}
+                className={`cursor-pointer border ${selectedReward === "seed" ? "border-[#3aafa9]" : "border-gray-200"} overflow-hidden`}
                 onClick={() => setSelectedReward("seed")}
               >
                 <div className="flex flex-col h-full">
@@ -1500,11 +1403,7 @@ export default function EditDealPage() {
 
               {/* Bloom Option */}
               <Card
-                className={`cursor-pointer border-4 ${
-                  selectedReward === "bloom"
-                    ? "border-[#3aafa9]"
-                    : "border-gray-200"
-                } overflow-hidden`}
+                className={`cursor-pointer border ${selectedReward === "bloom" ? "border-[#3aafa9]" : "border-gray-200"} overflow-hidden`}
                 onClick={() => setSelectedReward("bloom")}
               >
                 <div className="flex flex-col h-full">
@@ -1544,11 +1443,7 @@ export default function EditDealPage() {
 
               {/* Fruit Option */}
               <Card
-                className={`cursor-pointer border-4 ${
-                  selectedReward === "fruit"
-                    ? "border-[#3aafa9]"
-                    : "border-gray-200"
-                } overflow-hidden`}
+                className={`cursor-pointer border ${selectedReward === "fruit" ? "border-[#3aafa9]" : "border-gray-200"} overflow-hidden`}
                 onClick={() => setSelectedReward("fruit")}
               >
                 <div className="flex flex-col h-full">
@@ -1750,16 +1645,12 @@ export default function EditDealPage() {
               </div>
 
               <div>
-                <label
-                  htmlFor="yearsInBusiness"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
+                <label htmlFor="yearsInBusiness" className="block text-sm font-medium text-gray-700 mb-1">
                   Number of years in business
                 </label>
                 <Input
                   id="yearsInBusiness"
                   type="number"
-                  required
                   min="0"
                   value={formData.yearsInBusiness || ""}
                   onChange={(e) => handleNumberChange(e, "yearsInBusiness")}
@@ -1866,30 +1757,20 @@ export default function EditDealPage() {
                 </div>
 
                 <div>
-                  <label
-                    htmlFor="revenueGrowth"
-                    className="block text-sm font-medium text-gray-700 mb-1"
-                  >
+                  <label htmlFor="revenueGrowth" className="block text-sm font-medium text-gray-700 mb-1">
                     Average 3 year revenue growth in %
                   </label>
                   <Input
                     id="revenueGrowth"
                     type="text"
-                    value={
-                      formData.revenueGrowth !== undefined &&
-                      formData.revenueGrowth !== null
-                        ? formatNumberWithCommas(formData.revenueGrowth)
-                        : ""
-                    }
+                    value={formData.revenueGrowth ? formatNumberWithCommas(formData.revenueGrowth) : ""}
                     onChange={(e) => {
-                      const rawValue = e.target.value.replace(/,/g, "");
+                      const rawValue = e.target.value.replace(/,/g, "")
                       if (rawValue === "" || /^-?\d*$/.test(rawValue)) {
                         handleNumberChange(
-                          {
-                            target: { value: rawValue },
-                          } as React.ChangeEvent<HTMLInputElement>,
-                          "revenueGrowth"
-                        );
+                          { target: { value: rawValue } } as React.ChangeEvent<HTMLInputElement>,
+                          "revenueGrowth",
+                        )
                       }
                     }}
                     className="w-full"
@@ -2024,301 +1905,389 @@ export default function EditDealPage() {
             </div>
 
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Business Models <span className="text-red-500">*</span>
-              </label>
-              {/* ... checkbox group */}
-              {fieldErrors.businessModels && (
-                <p className="text-red-500 text-sm mt-2">
-                  {fieldErrors.businessModels}
-                </p>
-              )}
+              <label className="block text-sm font-medium text-gray-700 mb-3">Business Models</label>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center">
                   <Checkbox
                     id="recurring-revenue"
-                    checked={formData.businessModels.includes(
-                      "recurring-revenue"
-                    )}
-                    onCheckedChange={(checked) =>
-                      handleCheckboxChange(
-                        checked === true,
-                        "recurring-revenue",
-                        "businessModels"
-                      )
-                    }
+                    checked={formData.businessModels.includes("recurring-revenue")}
+                    onCheckedChange={(checked) => handleCheckboxChange(checked, "recurring-revenue", "businessModels")}
+                    className="mr-2 border-[#d0d5dd]"
                   />
-                  <label htmlFor="recurring-revenue" className="text-sm">
+                  <Label htmlFor="recurring-revenue" className="cursor-pointer">
                     Recurring Revenue
-                  </label>
+                  </Label>
                 </div>
 
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center">
                   <Checkbox
                     id="project-based"
                     checked={formData.businessModels.includes("project-based")}
-                    onCheckedChange={(checked) =>
-                      handleCheckboxChange(
-                        checked === true,
-                        "project-based",
-                        "businessModels"
-                      )
-                    }
+                    onCheckedChange={(checked) => handleCheckboxChange(checked, "project-based", "businessModels")}
+                    className="mr-2 border-[#d0d5dd]"
                   />
-                  <label htmlFor="project-based" className="text-sm">
-                    Project-Based
-                  </label>
+                  <Label htmlFor="project-based" className="cursor-pointer">
+                    Project Based
+                  </Label>
                 </div>
 
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center">
                   <Checkbox
                     id="asset-light"
                     checked={formData.businessModels.includes("asset-light")}
-                    onCheckedChange={(checked) =>
-                      handleCheckboxChange(
-                        checked === true,
-                        "asset-light",
-                        "businessModels"
-                      )
-                    }
+                    onCheckedChange={(checked) => handleCheckboxChange(checked, "asset-light", "businessModels")}
+                    className="mr-2 border-[#d0d5dd]"
                   />
-                  <label htmlFor="asset-light" className="text-sm">
+                  <Label htmlFor="asset-light" className="cursor-pointer">
                     Asset Light
-                  </label>
+                  </Label>
                 </div>
 
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center">
                   <Checkbox
                     id="asset-heavy"
                     checked={formData.businessModels.includes("asset-heavy")}
-                    onCheckedChange={(checked) =>
-                      handleCheckboxChange(
-                        checked === true,
-                        "asset-heavy",
-                        "businessModels"
-                      )
-                    }
+                    onCheckedChange={(checked) => handleCheckboxChange(checked, "asset-heavy", "businessModels")}
+                    className="mr-2 border-[#d0d5dd]"
                   />
-                  <label htmlFor="asset-heavy" className="text-sm">
+                  <Label htmlFor="asset-heavy" className="cursor-pointer">
                     Asset Heavy
-                  </label>
+                  </Label>
                 </div>
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Management Future Preferences{" "}
-                <span className="text-red-500">*</span>
-              </label>
-              {/* ... checkbox group */}
-              {fieldErrors.managementPreferences && (
-                <p className="text-red-500 text-sm mt-2">
-                  {fieldErrors.managementPreferences}
-                </p>
-              )}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-3">Management Preferences</label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center">
                   <Checkbox
                     id="retiring-divesting"
-                    checked={formData.managementPreferences.includes(
-                      "retiring-divesting"
-                    )}
+                    checked={formData.managementPreferences.includes("retiring-divesting")}
                     onCheckedChange={(checked) =>
-                      handleCheckboxChange(
-                        checked === true,
-                        "retiring-divesting",
-                        "managementPreferences"
-                      )
+                      handleCheckboxChange(checked, "retiring-divesting", "managementPreferences")
                     }
+                    className="mr-2 border-[#d0d5dd]"
                   />
-                  <label htmlFor="retiring-divesting" className="text-sm">
-                    Retiring to divesting
-                  </label>
+                  <Label htmlFor="retiring-divesting" className="cursor-pointer">
+                    Retiring / Divesting
+                  </Label>
                 </div>
 
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center">
                   <Checkbox
                     id="key-staff-stay"
-                    checked={formData.managementPreferences.includes(
-                      "key-staff-stay"
-                    )}
+                    checked={formData.managementPreferences.includes("key-staff-stay")}
                     onCheckedChange={(checked) =>
-                      handleCheckboxChange(
-                        checked === true,
-                        "key-staff-stay",
-                        "managementPreferences"
-                      )
+                      handleCheckboxChange(checked, "key-staff-stay", "managementPreferences")
                     }
+                    className="mr-2 border-[#d0d5dd]"
                   />
-                  <label htmlFor="key-staff-stay" className="text-sm">
-                    Other Key Staff Will Stay
-                  </label>
+                  <Label htmlFor="key-staff-stay" className="cursor-pointer">
+                    Key Staff Stay
+                  </Label>
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-  {/* Capital Availability */}
-  <div className="col-span-1">
-    <label className="block text-sm font-medium text-gray-700 mb-2">
-      Capital Availability
-    </label>
-    <div className="flex flex-wrap gap-4">
-      {[
-        { value: "Ready to deploy immediately", id: "ready" },
-        { value: "Need to raise", id: "need-raise" },
-      ].map((opt) => (
-        <label key={opt.id} className="flex items-center space-x-2">
-          <input
-            type="checkbox"
-            checked={formData.capitalAvailability.includes(opt.value)}
-            onChange={() => {
-              setFormData((prev) => {
-                const alreadySelected = prev.capitalAvailability.includes(opt.value)
-                return {
-                  ...prev,
-                  capitalAvailability: alreadySelected
-                    ? prev.capitalAvailability.filter((v) => v !== opt.value)
-                    : [...prev.capitalAvailability, opt.value],
-                }
-              })
-            }}
-          />
-          <span>{opt.value}</span>
-        </label>
-      ))}
-    </div>
-  </div>
-
-  {/* Company Type */}
-  <div className="col-span-1">
-    <label className="block text-sm font-medium text-gray-700 mb-2">
-      Company Type
-    </label>
-    <div className="flex flex-wrap gap-4">
-      {[
-        "Buy Side Mandate",
-        "Entrepreneurship through Acquisition",
-        "Family Office",
-        "Holding Company",
-        "Independent Sponsor",
-        "Private Equity",
-        "Single Acquisition Search",
-        "Strategic Operating Company",
-      ].map((option) => (
-        <label key={option} className="flex items-center space-x-2">
-          <input
-            type="checkbox"
-            checked={formData.companyType.includes(option)}
-            onChange={() => {
-              setFormData((prev) => {
-                const alreadySelected = prev.companyType.includes(option)
-                return {
-                  ...prev,
-                  companyType: alreadySelected
-                    ? prev.companyType.filter((c) => c !== option)
-                    : [...prev.companyType, option],
-                }
-              })
-            }}
-          />
-          <span>{option}</span>
-        </label>
-      ))}
-    </div>
-  </div>
-
-  {/* Min Prior Acquisitions */}
-  <div className="col-span-1">
-    <label
-      htmlFor="minPriorAcquisitions"
-      className="block text-sm font-medium text-gray-700 mb-1"
-    >
-      Minimum Prior Acquisitions
-    </label>
-    <Input
-      id="minPriorAcquisitions"
-      type="number"
-      min="0"
-      value={formData.minPriorAcquisitions || ""}
-      onChange={(e) => handleNumberChange(e, "minPriorAcquisitions")}
-      className="w-full"
-    />
-  </div>
-</div>
-
-
-            <div>
-              <label
-                htmlFor="minTransactionSize"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Minimum Transaction Size
+            {/* ✅ Fixed: Capital Availability with exact enum values */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Capital Availability <span className="text-red-500">*</span>
               </label>
-              <Input
-                id="minTransactionSize"
-                type="number"
-                min="0"
-                value={formData.minTransactionSize || ""}
-                onChange={(e) => handleNumberChange(e, "minTransactionSize")}
-                className="w-full"
-              />
+              <div className="space-y-3">
+                <div className="flex items-center space-x-3">
+                  <Checkbox
+                    id="ready-capital"
+                    checked={formData.capitalAvailability.includes(CAPITAL_AVAILABILITY_OPTIONS.READY)}
+                    onCheckedChange={(checked) =>
+                      handleCapitalAvailabilityChange(checked, CAPITAL_AVAILABILITY_OPTIONS.READY)
+                    }
+                    className="border-[#d0d5dd]"
+                  />
+                  <label htmlFor="ready-capital" className="text-sm cursor-pointer">
+                    {CAPITAL_AVAILABILITY_OPTIONS.READY}
+                  </label>
+                </div>
+
+                <div className="flex items-center space-x-3">
+                  <Checkbox
+                    id="need-raise"
+                    checked={formData.capitalAvailability.includes(CAPITAL_AVAILABILITY_OPTIONS.NEED)}
+                    onCheckedChange={(checked) =>
+                      handleCapitalAvailabilityChange(checked, CAPITAL_AVAILABILITY_OPTIONS.NEED)
+                    }
+                    className="border-[#d0d5dd]"
+                  />
+                  <label htmlFor="need-raise" className="text-sm cursor-pointer">
+                    {CAPITAL_AVAILABILITY_OPTIONS.NEED}
+                  </label>
+                </div>
+              </div>
+
+              {/* Show selected values */}
+              {formData.capitalAvailability.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {formData.capitalAvailability.map((item) => (
+                    <span
+                      key={item}
+                      className="flex items-center bg-green-100 text-green-800 text-sm px-3 py-1 rounded-full"
+                    >
+                      {item}
+                      <button
+                        type="button"
+                        onClick={() => handleCapitalAvailabilityChange(false, item)}
+                        className="ml-2 text-green-600 hover:text-green-800 focus:outline-none"
+                        aria-label={`Remove ${item}`}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Company Type - spans full width on md+ */}
+            <div className="md:col-span-2 w-full">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Company Type</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-between text-left h-auto min-h-11 px-3 py-2 border border-gray-300 hover:border-gray-400 focus:border-[#3aafa9] focus:ring-2 focus:ring-[#3aafa9]/20 rounded-md overflow-hidden"
+                  >
+                    <span
+                      className={`${Array.isArray(formData.companyType) && formData.companyType.length > 0 ? "text-gray-900" : "text-gray-500"} truncate block pr-2`}
+                    >
+                      {Array.isArray(formData.companyType) && formData.companyType.length > 0
+                        ? formData.companyType.join(", ")
+                        : "Select company types"}
+                    </span>
+                    <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+
+                <PopoverContent
+                  align="start"
+                  sideOffset={4}
+                  className="max-w-full w-[--radix-popover-trigger-width] p-0 border border-gray-200 rounded-md shadow-lg bg-white"
+                >
+                  <div className="p-3 border-b border-gray-100 bg-gray-50">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-sm font-medium text-gray-900">Select Company Types</h3>
+                      <span className="text-xs text-gray-500">
+                        {Array.isArray(formData.companyType) ? formData.companyType.length : 0} selected
+                      </span>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const allOptions = [
+                            "Buy Side Mandate",
+                            "Entrepreneurship through Acquisition",
+                            "Family Office",
+                            "Holding Company",
+                            "Independent Sponsor",
+                            "Private Equity",
+                            "Single Acquisition Search",
+                            "Strategic Operating Company",
+                          ]
+                          setFormData((prev) => ({ ...prev, companyType: allOptions }))
+                        }}
+                        className="flex-1 px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded transition-colors"
+                      >
+                        Select All
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormData((prev) => ({ ...prev, companyType: [] }))}
+                        className="flex-1 px-2 py-1 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded transition-colors"
+                      >
+                        Clear All
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="max-h-60 overflow-y-auto">
+                    {[
+                      "Buy Side Mandate",
+                      "Entrepreneurship through Acquisition",
+                      "Family Office",
+                      "Holding Company",
+                      "Independent Sponsor",
+                      "Private Equity",
+                      "Single Acquisition Search",
+                      "Strategic Operating Company",
+                    ].map((option) => {
+                      const isChecked = Array.isArray(formData.companyType) && formData.companyType.includes(option)
+
+                      return (
+                        <div
+                          key={option}
+                          className={`flex items-center space-x-3 p-3 cursor-pointer transition-colors ${
+                            isChecked ? "bg-blue-50 hover:bg-blue-100" : "hover:bg-gray-50"
+                          }`}
+                          onClick={() => handleMultiSelectChange(option)}
+                        >
+                          <div className="relative">
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => {}} // Controlled by onClick above
+                              className="h-4 w-4 border-gray-300 rounded appearance-none border-2 checked:bg-[#3aafa9] checked:border-[#3aafa9] focus:ring-[#3aafa9] focus:ring-2 transition-colors"
+                            />
+                            {isChecked && (
+                              <svg
+                                className="absolute inset-0 h-4 w-4 text-white pointer-events-none"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </div>
+                          <label
+                            className={`text-sm cursor-pointer flex-1 select-none ${
+                              isChecked ? "font-medium text-blue-900" : "text-gray-700"
+                            }`}
+                          >
+                            {option}
+                          </label>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </PopoverContent>
+              </Popover>
+
+              {/* Display selected items as removable tags */}
+              {Array.isArray(formData.companyType) && formData.companyType.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {formData.companyType.map((item) => (
+                    <span
+                      key={item}
+                      className="flex items-center bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full transition-colors hover:bg-blue-200"
+                    >
+                      <span className="truncate max-w-xs">{item}</span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleMultiSelectChange(item)
+                        }}
+                        className="ml-2 text-blue-600 hover:text-blue-800 focus:outline-none transition-colors"
+                        aria-label={`Remove ${item}`}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="md:col-span-2">
+              <div className="flex flex-col md:flex-row w-full gap-4">
+                {/* Minimum Prior Acquisitions */}
+                <div className="w-full">
+                  <label htmlFor="minPriorAcquisitions" className="block text-sm font-medium text-gray-700 mb-1">
+                    Minimum Prior Acquisitions
+                  </label>
+                  <Input
+                    id="minPriorAcquisitions"
+                    type="number"
+                    min="0"
+                    value={formData.minPriorAcquisitions || ""}
+                    onChange={(e) => handleNumberChange(e, "minPriorAcquisitions")}
+                    className="w-full"
+                  />
+                </div>
+
+                {/* Minimum Transaction Size */}
+                <div className="w-full">
+                  <label htmlFor="minTransactionSize" className="block text-sm font-medium text-gray-700 mb-1">
+                    Minimum Transaction Size
+                  </label>
+                  <Input
+                    id="minTransactionSize"
+                    type="number"
+                    min="0"
+                    value={formData.minTransactionSize || ""}
+                    onChange={(e) => handleNumberChange(e, "minTransactionSize")}
+                    className="w-full"
+                  />
+                </div>
+              </div>
             </div>
           </section>
 
           {/* Documents Section */}
           <section className="bg-[#f9f9f9] p-6 rounded-lg">
-            <h2 className="text-xl font-semibold mb-6">Documents</h2>
+            <h2 className="text-xl font-semibold mb-6">Upload New Documents</h2>
 
-            {/* Existing Documents */}
-            {existingDocuments.length > 0 && (
-              <div className="mb-6">
-                <h3 className="text-lg font-medium mb-3">Existing Documents</h3>
-                <ul className="space-y-2">
-                  {existingDocuments.map((doc, idx) => (
-                    <li
-                      key={doc.filename || doc.originalName || idx}
-                      className="flex items-center justify-between border rounded-md p-3"
-                    >
-                      <div className="flex items-center">
-                        <FileText className="h-5 w-5 mr-2 text-gray-500" />
-                        <span className="text-sm text-gray-700">
-                          {doc.originalName}
-                        </span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => handleDocumentDownload(doc)}
-                        >
-                          <Download className="h-4 w-4 mr-1" />
-                          Download
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleDocumentDelete(doc)}
-                        >
-                          <X className="h-4 w-4 mr-1" />
-                          Delete
-                        </Button>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Upload New Documents */}
-            <div>
-              <label
-                htmlFor="documents"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Upload New Documents
+            {/* All Documents (Existing + New) in one section */}
+            <div className="mb-6">
+              <label htmlFor="documents" className="block text-sm font-medium text-gray-700 mb-3">
+                Documents
               </label>
+
+              {/* Show existing documents and new documents together */}
+              {(existingDocuments.length > 0 || formData.documents.length > 0) && (
+                <div className="mb-4">
+                  <ul className="space-y-2">
+                    {/* Existing Documents */}
+                    {existingDocuments.map((doc, index) => (
+                      <li
+                        key={`existing-${doc.filename}`}
+                        className="flex items-center justify-between border rounded-md p-3 bg-blue-50"
+                      >
+                        <div className="flex items-center">
+                          <FileText className="h-5 w-5 mr-2 text-blue-600" />
+                          <span className="text-sm text-gray-700">{doc.originalName}</span>
+                          <span className="text-xs text-blue-600 ml-2">(Existing)</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Button variant="secondary" size="sm" onClick={() => handleDocumentDownload(doc)}>
+                            <Download className="h-4 w-4 mr-1" />
+                            Download
+                          </Button>
+                          <Button variant="destructive" size="sm" onClick={() => handleDocumentDelete(doc)}>
+                            <X className="h-4 w-4 mr-1" />
+                            Delete
+                          </Button>
+                        </div>
+                      </li>
+                    ))}
+
+                    {/* New Documents */}
+                    {formData.documents.map((file, index) => (
+                      <li
+                        key={`new-${index}`}
+                        className="flex items-center justify-between border rounded-md p-3 bg-green-50"
+                      >
+                        <div className="flex items-center">
+                          <FileText className="h-5 w-5 mr-2 text-green-600" />
+                          <span className="text-sm text-gray-700">{file.name}</span>
+                          <span className="text-xs text-green-600 ml-2">(New)</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-xs text-gray-500">{(file.size / 1024 / 1024).toFixed(2)} MB</span>
+                          <Button variant="destructive" size="sm" onClick={() => handleNewDocumentDelete(index)}>
+                            <X className="h-4 w-4 mr-1" />
+                            Remove
+                          </Button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* File Upload Input */}
               <Input
                 id="documents"
                 type="file"
@@ -2327,14 +2296,10 @@ export default function EditDealPage() {
                 className="w-full"
                 ref={fileInputRef}
               />
-              {fileError && (
-                <p className="text-red-500 text-sm mt-1">{fileError}</p>
-              )}
-              {selectedFile && (
-                <p className="text-green-500 text-sm mt-1">
-                  Selected file: {selectedFile.name}
-                </p>
-              )}
+              {fileError && <p className="text-red-500 text-sm mt-1">{fileError}</p>}
+              <p className="text-sm text-gray-500 mt-1">
+                You can upload multiple files. Maximum file size: 10MB per file.
+              </p>
             </div>
           </section>
 

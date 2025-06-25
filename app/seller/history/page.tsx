@@ -25,22 +25,6 @@ function DealCard({ deal }: { deal: Deal }) {
     <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
       <h3 className="text-lg font-semibold text-gray-900 mb-2">{deal.title}</h3>
       <p className="text-gray-600 text-sm mb-4">{deal.description}</p>
-
-      <div className="flex items-center gap-6 mb-4">
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-teal-500"></div>
-          <span className="text-sm text-gray-600">
-            Buyers Active: <span className="font-medium text-teal-600">{deal.buyersActive}</span>
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-gray-400"></div>
-          <span className="text-sm text-gray-600">
-            Buyers Passed: <span className="font-medium">{deal.buyersPassed}</span>
-          </span>
-        </div>
-      </div>
-
       <div className="space-y-2 text-sm">
         <div>
           <span className="text-gray-500">Closing Date: </span>
@@ -73,7 +57,7 @@ export default function DealsHistoryPage() {
     const fetchSellerProfile = async () => {
       try {
         const token = localStorage.getItem("token")
-        const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+        const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
 
         const response = await fetch(`${apiUrl}/sellers/profile`, {
           headers: {
@@ -107,7 +91,7 @@ export default function DealsHistoryPage() {
         setIsLoadingDeals(true)
         setDealsError(null)
         const token = localStorage.getItem("token")
-        const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+        const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
 
         const response = await fetch(`${apiUrl}/deals/completed`, {
           headers: {
@@ -166,7 +150,7 @@ export default function DealsHistoryPage() {
 
   const getProfilePictureUrl = (path: string | null) => {
     if (!path) return null
-    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+    const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
     const formattedPath = path.replace(/\\/g, "/")
     return `${apiUrl}/${formattedPath.startsWith("/") ? formattedPath.slice(1) : formattedPath}`
   }
@@ -192,7 +176,7 @@ export default function DealsHistoryPage() {
       formData.append("file", file)
 
       const token = localStorage.getItem("token")
-      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
 
       const response = await fetch(`${apiUrl}/sellers/upload-profile-picture`, {
         method: "POST",
@@ -223,7 +207,7 @@ export default function DealsHistoryPage() {
     if (profileName.trim()) {
       try {
         const token = localStorage.getItem("token")
-        const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+        const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
 
         const response = await fetch(`${apiUrl}/sellers/${sellerProfile?._id}`, {
           method: "PATCH",

@@ -1,7 +1,22 @@
 "use client";
+"use client";
 
 import type React from "react";
+import type React from "react";
 
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Search, Eye, LogOut, Briefcase } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Search, Eye, LogOut, Briefcase } from "lucide-react";
@@ -37,6 +52,26 @@ interface Deal {
   t12FreeCashFlow?: number; // <-- Add this line
   t12NetIncome?: number; // <-- Add this line
   documents?: Document[];
+  id: string;
+  sellerId?: string; // Add this line
+  title: string;
+  status: "active" | "pending" | "passed";
+  companyDescription: string;
+  industry: string;
+  geography: string;
+  yearsInBusiness: number;
+  trailingRevenue: number;
+  trailingEbitda: number;
+  averageGrowth: number;
+  netIncome: number;
+  askingPrice: number;
+  businessModel: string;
+  managementPreference: string;
+  phoneNumber: string;
+  email: string;
+  t12FreeCashFlow?: number; // <-- Add this line
+  t12NetIncome?: number; // <-- Add this line
+  documents?: Document[];
 }
 
 interface Document {
@@ -46,9 +81,21 @@ interface Document {
   size: number;
   mimetype: string;
   uploadedAt: string;
+  filename: string;
+  originalName: string;
+  path: string;
+  size: number;
+  mimetype: string;
+  uploadedAt: string;
 }
 
 interface BuyerProfile {
+  _id: string;
+  fullName: string;
+  email: string;
+  companyName: string;
+  role: string;
+  profilePicture: string | null;
   _id: string;
   fullName: string;
   email: string;
@@ -78,7 +125,29 @@ export default function DealsPage() {
     email: string;
   } | null>(null);
   const [sellerInfoMap, setSellerInfoMap] = useState<{ [sellerId: string]: { name: string; email: string; phoneNumber: string } }>({});
+  const [activeTab, setActiveTab] = useState("pending");
+  const [activeTitle, setActiveTitle] = useState("Pending Deals");
+  const [termsModalOpen, setTermsModalOpen] = useState(false);
+  const [selectedDealId, setSelectedDealId] = useState<string | null>(null);
+  const [profileSubmitted, setProfileSubmitted] = useState(false);
+  const [authToken, setAuthToken] = useState<string | null>(null);
+  const [buyerId, setBuyerId] = useState<string | null>(null);
+  const [dealDetailsOpen, setDealDetailsOpen] = useState(false);
+  const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [buyerProfile, setBuyerProfile] = useState<BuyerProfile | null>(null);
+  const [deals, setDeals] = useState<Deal[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [phoneNumber, setphoneNumber] = useState<{
+    phone: string;
+    email: string;
+  } | null>(null);
+  const [sellerInfoMap, setSellerInfoMap] = useState<{ [sellerId: string]: { name: string; email: string; phoneNumber: string } }>({});
 
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -86,11 +155,20 @@ export default function DealsPage() {
   const fetchDealsByStatus = async (
     status: "pending" | "active" | "passed"
   ) => {
+  const fetchDealsByStatus = async (
+    status: "pending" | "active" | "passed"
+  ) => {
     try {
       setLoading(true);
       setApiError(null);
       const token = localStorage.getItem("token");
+      setLoading(true);
+      setApiError(null);
+      const token = localStorage.getItem("token");
       if (!token) {
+        console.warn("No token found");
+        setApiError("Authentication token not found. Please log in again.");
+        return [];
         console.warn("No token found");
         setApiError("Authentication token not found. Please log in again.");
         return [];
@@ -100,20 +178,30 @@ export default function DealsPage() {
 
       // Map status to API endpoint
       let endpoint = "";
+      let endpoint = "";
       switch (status) {
         case "pending":
+          endpoint = "/buyers/deals/pending";
+          break;
           endpoint = "/buyers/deals/pending";
           break;
         case "active":
           endpoint = "/buyers/deals/active";
           break;
+          endpoint = "/buyers/deals/active";
+          break;
         case "passed":
+          endpoint = "/buyers/deals/rejected";
+          break;
           endpoint = "/buyers/deals/rejected";
           break;
       }
 
       const url = `${apiUrl}${endpoint}`;
+      const url = `${apiUrl}${endpoint}`;
 
+      console.log(`Fetching ${status} deals from:`, url);
+      console.log("Using token:", token.substring(0, 20) + "...");
       console.log(`Fetching ${status} deals from:`, url);
       console.log("Using token:", token.substring(0, 20) + "...");
 
@@ -123,6 +211,7 @@ export default function DealsPage() {
           "Content-Type": "application/json",
         },
       });
+      });
 
       if (!response.ok) {
         if (response.status === 401) {
@@ -131,18 +220,28 @@ export default function DealsPage() {
           localStorage.removeItem("userId");
           router.push("/buyer/login?session=expired");
           return [];
+          console.error("Authentication failed - redirecting to login");
+          localStorage.removeItem("token");
+          localStorage.removeItem("userId");
+          router.push("/buyer/login?session=expired");
+          return [];
         }
+        throw new Error(`Failed to fetch ${status} deals: ${response.status}`);
         throw new Error(`Failed to fetch ${status} deals: ${response.status}`);
       }
 
+      const data = await response.json();
+      console.log(`Raw API response for ${status}:`, data);
       const data = await response.json();
       console.log(`Raw API response for ${status}:`, data);
 
       // Map API response to component structure
       const mappedDeals = data.map((deal: any) => {
         console.log("Raw deal from API:", deal);
+        console.log("Raw deal from API:", deal);
         const mappedDeal = {
           id: deal._id,
+          sellerId: typeof deal.seller === "string" ? deal.seller : deal.seller?._id,
           sellerId: typeof deal.seller === "string" ? deal.seller : deal.seller?._id,
           title: deal.title,
           status: status,
@@ -159,6 +258,9 @@ export default function DealsPage() {
           managementPreference: getManagementPreferenceString(
             deal.managementPreferences
           ),
+          managementPreference: getManagementPreferenceString(
+            deal.managementPreferences
+          ),
           phoneNumber: "Contact via platform",
           email: "Contact via platform",
           t12FreeCashFlow: deal.financialDetails?.t12FreeCashFlow || 0, // <-- Add this line
@@ -168,20 +270,34 @@ export default function DealsPage() {
         console.log("Mapped deal:", mappedDeal);
         return mappedDeal;
       });
+        };
+        console.log("Mapped deal:", mappedDeal);
+        return mappedDeal;
+      });
 
+      console.log(`All mapped ${status} deals:`, mappedDeals);
+      return mappedDeals;
       console.log(`All mapped ${status} deals:`, mappedDeals);
       return mappedDeals;
     } catch (error) {
       console.error(`Error fetching ${status} deals:`, error);
       setApiError(`Failed to load ${status} deals. Please try again later.`);
       return [];
+      console.error(`Error fetching ${status} deals:`, error);
+      setApiError(`Failed to load ${status} deals. Please try again later.`);
+      return [];
     } finally {
       setLoading(false);
+      setLoading(false);
     }
+  };
   };
 
   const fetchAllDeals = async () => {
     try {
+      setLoading(true);
+      setDeals([]); // <-- Add this line to clear previous deals
+      console.log("Fetching all deals...");
       setLoading(true);
       setDeals([]); // <-- Add this line to clear previous deals
       console.log("Fetching all deals...");
@@ -192,22 +308,38 @@ export default function DealsPage() {
         fetchDealsByStatus("active"),
         fetchDealsByStatus("passed"),
       ]);
+      ]);
 
       // Combine all deals
       const allDeals = [...pendingDeals, ...activeDeals, ...passedDeals];
       console.log("Combined all deals:", allDeals);
+      const allDeals = [...pendingDeals, ...activeDeals, ...passedDeals];
+      console.log("Combined all deals:", allDeals);
 
+      setDeals(allDeals);
       setDeals(allDeals);
     } catch (error) {
       console.error("Error fetching all deals:", error);
       setApiError("Failed to load deals. Please try again later.");
+      console.error("Error fetching all deals:", error);
+      setApiError("Failed to load deals. Please try again later.");
     } finally {
       setLoading(false);
+      setLoading(false);
     }
+  };
   };
 
   // Helper functions
   const getBusinessModelString = (businessModel: any) => {
+    if (!businessModel) return "Not specified";
+    const models = [];
+    if (businessModel.recurringRevenue) models.push("Recurring Revenue");
+    if (businessModel.projectBased) models.push("Project-Based");
+    if (businessModel.assetLight) models.push("Asset Light");
+    if (businessModel.assetHeavy) models.push("Asset Heavy");
+    return models.join(", ") || "Not specified";
+  };
     if (!businessModel) return "Not specified";
     const models = [];
     if (businessModel.recurringRevenue) models.push("Recurring Revenue");
@@ -225,13 +357,27 @@ export default function DealsPage() {
     if (managementPreferences.staffStay) prefs.push("Staff willing to stay");
     return prefs.join(", ") || "Not specified";
   };
+    if (!managementPreferences) return "Not specified";
+    const prefs = [];
+    if (managementPreferences.retiringDivesting)
+      prefs.push("Retiring/Divesting");
+    if (managementPreferences.staffStay) prefs.push("Staff willing to stay");
+    return prefs.join(", ") || "Not specified";
+  };
 
   // Update deal status via API
   const updateDealStatus = async (
     dealId: string,
     action: "activate" | "reject" | "set-pending"
   ) => {
+  const updateDealStatus = async (
+    dealId: string,
+    action: "activate" | "reject" | "set-pending"
+  ) => {
     try {
+      console.log(`=== Starting updateDealStatus ===`);
+      console.log(`Deal ID: ${dealId}`);
+      console.log(`Action: ${action}`);
       console.log(`=== Starting updateDealStatus ===`);
       console.log(`Deal ID: ${dealId}`);
       console.log(`Action: ${action}`);
@@ -244,8 +390,15 @@ export default function DealsPage() {
       console.log("Token exists:", !!token);
       console.log("Buyer ID:", currentBuyerId);
       console.log("API URL:", apiUrl);
+      console.log("Token exists:", !!token);
+      console.log("Buyer ID:", currentBuyerId);
+      console.log("API URL:", apiUrl);
 
       if (!token) {
+        const errorMsg = "Authentication token not found. Please log in again.";
+        console.error(errorMsg);
+        setApiError(errorMsg);
+        return false;
         const errorMsg = "Authentication token not found. Please log in again.";
         console.error(errorMsg);
         setApiError(errorMsg);
@@ -257,8 +410,15 @@ export default function DealsPage() {
         console.error(errorMsg);
         setApiError(errorMsg);
         return false;
+        const errorMsg = "User ID not found. Please log in again.";
+        console.error(errorMsg);
+        setApiError(errorMsg);
+        return false;
       }
 
+      let endpoint = "";
+      const method = "POST";
+      let body: any = {};
       let endpoint = "";
       const method = "POST";
       let body: any = {};
@@ -269,7 +429,13 @@ export default function DealsPage() {
           endpoint = `/buyers/deals/${dealId}/activate`;
           body = { notes: "Buyer interested in deal" };
           break;
+          endpoint = `/buyers/deals/${dealId}/activate`;
+          body = { notes: "Buyer interested in deal" };
+          break;
         case "reject":
+          endpoint = `/buyers/deals/${dealId}/reject`;
+          body = { notes: "Deal passed by buyer" };
+          break;
           endpoint = `/buyers/deals/${dealId}/reject`;
           body = { notes: "Deal passed by buyer" };
           break;
@@ -277,7 +443,14 @@ export default function DealsPage() {
           endpoint = `/buyers/deals/${dealId}/set-pending`;
           body = { notes: "Deal set back to pending" };
           break;
+          endpoint = `/buyers/deals/${dealId}/set-pending`;
+          body = { notes: "Deal set back to pending" };
+          break;
         default:
+          const errorMsg = `Invalid action: ${action}`;
+          console.error(errorMsg);
+          setApiError(errorMsg);
+          return false;
           const errorMsg = `Invalid action: ${action}`;
           console.error(errorMsg);
           setApiError(errorMsg);
@@ -288,9 +461,15 @@ export default function DealsPage() {
       console.log(`=== Making API Request ===`);
       console.log(`URL: ${url}`);
       console.log(`Method: ${method}`);
+      const url = `${apiUrl}${endpoint}`;
+      console.log(`=== Making API Request ===`);
+      console.log(`URL: ${url}`);
+      console.log(`Method: ${method}`);
       console.log(`Headers:`, {
         Authorization: `Bearer ${token.substring(0, 20)}...`,
         "Content-Type": "application/json",
+      });
+      console.log(`Body:`, body);
       });
       console.log(`Body:`, body);
 
@@ -302,7 +481,12 @@ export default function DealsPage() {
         },
         body: JSON.stringify(body),
       });
+      });
 
+      console.log(`=== API Response ===`);
+      console.log(`Status: ${response.status}`);
+      console.log(`Status Text: ${response.statusText}`);
+      console.log(`OK: ${response.ok}`);
       console.log(`=== API Response ===`);
       console.log(`Status: ${response.status}`);
       console.log(`Status Text: ${response.statusText}`);
@@ -310,15 +494,27 @@ export default function DealsPage() {
 
       if (!response.ok) {
         let errorText = "";
+        let errorText = "";
         try {
+          errorText = await response.text();
+          console.error(`API Error Response:`, errorText);
           errorText = await response.text();
           console.error(`API Error Response:`, errorText);
         } catch (e) {
           console.error("Could not read error response:", e);
           errorText = `HTTP ${response.status} ${response.statusText}`;
+          console.error("Could not read error response:", e);
+          errorText = `HTTP ${response.status} ${response.statusText}`;
         }
 
         if (response.status === 401) {
+          console.error(
+            "Authentication failed during status update - redirecting to login"
+          );
+          localStorage.removeItem("token");
+          localStorage.removeItem("userId");
+          router.push("/buyer/login?session=expired");
+          return false;
           console.error(
             "Authentication failed during status update - redirecting to login"
           );
@@ -332,27 +528,42 @@ export default function DealsPage() {
         console.error(errorMsg);
         setApiError(errorMsg);
         return false;
+        const errorMsg = `Failed to update deal status. Server responded with: ${response.status} - ${errorText}`;
+        console.error(errorMsg);
+        setApiError(errorMsg);
+        return false;
       }
 
+      let responseData = null;
       let responseData = null;
       try {
         responseData = await response.json();
         console.log(`Success Response Data:`, responseData);
+        responseData = await response.json();
+        console.log(`Success Response Data:`, responseData);
       } catch (e) {
+        console.log("No JSON response body or failed to parse");
         console.log("No JSON response body or failed to parse");
       }
 
       console.log(`=== Deal ${dealId} successfully updated to ${action} ===`);
+      console.log(`=== Deal ${dealId} successfully updated to ${action} ===`);
 
       // Show success message
+      console.log(`SUCCESS: Deal status updated to ${action}`);
       console.log(`SUCCESS: Deal status updated to ${action}`);
 
       // Refresh all deals after successful update
       console.log("Refreshing all deals after successful update...");
       await fetchAllDeals();
+      console.log("Refreshing all deals after successful update...");
+      await fetchAllDeals();
 
       return true;
+      return true;
     } catch (error) {
+      console.error(`=== Error updating deal status to ${action} ===`);
+      console.error("Error details:", error);
       console.error(`=== Error updating deal status to ${action} ===`);
       console.error("Error details:", error);
 
@@ -361,13 +572,22 @@ export default function DealsPage() {
       }`;
       setApiError(errorMsg);
       return false;
+      const errorMsg = `Failed to update deal status: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`;
+      setApiError(errorMsg);
+      return false;
     }
+  };
   };
 
   // Initialize component
   const initializeComponent = () => {
     console.log("Initializing DealsPage component");
+    console.log("Initializing DealsPage component");
 
+    const urlToken = searchParams?.get("token");
+    const urlUserId = searchParams?.get("userId");
     const urlToken = searchParams?.get("token");
     const urlUserId = searchParams?.get("userId");
 
@@ -377,7 +597,12 @@ export default function DealsPage() {
       localStorage.setItem("token", cleanToken);
       setAuthToken(cleanToken);
       console.log("Token set from URL:", cleanToken.substring(0, 10) + "...");
+      const cleanToken = urlToken.trim();
+      localStorage.setItem("token", cleanToken);
+      setAuthToken(cleanToken);
+      console.log("Token set from URL:", cleanToken.substring(0, 10) + "...");
     } else {
+      const storedToken = localStorage.getItem("token");
       const storedToken = localStorage.getItem("token");
       if (storedToken) {
         const cleanToken = storedToken.trim();
@@ -386,7 +611,16 @@ export default function DealsPage() {
           "Token set from localStorage:",
           cleanToken.substring(0, 10) + "..."
         );
+        const cleanToken = storedToken.trim();
+        setAuthToken(cleanToken);
+        console.log(
+          "Token set from localStorage:",
+          cleanToken.substring(0, 10) + "..."
+        );
       } else {
+        console.warn("No token found, redirecting to login");
+        router.push("/buyer/login");
+        return false;
         console.warn("No token found, redirecting to login");
         router.push("/buyer/login");
         return false;
@@ -399,28 +633,52 @@ export default function DealsPage() {
       localStorage.setItem("userId", cleanUserId);
       setBuyerId(cleanUserId);
       console.log("Buyer ID set from URL:", cleanUserId);
+      const cleanUserId = urlUserId.trim();
+      localStorage.setItem("userId", cleanUserId);
+      setBuyerId(cleanUserId);
+      console.log("Buyer ID set from URL:", cleanUserId);
     } else {
+      const storedUserId = localStorage.getItem("userId");
       const storedUserId = localStorage.getItem("userId");
       if (storedUserId) {
         const cleanUserId = storedUserId.trim();
         setBuyerId(cleanUserId);
         console.log("Buyer ID set from localStorage:", cleanUserId);
+        const cleanUserId = storedUserId.trim();
+        setBuyerId(cleanUserId);
+        console.log("Buyer ID set from localStorage:", cleanUserId);
       } else {
+        console.warn("No user ID found");
         console.warn("No user ID found");
       }
     }
 
     return true;
   };
+    return true;
+  };
 
   // Check for token and userId on mount and from URL parameters
   useEffect(() => {
+    console.log("DealsPage useEffect triggered");
     console.log("DealsPage useEffect triggered");
 
     setActiveTitle(
       `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Deals`
     );
+    setActiveTitle(
+      `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Deals`
+    );
 
+    if (
+      searchParams?.get("profileSubmitted") === "true" &&
+      !localStorage.getItem("profileSubmissionNotified")
+    ) {
+      setProfileSubmitted(true);
+      localStorage.setItem("profileSubmissionNotified", "true");
+      console.log(
+        "Profile Submitted: Your company profile has been successfully submitted."
+      );
     if (
       searchParams?.get("profileSubmitted") === "true" &&
       !localStorage.getItem("profileSubmissionNotified")
@@ -435,12 +693,19 @@ export default function DealsPage() {
     if (!isInitialized) {
       const initialized = initializeComponent();
       if (!initialized) return;
+      const initialized = initializeComponent();
+      if (!initialized) return;
 
       setIsInitialized(true);
       checkProfileSubmission();
       fetchBuyerProfile();
       fetchAllDeals();
+      setIsInitialized(true);
+      checkProfileSubmission();
+      fetchBuyerProfile();
+      fetchAllDeals();
     }
+  }, [searchParams, router, activeTab, isInitialized]);
   }, [searchParams, router, activeTab, isInitialized]);
 
   // Add a separate effect to handle page visibility changes
@@ -450,12 +715,20 @@ export default function DealsPage() {
         console.log("Page became visible, refreshing data");
         fetchAllDeals();
         fetchBuyerProfile();
+        console.log("Page became visible, refreshing data");
+        fetchAllDeals();
+        fetchBuyerProfile();
       }
+    };
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [isInitialized]);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [isInitialized]);
@@ -464,8 +737,12 @@ export default function DealsPage() {
     try {
       const token = localStorage.getItem("token");
       const userId = localStorage.getItem("userId");
+      const token = localStorage.getItem("token");
+      const userId = localStorage.getItem("userId");
 
       if (!token || !userId) {
+        console.warn("Missing token or userId for profile check");
+        return;
         console.warn("Missing token or userId for profile check");
         return;
       }
@@ -481,27 +758,40 @@ export default function DealsPage() {
         console.log("Profile check error:", error);
         return null;
       });
+        console.log("Profile check error:", error);
+        return null;
+      });
 
       if (!response || !response.ok) {
+        console.log("Profile check failed or not supported");
+        return;
         console.log("Profile check failed or not supported");
         return;
       }
 
       const data = await response.json();
+      const data = await response.json();
 
       if (data && (data.exists === false || data.profileExists === false)) {
+        console.log("No profile found, redirecting to profile page");
+        router.push("/buyer/acquireprofile");
         console.log("No profile found, redirecting to profile page");
         router.push("/buyer/acquireprofile");
       }
     } catch (error) {
       console.error("Error checking profile:", error);
+      console.error("Error checking profile:", error);
     }
+  };
   };
 
   const fetchBuyerProfile = async () => {
     try {
       const token = localStorage.getItem("token");
+      const token = localStorage.getItem("token");
       if (!token) {
+        console.warn("Missing token for profile fetch");
+        return;
         console.warn("Missing token for profile fetch");
         return;
       }
@@ -513,6 +803,7 @@ export default function DealsPage() {
           Authorization: `Bearer ${token}`,
         },
       });
+      });
 
       if (!response.ok) {
         if (response.status === 401) {
@@ -520,19 +811,31 @@ export default function DealsPage() {
           localStorage.removeItem("userId");
           router.push("/buyer/login?session=expired");
           return;
+          localStorage.removeItem("token");
+          localStorage.removeItem("userId");
+          router.push("/buyer/login?session=expired");
+          return;
         }
+        throw new Error(`Failed to fetch buyer profile: ${response.status}`);
         throw new Error(`Failed to fetch buyer profile: ${response.status}`);
       }
 
       const data = await response.json();
       setBuyerProfile(data);
       console.log("Buyer profile fetched:", data);
+      const data = await response.json();
+      setBuyerProfile(data);
+      console.log("Buyer profile fetched:", data);
     } catch (error) {
+      console.error("Error fetching buyer profile:", error);
       console.error("Error fetching buyer profile:", error);
     }
   };
+  };
 
   const handlePassDeal = async (dealId: string) => {
+    console.log("Handling pass deal:", dealId);
+    const success = await updateDealStatus(dealId, "reject");
     console.log("Handling pass deal:", dealId);
     const success = await updateDealStatus(dealId, "reject");
 
@@ -541,16 +844,25 @@ export default function DealsPage() {
         "Deal Passed: The deal has been moved to the passed section."
       );
       setDealDetailsOpen(false);
+      console.log(
+        "Deal Passed: The deal has been moved to the passed section."
+      );
+      setDealDetailsOpen(false);
 
       // Switch to passed tab to show the deal
       setActiveTab("passed");
       setActiveTitle("Passed Deals");
+      setActiveTab("passed");
+      setActiveTitle("Passed Deals");
     }
+  };
   };
 
   // Fetch seller contact info for a deal
   const fetchphoneNumber = async (deal: Deal) => {
     try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
       const token = localStorage.getItem("token");
       if (!token) return;
 
@@ -568,21 +880,36 @@ export default function DealsPage() {
           },
         }
       );
+      const response = await fetch(
+        `${apiUrl}/deals/${deal.id}/seller-contact`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (!response.ok) {
+        console.error(`Failed to fetch seller contact: ${response.status}`);
+        return;
         console.error(`Failed to fetch seller contact: ${response.status}`);
         return;
       }
 
       const data = await response.json();
+      const data = await response.json();
       setphoneNumber({
         phone: data.phoneNumber || "N/A",
         email: data.email || "N/A",
       });
+      });
     } catch (error) {
       console.error("Error fetching seller contact:", error);
       setphoneNumber({ phone: "N/A", email: "N/A" });
+      console.error("Error fetching seller contact:", error);
+      setphoneNumber({ phone: "N/A", email: "N/A" });
     }
+  };
   };
 
   // Show deal details and fetch seller contact if active
@@ -596,13 +923,27 @@ export default function DealsPage() {
       } else {
         setSellerInfoMap({});
       }
+      setSelectedDeal(deal);
+      setDealDetailsOpen(true);
+      fetchphoneNumber(deal);
+      if (deal.sellerId) {
+        fetchSellerInfo(deal.sellerId);
+      } else {
+        setSellerInfoMap({});
+      }
     } else {
+      setphoneNumber(null);
+      handleGoToCIM(deal.id);
       setphoneNumber(null);
       handleGoToCIM(deal.id);
     }
   };
+  };
 
   const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    setActiveTitle(`${tab.charAt(0).toUpperCase() + tab.slice(1)} Deals`);
+  };
     setActiveTab(tab);
     setActiveTitle(`${tab.charAt(0).toUpperCase() + tab.slice(1)} Deals`);
   };
@@ -610,13 +951,17 @@ export default function DealsPage() {
   const handleSearchChange = (query: string) => {
     setSearchQuery(query);
   };
+    setSearchQuery(query);
+  };
 
   const filteredDeals = deals.filter((deal) => {
     // First filter by tab status
     if (deal.status !== activeTab) return false;
+    if (deal.status !== activeTab) return false;
 
     // Then filter by search query if one exists
     if (searchQuery.trim() !== "") {
+      const query = searchQuery.toLowerCase();
       const query = searchQuery.toLowerCase();
       return (
         deal.title.toLowerCase().includes(query) ||
@@ -625,8 +970,11 @@ export default function DealsPage() {
         deal.geography.toLowerCase().includes(query) ||
         deal.businessModel.toLowerCase().includes(query)
       );
+      );
     }
 
+    return true;
+  });
     return true;
   });
 
@@ -634,11 +982,17 @@ export default function DealsPage() {
     setSelectedDealId(dealId);
     setTermsModalOpen(true);
   };
+    setSelectedDealId(dealId);
+    setTermsModalOpen(true);
+  };
 
   const handleApproveTerms = async () => {
     setTermsModalOpen(false);
+    setTermsModalOpen(false);
 
     if (selectedDealId) {
+      console.log("Handling approve terms for deal:", selectedDealId);
+      const success = await updateDealStatus(selectedDealId, "activate");
       console.log("Handling approve terms for deal:", selectedDealId);
       const success = await updateDealStatus(selectedDealId, "activate");
 
@@ -646,12 +1000,18 @@ export default function DealsPage() {
         console.log(
           "Deal Approved: The deal has been moved to the active section."
         );
+        console.log(
+          "Deal Approved: The deal has been moved to the active section."
+        );
 
         // Switch to active tab to show the deal
         setActiveTab("active");
         setActiveTitle("Active Deals");
+        setActiveTab("active");
+        setActiveTitle("Active Deals");
       }
     }
+  };
   };
 
   const handleLogout = () => {
@@ -660,16 +1020,28 @@ export default function DealsPage() {
     localStorage.removeItem("userId");
     router.push("/buyer/login");
   };
+    console.log("Logging out");
+    localStorage.removeItem("token");
+    localStorage.removeItem("userId");
+    router.push("/buyer/login");
+  };
 
   const getProfilePictureUrl = (path: string | null) => {
+    if (!path) return null;
     if (!path) return null;
 
     const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
     if (path.startsWith("http://") || path.startsWith("https://")) {
       return path;
+      return path;
     }
 
+    const formattedPath = path.replace(/\\/g, "/");
+    return `${apiUrl}/${
+      formattedPath.startsWith("/") ? formattedPath.substring(1) : formattedPath
+    }`;
+  };
     const formattedPath = path.replace(/\\/g, "/");
     return `${apiUrl}/${
       formattedPath.startsWith("/") ? formattedPath.substring(1) : formattedPath
@@ -685,12 +1057,14 @@ export default function DealsPage() {
             <span>Active</span>
           </div>
         );
+        );
       case "pending":
         return (
           <div className="flex items-center">
             <div className="h-2 w-2 rounded-full bg-orange-500 mr-2"></div>
             <span>Pending</span>
           </div>
+        );
         );
       case "passed":
         return (
@@ -699,9 +1073,12 @@ export default function DealsPage() {
             <span>Passed</span>
           </div>
         );
+        );
       default:
         return null;
+        return null;
     }
+  };
   };
 
   const countDealsByStatus = (status: string) => {
@@ -771,6 +1148,7 @@ export default function DealsPage() {
         <div className="text-gray-500">Initializing...</div>
       </div>
     );
+    );
   }
 
   return (
@@ -784,6 +1162,9 @@ export default function DealsPage() {
                 <img src="/logo.svg" alt="CIM Amplify" className="h-10" />
               </div>
             </Link>
+            <h1 className="text-2xl font-semibold text-gray-800">
+              {activeTitle}
+            </h1>
             <h1 className="text-2xl font-semibold text-gray-800">
               {activeTitle}
             </h1>
@@ -806,6 +1187,9 @@ export default function DealsPage() {
                 <div className="text-sm font-medium">
                   {buyerProfile?.fullName || "User"}
                 </div>
+                <div className="text-sm font-medium">
+                  {buyerProfile?.fullName || "User"}
+                </div>
                 {/* <div className="text-xs text-gray-500">{buyerProfile?.companyName || "Company"}</div> */}
               </div>
               <div className="relative">
@@ -815,14 +1199,22 @@ export default function DealsPage() {
                       getProfilePictureUrl(buyerProfile.profilePicture) ||
                       "/placeholder.svg"
                     }
+                    src={
+                      getProfilePictureUrl(buyerProfile.profilePicture) ||
+                      "/placeholder.svg"
+                    }
                     alt={buyerProfile.fullName}
                     className="h-8 w-8 rounded-full object-cover"
                     onError={(e) => {
+                      (e.target as HTMLImageElement).src = "/placeholder.svg";
                       (e.target as HTMLImageElement).src = "/placeholder.svg";
                     }}
                   />
                 ) : (
                   <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
+                    <span className="text-gray-600 text-sm">
+                      {buyerProfile?.fullName?.charAt(0) || "U"}
+                    </span>
                     <span className="text-gray-600 text-sm">
                       {buyerProfile?.fullName?.charAt(0) || "U"}
                     </span>
@@ -875,6 +1267,11 @@ export default function DealsPage() {
                     viewBox="0 0 20 20"
                     fill="currentColor"
                   >
+                  <svg
+                    className="h-5 w-5 text-green-400"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
                     <path
                       fillRule="evenodd"
                       d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
@@ -883,6 +1280,9 @@ export default function DealsPage() {
                   </svg>
                 </div>
                 <div className="ml-3">
+                  <p className="text-sm font-medium">
+                    Your company profile has been successfully submitted!
+                  </p>
                   <p className="text-sm font-medium">
                     Your company profile has been successfully submitted!
                   </p>
@@ -895,6 +1295,11 @@ export default function DealsPage() {
             <div className="mb-6 rounded-md bg-red-50 p-4 text-red-800 border border-red-200">
               <div className="flex">
                 <div className="flex-shrink-0">
+                  <svg
+                    className="h-5 w-5 text-red-400"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
                   <svg
                     className="h-5 w-5 text-red-400"
                     viewBox="0 0 20 20"
@@ -913,6 +1318,10 @@ export default function DealsPage() {
                     onClick={() => setApiError(null)}
                     className="text-sm underline mt-1"
                   >
+                  <button
+                    onClick={() => setApiError(null)}
+                    className="text-sm underline mt-1"
+                  >
                     Dismiss
                   </button>
                 </div>
@@ -927,6 +1336,8 @@ export default function DealsPage() {
                 onClick={() => {
                   console.log("Manual refresh triggered");
                   fetchAllDeals();
+                  console.log("Manual refresh triggered");
+                  fetchAllDeals();
                 }}
                 variant="outline"
                 className="text-sm"
@@ -938,9 +1349,15 @@ export default function DealsPage() {
                 {countDealsByStatus("pending")} | Active:{" "}
                 {countDealsByStatus("active")} | Passed:{" "}
                 {countDealsByStatus("passed")}
+                Total deals: {deals.length} | Pending:{" "}
+                {countDealsByStatus("pending")} | Active:{" "}
+                {countDealsByStatus("active")} | Passed:{" "}
+                {countDealsByStatus("passed")}
               </div>
             </div>
             <div className="text-xs text-gray-400">
+              Token: {authToken ? `${authToken.substring(0, 10)}...` : "None"} |
+              User ID: {buyerId || "None"}
               Token: {authToken ? `${authToken.substring(0, 10)}...` : "None"} |
               User ID: {buyerId || "None"}
             </div>
@@ -951,10 +1368,18 @@ export default function DealsPage() {
             onValueChange={handleTabChange}
             className="mb-6 gap-2"
           >
+          <Tabs
+            value={activeTab}
+            onValueChange={handleTabChange}
+            className="mb-6 gap-2"
+          >
             <TabsList className="bg-white space-x-4">
               <TabsTrigger
                 value="pending"
                 className={`relative ${
+                  activeTab === "pending"
+                    ? "bg-[#3AAFA9] text-white"
+                    : "bg-gray-200 text-gray-700"
                   activeTab === "pending"
                     ? "bg-[#3AAFA9] text-white"
                     : "bg-gray-200 text-gray-700"
@@ -968,6 +1393,9 @@ export default function DealsPage() {
                   activeTab === "active"
                     ? "bg-[#3AAFA9] text-white"
                     : "bg-gray-200 text-gray-700"
+                  activeTab === "active"
+                    ? "bg-[#3AAFA9] text-white"
+                    : "bg-gray-200 text-gray-700"
                 } hover:bg-[#3AAFA9] hover:text-white px-6 py-2 rounded-md`}
               >
                 Active ({countDealsByStatus("active")})
@@ -975,6 +1403,9 @@ export default function DealsPage() {
               <TabsTrigger
                 value="passed"
                 className={`relative ${
+                  activeTab === "passed"
+                    ? "bg-[#3AAFA9] text-white"
+                    : "bg-gray-200 text-gray-700"
                   activeTab === "passed"
                     ? "bg-[#3AAFA9] text-white"
                     : "bg-gray-200 text-gray-700"
@@ -991,6 +1422,9 @@ export default function DealsPage() {
             </div>
           ) : filteredDeals.length === 0 ? (
             <div className="flex justify-center items-center h-64">
+              <div className="text-gray-500">
+                We will send you an email when new deals match your criteria.
+              </div>
               <div className="text-gray-500">
                 We will send you an email when new deals match your criteria.
               </div>
@@ -1013,7 +1447,37 @@ export default function DealsPage() {
                           : "Hidden Until Active"}
                       </h3>
                     </div>
+              {filteredDeals.map((deal) => {
+                const sellerIdStr = typeof deal.sellerId === 'string' ? deal.sellerId : undefined;
+                const sellerInfo = sellerIdStr ? sellerInfoMap[sellerIdStr] : undefined;
+                return (
+                  <div
+                    key={deal.id}
+                    className="rounded-lg border border-gray-200 bg-white shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+                    onClick={() => handleViewDealDetails(deal)}
+                  >
+                    <div className="flex items-center justify-between border-b border-gray-200 p-4">
+                      <h3 className="text-lg font-medium text-teal-500">
+                        {activeTab === "active"
+                          ? deal.title
+                          : "Hidden Until Active"}
+                      </h3>
+                    </div>
 
+                    <div className="p-4">
+                      {/* Overview */}
+                      <h4 className="mb-2 font-medium text-gray-800">Overview</h4>
+                      <div className="mb-4 space-y-1 text-sm text-gray-600">
+                        <p>Industry: {deal.industry}</p>
+                        <p>Geography: {deal.geography}</p>
+                        <p>Number of Years in Business: {deal.yearsInBusiness}</p>
+                        <p>
+                          Management Future Preferences:{" "}
+                          {deal.managementPreference}
+                        </p>
+                        <p>Business Model: {deal.businessModel}</p>
+                        <p>Company Description: {deal.companyDescription}</p>
+                      </div>
                     <div className="p-4">
                       {/* Overview */}
                       <h4 className="mb-2 font-medium text-gray-800">Overview</h4>
@@ -1157,8 +1621,13 @@ export default function DealsPage() {
               By clicking "Approve" you reaffirm your previous acceptance of the
               STRAIGHT TO CIM MASTER NON-DISCLOSURE AGREEMENT and the CIM
               AMPLIFY MASTER FEE AGREEMENT.
+              By clicking "Approve" you reaffirm your previous acceptance of the
+              STRAIGHT TO CIM MASTER NON-DISCLOSURE AGREEMENT and the CIM
+              AMPLIFY MASTER FEE AGREEMENT.
             </p>
             <p className="text-sm text-gray-600">
+              Once you approve, the seller will be notified and can contact you
+              directly.
               Once you approve, the seller will be notified and can contact you
               directly.
             </p>
@@ -1167,6 +1636,10 @@ export default function DealsPage() {
             <Button variant="outline" onClick={() => setTermsModalOpen(false)}>
               Go Back
             </Button>
+            <Button
+              onClick={handleApproveTerms}
+              className="bg-teal-500 hover:bg-teal-600"
+            >
             <Button
               onClick={handleApproveTerms}
               className="bg-teal-500 hover:bg-teal-600"
@@ -1299,5 +1772,6 @@ export default function DealsPage() {
         </DialogContent>
       </Dialog> */}
     </div>
+  );
   );
 }
