@@ -1,5 +1,3 @@
-//buyer/deals/page.tsx
-
 "use client";
 
 import type React from "react";
@@ -715,13 +713,9 @@ export default function DealsPage() {
 
   const fetchSellerInfo = async (sellerId: string) => {
     try {
-      const token = localStorage.getItem("token");
       const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
       const response = await fetch(
-        `${apiUrl}/sellers/profile?sellerId=${sellerId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        `${apiUrl}/sellers/public/${sellerId}`
       );
       if (!response.ok) throw new Error("Failed to fetch seller info");
       const data = await response.json();
@@ -735,7 +729,10 @@ export default function DealsPage() {
         }
       }));
     } catch {
-      setSellerInfoMap({});
+      setSellerInfoMap((prev: typeof sellerInfoMap) => ({
+        ...prev,
+        [sellerId]: { name: "N/A", email: "N/A", phoneNumber: "N/A" }
+      }));
     }
   };
 
@@ -759,7 +756,7 @@ export default function DealsPage() {
       for (const sellerId of uniqueSellerIds) {
         try {
           const response = await fetch(
-            `${apiUrl}/sellers/profile?sellerId=${sellerId}`,
+            `${apiUrl}/sellers/public/${sellerId}`,
             {
               headers: { Authorization: `Bearer ${token}` },
             }
