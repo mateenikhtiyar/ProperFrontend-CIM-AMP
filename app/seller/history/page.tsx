@@ -57,7 +57,7 @@ export default function DealsHistoryPage() {
     const fetchSellerProfile = async () => {
       try {
         const token = localStorage.getItem("token")
-        const apiUrl = localStorage.getItem("apiUrl") || "https://buyer.cimamplify.com"
+        const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
 
         const response = await fetch(`${apiUrl}/sellers/profile`, {
           headers: {
@@ -91,7 +91,7 @@ export default function DealsHistoryPage() {
         setIsLoadingDeals(true)
         setDealsError(null)
         const token = localStorage.getItem("token")
-        const apiUrl = localStorage.getItem("apiUrl") || "https://buyer.cimamplify.com"
+        const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
 
         const response = await fetch(`${apiUrl}/deals/completed`, {
           headers: {
@@ -150,7 +150,7 @@ export default function DealsHistoryPage() {
 
   const getProfilePictureUrl = (path: string | null) => {
     if (!path) return null
-    const apiUrl = localStorage.getItem("apiUrl") || "https://buyer.cimamplify.com"
+    const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
     const formattedPath = path.replace(/\\/g, "/")
     return `${apiUrl}/${formattedPath.startsWith("/") ? formattedPath.slice(1) : formattedPath}`
   }
@@ -176,7 +176,7 @@ export default function DealsHistoryPage() {
       formData.append("file", file)
 
       const token = localStorage.getItem("token")
-      const apiUrl = localStorage.getItem("apiUrl") || "https://buyer.cimamplify.com"
+      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
 
       const response = await fetch(`${apiUrl}/sellers/upload-profile-picture`, {
         method: "POST",
@@ -207,7 +207,7 @@ export default function DealsHistoryPage() {
     if (profileName.trim()) {
       try {
         const token = localStorage.getItem("token")
-        const apiUrl = localStorage.getItem("apiUrl") || "https://buyer.cimamplify.com"
+        const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
 
         const response = await fetch(`${apiUrl}/sellers/${sellerProfile?._id}`, {
           method: "PATCH",
