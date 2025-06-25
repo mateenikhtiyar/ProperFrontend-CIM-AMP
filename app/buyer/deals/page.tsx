@@ -1,3 +1,5 @@
+//buyer/deals/page.tsx
+
 "use client";
 
 import type React from "react";
@@ -56,6 +58,14 @@ interface BuyerProfile {
   role: string;
   profilePicture: string | null;
 }
+type SellerInfo = {
+  name: string;
+  email: string;
+  phoneNumber: string;
+};
+type SellerInfoMap = {
+  [sellerId: string]: SellerInfo;
+};
 
 export default function DealsPage() {
   const [activeTab, setActiveTab] = useState("pending");
@@ -96,7 +106,7 @@ export default function DealsPage() {
         return [];
       }
 
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
       // Map status to API endpoint
       let endpoint = "";
@@ -161,8 +171,8 @@ export default function DealsPage() {
           ),
           phoneNumber: "Contact via platform",
           email: "Contact via platform",
-          t12FreeCashFlow: deal.financialDetails?.t12FreeCashFlow || 0, // <-- Add this line
-          t12NetIncome: deal.financialDetails?.t12NetIncome || 0, // <-- Add this line
+          t12FreeCashFlow: deal.financialDetails?.t12FreeCashFlow || 0,
+          t12NetIncome: deal.financialDetails?.t12NetIncome || 0,
           documents: deal.documents || [],
         };
         console.log("Mapped deal:", mappedDeal);
@@ -239,7 +249,7 @@ export default function DealsPage() {
       setApiError(null);
       const token = localStorage.getItem("token");
       const currentBuyerId = localStorage.getItem("userId");
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
       console.log("Token exists:", !!token);
       console.log("Buyer ID:", currentBuyerId);
@@ -470,7 +480,7 @@ export default function DealsPage() {
         return;
       }
 
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
       const response = await fetch(`${apiUrl}/company-profiles/my-profile`, {
         method: "GET",
@@ -506,7 +516,7 @@ export default function DealsPage() {
         return;
       }
 
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
       const response = await fetch(`${apiUrl}/buyers/profile`, {
         headers: {
@@ -554,10 +564,7 @@ export default function DealsPage() {
       const token = localStorage.getItem("token");
       if (!token) return;
 
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
-
-      // Option 1: If you have sellerId in your deal object, use it
-      // const response = await fetch(`${apiUrl}/sellers/profile?sellerId=${deal.sellerId}`, {
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
       // Option 2: Use deal ID to get seller info (recommended)
       const response = await fetch(
@@ -614,7 +621,6 @@ export default function DealsPage() {
   const filteredDeals = deals.filter((deal) => {
     // First filter by tab status
     if (deal.status !== activeTab) return false;
-
     // Then filter by search query if one exists
     if (searchQuery.trim() !== "") {
       const query = searchQuery.toLowerCase();
@@ -626,7 +632,6 @@ export default function DealsPage() {
         deal.businessModel.toLowerCase().includes(query)
       );
     }
-
     return true;
   });
 
@@ -664,7 +669,7 @@ export default function DealsPage() {
   const getProfilePictureUrl = (path: string | null) => {
     if (!path) return null;
 
-    const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
     if (path.startsWith("http://") || path.startsWith("https://")) {
       return path;
@@ -711,7 +716,7 @@ export default function DealsPage() {
   const fetchSellerInfo = async (sellerId: string) => {
     try {
       const token = localStorage.getItem("token");
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
       const response = await fetch(
         `${apiUrl}/sellers/profile?sellerId=${sellerId}`,
         {
@@ -721,7 +726,7 @@ export default function DealsPage() {
       if (!response.ok) throw new Error("Failed to fetch seller info");
       const data = await response.json();
       console.log("Seller info for", sellerId, ":", data);
-      setSellerInfoMap(prev => ({
+      setSellerInfoMap((prev: typeof sellerInfoMap) => ({
         ...prev,
         [sellerId]: {
           name: data.fullName || "N/A",
@@ -734,35 +739,58 @@ export default function DealsPage() {
     }
   };
 
-  // Fetch seller info for all unique sellerIds after deals are loaded, but only for active tab
   useEffect(() => {
     if (activeTab !== "active") return;
-    const uniqueSellerIds = Array.from(new Set(filteredDeals.map(d => d.sellerId).filter(Boolean)));
-    uniqueSellerIds.forEach(async (sellerId) => {
-      if (typeof sellerId !== "string") return;
-      if (!sellerInfoMap[sellerId]) {
-        const token = localStorage.getItem("token");
-        const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
-        const response = await fetch(`${apiUrl}/sellers/profile?sellerId=${sellerId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setSellerInfoMap(prev => ({
-            ...prev,
-            [sellerId]: {
-              name: data.fullName || "N/A",
-              email: data.email || "N/A",
-              phoneNumber: data.phoneNumber || "N/A",
+
+    const fetchSellerInfos = async () => {
+      const uniqueSellerIds = Array.from(
+        new Set(
+          filteredDeals
+            .map((d) => d.sellerId)
+            .filter((id): id is string => typeof id === "string")
+        )
+      ).filter((sellerId) => !sellerInfoMap[sellerId]); // Fetch only missing seller infos
+
+      if (uniqueSellerIds.length === 0) return;
+
+      const token = localStorage.getItem("token");
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
+
+      for (const sellerId of uniqueSellerIds) {
+        try {
+          const response = await fetch(
+            `${apiUrl}/sellers/profile?sellerId=${sellerId}`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
             }
-          }));
-        } else {
-          console.error("Failed to fetch seller info for", sellerId, response.status);
+          );
+
+          if (response.ok) {
+            const data = await response.json();
+            setSellerInfoMap((prev: typeof sellerInfoMap) => ({
+              ...prev,
+              [sellerId]: {
+                name: data.fullName || "N/A",
+                email: data.email || "N/A",
+                phoneNumber: data.phoneNumber || "N/A",
+              },
+            }));
+          } else {
+            console.error(
+              `Failed to fetch seller info for ${sellerId}:`,
+              response.status
+            );
+          }
+        } catch (error) {
+          console.error(`Error fetching seller info for ${sellerId}:`, error);
         }
       }
-    });
+    };
+
+    fetchSellerInfos();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filteredDeals, activeTab]);
+  }, [filteredDeals, activeTab]); // only rerun when deals or tab change
+
 
   // Show loading if not initialized
   if (!isInitialized) {
@@ -999,7 +1027,9 @@ export default function DealsPage() {
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               {filteredDeals.map((deal) => {
                 const sellerIdStr = typeof deal.sellerId === 'string' ? deal.sellerId : undefined;
-                const sellerInfo = sellerIdStr ? sellerInfoMap[sellerIdStr] : undefined;
+                const sellerInfo = sellerIdStr && sellerInfoMap[sellerIdStr]
+                  ? sellerInfoMap[sellerIdStr]
+                  : { name: "N/A", email: "N/A", phoneNumber: "N/A" };
                 return (
                   <div
                     key={deal.id}
@@ -1059,17 +1089,17 @@ export default function DealsPage() {
                       </div>
                       {/* Seller Information */}
                       <h4 className="mb-2 font-medium text-gray-800">Seller Information</h4>
-{activeTab === "active" ? (
-  <div className="mb-4 text-sm text-gray-600 space-y-1">
-    <p>Name: {sellerInfo?.name || "N/A"}</p>
-    <p>Email: {sellerInfo?.email || "N/A"}</p>
-    <p>Phone: {sellerInfo?.phoneNumber || "N/A"}</p>
-  </div>
-) : (
-  <div className="mb-4 text-sm text-gray-500 italic">
-    Hidden Until Active
-  </div>
-)}
+                      {activeTab === "active" ? (
+                        <div className="mb-4 text-sm text-gray-600 space-y-1">
+                          <p>Name: {sellerInfo.name}</p>
+                          <p>Email: {sellerInfo.email}</p>
+                          <p>Phone: {sellerInfo.phoneNumber}</p>
+                        </div>
+                      ) : (
+                        <div className="mb-4 text-sm text-gray-500 italic">
+                          Hidden Until Active
+                        </div>
+                      )}
 
                       {/* 📄 Document Section */}
                       <h4 className="mb-2 font-medium text-gray-800">
@@ -1103,7 +1133,7 @@ export default function DealsPage() {
                                     // ✅ Correct
                                     const apiUrl =
                                       localStorage.getItem("apiUrl") ||
-                                      "https://api.cimamplify.com";
+                                      "http://localhost:3001";
                                     window.open(
                                       `${apiUrl}/${doc.path}`,
                                       "_blank"
@@ -1176,128 +1206,7 @@ export default function DealsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Deal Details Modal - commented out as requested */}
-      {/* <Dialog open={dealDetailsOpen} onOpenChange={setDealDetailsOpen}>
-        <DialogContent className="w-[523px] h-[583px] fixed  border-[0.5px] rounded-[6px] p-0 overflow-hidden overflow-y-auto">
-          <div className="p-6">
-            <DialogHeader>
-              <DialogTitle className="text-center text-teal-500 text-xl">Deal Details</DialogTitle>
-            </DialogHeader>
-
-            {selectedDeal && (
-              <div className="py-4">
-                <div className="mb-6">
-                  <h3 className="text-lg font-medium mb-3">Overview</h3>
-                  <div className="space-y-2 text-sm">
-                    <p>
-                      <span className="font-medium">Deal Title:</span> {selectedDeal.title}
-                    </p>
-                    <p>
-                      <span className="font-medium">Company Description:</span> {selectedDeal.companyDescription}
-                    </p>
-                    <p>
-                      <span className="font-medium">Industry:</span> {selectedDeal.industry}
-                    </p>
-                    <p>
-                      <span className="font-medium">Geography:</span> {selectedDeal.geography}
-                    </p>
-                    <p>
-                      <span className="font-medium">Number of Years in Business:</span> {selectedDeal.yearsInBusiness}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mb-6">
-                  <h3 className="text-lg font-medium mb-3">Financial</h3>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <p>
-                      <span className="font-medium">Trailing 12-Month Revenue:</span> $
-                      {selectedDeal.trailingRevenue.toLocaleString()}
-                    </p>
-                    <p>
-                      <span className="font-medium">Trailing 12-Month EBITDA:</span> $
-                      {selectedDeal.trailingEbitda.toLocaleString()}
-                    </p>
-                    <p>
-                      <span className="font-medium">Average 3-YEAR REVENUE GROWTH IN $:</span> $
-                      {selectedDeal.averageGrowth.toLocaleString()}
-                    </p>
-                    <p>
-                      <span className="font-medium">T12 Free Cash Flow :</span> $
-                      {selectedDeal.t12FreeCashFlow?.toLocaleString() ?? "N/A"}
-                    </p>
-                    <p>
-                      <span className="font-medium">T12 Net Income:</span> $
-                      {selectedDeal.t12NetIncome?.toLocaleString() ?? "N/A"}
-                    </p>
-                    <p>
-                      <span className="font-medium">Net Income:</span> ${selectedDeal.netIncome.toLocaleString()}
-                    </p>
-                    <p>
-                      <span className="font-medium">Asking Price:</span> ${selectedDeal.askingPrice.toLocaleString()}
-                    </p>
-                    <p>
-                      <span className="font-medium">Business Model:</span> {selectedDeal.businessModel}
-                    </p>
-                    <p className="col-span-2">
-                      <span className="font-medium">Management Future Preferences:</span>{" "}
-                      {selectedDeal.managementPreference}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mb-6">
-                  <h3 className="text-lg font-medium mb-3">Seller Contact Information</h3>
-                  <div className="space-y-2 text-sm">
-                    {selectedDeal?.status === "active" ? (
-                      <>
-                        <p>
-                          <span className="font-medium">Phone Number:</span> {phoneNumber?.phone ?? "Loading..."}
-                        </p>
-                        <p>
-                          <span className="font-medium">Email:</span> {phoneNumber?.email ?? "Loading..."}
-                        </p>
-                      </>
-                    ) : (
-                      <>
-                        <p>
-                          <span className="font-medium">Phone Number:</span> Contact via platform
-                        </p>
-                        <p>
-                          <span className="font-medium">Email:</span> Contact via platform
-                        </p>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-          <div className="flex justify-end space-x-4 p-4 mt-auto border-t border-gray-200">
-            <Button
-              variant="outline"
-              onClick={() => setDealDetailsOpen(false)}
-              className="border-[#3AAFA9] px-8 py-2 rounded-md bg-[#3AAFA91A] text-[#3AAFA9] hover:text-[#3AAFA9]"
-            >
-              Close
-            </Button>
-            {selectedDeal && selectedDeal.status !== "passed" && (
-              <Button
-                variant="outline"
-                className="border-red-200 text-red-500 hover:bg-red-50 px-8 py-2 hover:text-red-500 rounded-md bg-[#E3515333]"
-                onClick={() => {
-                  if (selectedDeal) {
-                    handlePassDeal(selectedDeal.id)
-                  }
-                }}
-              >
-                Pass
-              </Button>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog> */}
     </div>
   );
 }
+
