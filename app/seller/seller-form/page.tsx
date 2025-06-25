@@ -42,7 +42,7 @@ interface SellerFormData {
   netIncome: number
   askingPrice: number
   businessModels: string[]
-  managementPreferences: string[]
+  managementPreferences: string
   capitalAvailability: string[]
   companyType: string[]
   minPriorAcquisitions: number
@@ -135,7 +135,7 @@ export default function SellerFormPage() {
     netIncome: 0,
     askingPrice: 0,
     businessModels: [],
-    managementPreferences: [],
+    managementPreferences: "", // Changed from [] to ""
     capitalAvailability: [],
     companyType: [],
     minPriorAcquisitions: 0,
@@ -884,10 +884,9 @@ export default function SellerFormPage() {
         errors.businessModels = "Please select at least one business model."
       }
 
-      // Validate management preferences
-      if (formData.managementPreferences.length === 0) {
-        errors.managementPreferences = "Please select at least one management preference."
-      }
+       if (!formData.managementPreferences.trim()) {
+      errors.managementPreferences = "Please describe why your client is selling and their continuation plan."
+    }
       // Validate capital availability
       if (!formData.capitalAvailability || formData.capitalAvailability.length === 0) {
         errors.capitalAvailability = "Please select capital availability."
@@ -941,10 +940,8 @@ export default function SellerFormPage() {
           assetLight: formData.businessModels.includes("asset-light"),
           assetHeavy: formData.businessModels.includes("asset-heavy"),
         },
-        managementPreferences: {
-          retiringDivesting: formData.managementPreferences.includes("retiring-divesting"),
-          staffStay: formData.managementPreferences.includes("key-staff-stay"),
-        },
+        // Update managementPreferences to store the text description
+        managementPreferences: formData.managementPreferences,
         buyerFit: {
           capitalAvailability: formData.capitalAvailability.map((item) =>
             item === "ready" ? "Ready to deploy immediately" : item === "need-raise" ? "Need to raise" : item,
@@ -975,7 +972,7 @@ export default function SellerFormPage() {
       })
 
       // Get API URL from localStorage or use default
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
 
       // Prepare FormData for multipart/form-data
       const multipartFormData = new FormData()
@@ -1362,42 +1359,25 @@ export default function SellerFormPage() {
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Management Future Preferences <span className="text-red-500">*</span>
-            </label>
-            {/* ... checkbox group */}
-            {fieldErrors.managementPreferences && (
-              <p className="text-red-500 text-sm mt-2">{fieldErrors.managementPreferences}</p>
-            )}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="retiring-divesting"
-                  checked={formData.managementPreferences.includes("retiring-divesting")}
-                  onCheckedChange={(checked) =>
-                    handleCheckboxChange(checked === true, "retiring-divesting", "managementPreferences")
-                  }
-                />
-                <label htmlFor="retiring-divesting" className="text-sm">
-                  Retiring to divesting
-                </label>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="key-staff-stay"
-                  checked={formData.managementPreferences.includes("key-staff-stay")}
-                  onCheckedChange={(checked) =>
-                    handleCheckboxChange(checked === true, "key-staff-stay", "managementPreferences")
-                  }
-                />
-                <label htmlFor="key-staff-stay" className="text-sm">
-                  Other Key Staff Will Stay
-                </label>
-              </div>
-            </div>
-          </div>
+        
+<div>
+  <Label htmlFor="managementPreferences" className="text-sm font-medium">
+    Management Future Preferences *
+  </Label>
+  <Textarea
+    id="managementPreferences"
+    placeholder="Describe why your client is selling and what their plan is for continuation."
+    value={formData.managementPreferences}
+    onChange={(e) => setFormData({ ...formData, managementPreferences: e.target.value })}
+    className="mt-1"
+    rows={4}
+  />
+  {fieldErrors.managementPreferences && (
+    <p className="text-sm text-red-600 mt-1">
+      {fieldErrors.managementPreferences}
+    </p>
+  )}
+</div>
           </div>
         </section>
         

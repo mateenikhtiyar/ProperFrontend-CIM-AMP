@@ -46,7 +46,7 @@ interface SellerFormData {
   netIncome: number
   askingPrice: number
   businessModels: string[]
-  managementPreferences: string[]
+  managementPreferences: string
   capitalAvailability: CapitalAvailabilityType[] // ✅ Use the exact type
   companyType: string[]
   minPriorAcquisitions: number
@@ -119,10 +119,7 @@ interface Deal {
     assetLight?: boolean
     assetHeavy?: boolean
   }
-  managementPreferences: {
-    retiringDivesting?: boolean
-    staffStay?: boolean
-  }
+  managementPreferences: string
   buyerFit: {
     capitalAvailability?: CapitalAvailabilityType[]
     minPriorAcquisitions?: number
@@ -204,7 +201,7 @@ export default function EditDealPageFixed() {
     netIncome: 0,
     askingPrice: 0,
     businessModels: [],
-    managementPreferences: [],
+     managementPreferences: "",
     capitalAvailability: [], // ✅ Initialize as empty array with correct type
     companyType: [],
     minPriorAcquisitions: 0,
@@ -283,7 +280,7 @@ export default function EditDealPageFixed() {
     try {
       setIsLoading(true)
       const token = localStorage.getItem("token")
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
 
       const response = await fetch(`${apiUrl}/deals/${dealId}`, {
         headers: {
@@ -340,10 +337,7 @@ export default function EditDealPageFixed() {
           ...(dealData.businessModel?.assetLight ? ["asset-light"] : []),
           ...(dealData.businessModel?.assetHeavy ? ["asset-heavy"] : []),
         ],
-        managementPreferences: [
-          ...(dealData.managementPreferences?.retiringDivesting ? ["retiring-divesting"] : []),
-          ...(dealData.managementPreferences?.staffStay ? ["key-staff-stay"] : []),
-        ],
+         managementPreferences: dealData.managementPreferences || "",
         capitalAvailability: capitalAvailabilityArray, // ✅ Fixed: Normalized array format
         companyType: [...new Set(companyTypeArray)],
         minPriorAcquisitions: dealData.buyerFit?.minPriorAcquisitions || 0,
@@ -1049,7 +1043,7 @@ export default function EditDealPageFixed() {
 
       const token = localStorage.getItem("token")
       const sellerId = localStorage.getItem("userId")
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
 
       if (!token || !sellerId) throw new Error("Authentication required")
 
@@ -1091,7 +1085,7 @@ export default function EditDealPageFixed() {
           t12NetIncome: formData.t12NetIncome || 0,
         },
         businessModel,
-        managementPreferences,
+ managementPreferences: formData.managementPreferences,
         buyerFit: {
           capitalAvailability: validCapitalAvailability, // ✅ Fixed: Always valid array with exact enum values
           minPriorAcquisitions: formData.minPriorAcquisitions,
@@ -1165,7 +1159,7 @@ export default function EditDealPageFixed() {
 
     try {
       const token = localStorage.getItem("token")
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
 
       const docIndex = existingDocuments.findIndex((d) => d.filename === doc.filename)
       const response = await fetch(`${apiUrl}/deals/${dealId}/documents/${docIndex}`, {
@@ -1198,7 +1192,7 @@ export default function EditDealPageFixed() {
 
   // Handle document download
   const handleDocumentDownload = (doc: DealDocument) => {
-    const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
     const link = document.createElement("a")
     link.href = `${apiUrl}/uploads/deal-documents/${doc.filename}`
     link.download = doc.originalName
@@ -1564,38 +1558,18 @@ export default function EditDealPageFixed() {
               </div>
             </div>
 
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-3">Management Preferences</label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="flex items-center">
-                  <Checkbox
-                    id="retiring-divesting"
-                    checked={formData.managementPreferences.includes("retiring-divesting")}
-                    onCheckedChange={(checked) =>
-                      handleCheckboxChange(checked, "retiring-divesting", "managementPreferences")
-                    }
-                    className="mr-2 border-[#d0d5dd]"
-                  />
-                  <Label htmlFor="retiring-divesting" className="cursor-pointer">
-                    Retiring / Divesting
-                  </Label>
-                </div>
-
-                <div className="flex items-center">
-                  <Checkbox
-                    id="key-staff-stay"
-                    checked={formData.managementPreferences.includes("key-staff-stay")}
-                    onCheckedChange={(checked) =>
-                      handleCheckboxChange(checked, "key-staff-stay", "managementPreferences")
-                    }
-                    className="mr-2 border-[#d0d5dd]"
-                  />
-                  <Label htmlFor="key-staff-stay" className="cursor-pointer">
-                    Key Staff Stay
-                  </Label>
-                </div>
-              </div>
-            </div>
+          <div className="mb-6">
+  <label className="block text-sm font-medium text-gray-700 mb-3">
+    Management Preferences *
+  </label>
+  <Textarea
+    placeholder="Describe why your client is selling and what their plan is for continuation."
+    value={formData.managementPreferences}
+    onChange={(e) => setFormData({ ...formData, managementPreferences: e.target.value })}
+    rows={4}
+    className="w-full"
+  />
+</div>
             </div>
           </section>
 
