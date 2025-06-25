@@ -80,6 +80,14 @@ const formatNumberWithCommas = (num: number): string => {
   return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
 }
 
+// Helper function to validate EBITDA vs Revenue
+const validateEBITDAvsRevenue = (ebitda: number, revenue: number): string | null => {
+  if (revenue > 0 && ebitda >= revenue) {
+    return "EBITDA must be smaller than Revenue"
+  }
+  return null
+}
+
 export default function SellerFormPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(true)
@@ -139,6 +147,7 @@ export default function SellerFormPage() {
 
   // Add fieldErrors state for validation errors
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({})
+  const [realtimeErrors, setRealtimeErrors] = useState<{ [key: string]: string }>({})
 
   // Flatten geography data for searchable dropdown
   const flattenGeoData = (items: Continent[] | Region[] | SubRegion[], parentPath = "", result: GeoItem[] = []) => {
@@ -887,6 +896,11 @@ export default function SellerFormPage() {
         errors.companyType = "Please select at least one company type."
       }
 
+      // Validate that EBITDA is smaller than Revenue
+      if (formData.trailingEBITDA >= formData.trailingRevenue && formData.trailingRevenue > 0) {
+        errors.trailingEBITDA = "Trailing 12 Month EBITDA must be smaller than Trailing 12 Month Revenue."
+      }
+
       // Set field errors and return early if any
       setFieldErrors(errors)
       if (Object.keys(errors).length > 0) {
@@ -1312,12 +1326,20 @@ export default function SellerFormPage() {
                     onChange={(e) => {
                       const rawValue = e.target.value.replace(/,/g, "")
                       if (rawValue === "" || /^-?\d*$/.test(rawValue)) {
+                        const numValue = rawValue === "" ? 0 : Number.parseFloat(rawValue)
                         handleNumberChange(
                           {
                             target: { value: rawValue },
                           } as React.ChangeEvent<HTMLInputElement>,
                           "trailingRevenue",
                         )
+
+                        // Real-time validation for EBITDA
+                        const validationError = validateEBITDAvsRevenue(formData.trailingEBITDA, numValue)
+                        setRealtimeErrors((prev) => ({
+                          ...prev,
+                          trailingEBITDA: validationError || "",
+                        }))
                       }
                     }}
                     className="w-full"
@@ -1356,16 +1378,29 @@ export default function SellerFormPage() {
                   onChange={(e) => {
                     const rawValue = e.target.value.replace(/,/g, "")
                     if (rawValue === "" || /^-?\d*$/.test(rawValue)) {
+                      const numValue = rawValue === "" ? 0 : Number.parseFloat(rawValue)
                       handleNumberChange(
                         {
                           target: { value: rawValue },
                         } as React.ChangeEvent<HTMLInputElement>,
                         "trailingEBITDA",
                       )
+
+                      // Real-time validation
+                      const validationError = validateEBITDAvsRevenue(numValue, formData.trailingRevenue)
+                      setRealtimeErrors((prev) => ({
+                        ...prev,
+                        trailingEBITDA: validationError || "",
+                      }))
                     }
                   }}
                   className="w-full"
                 />
+                {(fieldErrors.trailingEBITDA || realtimeErrors.trailingEBITDA) && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {fieldErrors.trailingEBITDA || realtimeErrors.trailingEBITDA}
+                  </p>
+                )}
               </div>
 
               <div>
