@@ -13,6 +13,7 @@ import { Toaster } from "@/components/ui/toaster";
 
 interface RegisterFormData {
   fullName: string;
+  companyName: string;
   phone: string;
   email: string;
   password: string;
@@ -24,6 +25,7 @@ export default function BuyerRegisterPage() {
   const searchParams = useSearchParams();
   const [formData, setFormData] = useState<RegisterFormData>({
     fullName: "",
+    companyName: "",
     phone: "",
     email: "",
     password: "",
@@ -95,6 +97,10 @@ export default function BuyerRegisterPage() {
       newErrors.fullName = "Full name is required";
     }
 
+    if (!formData.companyName.trim()) {
+      newErrors.companyName = "Company name is required";
+    }
+
     if (!formData.email.trim()) {
       newErrors.email = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
@@ -136,7 +142,7 @@ export default function BuyerRegisterPage() {
 
     try {
       // Get API URL from localStorage or use default
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
       console.log("Register page - Submitting registration to:", apiUrl);
       console.log("POST to:", `${apiUrl}/buyer/register`);
@@ -151,6 +157,7 @@ export default function BuyerRegisterPage() {
           email: formData.email,
           phone: formData.phone || null, // Allow phone to be optional
           password: formData.password,
+          companyName: formData.companyName,
         }),
       });
 
@@ -255,7 +262,7 @@ export default function BuyerRegisterPage() {
   const handleGoogleLogin = () => {
     // Get API URL from localStorage or use default
     const apiUrl =
-      localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+      localStorage.getItem("apiUrl") || "http://localhost:3001";
     console.log(
       "Register page - Redirecting to Google OAuth:",
       `${apiUrl}/buyers/google`
@@ -368,6 +375,25 @@ export default function BuyerRegisterPage() {
                 />
                 {errors.fullName && (
                   <p className="mt-1 text-sm text-red-600">{errors.fullName}</p>
+                )}
+              </div>
+              <div>
+                <label
+                  htmlFor="companyName"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Company Name
+                </label>
+                <Input
+                  id="companyName"
+                  name="companyName"
+                  value={formData.companyName}
+                  onChange={handleChange}
+                  placeholder=""
+                  className={`${errors.companyName ? "border-red-300" : ""} py-5`}
+                />
+                {errors.companyName && (
+                  <p className="mt-1 text-sm text-red-600">{errors.companyName}</p>
                 )}
               </div>
               <div className="mb-4">

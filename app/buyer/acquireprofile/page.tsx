@@ -81,7 +81,7 @@ const MANAGEMENT_PREFERENCES = [
 ];
 
 // Default API URL
-const DEFAULT_API_URL = "https://api.cimamplify.com";
+const DEFAULT_API_URL = "http://localhost:3001";
 
 // Type for hierarchical selection
 interface HierarchicalSelection {
@@ -283,185 +283,171 @@ export default function AcquireProfilePage() {
   const fetchUserProfile = async () => {
     if (!authToken) return;
 
+    let buyerDetails = null;
     try {
-      setIsSubmitting(true);
-      // Fetch buyer profile info (name, email, phone)
-      let buyerDetails = null;
-      try {
-        const buyerRes = await fetch(`${apiUrl}/buyers/me`, {
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-          },
-        });
-
-        if (!buyerRes.ok) {
-          console.warn("Failed to fetch buyer details");
-        } else {
-          buyerDetails = await buyerRes.json();
-          console.log("Fetched buyer info:", buyerDetails);
-        }
-      } catch (err) {
-        console.error("Error fetching buyer info:", err);
-      }
-
-      const response = await fetch(`${apiUrl}/company-profiles/my-profile`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
-        },
+      const buyerRes = await fetch(`${apiUrl}/buyers/me`, {
+        headers: { Authorization: `Bearer ${authToken}` },
       });
-
-      if (!response.ok) {
-        if (response.status === 404) {
-          // No profile exists yet, that's okay
-          console.log("No existing profile found, showing empty form");
-          return;
-        }
-
-        // Handle other errors
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          `API Error: ${response.status} - ${JSON.stringify(errorData)}`
-        );
+      if (buyerRes.ok) {
+        buyerDetails = await buyerRes.json();
+        console.log("Fetched buyerDetails:", buyerDetails);
       }
+    } catch (err) {
+      // handle error
+    }
 
-      const profileData = await response.json();
-      console.log("Existing profile loaded:", profileData);
+    const response = await fetch(`${apiUrl}/company-profiles/my-profile`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${authToken}`,
+      },
+    });
 
-      // Update form data with the fetched profile
-      if (profileData) {
-        // Ensure all required fields exist in the profile data
-        const updatedProfile = {
-          ...formData,
-          ...profileData,
-          contacts: [
-            {
-              name: buyerDetails?.fullName || "",
-              email: buyerDetails?.email || "",
-              phone: buyerDetails?.phone || "",
-            },
-          ],
-          // Ensure nested objects are properly merged
-          preferences: {
-            ...formData.preferences,
-            ...(profileData.preferences || {}),
+    if (!response.ok) {
+      if (response.status === 404) {
+        setFormData((prev) => {
+          const newForm = {
+            ...prev,
+            companyName: buyerDetails?.companyName || "",
+            contacts: [
+              {
+                name: buyerDetails?.fullName || "",
+                email: buyerDetails?.email || "",
+                phone: buyerDetails?.phone || "",
+              },
+            ],
+          };
+          console.log("Setting formData from buyerDetails (404):", newForm);
+          return newForm;
+        });
+        return;
+      }
+      // ...handle other errors
+    }
+
+    const profileData = await response.json();
+    console.log("Existing profile loaded:", profileData);
+
+    // Update form data with the fetched profile
+    if (profileData) {
+      const updatedProfile = {
+        ...formData,
+        ...profileData,
+        contacts: [
+          {
+            name: buyerDetails?.fullName || "",
+            email: buyerDetails?.email || "",
+            phone: buyerDetails?.phone || "",
           },
-          targetCriteria: {
-            ...formData.targetCriteria,
-            ...(profileData.targetCriteria || {}),
-          },
-          agreements: {
-            ...formData.agreements,
-            ...(profileData.agreements || {}),
-          },
-          // Ensure selectedCurrency is set
-          selectedCurrency: profileData.selectedCurrency || "USD",
-          // Ensure capitalAvailability is set
-          capitalEntity: profileData.capitalEntity || "Need to raise",
-        };
+        ],
+        companyName: profileData.companyName || buyerDetails?.companyName || "",
+        preferences: {
+          ...formData.preferences,
+          ...(profileData.preferences || {}),
+        },
+        targetCriteria: {
+          ...formData.targetCriteria,
+          ...(profileData.targetCriteria || {}),
+        },
+        agreements: {
+          ...formData.agreements,
+          ...(profileData.agreements || {}),
+        },
+        selectedCurrency: profileData.selectedCurrency || "USD",
+        capitalEntity: profileData.capitalEntity || "Need to raise",
+      };
+      console.log("Setting formData from profileData:", updatedProfile);
+      setFormData(updatedProfile);
 
-        setFormData(updatedProfile);
+      // Update geography selections
+      if (profileData.targetCriteria?.countries?.length > 0 && geoData) {
+        const newGeoSelection = { ...geoSelection };
 
-        // Update geography selections
-        if (profileData.targetCriteria?.countries?.length > 0 && geoData) {
-          const newGeoSelection = { ...geoSelection };
+        // Mark selected countries in the hierarchical selection
+        geoData.continents.forEach((continent) => {
+          if (profileData.targetCriteria.countries.includes(continent.name)) {
+            newGeoSelection.continents[continent.id] = true;
+          }
 
-          // Mark selected countries in the hierarchical selection
-          geoData.continents.forEach((continent) => {
-            if (profileData.targetCriteria.countries.includes(continent.name)) {
-              newGeoSelection.continents[continent.id] = true;
+          continent.regions.forEach((region) => {
+            if (profileData.targetCriteria.countries.includes(region.name)) {
+              newGeoSelection.regions[region.id] = true;
             }
 
-            continent.regions.forEach((region) => {
-              if (profileData.targetCriteria.countries.includes(region.name)) {
-                newGeoSelection.regions[region.id] = true;
-              }
-
-              if (region.subRegions) {
-                region.subRegions.forEach((subRegion) => {
-                  if (
-                    profileData.targetCriteria.countries.includes(
-                      subRegion.name
-                    )
-                  ) {
-                    newGeoSelection.subRegions[subRegion.id] = true;
-                  }
-                });
-              }
-            });
-          });
-
-          setGeoSelection(newGeoSelection);
-        }
-
-        // Update industry selections
-        if (
-          profileData.targetCriteria?.industrySectors?.length > 0 &&
-          industryData
-        ) {
-          const newIndustrySelection = { ...industrySelection };
-
-          // Mark selected industries in the hierarchical selection
-          industryData.sectors.forEach((sector) => {
-            if (
-              profileData.targetCriteria.industrySectors.includes(sector.name)
-            ) {
-              newIndustrySelection.sectors[sector.id] = true;
-            }
-
-            sector.industryGroups.forEach((group) => {
-              if (
-                profileData.targetCriteria.industrySectors.includes(group.name)
-              ) {
-                newIndustrySelection.industryGroups[group.id] = true;
-              }
-
-              group.industries.forEach((industry) => {
+            if (region.subRegions) {
+              region.subRegions.forEach((subRegion) => {
                 if (
-                  profileData.targetCriteria.industrySectors.includes(
-                    industry.name
+                  profileData.targetCriteria.countries.includes(
+                    subRegion.name
                   )
                 ) {
-                  newIndustrySelection.industries[industry.id] = true;
+                  newGeoSelection.subRegions[subRegion.id] = true;
                 }
               });
+            }
+          });
+        });
+
+        setGeoSelection(newGeoSelection);
+      }
+
+      // Update industry selections
+      if (
+        profileData.targetCriteria?.industrySectors?.length > 0 &&
+        industryData
+      ) {
+        const newIndustrySelection = { ...industrySelection };
+
+        // Mark selected industries in the hierarchical selection
+        industryData.sectors.forEach((sector) => {
+          if (
+            profileData.targetCriteria.industrySectors.includes(sector.name)
+          ) {
+            newIndustrySelection.sectors[sector.id] = true;
+          }
+
+          sector.industryGroups.forEach((group) => {
+            if (
+              profileData.targetCriteria.industrySectors.includes(group.name)
+            ) {
+              newIndustrySelection.industryGroups[group.id] = true;
+            }
+
+            group.industries.forEach((industry) => {
+              if (
+                profileData.targetCriteria.industrySectors.includes(
+                  industry.name
+                )
+              ) {
+                newIndustrySelection.industries[industry.id] = true;
+              }
             });
           });
+        });
 
-          setIndustrySelection(newIndustrySelection);
-        }
+        setIndustrySelection(newIndustrySelection);
+      }
 
-        // Update management preferences
-        if (profileData.targetCriteria?.managementTeamPreference) {
-          // Convert from array to array for the UI state (if it's a string, convert to array)
-          const preferences = Array.isArray(
-            profileData.targetCriteria.managementTeamPreference
-          )
-            ? profileData.targetCriteria.managementTeamPreference
-            : [profileData.targetCriteria.managementTeamPreference];
+      // Update management preferences
+      if (profileData.targetCriteria?.managementTeamPreference) {
+        // Convert from array to array for the UI state (if it's a string, convert to array)
+        const preferences = Array.isArray(
+          profileData.targetCriteria.managementTeamPreference
+        )
+          ? profileData.targetCriteria.managementTeamPreference
+          : [profileData.targetCriteria.managementTeamPreference];
 
-          setExtendedFormState({
-            ...extendedFormState,
-            selectedManagementPreferences: preferences,
-          });
-        }
-
-        toast({
-          title: "Profile Loaded",
-          description: "Your existing profile has been loaded.",
+        setExtendedFormState({
+          ...extendedFormState,
+          selectedManagementPreferences: preferences,
         });
       }
-    } catch (error) {
-      console.error("Error fetching profile:", error);
+
       toast({
-        title: "Error Loading Profile",
-        description:
-          "Failed to load your existing profile. Starting with a new form.",
-        variant: "destructive",
+        title: "Profile Loaded",
+        description: "Your existing profile has been loaded.",
       });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -1843,6 +1829,9 @@ export default function AcquireProfilePage() {
                 >
                   Company Name <span className="text-red-500">*</span>
                 </Label>
+                {formData.companyName === "" && (
+                  <div className="text-red-500 text-xs mb-1">Warning: companyName is empty!</div>
+                )}
                 <Input
                   id="companyName"
                   placeholder="Company Name"
