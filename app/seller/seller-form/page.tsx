@@ -975,7 +975,7 @@ export default function SellerFormPage() {
       })
 
       // Get API URL from localStorage or use default
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001/"
 
       // Prepare FormData for multipart/form-data
       const multipartFormData = new FormData()
@@ -1069,7 +1069,7 @@ export default function SellerFormPage() {
                     <Image width={100} height={100} src="/seed.svg" alt="seed" className="w-20 h-20" />
                   </div>
                   <p className="text-sm mt-2 text-gray-600">
-                    Most of our buyers refuse deals from this level - you will get very few buyer matches.
+                  This deal will be made widely available on other deal platforms. Most of our buyers refuse deals from this level - you will get very few buyer matches.
                   </p>
                 </div>
                 <div className="mt-auto">
@@ -1193,7 +1193,7 @@ export default function SellerFormPage() {
                   <div className="relative mb-4">
                     <Search className="absolute left-2 top-2.5 h-4 w-4 text-[#667085]" />
                     <Input
-                      placeholder="Search countries..."
+                      placeholder="Search "
                       className="pl-8 border-[#d0d5dd]"
                       value={geoSearchTerm}
                       onChange={(e) => setGeoSearchTerm(e.target.value)}
@@ -1202,7 +1202,7 @@ export default function SellerFormPage() {
 
                   {formData.geographySelections.length > 0 && (
                     <div className="mb-4">
-                      <div className="text-sm text-[#667085] mb-1">Selected Countries</div>
+                      <div className="text-sm text-[#667085] mb-1">Selected </div>
                       <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
                         {formData.geographySelections.map((country, index) => (
                           <span
@@ -1245,7 +1245,7 @@ export default function SellerFormPage() {
                   <div className="relative mb-4">
                     <Search className="absolute left-2 top-2.5 h-4 w-4 text-[#667085]" />
                     <Input
-                      placeholder="Search industries..."
+                      placeholder="Search "
                       className="pl-8 border-[#d0d5dd]"
                       value={industrySearchTerm}
                       onChange={(e) => setIndustrySearchTerm(e.target.value)}
@@ -1254,7 +1254,7 @@ export default function SellerFormPage() {
 
                   {formData.industrySelections.length > 0 && (
                     <div className="mb-4">
-                      <div className="text-sm text-[#667085] mb-1">Selected Industries</div>
+                      <div className="text-sm text-[#667085] mb-1">Selected </div>
                       <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
                         {formData.industrySelections.map((industry, index) => (
                           <span
@@ -1305,8 +1305,102 @@ export default function SellerFormPage() {
                 className="w-full"
               />
             </div>
+              <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Business Models <span className="text-red-500">*</span>
+            </label>
+            {/* ... checkbox group */}
+            {fieldErrors.businessModels && <p className="text-red-500 text-sm mt-2">{fieldErrors.businessModels}</p>}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="recurring-revenue"
+                  checked={formData.businessModels.includes("recurring-revenue")}
+                  onCheckedChange={(checked) =>
+                    handleCheckboxChange(checked === true, "recurring-revenue", "businessModels")
+                  }
+                />
+                <label htmlFor="recurring-revenue" className="text-sm">
+                  Recurring Revenue
+                </label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="project-based"
+                  checked={formData.businessModels.includes("project-based")}
+                  onCheckedChange={(checked) =>
+                    handleCheckboxChange(checked === true, "project-based", "businessModels")
+                  }
+                />
+                <label htmlFor="project-based" className="text-sm">
+                  Project-Based
+                </label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="asset-light"
+                  checked={formData.businessModels.includes("asset-light")}
+                  onCheckedChange={(checked) => handleCheckboxChange(checked === true, "asset-light", "businessModels")}
+                />
+                <label htmlFor="asset-light" className="text-sm">
+                  Asset Light
+                </label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="asset-heavy"
+                  checked={formData.businessModels.includes("asset-heavy")}
+                  onCheckedChange={(checked) => handleCheckboxChange(checked === true, "asset-heavy", "businessModels")}
+                />
+                <label htmlFor="asset-heavy" className="text-sm">
+                  Asset Heavy
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Management Future Preferences <span className="text-red-500">*</span>
+            </label>
+            {/* ... checkbox group */}
+            {fieldErrors.managementPreferences && (
+              <p className="text-red-500 text-sm mt-2">{fieldErrors.managementPreferences}</p>
+            )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="retiring-divesting"
+                  checked={formData.managementPreferences.includes("retiring-divesting")}
+                  onCheckedChange={(checked) =>
+                    handleCheckboxChange(checked === true, "retiring-divesting", "managementPreferences")
+                  }
+                />
+                <label htmlFor="retiring-divesting" className="text-sm">
+                  Retiring to divesting
+                </label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="key-staff-stay"
+                  checked={formData.managementPreferences.includes("key-staff-stay")}
+                  onCheckedChange={(checked) =>
+                    handleCheckboxChange(checked === true, "key-staff-stay", "managementPreferences")
+                  }
+                />
+                <label htmlFor="key-staff-stay" className="text-sm">
+                  Other Key Staff Will Stay
+                </label>
+              </div>
+            </div>
+          </div>
           </div>
         </section>
+        
 
         {/* Financials Section */}
         <section className="bg-[#f9f9f9] p-6 rounded-lg">
@@ -1369,7 +1463,7 @@ export default function SellerFormPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label htmlFor="trailingEBITDA" className="block text-sm font-medium text-gray-700 mb-1">
-                  Trailing 12 Month EBITDA
+                  Trailing 12 Month EBITDA(0 covers negative)
                 </label>
                 <Input
                   id="trailingEBITDA"
@@ -1405,7 +1499,7 @@ export default function SellerFormPage() {
 
               <div>
                 <label htmlFor="revenueGrowth" className="block text-sm font-medium text-gray-700 mb-1">
-                  Average 3 year revenue growth in %
+                  Average 3 year revenue growth in %(0 covers negative)
                 </label>
                 <Input
                   id="revenueGrowth"
@@ -1529,99 +1623,7 @@ export default function SellerFormPage() {
             </div>
           </div>
 
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Business Models <span className="text-red-500">*</span>
-            </label>
-            {/* ... checkbox group */}
-            {fieldErrors.businessModels && <p className="text-red-500 text-sm mt-2">{fieldErrors.businessModels}</p>}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="recurring-revenue"
-                  checked={formData.businessModels.includes("recurring-revenue")}
-                  onCheckedChange={(checked) =>
-                    handleCheckboxChange(checked === true, "recurring-revenue", "businessModels")
-                  }
-                />
-                <label htmlFor="recurring-revenue" className="text-sm">
-                  Recurring Revenue
-                </label>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="project-based"
-                  checked={formData.businessModels.includes("project-based")}
-                  onCheckedChange={(checked) =>
-                    handleCheckboxChange(checked === true, "project-based", "businessModels")
-                  }
-                />
-                <label htmlFor="project-based" className="text-sm">
-                  Project-Based
-                </label>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="asset-light"
-                  checked={formData.businessModels.includes("asset-light")}
-                  onCheckedChange={(checked) => handleCheckboxChange(checked === true, "asset-light", "businessModels")}
-                />
-                <label htmlFor="asset-light" className="text-sm">
-                  Asset Light
-                </label>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="asset-heavy"
-                  checked={formData.businessModels.includes("asset-heavy")}
-                  onCheckedChange={(checked) => handleCheckboxChange(checked === true, "asset-heavy", "businessModels")}
-                />
-                <label htmlFor="asset-heavy" className="text-sm">
-                  Asset Heavy
-                </label>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Management Future Preferences <span className="text-red-500">*</span>
-            </label>
-            {/* ... checkbox group */}
-            {fieldErrors.managementPreferences && (
-              <p className="text-red-500 text-sm mt-2">{fieldErrors.managementPreferences}</p>
-            )}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="retiring-divesting"
-                  checked={formData.managementPreferences.includes("retiring-divesting")}
-                  onCheckedChange={(checked) =>
-                    handleCheckboxChange(checked === true, "retiring-divesting", "managementPreferences")
-                  }
-                />
-                <label htmlFor="retiring-divesting" className="text-sm">
-                  Retiring to divesting
-                </label>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="key-staff-stay"
-                  checked={formData.managementPreferences.includes("key-staff-stay")}
-                  onCheckedChange={(checked) =>
-                    handleCheckboxChange(checked === true, "key-staff-stay", "managementPreferences")
-                  }
-                />
-                <label htmlFor="key-staff-stay" className="text-sm">
-                  Other Key Staff Will Stay
-                </label>
-              </div>
-            </div>
-          </div>
+         
         </section>
 
         {/* Buyer Fit / Ability to Close */}
@@ -1791,30 +1793,7 @@ export default function SellerFormPage() {
               </PopoverContent>
             </Popover>
 
-            {/* ✅ IMPROVED: Display selected items as removable tags */}
-            {Array.isArray(formData.companyType) && formData.companyType.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-2">
-                {formData.companyType.map((item) => (
-                  <span
-                    key={item}
-                    className="flex items-center bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full transition-colors hover:bg-blue-200"
-                  >
-                    <span className="truncate max-w-xs">{item}</span>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleMultiSelectChange(item, "companyType")
-                      }}
-                      className="ml-2 text-blue-600 hover:text-blue-800 focus:outline-none transition-colors"
-                      aria-label={`Remove ${item}`}
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
+           
           </div>
           {fieldErrors.companyType && <p className="text-red-500 text-sm mt-2">{fieldErrors.companyType}</p>}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1944,9 +1923,9 @@ export default function SellerFormPage() {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                Terms and Conditions.
+                Terms and Conditions. 
               </Link>
-              After clicking on Submit you will be presented with a list of matched potential buyers for selection.
+              &nbsp;After clicking on Submit you will be presented with a list of matched potential buyers for selection.
             </p>
           </div>
         </section>
