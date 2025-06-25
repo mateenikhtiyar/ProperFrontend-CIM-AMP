@@ -1280,8 +1280,7 @@ export default function EditDealPageFixed() {
                       <Image width={100} height={100} src="/seed.svg" alt="seed" className="w-20 h-20 " />
                     </div>{" "}
                     <p className="text-sm mt-2 text-gray-600">
-                      This deal will be marketed solely on other deal sites. Most of our buyers chase deals from this
-                      level.
+                     This deal will be made widely available on other deal platforms. Most of our buyers refuse deals from this level - you will get very few buyer matches.
                     </p>
                   </div>
                   <div className="mt-auto">
@@ -1396,12 +1395,12 @@ export default function EditDealPageFixed() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Geography Selector */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Geography Selector</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Company Location</label>
                   <div className="border border-[#d0d5dd] rounded-md p-4 h-80 flex flex-col">
                     <div className="relative mb-4">
                       <Search className="absolute left-2 top-2.5 h-4 w-4 text-[#667085]" />
                       <Input
-                        placeholder="Search countries..."
+                        placeholder="Search "
                         className="pl-8 border-[#d0d5dd]"
                         value={geoSearchTerm}
                         onChange={(e) => setGeoSearchTerm(e.target.value)}
@@ -1410,7 +1409,7 @@ export default function EditDealPageFixed() {
 
                     {formData.geographySelections.length > 0 && (
                       <div className="mb-4">
-                        <div className="text-sm text-[#667085] mb-1">Selected Countries</div>
+                        <div className="text-sm text-[#667085] mb-1">Selected </div>
                         <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
                           {formData.geographySelections.map((country, index) => (
                             <span
@@ -1453,7 +1452,7 @@ export default function EditDealPageFixed() {
                     <div className="relative mb-4">
                       <Search className="absolute left-2 top-2.5 h-4 w-4 text-[#667085]" />
                       <Input
-                        placeholder="Search industries..."
+                        placeholder="Search "
                         className="pl-8 border-[#d0d5dd]"
                         value={industrySearchTerm}
                         onChange={(e) => setIndustrySearchTerm(e.target.value)}
@@ -1462,7 +1461,7 @@ export default function EditDealPageFixed() {
 
                     {formData.industrySelections.length > 0 && (
                       <div className="mb-4">
-                        <div className="text-sm text-[#667085] mb-1">Selected Industries</div>
+                        <div className="text-sm text-[#667085] mb-1">Selected </div>
                         <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
                           {formData.industrySelections.map((industry, index) => (
                             <span
@@ -1512,6 +1511,91 @@ export default function EditDealPageFixed() {
                   className="w-full"
                 />
               </div>
+                  <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-3">Business Models</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="flex items-center">
+                  <Checkbox
+                    id="recurring-revenue"
+                    checked={formData.businessModels.includes("recurring-revenue")}
+                    onCheckedChange={(checked) => handleCheckboxChange(checked, "recurring-revenue", "businessModels")}
+                    className="mr-2 border-[#d0d5dd]"
+                  />
+                  <Label htmlFor="recurring-revenue" className="cursor-pointer">
+                    Recurring Revenue
+                  </Label>
+                </div>
+
+                <div className="flex items-center">
+                  <Checkbox
+                    id="project-based"
+                    checked={formData.businessModels.includes("project-based")}
+                    onCheckedChange={(checked) => handleCheckboxChange(checked, "project-based", "businessModels")}
+                    className="mr-2 border-[#d0d5dd]"
+                  />
+                  <Label htmlFor="project-based" className="cursor-pointer">
+                    Project Based
+                  </Label>
+                </div>
+
+                <div className="flex items-center">
+                  <Checkbox
+                    id="asset-light"
+                    checked={formData.businessModels.includes("asset-light")}
+                    onCheckedChange={(checked) => handleCheckboxChange(checked, "asset-light", "businessModels")}
+                    className="mr-2 border-[#d0d5dd]"
+                  />
+                  <Label htmlFor="asset-light" className="cursor-pointer">
+                    Asset Light
+                  </Label>
+                </div>
+
+                <div className="flex items-center">
+                  <Checkbox
+                    id="asset-heavy"
+                    checked={formData.businessModels.includes("asset-heavy")}
+                    onCheckedChange={(checked) => handleCheckboxChange(checked, "asset-heavy", "businessModels")}
+                    className="mr-2 border-[#d0d5dd]"
+                  />
+                  <Label htmlFor="asset-heavy" className="cursor-pointer">
+                    Asset Heavy
+                  </Label>
+                </div>
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-3">Management Preferences</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex items-center">
+                  <Checkbox
+                    id="retiring-divesting"
+                    checked={formData.managementPreferences.includes("retiring-divesting")}
+                    onCheckedChange={(checked) =>
+                      handleCheckboxChange(checked, "retiring-divesting", "managementPreferences")
+                    }
+                    className="mr-2 border-[#d0d5dd]"
+                  />
+                  <Label htmlFor="retiring-divesting" className="cursor-pointer">
+                    Retiring / Divesting
+                  </Label>
+                </div>
+
+                <div className="flex items-center">
+                  <Checkbox
+                    id="key-staff-stay"
+                    checked={formData.managementPreferences.includes("key-staff-stay")}
+                    onCheckedChange={(checked) =>
+                      handleCheckboxChange(checked, "key-staff-stay", "managementPreferences")
+                    }
+                    className="mr-2 border-[#d0d5dd]"
+                  />
+                  <Label htmlFor="key-staff-stay" className="cursor-pointer">
+                    Key Staff Stay
+                  </Label>
+                </div>
+              </div>
+            </div>
             </div>
           </section>
 
@@ -1566,7 +1650,7 @@ export default function EditDealPageFixed() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label htmlFor="trailingEBITDA" className="block text-sm font-medium text-gray-700 mb-1">
-                    Trailing 12 Month EBITDA
+                    Trailing 12 Month EBITDA(0 covers negative)
                   </label>
                   <Input
                     id="trailingEBITDA"
@@ -1587,7 +1671,7 @@ export default function EditDealPageFixed() {
 
                 <div>
                   <label htmlFor="revenueGrowth" className="block text-sm font-medium text-gray-700 mb-1">
-                    Average 3 year revenue growth in %
+                    Average 3 year revenue growth in %(0 covers negative)
                   </label>
                   <Input
                     id="revenueGrowth"
@@ -1697,91 +1781,7 @@ export default function EditDealPageFixed() {
               </div>
             </div>
 
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-3">Business Models</label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="flex items-center">
-                  <Checkbox
-                    id="recurring-revenue"
-                    checked={formData.businessModels.includes("recurring-revenue")}
-                    onCheckedChange={(checked) => handleCheckboxChange(checked, "recurring-revenue", "businessModels")}
-                    className="mr-2 border-[#d0d5dd]"
-                  />
-                  <Label htmlFor="recurring-revenue" className="cursor-pointer">
-                    Recurring Revenue
-                  </Label>
-                </div>
-
-                <div className="flex items-center">
-                  <Checkbox
-                    id="project-based"
-                    checked={formData.businessModels.includes("project-based")}
-                    onCheckedChange={(checked) => handleCheckboxChange(checked, "project-based", "businessModels")}
-                    className="mr-2 border-[#d0d5dd]"
-                  />
-                  <Label htmlFor="project-based" className="cursor-pointer">
-                    Project Based
-                  </Label>
-                </div>
-
-                <div className="flex items-center">
-                  <Checkbox
-                    id="asset-light"
-                    checked={formData.businessModels.includes("asset-light")}
-                    onCheckedChange={(checked) => handleCheckboxChange(checked, "asset-light", "businessModels")}
-                    className="mr-2 border-[#d0d5dd]"
-                  />
-                  <Label htmlFor="asset-light" className="cursor-pointer">
-                    Asset Light
-                  </Label>
-                </div>
-
-                <div className="flex items-center">
-                  <Checkbox
-                    id="asset-heavy"
-                    checked={formData.businessModels.includes("asset-heavy")}
-                    onCheckedChange={(checked) => handleCheckboxChange(checked, "asset-heavy", "businessModels")}
-                    className="mr-2 border-[#d0d5dd]"
-                  />
-                  <Label htmlFor="asset-heavy" className="cursor-pointer">
-                    Asset Heavy
-                  </Label>
-                </div>
-              </div>
-            </div>
-
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-3">Management Preferences</label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="flex items-center">
-                  <Checkbox
-                    id="retiring-divesting"
-                    checked={formData.managementPreferences.includes("retiring-divesting")}
-                    onCheckedChange={(checked) =>
-                      handleCheckboxChange(checked, "retiring-divesting", "managementPreferences")
-                    }
-                    className="mr-2 border-[#d0d5dd]"
-                  />
-                  <Label htmlFor="retiring-divesting" className="cursor-pointer">
-                    Retiring / Divesting
-                  </Label>
-                </div>
-
-                <div className="flex items-center">
-                  <Checkbox
-                    id="key-staff-stay"
-                    checked={formData.managementPreferences.includes("key-staff-stay")}
-                    onCheckedChange={(checked) =>
-                      handleCheckboxChange(checked, "key-staff-stay", "managementPreferences")
-                    }
-                    className="mr-2 border-[#d0d5dd]"
-                  />
-                  <Label htmlFor="key-staff-stay" className="cursor-pointer">
-                    Key Staff Stay
-                  </Label>
-                </div>
-              </div>
-            </div>
+          
 
             {/* ✅ Fixed: Capital Availability with exact enum values */}
             <div className="mb-6">
@@ -1818,27 +1818,7 @@ export default function EditDealPageFixed() {
                 </div>
               </div>
 
-              {/* Show selected values */}
-              {formData.capitalAvailability.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {formData.capitalAvailability.map((item) => (
-                    <span
-                      key={item}
-                      className="flex items-center bg-green-100 text-green-800 text-sm px-3 py-1 rounded-full"
-                    >
-                      {item}
-                      <button
-                        type="button"
-                        onClick={() => handleCapitalAvailabilityChange(false, item)}
-                        className="ml-2 text-green-600 hover:text-green-800 focus:outline-none"
-                        aria-label={`Remove ${item}`}
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
+            
             </div>
 
             {/* Company Type - spans full width on md+ */}
@@ -1957,30 +1937,7 @@ export default function EditDealPageFixed() {
                 </PopoverContent>
               </Popover>
 
-              {/* Display selected items as removable tags */}
-              {Array.isArray(formData.companyType) && formData.companyType.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {formData.companyType.map((item) => (
-                    <span
-                      key={item}
-                      className="flex items-center bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full transition-colors hover:bg-blue-200"
-                    >
-                      <span className="truncate max-w-xs">{item}</span>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleMultiSelectChange(item)
-                        }}
-                        className="ml-2 text-blue-600 hover:text-blue-800 focus:outline-none transition-colors"
-                        aria-label={`Remove ${item}`}
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
+           
             </div>
 
             <div className="md:col-span-2">
