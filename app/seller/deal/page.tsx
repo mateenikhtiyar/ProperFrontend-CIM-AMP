@@ -188,7 +188,7 @@ export default function DealDetailsPage() {
     const fetchSellerProfile = async () => {
       try {
         const token = localStorage.getItem("token")
-        const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+        const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
 
         const response = await fetch(`${apiUrl}/sellers/profile`, {
           headers: {
@@ -225,7 +225,7 @@ export default function DealDetailsPage() {
       try {
         setLoading(true)
         const token = localStorage.getItem("token")
-        const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+        const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
 
         if (!token) {
           router.push("/seller/login?error=no_token")
@@ -266,7 +266,7 @@ export default function DealDetailsPage() {
     try {
       setLoadingBuyers(true)
       const token = localStorage.getItem("token")
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
 
       const response = await fetch(`${apiUrl}/deals/${dealId}/status-summary`, {
         headers: {
@@ -376,7 +376,7 @@ export default function DealDetailsPage() {
         try {
           setLoadingBuyers(true)
           const token = localStorage.getItem("token")
-          const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+          const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
 
           const response = await fetch(`${apiUrl}/deals/${dealId}/matching-buyers`, {
             headers: {
@@ -417,6 +417,13 @@ export default function DealDetailsPage() {
     if (model.assetHeavy) models.push("Asset Heavy")
     return models.length > 0 ? models[0] : "Not specified"
   }
+
+const getProfilePictureUrl = (path: string | null) => {
+  if (!path) return null
+  const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+  const formattedPath = path.replace(/\\/g, "/")
+  return `${apiUrl}/${formattedPath.startsWith("/") ? formattedPath.slice(1) : formattedPath}`
+}
 
   const getManagementPreferences = (prefs: Deal["managementPreferences"]): string => {
     if (prefs.retiringDivesting && prefs.staffStay) return "Retiring to diversity"
@@ -467,7 +474,7 @@ export default function DealDetailsPage() {
   }
 
   const downloadDocument = (doc: DealDocument) => {
-    const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
     const link = document.createElement("a")
     link.href = `${apiUrl}/uploads/deal-documents/${doc.filename}`
     link.download = doc.originalName
@@ -518,7 +525,7 @@ export default function DealDetailsPage() {
 
     try {
       setSending(true)
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
       const token = localStorage.getItem("token")
 
       if (!token) {
@@ -613,7 +620,7 @@ export default function DealDetailsPage() {
       try {
         setLoadingBuyers(true)
         const token = localStorage.getItem("token")
-        const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+        const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
 
         const response = await fetch(`${apiUrl}/deals/${dealId}/matching-buyers`, {
           headers: {
@@ -714,17 +721,20 @@ export default function DealDetailsPage() {
               <div className="text-right">
                 <div className="font-medium">{userProfile?.fullName || sellerProfile?.fullName || "User"}</div>
               </div>
-              <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center text-white font-medium overflow-hidden">
-                {userProfile?.profilePicture || sellerProfile?.profilePicture ? (
-                  <img
-                    src={userProfile?.profilePicture || sellerProfile?.profilePicture || "/placeholder.svg"}
-                    alt={userProfile?.fullName || sellerProfile?.fullName}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  (sellerProfile?.fullName || "U").charAt(0)
-                )}
-              </div>
+<div className="relative h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center text-white font-medium overflow-hidden">
+  {sellerProfile?.profilePicture ? (
+    <img
+      src={getProfilePictureUrl(sellerProfile.profilePicture) || "/placeholder.svg"}
+      alt={sellerProfile.fullName}
+      className="h-full w-full object-cover"
+      onError={(e) => {
+        (e.currentTarget as HTMLImageElement).src = "/placeholder.svg"
+      }}
+    />
+  ) : (
+    (sellerProfile?.fullName || "U").charAt(0)
+  )}
+</div>
             </div>
           </header>
 

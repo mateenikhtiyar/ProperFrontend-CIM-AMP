@@ -58,13 +58,6 @@ const COMPANY_TYPES = [
   "Strategic Operating Company",
 ];
 
-const CAPITAL_ENTITIES = [
-  "Fund",
-  "Holding Company",
-  "SPV",
-  "Direct Investment",
-];
-
 const BUSINESS_MODELS = [
   "Recurring Revenue",
   "Project-Based",
@@ -79,7 +72,7 @@ const MANAGEMENT_PREFERENCES = [
 ];
 
 // Default API URL
-const DEFAULT_API_URL = "https://api.cimamplify.com";
+const DEFAULT_API_URL = "http://localhost:3001";
 
 // Type for hierarchical selection
 interface HierarchicalSelection {
@@ -302,8 +295,7 @@ export default function CompanyProfilePage() {
     averageDealSize: undefined,
     preferences: {
       stopSendingDeals: false,
-      dontShowMyDeals: false,
-      dontSendDealsToMyCompetitors: false,
+      doNotSendMarketedDeals: false,
       allowBuyerLikeDeals: false,
     },
     targetCriteria: {
@@ -495,7 +487,7 @@ export default function CompanyProfilePage() {
         return;
       }
 
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
       const response = await fetch(`${apiUrl}/buyers/profile`, {
         headers: {
@@ -1668,7 +1660,7 @@ export default function CompanyProfilePage() {
   const getProfilePictureUrl = (path: string | null) => {
     if (!path) return null;
 
-    const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
     if (path.startsWith("http://") || path.startsWith("https://")) {
       return path;
@@ -2814,40 +2806,21 @@ export default function CompanyProfilePage() {
 
                   <div className="flex items-end space-x-2">
                     <Checkbox
-                      id="dontShowMyDeals"
-                      className="mt-1 border-[#d0d5dd]"
-                      checked={formData.preferences.dontShowMyDeals}
-                      onCheckedChange={(checked) =>
-                        handleNestedChange(
-                          "preferences",
-                          "dontShowMyDeals",
-                          checked === true
-                        )
-                      }
-                    />
-                    <Label htmlFor="dontShowMyDeals" className="text-[#344054]">
-                      Don't show sellers your company details until you engage.
-                      You will show as "Anonymous Buyer"
-                    </Label>
-                  </div>
-
-                  <div className="flex items-end space-x-2">
-                    <Checkbox
-                      id="dontSendDealsToMyCompetitors"
+                      id="doNotSendMarketedDeals"
                       className="mt-1 border-[#d0d5dd]"
                       checked={
-                        formData.preferences.dontSendDealsToMyCompetitors
+                        formData.preferences.doNotSendMarketedDeals
                       }
                       onCheckedChange={(checked) =>
                         handleNestedChange(
                           "preferences",
-                          "dontSendDealsToMyCompetitors",
+                          "doNotSendMarketedDeals",
                           checked === true
                         )
                       }
                     />
                     <Label
-                      htmlFor="dontSendDealsToMyCompetitors"
+                      htmlFor="doNotSendMarketedDeals"
                       className="text-[#344054]"
                     >
                       Do not send deals that are currently marketed on other

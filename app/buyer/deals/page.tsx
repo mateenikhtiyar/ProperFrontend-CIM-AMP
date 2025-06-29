@@ -104,7 +104,7 @@ export default function DealsPage() {
         return [];
       }
 
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
       // Map status to API endpoint
       let endpoint = "";
@@ -247,7 +247,7 @@ export default function DealsPage() {
       setApiError(null);
       const token = localStorage.getItem("token");
       const currentBuyerId = localStorage.getItem("userId");
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
       console.log("Token exists:", !!token);
       console.log("Buyer ID:", currentBuyerId);
@@ -478,7 +478,7 @@ export default function DealsPage() {
         return;
       }
 
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
       const response = await fetch(`${apiUrl}/company-profiles/my-profile`, {
         method: "GET",
@@ -514,7 +514,7 @@ export default function DealsPage() {
         return;
       }
 
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
       const response = await fetch(`${apiUrl}/buyers/profile`, {
         headers: {
@@ -562,7 +562,7 @@ export default function DealsPage() {
       const token = localStorage.getItem("token");
       if (!token) return;
 
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
       // Option 2: Use deal ID to get seller info (recommended)
       const response = await fetch(
@@ -667,7 +667,7 @@ export default function DealsPage() {
   const getProfilePictureUrl = (path: string | null) => {
     if (!path) return null;
 
-    const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
     if (path.startsWith("http://") || path.startsWith("https://")) {
       return path;
@@ -713,7 +713,7 @@ export default function DealsPage() {
 
   const fetchSellerInfo = async (sellerId: string) => {
     try {
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
       const response = await fetch(
         `${apiUrl}/sellers/public/${sellerId}`
       );
@@ -751,7 +751,7 @@ export default function DealsPage() {
       if (uniqueSellerIds.length === 0) return;
 
       const token = localStorage.getItem("token");
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
       for (const sellerId of uniqueSellerIds) {
         try {
@@ -1130,7 +1130,7 @@ export default function DealsPage() {
                                     // ✅ Correct
                                     const apiUrl =
                                       localStorage.getItem("apiUrl") ||
-                                      "https://api.cimamplify.com";
+                                      "http://localhost:3001";
                                     window.open(
                                       `${apiUrl}/${doc.path}`,
                                       "_blank"

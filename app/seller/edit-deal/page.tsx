@@ -1,5 +1,8 @@
 "use client"
 import Image from "next/image"
+
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
+
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
@@ -12,9 +15,12 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "@/components/ui/use-toast"
 import { Toaster } from "@/components/ui/toaster"
-import { ChevronDown, ChevronRight, Search, ArrowLeft, FileText, X, Download } from "lucide-react"
-import { getGeoData, type Continent, type Region, type SubRegion, type GeoData } from "@/lib/geography-data"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { ChevronDown, ChevronRight, Search, ArrowLeft, FileText, X, Download } from 'lucide-react'
+// Remove these imports:
+// import { getGeoData, type Continent, type Region, type SubRegion, type GeoData } from "@/lib/geography-data"
+
+// Add these imports instead:
+import { Country, State, City } from "country-state-city"
 import {
   getIndustryData,
   type Sector,
@@ -25,6 +31,7 @@ import {
 } from "@/lib/industry-data"
 import SellerProtectedRoute from "@/components/seller/protected-route"
 
+// ...existing code...
 // ✅ Define the exact enum values as constants to match backend schema
 const CAPITAL_AVAILABILITY_OPTIONS = {
   READY: "Ready to deploy immediately",
@@ -38,6 +45,7 @@ interface SellerFormData {
   companyDescription: string
   geographySelections: string[]
   industrySelections: string[]
+  selectedIndustryDisplay?: string // Add this field to track what user selected for display
   yearsInBusiness: number
   trailingRevenue: number
   trailingEBITDA: number
@@ -46,7 +54,7 @@ interface SellerFormData {
   netIncome: number
   askingPrice: number
   businessModels: string[]
-  managementPreferences: string
+  managementPreferences: string[]
   capitalAvailability: CapitalAvailabilityType[] // ✅ Use the exact type
   companyType: string[]
   minPriorAcquisitions: number
@@ -56,10 +64,34 @@ interface SellerFormData {
   t12NetIncome?: number
 }
 
+// Replace the existing GeoItem interface with:
 interface GeoItem {
   id: string
   name: string
   path: string
+  type: "country" | "state" | "city"
+  countryCode?: string
+  stateCode?: string
+}
+
+// Add new interfaces:
+interface CountryData {
+  isoCode: string
+  name: string
+  states: StateData[]
+}
+
+interface StateData {
+  isoCode: string
+  name: string
+  countryCode: string
+  cities: CityData[]
+}
+
+interface CityData {
+  name: string
+  stateCode: string
+  countryCode: string
 }
 
 interface IndustryItem {
@@ -78,6 +110,8 @@ interface IndustrySelection {
   sectors: Record<string, boolean>
   industryGroups: Record<string, boolean>
   industries: Record<string, boolean>
+  subIndustries: Record<string, boolean>
+  activities: Record<string, boolean>
 }
 
 interface DealDocument {
@@ -119,7 +153,10 @@ interface Deal {
     assetLight?: boolean
     assetHeavy?: boolean
   }
-  managementPreferences: string
+  managementPreferences: {
+    retiringDivesting?: boolean
+    staffStay?: boolean
+  }
   buyerFit: {
     capitalAvailability?: CapitalAvailabilityType[]
     minPriorAcquisitions?: number
@@ -154,9 +191,7 @@ export default function EditDealPageFixed() {
 
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
-  const [geoData, setGeoData] = useState<GeoData | null>(null)
   const [industryData, setIndustryData] = useState<IndustryData | null>(null)
-  const [flatGeoData, setFlatGeoData] = useState<GeoItem[]>([])
   const [flatIndustryData, setFlatIndustryData] = useState<IndustryItem[]>([])
   const [geoSearchTerm, setGeoSearchTerm] = useState("")
   const [industrySearchTerm, setIndustrySearchTerm] = useState("")
@@ -180,6 +215,8 @@ export default function EditDealPageFixed() {
     sectors: {},
     industryGroups: {},
     industries: {},
+    subIndustries: {},
+    activities: {},
   })
 
   // UI state for expanded sections
@@ -201,7 +238,7 @@ export default function EditDealPageFixed() {
     netIncome: 0,
     askingPrice: 0,
     businessModels: [],
-     managementPreferences: "",
+    managementPreferences: [],
     capitalAvailability: [], // ✅ Initialize as empty array with correct type
     companyType: [],
     minPriorAcquisitions: 0,
@@ -213,22 +250,14 @@ export default function EditDealPageFixed() {
 
   // Add to state
   const [dealData, setDealData] = useState<Deal | null>(null)
+  const [flatGeoData, setFlatGeoData] = useState<GeoItem[]>([])
 
-  // Flatten geography data for searchable dropdown
-  const flattenGeoData = (items: Continent[] | Region[] | SubRegion[], parentPath = "", result: GeoItem[] = []) => {
-    items.forEach((item) => {
-      const path = parentPath ? `${parentPath} > ${item.name}` : item.name
-      result.push({ id: item.id, name: item.name, path })
+  // Add debounced search state
+  const [debouncedGeoSearch, setDebouncedGeoSearch] = useState("")
+  const [debouncedIndustrySearch, setDebouncedIndustrySearch] = useState("")
 
-      if ("regions" in item && item.regions) {
-        flattenGeoData(item.regions, path, result)
-      }
-      if ("subRegions" in item && item.subRegions) {
-        flattenGeoData(item.subRegions, path, result)
-      }
-    })
-    return result
-  }
+  // Add new UI state for expanded sub-industries:
+  const [expandedSubIndustries, setExpandedSubIndustries] = useState<Record<string, boolean>>({})
 
   // Flatten industry data for searchable dropdown
   const flattenIndustryData = (
@@ -253,7 +282,6 @@ export default function EditDealPageFixed() {
     return result
   }
 
-  // ✅ Helper function to normalize capital availability values
   const normalizeCapitalAvailability = (value: string): CapitalAvailabilityType | null => {
     const trimmedValue = value.trim()
     if (trimmedValue === CAPITAL_AVAILABILITY_OPTIONS.READY) {
@@ -265,7 +293,6 @@ export default function EditDealPageFixed() {
     return null
   }
 
-  // Fetch deal data
   const fetchDealData = async () => {
     if (!dealId) {
       toast({
@@ -280,7 +307,7 @@ export default function EditDealPageFixed() {
     try {
       setIsLoading(true)
       const token = localStorage.getItem("token")
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
 
       const response = await fetch(`${apiUrl}/deals/${dealId}`, {
         headers: {
@@ -300,7 +327,7 @@ export default function EditDealPageFixed() {
       if (Array.isArray(dealData.buyerFit?.capitalAvailability)) {
         capitalAvailabilityArray = dealData.buyerFit.capitalAvailability
           .map(normalizeCapitalAvailability)
-          .filter((item): item is CapitalAvailabilityType => item !== null)
+          .filter((item: unknown): item is CapitalAvailabilityType => item !== null)
       } else if (typeof dealData.buyerFit?.capitalAvailability === "string") {
         const normalized = normalizeCapitalAvailability(dealData.buyerFit.capitalAvailability)
         if (normalized) {
@@ -315,7 +342,7 @@ export default function EditDealPageFixed() {
       } else if (typeof dealData.companyType === "string" && dealData.companyType.trim()) {
         companyTypeArray = dealData.companyType
           .split(",")
-          .map((s) => s.trim())
+          .map((s: string) => s.trim())
           .filter(Boolean)
       }
 
@@ -324,6 +351,7 @@ export default function EditDealPageFixed() {
         companyDescription: dealData.companyDescription || "",
         geographySelections: dealData.geographySelection ? [dealData.geographySelection] : [],
         industrySelections: dealData.industrySector ? [dealData.industrySector] : [],
+        selectedIndustryDisplay: dealData.industrySector || undefined,
         yearsInBusiness: dealData.yearsInBusiness || 0,
         trailingRevenue: dealData.financialDetails?.trailingRevenueAmount || 0,
         trailingEBITDA: dealData.financialDetails?.trailingEBITDAAmount || 0,
@@ -337,8 +365,11 @@ export default function EditDealPageFixed() {
           ...(dealData.businessModel?.assetLight ? ["asset-light"] : []),
           ...(dealData.businessModel?.assetHeavy ? ["asset-heavy"] : []),
         ],
-         managementPreferences: dealData.managementPreferences || "",
-        capitalAvailability: capitalAvailabilityArray, // ✅ Fixed: Normalized array format
+        managementPreferences: [
+          ...(dealData.managementPreferences?.retiringDivesting ? ["retiring-divesting"] : []),
+          ...(dealData.managementPreferences?.staffStay ? ["key-staff-stay"] : []),
+        ],
+        capitalAvailability: capitalAvailabilityArray,
         companyType: [...new Set(companyTypeArray)],
         minPriorAcquisitions: dealData.buyerFit?.minPriorAcquisitions || 0,
         minTransactionSize: dealData.buyerFit?.minTransactionSize || 0,
@@ -370,42 +401,121 @@ export default function EditDealPageFixed() {
   }
 
   // Fetch geography and industry data
-  useEffect(() => {
-    const fetchInitialData = async () => {
-      try {
-        const token = localStorage.getItem("token")
-        const userRole = localStorage.getItem("userRole")
+  // useEffect(() => {
+  //   // Add debounce effect for geo search
+  //   useEffect(() => {
+  //     const timer = setTimeout(() => {
+  //       setDebouncedGeoSearch(geoSearchTerm)
+  //     }, 300)
 
-        if (!token || userRole !== "seller") {
-          router.push("/seller/login")
-          return
-        }
+  //     return () => clearTimeout(timer)
+  //   }, [geoSearchTerm])
 
-        // Fetch geo and industry data in parallel
-        const [geoResponse, industryResponse] = await Promise.all([getGeoData(), getIndustryData()])
+  //   // Add debounce effect for industry search
+  //   useEffect(() => {
+  //     const timer = setTimeout(() => {
+  //       setDebouncedIndustrySearch(industrySearchTerm)
+  //     }, 300)
 
-        setGeoData(geoResponse)
-        setIndustryData(industryResponse)
+  //     return () => clearTimeout(timer)
+  //   }, [industrySearchTerm])
 
-        // Flatten for searchable dropdowns
-        setFlatGeoData(flattenGeoData(geoResponse.continents))
-        setFlatIndustryData(flattenIndustryData(industryResponse.sectors))
+  //   // Replace the existing fetchInitialData function with:
+  //   const fetchInitialData = async () => {
+  //     try {
+  //       const token = localStorage.getItem("token")
+  //       const userRole = localStorage.getItem("userRole")
 
-        // Then fetch the existing deal data (for edit)
-        await fetchDealData()
-      } catch (error) {
-        console.error("Error fetching data:", error)
-        toast({
-          title: "Error",
-          description: "Failed to load form data. Please refresh the page.",
-          variant: "destructive",
+  //       if (!token || userRole !== "seller") {
+  //         router.push("/seller/login")
+  //         return
+  //       }
+
+  //       // Load all countries initially but limit the visible ones
+  //       const allCountries = Country.getAllCountries()
+  //       const geoData: GeoItem[] = []
+
+  //       // Add all countries to enable search
+  //       allCountries.forEach((country) => {
+  //         geoData.push({
+  //           id: country.isoCode,
+  //           name: country.name,
+  //           path: country.name,
+  //           type: "country",
+  //           countryCode: country.isoCode,
+  //         })
+  //       })
+
+  //       setFlatGeoData(geoData)
+
+  //       // Load industry data asynchronously
+  //       const industryResponse = await getIndustryData()
+  //       setIndustryData(industryResponse)
+  //       setFlatIndustryData(flattenIndustryData(industryResponse.sectors))
+
+  //       // Then fetch the existing deal data (for edit)
+  //       await fetchDealData()
+  //     } catch (error) {
+  //       console.error("Error fetching data:", error)
+  //       toast({
+  //         title: "Error",
+  //         description: "Failed to load form data. Please refresh the page.",
+  //         variant: "destructive",
+  //       })
+  //       setIsLoading(false)
+  //     }
+  //   }
+
+  //   fetchInitialData()
+  // }, [router, dealId])
+
+  const loadStatesAndCities = async (countryCode: string) => {
+    const hasStates = flatGeoData.some((item) => item.countryCode === countryCode && item.type === "state")
+
+    if (hasStates) return 
+
+    const states = State.getStatesOfCountry(countryCode)
+    const newGeoData = [...flatGeoData]
+
+    const existingIds = new Set(newGeoData.map((item) => item.id))
+
+    states.forEach((state) => {
+      const stateId = `${countryCode}-${state.isoCode}`
+      const statePath = `${Country.getCountryByCode(countryCode)?.name} > ${state.name}`
+
+      if (!existingIds.has(stateId)) {
+        newGeoData.push({
+          id: stateId,
+          name: state.name,
+          path: statePath,
+          type: "state",
+          countryCode: countryCode,
+          stateCode: state.isoCode,
         })
-        setIsLoading(false)
+        existingIds.add(stateId)
       }
-    }
 
-    fetchInitialData()
-  }, [router, dealId])
+      const cities = City.getCitiesOfState(countryCode, state.isoCode).slice(0, 5)
+      cities.forEach((city, cityIndex) => {
+        const cityId = `${countryCode}-${state.isoCode}-${city.name}-${cityIndex}`
+        const cityPath = `${Country.getCountryByCode(countryCode)?.name} > ${state.name} > ${city.name}`
+
+        if (!existingIds.has(cityId)) {
+          newGeoData.push({
+            id: cityId,
+            name: city.name,
+            path: cityPath,
+            type: "city",
+            countryCode: countryCode,
+            stateCode: state.isoCode,
+          })
+          existingIds.add(cityId)
+        }
+      })
+    })
+
+    setFlatGeoData(newGeoData)
+  }
 
   // Handle text input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -413,11 +523,14 @@ export default function EditDealPageFixed() {
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  // Handle number input changes
-  const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>, fieldName: string) => {
-    const value = e.target.value === "" ? 0 : Number.parseFloat(e.target.value)
-    setFormData((prev) => ({ ...prev, [fieldName]: value }))
-  }
+// Update handleNumberChange to handle empty string
+const handleNumberChange = (
+  e: React.ChangeEvent<HTMLInputElement>,
+  fieldName: keyof SellerFormData
+) => {
+  const value = e.target.value === "" ? 0 : Number.parseFloat(e.target.value);
+  setFormData((prev) => ({ ...prev, [fieldName]: value }));
+};
 
   // Handle select changes
   const handleSelectChange = (value: string, fieldName: string) => {
@@ -425,24 +538,22 @@ export default function EditDealPageFixed() {
   }
 
   // Handle checkbox changes for business models and management preferences
-  const handleCheckboxChange = (
-    checked: boolean,
-    value: string,
-    fieldName: "companyType" | "businessModels" | "managementPreferences",
-  ) => {
-    setFormData((prev) => {
-      const currentValues = Array.isArray(prev[fieldName]) ? prev[fieldName] : []
-
-      const newValues = checked
-        ? [...new Set([...currentValues, value])] // add if checked
-        : currentValues.filter((v) => v !== value) // remove if unchecked
-
-      return {
-        ...prev,
-        [fieldName]: newValues,
-      }
-    })
-  }
+const handleCheckboxChange = (
+  checked: boolean,
+  value: string,
+  fieldName: "companyType" | "businessModels" | "managementPreferences"
+) => {
+  setFormData((prev) => {
+    const currentValues = Array.isArray(prev[fieldName]) ? prev[fieldName] : [];
+    const newValues = checked
+      ? [...new Set([...currentValues, value])]
+      : currentValues.filter((v) => v !== value);
+    return {
+      ...prev,
+      [fieldName]: newValues,
+    };
+  });
+};
 
   // ✅ Fixed: Handle capital availability changes with exact enum values
   const handleCapitalAvailabilityChange = (checked: boolean, value: CapitalAvailabilityType) => {
@@ -704,12 +815,19 @@ export default function EditDealPageFixed() {
     updateIndustriesInFormData(newIndustrySelection)
   }
 
-  // Toggle expansion of UI sections
-  const toggleContinentExpansion = (continentId: string) => {
+  // Replace the existing toggleContinentExpansion function
+  const toggleContinentExpansion = async (continentId: string) => {
+    const isCurrentlyExpanded = expandedContinents[continentId]
+
     setExpandedContinents((prev) => ({
       ...prev,
       [continentId]: !prev[continentId],
     }))
+
+    // Load states and cities when expanding (not when already expanded)
+    if (!isCurrentlyExpanded) {
+      await loadStatesAndCities(continentId)
+    }
   }
 
   const toggleRegionExpansion = (regionId: string) => {
@@ -736,26 +854,12 @@ export default function EditDealPageFixed() {
     }))
   }
 
-  // Filter geography data based on search term
-  const filterGeographyData = () => {
-    if (!geoData || !geoSearchTerm) return geoData
-
-    const filteredContinents: Continent[] = []
-
-    geoData.continents.forEach((continent) => {
-      const filteredRegions = continent.regions.filter((region) =>
-        region.name.toLowerCase().includes(geoSearchTerm.toLowerCase()),
-      )
-
-      if (filteredRegions.length > 0) {
-        filteredContinents.push({
-          ...continent,
-          regions: filteredRegions,
-        })
-      }
-    })
-
-    return { continents: filteredContinents }
+  // Add toggle function for sub-industries:
+  const toggleSubIndustryExpansion = (subIndustryId: string) => {
+    setExpandedSubIndustries((prev) => ({
+      ...prev,
+      [subIndustryId]: !prev[subIndustryId],
+    }))
   }
 
   // Filter industry data based on search term
@@ -795,106 +899,71 @@ export default function EditDealPageFixed() {
     return { sectors: filteredSectors }
   }
 
-  // Render the hierarchical geography selection
-  const renderGeographySelection = () => {
-    const filteredData = filterGeographyData()
-    if (!filteredData) return <div>Loading geography data...</div>
+  // Add this function inside EditDealPageFixed, before renderIndustrySelection
+  const handleIndustryRadioChange = (industryName: string) => {
+    if (!industryData) return
 
-    return (
-      <div className="space-y-2 font-poppins">
-        {filteredData.continents.map((continent) => (
-          <div key={continent.id} className="border-b border-gray-100 pb-1">
-            <div className="flex items-center">
-              <input
-                type="radio"
-                id={`continent-${continent.id}`}
-                name="geography"
-                checked={geoSelection.selectedId === continent.id}
-                onChange={() => selectGeography(continent.id, continent.name)}
-                className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9]"
-              />
-              <div
-                className="flex items-center cursor-pointer flex-1"
-                onClick={() => toggleContinentExpansion(continent.id)}
-              >
-                {expandedContinents[continent.id] ? (
-                  <ChevronDown className="h-4 w-4 mr-1 text-gray-500" />
-                ) : (
-                  <ChevronRight className="h-4 w-4 mr-1 text-gray-500" />
-                )}
-                <Label htmlFor={`continent-${continent.id}`} className="text-[#344054] cursor-pointer font-medium">
-                  {continent.name}
-                </Label>
-              </div>
-            </div>
+    // Find the selected industry and get all its sub-industries
+    const subIndustryNames: string[] = []
+    let selectedIndustryType = "industry" // track what type was selected
 
-            {expandedContinents[continent.id] && (
-              <div className="ml-6 mt-1 space-y-1">
-                {continent.regions.map((region) => (
-                  <div key={region.id} className="pl-2">
-                    <div className="flex items-center">
-                      <input
-                        type="radio"
-                        id={`region-${region.id}`}
-                        name="geography"
-                        checked={geoSelection.selectedId === region.id}
-                        onChange={() => selectGeography(region.id, region.name)}
-                        className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9]"
-                      />
-                      {region.subRegions && region.subRegions.length > 0 ? (
-                        <div
-                          className="flex items-center cursor-pointer flex-1"
-                          onClick={() => toggleRegionExpansion(region.id)}
-                        >
-                          {expandedRegions[region.id] ? (
-                            <ChevronDown className="h-3 w-3 mr-1 text-gray-400" />
-                          ) : (
-                            <ChevronRight className="h-3 w-3 mr-1 text-gray-400" />
-                          )}
-                          <Label htmlFor={`region-${region.id}`} className="text-[#344054] cursor-pointer">
-                            {region.name}
-                          </Label>
-                        </div>
-                      ) : (
-                        <Label htmlFor={`region-${region.id}`} className="text-[#344054] cursor-pointer">
-                          {region.name}
-                        </Label>
-                      )}
-                    </div>
+    // Search through all levels to find the selected item
+    industryData.sectors.forEach((sector) => {
+      if (sector.name === industryName) {
+        selectedIndustryType = "sector"
+        // If a sector is selected, get all sub-industries from all its industry groups
+        sector.industryGroups.forEach((group) => {
+          group.industries.forEach((industry) => {
+            industry.subIndustries.forEach((subIndustry) => {
+              subIndustryNames.push(subIndustry.name)
+            })
+          })
+        })
+      } else {
+        sector.industryGroups.forEach((group) => {
+          if (group.name === industryName) {
+            selectedIndustryType = "industryGroup"
+            // If an industry group is selected, get all sub-industries from all its industries
+            group.industries.forEach((industry) => {
+              industry.subIndustries.forEach((subIndustry) => {
+                subIndustryNames.push(subIndustry.name)
+              })
+            })
+          } else {
+            group.industries.forEach((industry) => {
+              if (industry.name === industryName) {
+                selectedIndustryType = "industry"
+                // If an industry is selected, get all its sub-industries
+                industry.subIndustries.forEach((subIndustry) => {
+                  subIndustryNames.push(subIndustry.name)
+                })
+              } else {
+                industry.subIndustries.forEach((subIndustry) => {
+                  if (subIndustry.name === industryName) {
+                    selectedIndustryType = "subIndustry"
+                    // If a sub-industry is selected, just send that sub-industry
+                    subIndustryNames.push(subIndustry.name)
+                  }
+                })
+              }
+            })
+          }
+        })
+      }
+    })
 
-                    {region.subRegions && expandedRegions[region.id] && (
-                      <div className="ml-6 mt-1 space-y-1">
-                        {region.subRegions.map((subRegion) => (
-                          <div key={subRegion.id} className="flex items-center">
-                            <input
-                              type="radio"
-                              id={`subregion-${subRegion.id}`}
-                              name="geography"
-                              checked={geoSelection.selectedId === subRegion.id}
-                              onChange={() => selectGeography(subRegion.id, subRegion.name)}
-                              className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9]"
-                            />
-                            <Label
-                              htmlFor={`subregion-${subRegion.id}`}
-                              className="text-[#344054] cursor-pointer text-sm"
-                            >
-                              {subRegion.name}
-                            </Label>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-    )
+    // Update form data
+    setFormData((prev) => ({
+      ...prev,
+      industrySelections: subIndustryNames.length > 0 ? subIndustryNames : [industryName], // fallback to industry name if no sub-industries found
+      selectedIndustryDisplay: industryName, // keep track of what the user selected for display
+    }))
+
+    console.log(`Selected ${selectedIndustryType}: ${industryName}`)
+    console.log(`Sending ${subIndustryNames.length} sub-industries to backend:`, subIndustryNames)
   }
 
-  // Render the hierarchical industry selection
+  // Replace renderIndustrySelection to use radio buttons
   const renderIndustrySelection = () => {
     const filteredData = filterIndustryData()
     if (!filteredData) return <div>Loading industry data...</div>
@@ -904,13 +973,13 @@ export default function EditDealPageFixed() {
         {filteredData.sectors.map((sector) => (
           <div key={sector.id} className="border-b border-gray-100 pb-1">
             <div className="flex items-center">
-              <Checkbox
+              <input
+                type="radio"
                 id={`sector-${sector.id}`}
-                checked={!!industrySelection.sectors[sector.id]}
-                onCheckedChange={() => {
-                  toggleSector(sector)
-                }}
-                className="mr-2 border-[#d0d5dd]"
+                name="industry"
+                checked={formData.selectedIndustryDisplay === sector.name}
+                onChange={() => handleIndustryRadioChange(sector.name)}
+                className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9]"
               />
               <div className="flex items-center cursor-pointer flex-1" onClick={() => toggleSectorExpansion(sector.id)}>
                 {expandedSectors[sector.id] ? (
@@ -929,57 +998,161 @@ export default function EditDealPageFixed() {
                 {sector.industryGroups.map((group) => (
                   <div key={group.id} className="pl-2">
                     <div className="flex items-center">
-                      <Checkbox
+                      <input
+                        type="radio"
                         id={`group-${group.id}`}
-                        checked={!!industrySelection.industryGroups[group.id]}
-                        onCheckedChange={() => {
-                          toggleIndustryGroup(group, sector)
-                        }}
-                        className="mr-2 border-[#d0d5dd]"
+                        name="industry"
+                        checked={formData.selectedIndustryDisplay === group.name}
+                        onChange={() => handleIndustryRadioChange(group.name)}
+                        className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9]"
                       />
                       <div
                         className="flex items-center cursor-pointer flex-1"
                         onClick={() => toggleIndustryGroupExpansion(group.id)}
                       >
-                        {expandedIndustryGroups[group.id] ? (
-                          <ChevronDown className="h-3 w-3 mr-1 text-gray-400" />
-                        ) : (
-                          <ChevronRight className="h-3 w-3 mr-1 text-gray-400" />
-                        )}
                         <Label htmlFor={`group-${group.id}`} className="text-[#344054] cursor-pointer">
                           {group.name}
                         </Label>
                       </div>
                     </div>
-
-                    {expandedIndustryGroups[group.id] && (
-                      <div className="ml-6 mt-1 space-y-1">
-                        {group.industries.map((industry) => (
-                          <div key={industry.id} className="flex items-center">
-                            <Checkbox
-                              id={`industry-${industry.id}`}
-                              checked={!!industrySelection.industries[industry.id]}
-                              onCheckedChange={() => {
-                                toggleIndustry(industry, group, sector)
-                              }}
-                              className="mr-2 border-[#d0d5dd]"
-                            />
-                            <Label
-                              htmlFor={`industry-${industry.id}`}
-                              className="text-[#344054] cursor-pointer text-sm"
-                            >
-                              {industry.name}
-                            </Label>
-                          </div>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 ))}
               </div>
             )}
           </div>
         ))}
+      </div>
+    )
+  }
+
+  // Replace the renderGeographySelection function with this optimized version
+  const renderGeographySelection = () => {
+    const filteredGeoData = flatGeoData
+      .filter(
+        (item) =>
+          !debouncedGeoSearch ||
+          item.name.toLowerCase().includes(debouncedGeoSearch.toLowerCase()) ||
+          item.path.toLowerCase().includes(debouncedGeoSearch.toLowerCase()),
+      )
+      .slice(0, 200) // Increased limit for better search results
+
+    const groupedData = filteredGeoData.reduce(
+      (acc, item) => {
+        const countryCode = item.countryCode || item.id
+        if (!acc[countryCode]) {
+          acc[countryCode] = {
+            country: null,
+            states: [],
+            cities: [],
+          }
+        }
+
+        if (item.type === "country") {
+          acc[countryCode].country = item
+        } else if (item.type === "state") {
+          acc[countryCode].states.push(item)
+        } else if (item.type === "city") {
+          acc[countryCode].cities.push(item)
+        }
+
+        return acc
+      },
+      {} as Record<string, { country: GeoItem | null; states: GeoItem[]; cities: GeoItem[] }>,
+    )
+
+    const countryLimit = debouncedGeoSearch ? 50 : 20
+
+    return (
+      <div className="space-y-2 font-poppins">
+        {Object.values(groupedData)
+          .filter((group) => group.country || group.states.length > 0 || group.cities.length > 0)
+          .slice(0, countryLimit)
+          .map((group, groupIndex) => {
+            if (!group.country) return null
+            const country = group.country
+
+            const filteredStates = group.states.slice(0, 10)
+            const filteredCities = group.cities.slice(0, 10)
+
+            return (
+              <div key={`country-${country.id}-${groupIndex}`} className="border-b border-gray-100 pb-1">
+                <div className="flex items-center">
+                  <input
+                    type="radio"
+                    id={`geo-${country.id}`}
+                    name="geography"
+                    checked={geoSelection.selectedId === country.id}
+                    onChange={() => selectGeography(country.id, country.name)}
+                    className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9]"
+                  />
+                  <div
+                    className="flex items-center cursor-pointer flex-1"
+                    onClick={() => toggleContinentExpansion(country.id)}
+                  >
+                    {expandedContinents[country.id] ? (
+                      <ChevronDown className="h-4 w-4 mr-1 text-gray-500" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4 mr-1 text-gray-500" />
+                    )}
+                    <Label htmlFor={`geo-${country.id}`} className="text-[#344054] cursor-pointer font-medium">
+                      {country.name}
+                    </Label>
+                  </div>
+                </div>
+
+                {expandedContinents[country.id] && filteredStates.length > 0 && (
+                  <div className="ml-6 mt-1 space-y-1">
+                    {filteredStates.map((state, stateIndex) => (
+                      <div key={`state-${state.id}-${stateIndex}`} className="pl-2">
+                        <div className="flex items-center">
+                          <input
+                            type="radio"
+                            id={`geo-${state.id}`}
+                            name="geography"
+                            checked={geoSelection.selectedId === state.id}
+                            onChange={() => selectGeography(state.id, state.path)}
+                            className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9]"
+                          />
+                          <Label htmlFor={`geo-${state.id}`} className="text-[#344054] cursor-pointer">
+                            {state.name}
+                          </Label>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {expandedContinents[country.id] && filteredCities.length > 0 && (
+                  <div className="ml-6 mt-1 space-y-1">
+                    {filteredCities.map((city, cityIndex) => (
+                      <div key={`city-${city.id}-${cityIndex}`} className="pl-4">
+                        <div className="flex items-center">
+                          <input
+                            type="radio"
+                            id={`geo-${city.id}`}
+                            name="geography"
+                            checked={geoSelection.selectedId === city.id}
+                            onChange={() => selectGeography(city.id, city.path)}
+                            className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9]"
+                          />
+                          <Label htmlFor={`geo-${city.id}`} className="text-[#344054] cursor-pointer">
+                            {city.name}
+                          </Label>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        {Object.values(groupedData).length > countryLimit && (
+          <div className="text-center py-2 text-sm text-gray-500">
+            {debouncedGeoSearch
+              ? `Showing first ${countryLimit} matching countries. Refine your search for better results.`
+              : `Showing first ${countryLimit} countries. Use search to find more.`}
+          </div>
+        )}
       </div>
     )
   }
@@ -1043,7 +1216,7 @@ export default function EditDealPageFixed() {
 
       const token = localStorage.getItem("token")
       const sellerId = localStorage.getItem("userId")
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
 
       if (!token || !sellerId) throw new Error("Authentication required")
 
@@ -1085,7 +1258,7 @@ export default function EditDealPageFixed() {
           t12NetIncome: formData.t12NetIncome || 0,
         },
         businessModel,
- managementPreferences: formData.managementPreferences,
+        managementPreferences,
         buyerFit: {
           capitalAvailability: validCapitalAvailability, // ✅ Fixed: Always valid array with exact enum values
           minPriorAcquisitions: formData.minPriorAcquisitions,
@@ -1159,7 +1332,7 @@ export default function EditDealPageFixed() {
 
     try {
       const token = localStorage.getItem("token")
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
 
       const docIndex = existingDocuments.findIndex((d) => d.filename === doc.filename)
       const response = await fetch(`${apiUrl}/deals/${dealId}/documents/${docIndex}`, {
@@ -1192,7 +1365,7 @@ export default function EditDealPageFixed() {
 
   // Handle document download
   const handleDocumentDownload = (doc: DealDocument) => {
-    const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
     const link = document.createElement("a")
     link.href = `${apiUrl}/uploads/deal-documents/${doc.filename}`
     link.download = doc.originalName
@@ -1237,6 +1410,74 @@ export default function EditDealPageFixed() {
     })
   }
 
+  // Add debounce effect for geo search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedGeoSearch(geoSearchTerm)
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [geoSearchTerm])
+
+  // Add debounce effect for industry search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedIndustrySearch(industrySearchTerm)
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [industrySearchTerm])
+
+  // Fetch geography and industry data
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      try {
+        const token = localStorage.getItem("token")
+        const userRole = localStorage.getItem("userRole")
+
+        if (!token || userRole !== "seller") {
+          router.push("/seller/login")
+          return
+        }
+
+        // Load all countries initially but limit the visible ones
+        const allCountries = Country.getAllCountries()
+        const geoData: GeoItem[] = []
+
+        // Add all countries to enable search
+        allCountries.forEach((country) => {
+          geoData.push({
+            id: country.isoCode,
+            name: country.name,
+            path: country.name,
+            type: "country",
+            countryCode: country.isoCode,
+          })
+        })
+
+        setFlatGeoData(geoData)
+
+        // Load industry data asynchronously
+        const industryResponse = await getIndustryData()
+        setIndustryData(industryResponse)
+        setFlatIndustryData(flattenIndustryData(industryResponse.sectors))
+
+        // Then fetch the existing deal data (for edit)
+        await fetchDealData()
+      } catch (error) {
+        console.error("Error fetching data:", error)
+        toast({
+          title: "Error",
+          description: "Failed to load form data. Please refresh the page.",
+          variant: "destructive",
+        })
+        setIsLoading(false)
+      }
+    }
+
+    fetchInitialData()
+  }, [router, dealId])
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -1274,7 +1515,8 @@ export default function EditDealPageFixed() {
                       <Image width={100} height={100} src="/seed.svg" alt="seed" className="w-20 h-20 " />
                     </div>{" "}
                     <p className="text-sm mt-2 text-gray-600">
-                     This deal will be made widely available on other deal platforms. Most of our buyers refuse deals from this level - you will get very few buyer matches.
+                      This deal will be made widely available on other deal platforms. Most of our buyers refuse deals
+                      from this level - you will get very few buyer matches.
                     </p>
                   </div>
                   <div className="mt-auto">
@@ -1453,36 +1695,43 @@ export default function EditDealPageFixed() {
                       />
                     </div>
 
-                    {formData.industrySelections.length > 0 && (
+                    {formData.selectedIndustryDisplay && (
                       <div className="mb-4">
                         <div className="text-sm text-[#667085] mb-1">Selected </div>
                         <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
-                          {formData.industrySelections.map((industry, index) => (
-                            <span
-                              key={`selected-industry-${index}`}
-                              className="bg-gray-100 text-[#344054] text-xs rounded-full px-2 py-0.5 flex items-center group"
-                            >
-                              {industry}
-                              <button
-                                type="button"
-                                onClick={() => removeIndustry(industry)}
-                                className="ml-1 text-gray-400 hover:text-gray-600 focus:outline-none"
-                              >
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  className="h-3 w-3"
-                                  viewBox="0 0 20 20"
-                                  fill="currentColor"
-                                >
-                                  <path
-                                    fillRule="evenodd"
-                                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                                    clipRule="evenodd"
-                                  />
-                                </svg>
-                              </button>
+                          <span
+                            key="selected-industry-display"
+                            className="bg-gray-100 text-[#344054] text-xs rounded-full px-2 py-0.5 flex items-center group"
+                          >
+                            {formData.selectedIndustryDisplay}
+                            <span className="ml-1 text-gray-400 text-xs">
+                              ({formData.industrySelections.length} sub-industries)
                             </span>
-                          ))}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  industrySelections: [],
+                                  selectedIndustryDisplay: undefined,
+                                }))
+                              }}
+                              className="ml-1 text-gray-400 hover:text-gray-600 focus:outline-none"
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-3 w-3"
+                                viewBox="0 0 20 20"
+                                fill="currentColor"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                            </button>
+                          </span>
                         </div>
                       </div>
                     )}
@@ -1496,80 +1745,102 @@ export default function EditDealPageFixed() {
                 <label htmlFor="yearsInBusiness" className="block text-sm font-medium text-gray-700 mb-1">
                   Number of years in business
                 </label>
-                <Input
-                  id="yearsInBusiness"
-                  type="number"
-                  min="0"
-                  value={formData.yearsInBusiness || ""}
-                  onChange={(e) => handleNumberChange(e, "yearsInBusiness")}
-                  className="w-full"
-                />
+<Input
+  id="yearsInBusiness"
+  type="number"
+  min="0"
+  value={formData.yearsInBusiness ?? ""}
+  onChange={(e) => handleNumberChange(e, "yearsInBusiness")}
+  className="w-full"
+/>
               </div>
-                  <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-3">Business Models</label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="flex items-center">
-                  <Checkbox
-                    id="recurring-revenue"
-                    checked={formData.businessModels.includes("recurring-revenue")}
-                    onCheckedChange={(checked) => handleCheckboxChange(checked, "recurring-revenue", "businessModels")}
-                    className="mr-2 border-[#d0d5dd]"
-                  />
-                  <Label htmlFor="recurring-revenue" className="cursor-pointer">
-                    Recurring Revenue
-                  </Label>
-                </div>
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-3">Business Models</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="flex items-center">
+<Checkbox
+  id="recurring-revenue"
+  checked={formData.businessModels.includes("recurring-revenue")}
+  onCheckedChange={(checked) =>
+    handleCheckboxChange(Boolean(checked), "recurring-revenue", "businessModels")
+  }
+  className="mr-2 border-[#d0d5dd]"
+/>
+                    <Label htmlFor="recurring-revenue" className="cursor-pointer">
+                      Recurring Revenue
+                    </Label>
+                  </div>
 
-                <div className="flex items-center">
-                  <Checkbox
-                    id="project-based"
-                    checked={formData.businessModels.includes("project-based")}
-                    onCheckedChange={(checked) => handleCheckboxChange(checked, "project-based", "businessModels")}
-                    className="mr-2 border-[#d0d5dd]"
-                  />
-                  <Label htmlFor="project-based" className="cursor-pointer">
-                    Project Based
-                  </Label>
-                </div>
+                  <div className="flex items-center">
+                    <Checkbox
+                      id="project-based"
+                      checked={formData.businessModels.includes("project-based")}
+                      onCheckedChange={(checked) => handleCheckboxChange(Boolean(checked), "project-based", "businessModels")}
+                      className="mr-2 border-[#d0d5dd]"
+                    />
+                    <Label htmlFor="project-based" className="cursor-pointer">
+                      Project Based
+                    </Label>
+                  </div>
 
-                <div className="flex items-center">
-                  <Checkbox
-                    id="asset-light"
-                    checked={formData.businessModels.includes("asset-light")}
-                    onCheckedChange={(checked) => handleCheckboxChange(checked, "asset-light", "businessModels")}
-                    className="mr-2 border-[#d0d5dd]"
-                  />
-                  <Label htmlFor="asset-light" className="cursor-pointer">
-                    Asset Light
-                  </Label>
-                </div>
+                  <div className="flex items-center">
+                    <Checkbox
+                      id="asset-light"
+                      checked={formData.businessModels.includes("asset-light")}
+                      onCheckedChange={(checked) => handleCheckboxChange(Boolean(checked), "asset-light", "businessModels")}
+                      className="mr-2 border-[#d0d5dd]"
+                    />
+                    <Label htmlFor="asset-light" className="cursor-pointer">
+                      Asset Light
+                    </Label>
+                  </div>
 
-                <div className="flex items-center">
-                  <Checkbox
-                    id="asset-heavy"
-                    checked={formData.businessModels.includes("asset-heavy")}
-                    onCheckedChange={(checked) => handleCheckboxChange(checked, "asset-heavy", "businessModels")}
-                    className="mr-2 border-[#d0d5dd]"
-                  />
-                  <Label htmlFor="asset-heavy" className="cursor-pointer">
-                    Asset Heavy
-                  </Label>
+                  <div className="flex items-center">
+                    <Checkbox
+                      id="asset-heavy"
+                      checked={formData.businessModels.includes("asset-heavy")}
+                      onCheckedChange={(checked) => handleCheckboxChange(Boolean(checked), "asset-heavy", "businessModels")}
+                      className="mr-2 border-[#d0d5dd]"
+                    />
+                    <Label htmlFor="asset-heavy" className="cursor-pointer">
+                      Asset Heavy
+                    </Label>
+                  </div>
                 </div>
               </div>
-            </div>
 
-          <div className="mb-6">
-  <label className="block text-sm font-medium text-gray-700 mb-3">
-    Management Preferences *
-  </label>
-  <Textarea
-    placeholder="Describe why your client is selling and what their plan is for continuation."
-    value={formData.managementPreferences}
-    onChange={(e) => setFormData({ ...formData, managementPreferences: e.target.value })}
-    rows={4}
-    className="w-full"
-  />
-</div>
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-3">Management Preferences</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex items-center">
+                    <Checkbox
+                      id="retiring-divesting"
+                      checked={formData.managementPreferences.includes("retiring-divesting")}
+                      onCheckedChange={(checked) =>
+                        handleCheckboxChange(Boolean(checked), "retiring-divesting", "managementPreferences")
+                      }
+                      className="mr-2 border-[#d0d5dd]"
+                    />
+                    <Label htmlFor="retiring-divesting" className="cursor-pointer">
+                      Retiring / Divesting
+                    </Label>
+                  </div>
+
+                  <div className="flex items-center">
+                    <Checkbox
+                      id="key-staff-stay"
+                      checked={formData.managementPreferences.includes("key-staff-stay")}
+                      onCheckedChange={(checked) =>
+                        handleCheckboxChange(Boolean(checked), "key-staff-stay", "managementPreferences")
+                      }
+                      className="mr-2 border-[#d0d5dd]"
+                    />
+                    <Label htmlFor="key-staff-stay" className="cursor-pointer">
+                      Key Staff Stay
+                    </Label>
+                  </div>
+                </div>
+              </div>
             </div>
           </section>
 
@@ -1755,8 +2026,6 @@ export default function EditDealPageFixed() {
               </div>
             </div>
 
-          
-
             {/* ✅ Fixed: Capital Availability with exact enum values */}
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -1768,7 +2037,7 @@ export default function EditDealPageFixed() {
                     id="ready-capital"
                     checked={formData.capitalAvailability.includes(CAPITAL_AVAILABILITY_OPTIONS.READY)}
                     onCheckedChange={(checked) =>
-                      handleCapitalAvailabilityChange(checked, CAPITAL_AVAILABILITY_OPTIONS.READY)
+                      handleCapitalAvailabilityChange(Boolean(checked), CAPITAL_AVAILABILITY_OPTIONS.READY)
                     }
                     className="border-[#d0d5dd]"
                   />
@@ -1782,7 +2051,7 @@ export default function EditDealPageFixed() {
                     id="need-raise"
                     checked={formData.capitalAvailability.includes(CAPITAL_AVAILABILITY_OPTIONS.NEED)}
                     onCheckedChange={(checked) =>
-                      handleCapitalAvailabilityChange(checked, CAPITAL_AVAILABILITY_OPTIONS.NEED)
+                      handleCapitalAvailabilityChange(Boolean(checked), CAPITAL_AVAILABILITY_OPTIONS.NEED)
                     }
                     className="border-[#d0d5dd]"
                   />
@@ -1791,8 +2060,6 @@ export default function EditDealPageFixed() {
                   </label>
                 </div>
               </div>
-
-            
             </div>
 
             {/* Company Type - spans full width on md+ */}
@@ -1802,7 +2069,7 @@ export default function EditDealPageFixed() {
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
-                    className="w-full justify-between text-left h-auto min-h-11 px-3 py-2 border border-gray-300 hover:border-gray-400 focus:border-[#3aafa9] focus:ring-2 focus:ring-[#3aafa9]/20 rounded-md overflow-hidden"
+                    className="w-full justify-between text-left h-auto min-h-11 px-3 py-2 border border-gray-300 hover:border-gray-400 focus:border-[#3aafa9] focus:ring-2 focus:ring-[#3aafa9]/20 rounded-md overflow-hidden bg-transparent"
                   >
                     <span
                       className={`${Array.isArray(formData.companyType) && formData.companyType.length > 0 ? "text-gray-900" : "text-gray-500"} truncate block pr-2`}
@@ -1910,8 +2177,6 @@ export default function EditDealPageFixed() {
                   </div>
                 </PopoverContent>
               </Popover>
-
-           
             </div>
 
             <div className="md:col-span-2">
