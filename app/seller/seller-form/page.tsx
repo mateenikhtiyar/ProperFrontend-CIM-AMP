@@ -2,7 +2,7 @@
 import Image from "next/image"
 import Link from "next/link"
 import type React from "react"
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "@/components/ui/use-toast"
 import { Toaster } from "@/components/ui/toaster"
 import { ChevronDown, ChevronRight, Search } from "lucide-react"
-import { getGeoData, type Continent, type Region, type SubRegion, type GeoData } from "@/lib/geography-data"
+
 import {
   getIndustryData,
   type Sector,
@@ -23,15 +23,26 @@ import {
   type Industry,
   type SubIndustry,
   type IndustryData,
+  type Activity,
 } from "@/lib/industry-data"
-// Remove this import at the top of the file:
-// import { submitDeal } from "@/services/api"
+
+import { Country, State, City } from "country-state-city"
 
 interface SellerFormData {
   dealTitle: string
   companyDescription: string
   geographySelections: string[]
   industrySelections: string[]
+  selectedIndustryDisplay?: string
+  geographyHierarchy?: {
+    country: string
+    states: string[]
+    cities: string[]
+  }
+  industryHierarchy?: {
+    selectedItem: string
+    subIndustries: string[]
+  }
   yearsInBusiness: number
   trailingRevenue: number
   trailingEBITDA: number
@@ -42,19 +53,41 @@ interface SellerFormData {
   netIncome: number
   askingPrice: number
   businessModels: string[]
-  managementPreferences: string
+  managementPreferences: string[]
   capitalAvailability: string[]
   companyType: string[]
   minPriorAcquisitions: number
   minTransactionSize: number
   documents: File[]
-  employeeCount?: number // <-- optional field
+  employeeCount?: number
 }
 
 interface GeoItem {
   id: string
   name: string
   path: string
+  type: "country" | "state" | "city"
+  countryCode?: string
+  stateCode?: string
+}
+
+interface CountryData {
+  isoCode: string
+  name: string
+  states: StateData[]
+}
+
+interface StateData {
+  isoCode: string
+  name: string
+  countryCode: string
+  cities: CityData[]
+}
+
+interface CityData {
+  name: string
+  stateCode: string
+  countryCode: string
 }
 
 interface IndustryItem {
@@ -63,7 +96,6 @@ interface IndustryItem {
   path: string
 }
 
-// Type for hierarchical selection
 interface GeographySelection {
   selectedId: string | null
   selectedName: string | null
@@ -73,14 +105,14 @@ interface IndustrySelection {
   sectors: Record<string, boolean>
   industryGroups: Record<string, boolean>
   industries: Record<string, boolean>
+  subIndustries: Record<string, boolean>
+  activities: Record<string, boolean>
 }
 
-// Format number with commas for display
 const formatNumberWithCommas = (num: number): string => {
   return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
 }
 
-// Helper function to validate EBITDA vs Revenue
 const validateEBITDAvsRevenue = (ebitda: number, revenue: number): string | null => {
   if (revenue > 0 && ebitda >= revenue) {
     return "EBITDA must be smaller than Revenue"
@@ -91,7 +123,6 @@ const validateEBITDAvsRevenue = (ebitda: number, revenue: number): string | null
 export default function SellerFormPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(true)
-  const [geoData, setGeoData] = useState<GeoData | null>(null)
   const [industryData, setIndustryData] = useState<IndustryData | null>(null)
   const [flatGeoData, setFlatGeoData] = useState<GeoItem[]>([])
   const [flatIndustryData, setFlatIndustryData] = useState<IndustryItem[]>([])
@@ -102,7 +133,6 @@ export default function SellerFormPage() {
   const [selectedReward, setSelectedReward] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Hierarchical selection state
   const [geoSelection, setGeoSelection] = useState<GeographySelection>({
     selectedId: null,
     selectedName: null,
@@ -112,19 +142,21 @@ export default function SellerFormPage() {
     sectors: {},
     industryGroups: {},
     industries: {},
+    subIndustries: {},
+    activities: {},
   })
 
-  // UI state for expanded sections
   const [expandedContinents, setExpandedContinents] = useState<Record<string, boolean>>({})
   const [expandedRegions, setExpandedRegions] = useState<Record<string, boolean>>({})
   const [expandedSectors, setExpandedSectors] = useState<Record<string, boolean>>({})
   const [expandedIndustryGroups, setExpandedIndustryGroups] = useState<Record<string, boolean>>({})
+  const [expandedSubIndustries, setExpandedSubIndustries] = useState<Record<string, boolean>>({})
 
   const [formData, setFormData] = useState<SellerFormData>({
     dealTitle: "",
     companyDescription: "",
     geographySelections: [],
-    industrySelections: [],
+    industrySelections: [""],
     yearsInBusiness: 0,
     trailingRevenue: 0,
     trailingEBITDA: 0,
@@ -135,7 +167,7 @@ export default function SellerFormPage() {
     netIncome: 0,
     askingPrice: 0,
     businessModels: [],
-    managementPreferences: "", // Changed from [] to ""
+    managementPreferences: [],
     capitalAvailability: [],
     companyType: [],
     minPriorAcquisitions: 0,
@@ -144,33 +176,9 @@ export default function SellerFormPage() {
   })
 
   const [fileError, setFileError] = useState<string | null>(null)
-
-  // Add fieldErrors state for validation errors
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({})
   const [realtimeErrors, setRealtimeErrors] = useState<{ [key: string]: string }>({})
 
-  // Flatten geography data for searchable dropdown
-  const flattenGeoData = (items: Continent[] | Region[] | SubRegion[], parentPath = "", result: GeoItem[] = []) => {
-    if (!Array.isArray(items)) return result
-    items.forEach((item) => {
-      const path = parentPath ? `${parentPath} > ${item.name}` : item.name
-      result.push({ id: item.id, name: item.name, path })
-
-      if ("regions" in item && item.regions) {
-        if (Array.isArray(item.regions)) {
-          flattenGeoData(item.regions, path, result)
-        }
-      }
-      if ("subRegions" in item && item.subRegions) {
-        if (Array.isArray(item.subRegions)) {
-          flattenGeoData(item.subRegions, path, result)
-        }
-      }
-    })
-    return result
-  }
-
-  // Add this helper for multiple checkbox selection
   const handleMultiSelectChange = (option: string, fieldName: string) => {
     setFormData((prev) => {
       const arr = Array.isArray((prev as any)[fieldName]) ? (prev as any)[fieldName] : []
@@ -181,7 +189,6 @@ export default function SellerFormPage() {
     })
   }
 
-  // Flatten industry data for searchable dropdown
   const flattenIndustryData = (
     items: Sector[] | IndustryGroup[] | Industry[] | SubIndustry[],
     parentPath = "",
@@ -205,16 +212,45 @@ export default function SellerFormPage() {
     return result
   }
 
-  // Fetch geography and industry data
+  const [debouncedGeoSearch, setDebouncedGeoSearch] = useState("")
+  const [debouncedIndustrySearch, setDebouncedIndustrySearch] = useState("")
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedGeoSearch(geoSearchTerm)
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [geoSearchTerm])
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedIndustrySearch(industrySearchTerm)
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [industrySearchTerm])
+
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [geoResponse, industryResponse] = await Promise.all([getGeoData(), getIndustryData()])
-        setGeoData(geoResponse)
-        setIndustryData(industryResponse)
+        const allCountries = Country.getAllCountries()
+        const geoData: GeoItem[] = []
 
-        // Flatten the hierarchical data for searchable dropdowns
-        setFlatGeoData(flattenGeoData(geoResponse.continents))
+        allCountries.forEach((country) => {
+          geoData.push({
+            id: country.isoCode,
+            name: country.name,
+            path: country.name,
+            type: "country",
+            countryCode: country.isoCode,
+          })
+        })
+
+        setFlatGeoData(geoData)
+
+        const industryResponse = await getIndustryData()
+        setIndustryData(industryResponse)
         setFlatIndustryData(flattenIndustryData(industryResponse.sectors))
       } catch (error) {
         console.error("Error fetching data:", error)
@@ -230,7 +266,6 @@ export default function SellerFormPage() {
 
     fetchData()
 
-    // Check if user is authenticated
     const token = localStorage.getItem("token")
     const userRole = localStorage.getItem("userRole")
 
@@ -239,24 +274,80 @@ export default function SellerFormPage() {
     }
   }, [router])
 
-  // Handle text input changes
+  const loadStatesAndCities = async (countryCode: string) => {
+    const hasStates = flatGeoData.some((item) => item.countryCode === countryCode && item.type === "state")
+
+    if (hasStates) return
+
+    const states = State.getStatesOfCountry(countryCode)
+    const newGeoData = [...flatGeoData]
+    const existingIds = new Set(newGeoData.map((item) => item.id))
+
+    states.forEach((state) => {
+      const stateId = `${countryCode}-${state.isoCode}`
+      const statePath = `${Country.getCountryByCode(countryCode)?.name} > ${state.name}`
+
+      if (!existingIds.has(stateId)) {
+        newGeoData.push({
+          id: stateId,
+          name: state.name,
+          path: statePath,
+          type: "state",
+          countryCode: countryCode,
+          stateCode: state.isoCode,
+        })
+        existingIds.add(stateId)
+      }
+
+      const cities = City.getCitiesOfState(countryCode, state.isoCode).slice(0, 5)
+      cities.forEach((city, cityIndex) => {
+        const cityId = `${countryCode}-${state.isoCode}-${city.name}-${cityIndex}`
+        const cityPath = `${Country.getCountryByCode(countryCode)?.name} > ${state.name} > ${city.name}`
+
+        if (!existingIds.has(cityId)) {
+          newGeoData.push({
+            id: cityId,
+            name: city.name,
+            path: cityPath,
+            type: "city",
+            countryCode: countryCode,
+            stateCode: state.isoCode,
+          })
+          existingIds.add(cityId)
+        }
+      })
+    })
+
+    setFlatGeoData(newGeoData)
+  }
+
+  const toggleContinentExpansion = async (continentId: string) => {
+    const isCurrentlyExpanded = expandedContinents[continentId]
+
+    setExpandedContinents((prev) => ({
+      ...prev,
+      [continentId]: !prev[continentId],
+    }))
+
+    if (!isCurrentlyExpanded) {
+      await loadStatesAndCities(continentId)
+    }
+  }
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  // Handle number input changes
   const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>, fieldName: string) => {
     const value = e.target.value === "" ? 0 : Number.parseFloat(e.target.value)
     setFormData((prev) => ({ ...prev, [fieldName]: value }))
   }
 
-  // Handle select changes
   const handleSelectChange = (value: string, fieldName: string) => {
     setFormData((prev) => ({ ...prev, [fieldName]: value }))
   }
 
-  // Handle checkbox changes for business models and management preferences
   const handleCheckboxChange = (
     checked: boolean,
     value: string,
@@ -274,17 +365,66 @@ export default function SellerFormPage() {
     })
   }
 
-  // Geography selection handlers
-  const selectGeography = (id: string, name: string) => {
+  // Updated geography selection handler to collect hierarchical data
+  const selectGeography = async (id: string, name: string, type: "country" | "state" | "city") => {
     setGeoSelection({
       selectedId: id,
       selectedName: name,
     })
 
+    // Collect hierarchical data based on selection type
+    const hierarchyData = {
+      country: "",
+      states: [] as string[],
+      cities: [] as string[],
+    }
+
+    if (type === "country") {
+      const countryCode = id
+      hierarchyData.country = name
+
+      // Get all states for this country
+      const states = State.getStatesOfCountry(countryCode)
+      hierarchyData.states = states.map((state) => state.name)
+
+      // Get all cities for all states (limited for performance)
+      const allCities: string[] = []
+      for (const state of states.slice(0, 10)) {
+        // Limit to first 10 states for performance
+        const cities = City.getCitiesOfState(countryCode, state.isoCode).slice(0, 5)
+        allCities.push(...cities.map((city) => city.name))
+      }
+      hierarchyData.cities = allCities
+    } else if (type === "state") {
+      const [countryCode, stateCode] = id.split("-")
+      const country = Country.getCountryByCode(countryCode)
+      const state = State.getStateByCodeAndCountry(stateCode, countryCode)
+
+      hierarchyData.country = country?.name || ""
+      hierarchyData.states = [name]
+
+      // Get all cities for this state
+      const cities = City.getCitiesOfState(countryCode, stateCode)
+      hierarchyData.cities = cities.map((city) => city.name)
+    } else if (type === "city") {
+      const parts = id.split("-")
+      const countryCode = parts[0]
+      const stateCode = parts[1]
+      const country = Country.getCountryByCode(countryCode)
+      const state = State.getStateByCodeAndCountry(stateCode, countryCode)
+
+      hierarchyData.country = country?.name || ""
+      hierarchyData.states = [state?.name || ""]
+      hierarchyData.cities = [name]
+    }
+
     setFormData((prev) => ({
       ...prev,
       geographySelections: [name],
+      geographyHierarchy: hierarchyData,
     }))
+
+    console.log("Geography hierarchy data to send to backend:", hierarchyData)
   }
 
   const clearGeographySelection = () => {
@@ -296,6 +436,7 @@ export default function SellerFormPage() {
     setFormData((prev) => ({
       ...prev,
       geographySelections: [],
+      geographyHierarchy: undefined,
     }))
   }
 
@@ -303,21 +444,92 @@ export default function SellerFormPage() {
     clearGeographySelection()
   }
 
-  // Industry selection handlers
+  // Updated industry selection handler to collect hierarchical data
+  const handleIndustryRadioChange = (industryName: string) => {
+    if (!industryData) return
+
+    const subIndustryNames: string[] = []
+    let selectedIndustryType = "industry"
+    const hierarchyData = {
+      selectedItem: industryName,
+      subIndustries: [] as string[],
+    }
+
+    // Search through all levels to find the selected item and collect sub-industries
+    industryData.sectors.forEach((sector) => {
+      if (sector.name === industryName) {
+        selectedIndustryType = "sector"
+        sector.industryGroups.forEach((group) => {
+          group.industries.forEach((industry) => {
+            industry.subIndustries.forEach((subIndustry) => {
+              subIndustryNames.push(subIndustry.name)
+            })
+          })
+        })
+      } else {
+        sector.industryGroups.forEach((group) => {
+          if (group.name === industryName) {
+            selectedIndustryType = "industryGroup"
+            group.industries.forEach((industry) => {
+              industry.subIndustries.forEach((subIndustry) => {
+                subIndustryNames.push(subIndustry.name)
+              })
+            })
+          } else {
+            group.industries.forEach((industry) => {
+              if (industry.name === industryName) {
+                selectedIndustryType = "industry"
+                industry.subIndustries.forEach((subIndustry) => {
+                  subIndustryNames.push(subIndustry.name)
+                })
+              } else {
+                industry.subIndustries.forEach((subIndustry) => {
+                  if (subIndustry.name === industryName) {
+                    selectedIndustryType = "subIndustry"
+                    subIndustryNames.push(subIndustry.name)
+                  }
+                })
+              }
+            })
+          }
+        })
+      }
+    })
+
+    hierarchyData.subIndustries = subIndustryNames.length > 0 ? subIndustryNames : [industryName]
+
+    setFormData((prev) => ({
+      ...prev,
+      industrySelections: subIndustryNames.length > 0 ? subIndustryNames : [industryName],
+      selectedIndustryDisplay: industryName,
+      industryHierarchy: hierarchyData,
+  }))
+
+    console.log(`Selected ${selectedIndustryType}: ${industryName}`)
+    console.log("Industry hierarchy data to send to backend:", hierarchyData)
+  }
+
   const toggleSector = (sector: Sector) => {
     const newIndustrySelection = { ...industrySelection }
     const isSelected = !industrySelection.sectors[sector.id]
 
-    // Update sector selection
     newIndustrySelection.sectors[sector.id] = isSelected
 
-    // Update all industry groups in this sector
     sector.industryGroups.forEach((group) => {
       newIndustrySelection.industryGroups[group.id] = isSelected
 
-      // Update all industries in this group
       group.industries.forEach((industry) => {
         newIndustrySelection.industries[industry.id] = isSelected
+
+        industry.subIndustries.forEach((subIndustry) => {
+          newIndustrySelection.subIndustries[subIndustry.id] = isSelected
+
+          if (subIndustry.activities) {
+            subIndustry.activities.forEach((activity) => {
+              newIndustrySelection.activities[activity.id] = isSelected
+            })
+          }
+        })
       })
     })
 
@@ -329,15 +541,22 @@ export default function SellerFormPage() {
     const newIndustrySelection = { ...industrySelection }
     const isSelected = !industrySelection.industryGroups[group.id]
 
-    // Update industry group selection
     newIndustrySelection.industryGroups[group.id] = isSelected
 
-    // Update all industries in this group
     group.industries.forEach((industry) => {
       newIndustrySelection.industries[industry.id] = isSelected
+
+      industry.subIndustries.forEach((subIndustry) => {
+        newIndustrySelection.subIndustries[subIndustry.id] = isSelected
+
+        if (subIndustry.activities) {
+          subIndustry.activities.forEach((activity) => {
+            newIndustrySelection.activities[activity.id] = isSelected
+          })
+        }
+      })
     })
 
-    // Check if all groups in the sector are selected/deselected
     const allGroupsSelected = sector.industryGroups.every((g) =>
       g.id === group.id ? isSelected : newIndustrySelection.industryGroups[g.id],
     )
@@ -346,7 +565,6 @@ export default function SellerFormPage() {
       g.id === group.id ? !isSelected : !newIndustrySelection.industryGroups[g.id],
     )
 
-    // Update sector selection based on groups
     if (allGroupsSelected) {
       newIndustrySelection.sectors[sector.id] = true
     } else if (allGroupsDeselected) {
@@ -361,26 +579,32 @@ export default function SellerFormPage() {
     const newIndustrySelection = { ...industrySelection }
     const isSelected = !industrySelection.industries[industry.id]
 
-    // Update industry selection
     newIndustrySelection.industries[industry.id] = isSelected
 
-    // Check if all industries in the group are selected/deselected
+    industry.subIndustries.forEach((subIndustry) => {
+      newIndustrySelection.subIndustries[subIndustry.id] = isSelected
+
+      if (subIndustry.activities) {
+        subIndustry.activities.forEach((activity) => {
+          newIndustrySelection.activities[activity.id] = isSelected
+        })
+      }
+    })
+
     const allIndustriesSelected = group.industries.every((i) =>
       i.id === industry.id ? isSelected : newIndustrySelection.industries[i.id],
     )
 
     const allIndustriesDeselected = group.industries.every((i) =>
-      i.id === industry.id ? !isSelected : !newIndustrySelection.industries[i.id],
+      i.id === industry.id ? !isSelected : newIndustrySelection.industries[i.id],
     )
 
-    // Update group selection based on industries
     if (allIndustriesSelected) {
       newIndustrySelection.industryGroups[group.id] = true
     } else if (allIndustriesDeselected) {
       newIndustrySelection.industryGroups[group.id] = false
     }
 
-    // Check if all groups in the sector are selected/deselected
     const allGroupsSelected = sector.industryGroups.every((g) =>
       g.id === group.id ? newIndustrySelection.industryGroups[g.id] : newIndustrySelection.industryGroups[g.id],
     )
@@ -389,7 +613,6 @@ export default function SellerFormPage() {
       g.id === group.id ? !newIndustrySelection.industryGroups[g.id] : !newIndustrySelection.industryGroups[g.id],
     )
 
-    // Update sector selection based on groups
     if (allGroupsSelected) {
       newIndustrySelection.sectors[sector.id] = true
     } else if (allGroupsDeselected) {
@@ -400,7 +623,120 @@ export default function SellerFormPage() {
     updateIndustriesInFormData(newIndustrySelection)
   }
 
-  // Update the industries array in formData based on the hierarchical selection
+  const toggleSubIndustry = (subIndustry: SubIndustry, industry: Industry, group: IndustryGroup, sector: Sector) => {
+    const newIndustrySelection = { ...industrySelection }
+    const isSelected = !industrySelection.subIndustries[subIndustry.id]
+
+    newIndustrySelection.subIndustries[subIndustry.id] = isSelected
+
+    if (subIndustry.activities) {
+      subIndustry.activities.forEach((activity) => {
+        newIndustrySelection.activities[activity.id] = isSelected
+      })
+    }
+
+    const allSubIndustriesSelected = industry.subIndustries.every((si) =>
+      si.id === subIndustry.id ? isSelected : newIndustrySelection.subIndustries[si.id],
+    )
+
+    const allSubIndustriesDeselected = industry.subIndustries.every((si) =>
+      si.id === subIndustry.id ? !isSelected : !newIndustrySelection.subIndustries[si.id],
+    )
+
+    if (allSubIndustriesSelected) {
+      newIndustrySelection.industries[industry.id] = true
+    } else if (allSubIndustriesDeselected) {
+      newIndustrySelection.industries[industry.id] = false
+    }
+
+    const allIndustriesSelected = group.industries.every((i) => newIndustrySelection.industries[i.id])
+    const allIndustriesDeselected = group.industries.every((i) => !newIndustrySelection.industries[i.id])
+
+    if (allIndustriesSelected) {
+      newIndustrySelection.industryGroups[group.id] = true
+    } else if (allIndustriesDeselected) {
+      newIndustrySelection.industryGroups[group.id] = false
+    }
+
+    const allGroupsSelected = sector.industryGroups.every((g) => newIndustrySelection.industryGroups[g.id])
+    const allGroupsDeselected = sector.industryGroups.every((g) => !newIndustrySelection.industryGroups[g.id])
+
+    if (allGroupsSelected) {
+      newIndustrySelection.sectors[sector.id] = true
+    } else if (allGroupsDeselected) {
+      newIndustrySelection.sectors[sector.id] = false
+    }
+
+    setIndustrySelection(newIndustrySelection)
+    updateIndustriesInFormData(newIndustrySelection)
+  }
+
+  const toggleActivity = (
+    activity: Activity,
+    subIndustry: SubIndustry,
+    industry: Industry,
+    group: IndustryGroup,
+    sector: Sector,
+  ) => {
+    const newIndustrySelection = { ...industrySelection }
+    const isSelected = !industrySelection.activities[activity.id]
+
+    newIndustrySelection.activities[activity.id] = isSelected
+
+    if (subIndustry.activities) {
+      const allActivitiesSelected = subIndustry.activities.every((a) =>
+        a.id === activity.id ? isSelected : newIndustrySelection.activities[a.id],
+      )
+
+      const allActivitiesDeselected = subIndustry.activities.every((a) =>
+        a.id === activity.id ? !isSelected : !newIndustrySelection.activities[a.id],
+      )
+
+      if (allActivitiesSelected) {
+        newIndustrySelection.subIndustries[subIndustry.id] = true
+      } else if (allActivitiesDeselected) {
+        newIndustrySelection.subIndustries[subIndustry.id] = false
+      }
+    }
+
+    const allSubIndustriesSelected = industry.subIndustries.every((si) => newIndustrySelection.subIndustries[si.id])
+    const allSubIndustriesDeselected = industry.subIndustries.every((si) => !newIndustrySelection.subIndustries[si.id])
+
+    if (allSubIndustriesSelected) {
+      newIndustrySelection.industries[industry.id] = true
+    } else if (allSubIndustriesDeselected) {
+      newIndustrySelection.industries[industry.id] = false
+    }
+
+    const allIndustriesSelected = group.industries.every((i) => newIndustrySelection.industries[i.id])
+    const allIndustriesDeselected = group.industries.every((i) => !newIndustrySelection.industries[i.id])
+
+    if (allIndustriesSelected) {
+      newIndustrySelection.industryGroups[group.id] = true
+    } else if (allIndustriesDeselected) {
+      newIndustrySelection.industryGroups[group.id] = false
+    }
+
+    const allGroupsSelected = sector.industryGroups.every((g) => newIndustrySelection.industryGroups[g.id])
+    const allGroupsDeselected = sector.industryGroups.every((g) => !newIndustrySelection.industryGroups[g.id])
+
+    if (allGroupsSelected) {
+      newIndustrySelection.sectors[sector.id] = true
+    } else if (allGroupsDeselected) {
+      newIndustrySelection.sectors[sector.id] = false
+    }
+
+    setIndustrySelection(newIndustrySelection)
+    updateIndustriesInFormData(newIndustrySelection)
+  }
+
+  const toggleSubIndustryExpansion = (subIndustryId: string) => {
+    setExpandedSubIndustries((prev) => ({
+      ...prev,
+      [subIndustryId]: !prev[subIndustryId],
+    }))
+  }
+
   const updateIndustriesInFormData = (selection: IndustrySelection) => {
     if (!industryData) return
 
@@ -409,27 +745,21 @@ export default function SellerFormPage() {
     industryData.sectors.forEach((sector) => {
       const sectorSelected = selection.sectors[sector.id]
 
-      // Check if all industry groups in this sector are selected
       const allGroupsSelected = sector.industryGroups.every((group) => {
         return group.industries.every((industry) => selection.industries[industry.id])
       })
 
       if (sectorSelected && allGroupsSelected) {
-        // If sector is selected and all its groups/industries are selected, send only the sector
         selectedIndustries.push(sector.name)
       } else {
-        // Otherwise, check individual groups and industries
         sector.industryGroups.forEach((group) => {
           const groupSelected = selection.industryGroups[group.id]
 
-          // Check if all industries in this group are selected
           const allIndustriesSelected = group.industries.every((industry) => selection.industries[industry.id])
 
           if (groupSelected && allIndustriesSelected) {
-            // If group is selected and all its industries are selected, send only the group
             selectedIndustries.push(group.name)
           } else {
-            // Otherwise, send only the selected industries
             group.industries.forEach((industry) => {
               if (selection.industries[industry.id]) {
                 selectedIndustries.push(industry.name)
@@ -452,13 +782,11 @@ export default function SellerFormPage() {
     const newIndustrySelection = { ...industrySelection }
     let found = false
 
-    // Search through all levels to find and unselect the matching item
     industryData.sectors.forEach((sector) => {
       if (sector.name === industryToRemove) {
         newIndustrySelection.sectors[sector.id] = false
         found = true
 
-        // Unselect all children
         sector.industryGroups.forEach((group) => {
           newIndustrySelection.industryGroups[group.id] = false
 
@@ -474,12 +802,10 @@ export default function SellerFormPage() {
             newIndustrySelection.industryGroups[group.id] = false
             found = true
 
-            // Unselect all children
             group.industries.forEach((industry) => {
               newIndustrySelection.industries[industry.id] = false
             })
 
-            // Check if all groups in the sector are now deselected
             const allGroupsDeselected = sector.industryGroups.every((g) => !newIndustrySelection.industryGroups[g.id])
 
             if (allGroupsDeselected) {
@@ -493,7 +819,6 @@ export default function SellerFormPage() {
                 newIndustrySelection.industries[industry.id] = false
                 found = true
 
-                // Check parent selections
                 const allIndustriesDeselected = group.industries.every((i) => !newIndustrySelection.industries[i.id])
 
                 if (allIndustriesDeselected) {
@@ -516,14 +841,6 @@ export default function SellerFormPage() {
 
     setIndustrySelection(newIndustrySelection)
     updateIndustriesInFormData(newIndustrySelection)
-  }
-
-  // Toggle expansion of UI sections
-  const toggleContinentExpansion = (continentId: string) => {
-    setExpandedContinents((prev) => ({
-      ...prev,
-      [continentId]: !prev[continentId],
-    }))
   }
 
   const toggleRegionExpansion = (regionId: string) => {
@@ -550,165 +867,243 @@ export default function SellerFormPage() {
     }))
   }
 
-  // Filter geography data based on search term
-  const filterGeographyData = () => {
-    if (!geoData || !geoSearchTerm) return geoData
-
-    const filteredContinents: Continent[] = []
-
-    geoData.continents.forEach((continent) => {
-      const filteredRegions = continent.regions.filter((region) =>
-        region.name.toLowerCase().includes(geoSearchTerm.toLowerCase()),
-      )
-
-      if (filteredRegions.length > 0) {
-        filteredContinents.push({
-          ...continent,
-          regions: filteredRegions,
-        })
-      }
-    })
-
-    return { continents: filteredContinents }
-  }
-
-  // Filter industry data based on search term
-  const filterIndustryData = () => {
-    if (!industryData || !industrySearchTerm) return industryData
-
-    const filteredSectors: Sector[] = []
-
-    industryData.sectors.forEach((sector) => {
-      const filteredGroups: IndustryGroup[] = []
-
-      sector.industryGroups.forEach((group) => {
-        const filteredIndustries: Industry[] = []
-
-        group.industries.forEach((industry) => {
-          if (industry.name.toLowerCase().includes(industrySearchTerm.toLowerCase())) {
-            filteredIndustries.push(industry)
-          }
-        })
-
-        if (filteredIndustries.length > 0 || group.name.toLowerCase().includes(industrySearchTerm.toLowerCase())) {
-          filteredGroups.push({
-            ...group,
-            industries: filteredIndustries.length > 0 ? filteredIndustries : group.industries,
-          })
-        }
-      })
-
-      if (filteredGroups.length > 0 || sector.name.toLowerCase().includes(industrySearchTerm.toLowerCase())) {
-        filteredSectors.push({
-          ...sector,
-          industryGroups: filteredGroups.length > 0 ? filteredGroups : sector.industryGroups,
-        })
-      }
-    })
-
-    return { sectors: filteredSectors }
-  }
-
-  // Render the hierarchical geography selection
   const renderGeographySelection = () => {
-    const filteredData = filterGeographyData()
-    if (!filteredData) return <div>Loading geography data...</div>
+    const filteredGeoData = flatGeoData
+      .filter(
+        (item) =>
+          !debouncedGeoSearch ||
+          item.name.toLowerCase().includes(debouncedGeoSearch.toLowerCase()) ||
+          item.path.toLowerCase().includes(debouncedGeoSearch.toLowerCase()),
+      )
+      .slice(0, 200)
+
+    const groupedData = filteredGeoData.reduce(
+      (acc, item) => {
+        const countryCode = item.countryCode || item.id
+        if (!acc[countryCode]) {
+          acc[countryCode] = {
+            country: null,
+            states: [],
+            cities: [],
+          }
+        }
+
+        if (item.type === "country") {
+          acc[countryCode].country = item
+        } else if (item.type === "state") {
+          acc[countryCode].states.push(item)
+        } else if (item.type === "city") {
+          acc[countryCode].cities.push(item)
+        }
+
+        return acc
+      },
+      {} as Record<string, { country: GeoItem | null; states: GeoItem[]; cities: GeoItem[] }>,
+    )
+
+    const countryLimit = debouncedGeoSearch ? 50 : 20
 
     return (
       <div className="space-y-2 font-poppins">
-        {filteredData.continents.map((continent) => (
-          <div key={continent.id} className="border-b border-gray-100 pb-1">
-            <div className="flex items-center">
-              <input
-                type="radio"
-                id={`continent-${continent.id}`}
-                name="geography"
-                checked={geoSelection.selectedId === continent.id}
-                onChange={() => selectGeography(continent.id, continent.name)}
-                className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9]"
-              />
-              <div
-                className="flex items-center cursor-pointer flex-1"
-                onClick={() => toggleContinentExpansion(continent.id)}
-              >
-                {expandedContinents[continent.id] ? (
-                  <ChevronDown className="h-4 w-4 mr-1 text-gray-500" />
-                ) : (
-                  <ChevronRight className="h-4 w-4 mr-1 text-gray-500" />
-                )}
-                <Label htmlFor={`continent-${continent.id}`} className="text-[#344054] cursor-pointer font-medium">
-                  {continent.name}
-                </Label>
-              </div>
-            </div>
+        {Object.values(groupedData)
+          .filter((group) => group.country || group.states.length > 0 || group.cities.length > 0)
+          .slice(0, countryLimit)
+          .map((group, groupIndex) => {
+            if (!group.country) return null
+            const country = group.country
 
-            {expandedContinents[continent.id] && (
-              <div className="ml-6 mt-1 space-y-1">
-                {continent.regions.map((region) => (
-                  <div key={region.id} className="pl-2">
-                    <div className="flex items-center">
-                      <input
-                        type="radio"
-                        id={`region-${region.id}`}
-                        name="geography"
-                        checked={geoSelection.selectedId === region.id}
-                        onChange={() => selectGeography(region.id, region.name)}
-                        className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9]"
-                      />
-                      {region.subRegions && region.subRegions.length > 0 ? (
-                        <div
-                          className="flex items-center cursor-pointer flex-1"
-                          onClick={() => toggleRegionExpansion(region.id)}
-                        >
-                          {expandedRegions[region.id] ? (
-                            <ChevronDown className="h-3 w-3 mr-1 text-gray-400" />
-                          ) : (
-                            <ChevronRight className="h-3 w-3 mr-1 text-gray-400" />
-                          )}
-                          <Label htmlFor={`region-${region.id}`} className="text-[#344054] cursor-pointer">
-                            {region.name}
+            const filteredStates = group.states.slice(0, 10)
+            const filteredCities = group.cities.slice(0, 10)
+
+            return (
+              <div key={`country-${country.id}-${groupIndex}`} className="border-b border-gray-100 pb-1">
+                <div className="flex items-center">
+                  <input
+                    type="radio"
+                    id={`geo-${country.id}`}
+                    name="geography"
+                    checked={geoSelection.selectedId === country.id}
+                    onChange={() => selectGeography(country.id, country.name, "country")}
+                    className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9]"
+                  />
+                  <div
+                    className="flex items-center cursor-pointer flex-1"
+                    onClick={() => toggleContinentExpansion(country.id)}
+                  >
+                    {expandedContinents[country.id] ? (
+                      <ChevronDown className="h-4 w-4 mr-1 text-gray-500" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4 mr-1 text-gray-500" />
+                    )}
+                    <Label htmlFor={`geo-${country.id}`} className="text-[#344054] cursor-pointer font-medium">
+                      {country.name}
+                    </Label>
+                  </div>
+                </div>
+
+                {expandedContinents[country.id] && filteredStates.length > 0 && (
+                  <div className="ml-6 mt-1 space-y-1">
+                    {filteredStates.map((state, stateIndex) => (
+                      <div key={`state-${state.id}-${stateIndex}`} className="pl-2">
+                        <div className="flex items-center">
+                          <input
+                            type="radio"
+                            id={`geo-${state.id}`}
+                            name="geography"
+                            checked={geoSelection.selectedId === state.id}
+                            onChange={() => selectGeography(state.id, state.path, "state")}
+                            className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9]"
+                          />
+                          <Label htmlFor={`geo-${state.id}`} className="text-[#344054] cursor-pointer">
+                            {state.name}
                           </Label>
                         </div>
-                      ) : (
-                        <Label htmlFor={`region-${region.id}`} className="text-[#344054] cursor-pointer">
-                          {region.name}
-                        </Label>
-                      )}
-                    </div>
-
-                    {region.subRegions && expandedRegions[region.id] && (
-                      <div className="ml-6 mt-1 space-y-1">
-                        {region.subRegions.map((subRegion) => (
-                          <div key={subRegion.id} className="flex items-center">
-                            <input
-                              type="radio"
-                              id={`subregion-${subRegion.id}`}
-                              name="geography"
-                              checked={geoSelection.selectedId === subRegion.id}
-                              onChange={() => selectGeography(subRegion.id, subRegion.name)}
-                              className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9]"
-                            />
-                            <Label
-                              htmlFor={`subregion-${subRegion.id}`}
-                              className="text-[#344054] cursor-pointer text-sm"
-                            >
-                              {subRegion.name}
-                            </Label>
-                          </div>
-                        ))}
                       </div>
-                    )}
+                    ))}
                   </div>
-                ))}
+                )}
+
+                {expandedContinents[country.id] && filteredCities.length > 0 && (
+                  <div className="ml-6 mt-1 space-y-1">
+                    {filteredCities.map((city, cityIndex) => (
+                      <div key={`city-${city.id}-${cityIndex}`} className="pl-4">
+                        <div className="flex items-center">
+                          <input
+                            type="radio"
+                            id={`geo-${city.id}`}
+                            name="geography"
+                            checked={geoSelection.selectedId === city.id}
+                            onChange={() => selectGeography(city.id, city.path, "city")}
+                            className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9]"
+                          />
+                          <Label htmlFor={`geo-${city.id}`} className="text-[#344054] cursor-pointer">
+                            {city.name}
+                          </Label>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
+            )
+          })}
+        {Object.values(groupedData).length > countryLimit && (
+          <div className="text-center py-2 text-sm text-gray-500">
+            {debouncedGeoSearch
+              ? `Showing first ${countryLimit} matching countries. Refine your search for better results.`
+              : `Showing first ${countryLimit} countries. Use search to find more.`}
           </div>
-        ))}
+        )}
       </div>
     )
   }
 
-  // Render the hierarchical industry selection
+  const memoizedFilteredGeoData = useMemo(() => {
+    return flatGeoData
+      .filter(
+        (item) =>
+          !debouncedGeoSearch ||
+          item.name.toLowerCase().includes(debouncedGeoSearch.toLowerCase()) ||
+          item.path.toLowerCase().includes(debouncedGeoSearch.toLowerCase()),
+      )
+      .slice(0, 100)
+  }, [flatGeoData, debouncedGeoSearch])
+
+  const memoizedFilteredIndustryData = useMemo(() => {
+    if (!industryData || !debouncedIndustrySearch) return industryData
+
+    const filteredSectors = industryData.sectors
+      .map((sector) => {
+        const filteredIndustryGroups = sector.industryGroups
+          .map((group) => {
+            const filteredIndustries = group.industries
+              .map((industry) => {
+                const filteredSubIndustries = industry.subIndustries.filter((subIndustry) =>
+                  subIndustry.name.toLowerCase().includes(debouncedIndustrySearch.toLowerCase()),
+                )
+
+                if (
+                  industry.name.toLowerCase().includes(debouncedIndustrySearch.toLowerCase()) ||
+                  filteredSubIndustries.length > 0
+                ) {
+                  return { ...industry, subIndustries: filteredSubIndustries }
+                }
+                return null
+              })
+              .filter(Boolean) as Industry[]
+
+            if (
+              group.name.toLowerCase().includes(debouncedIndustrySearch.toLowerCase()) ||
+              filteredIndustries.length > 0
+            ) {
+              return { ...group, industries: filteredIndustries }
+            }
+            return null
+          })
+          .filter(Boolean) as IndustryGroup[]
+
+        if (
+          sector.name.toLowerCase().includes(debouncedIndustrySearch.toLowerCase()) ||
+          filteredIndustryGroups.length > 0
+        ) {
+          return { ...sector, industryGroups: filteredIndustryGroups }
+        }
+        return null
+      })
+      .filter(Boolean) as Sector[]
+
+    return { ...industryData, sectors: filteredSectors }
+  }, [industryData, debouncedIndustrySearch])
+
+  const filterIndustryData = () => {
+    if (!industryData) return null
+
+    if (!industrySearchTerm) {
+      return industryData
+    }
+
+    const filteredSectors = industryData.sectors
+      .map((sector) => {
+        const filteredIndustryGroups = sector.industryGroups
+          .map((group) => {
+            const filteredIndustries = group.industries
+              .map((industry) => {
+                const filteredSubIndustries = industry.subIndustries
+                  .map((subIndustry) => {
+                    if (subIndustry.name.toLowerCase().includes(industrySearchTerm.toLowerCase())) {
+                      return subIndustry
+                    }
+                    return null
+                  })
+                  .filter(Boolean) as SubIndustry[]
+
+                if (
+                  industry.name.toLowerCase().includes(industrySearchTerm.toLowerCase()) ||
+                  filteredSubIndustries.length > 0
+                ) {
+                  return { ...industry, subIndustries: filteredSubIndustries }
+                }
+                return null
+              })
+              .filter(Boolean) as Industry[]
+
+            if (group.name.toLowerCase().includes(industrySearchTerm.toLowerCase()) || filteredIndustries.length > 0) {
+              return { ...group, industries: filteredIndustries }
+            }
+            return null
+          })
+          .filter(Boolean) as IndustryGroup[]
+
+        if (sector.name.toLowerCase().includes(industrySearchTerm.toLowerCase()) || filteredIndustryGroups.length > 0) {
+          return { ...sector, industryGroups: filteredIndustryGroups }
+        }
+        return null
+      })
+      .filter(Boolean) as Sector[]
+
+    return { ...industryData, sectors: filteredSectors }
+  }
+
   const renderIndustrySelection = () => {
     const filteredData = filterIndustryData()
     if (!filteredData) return <div>Loading industry data...</div>
@@ -718,13 +1113,13 @@ export default function SellerFormPage() {
         {filteredData.sectors.map((sector) => (
           <div key={sector.id} className="border-b border-gray-100 pb-1">
             <div className="flex items-center">
-              <Checkbox
+              <input
+                type="radio"
                 id={`sector-${sector.id}`}
-                checked={!!industrySelection.sectors[sector.id]}
-                onCheckedChange={() => {
-                  toggleSector(sector)
-                }}
-                className="mr-2 border-[#d0d5dd]"
+                name="industry"
+                checked={formData.selectedIndustryDisplay === sector.name}
+                onChange={() => handleIndustryRadioChange(sector.name)}
+                className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9]"
               />
               <div className="flex items-center cursor-pointer flex-1" onClick={() => toggleSectorExpansion(sector.id)}>
                 {expandedSectors[sector.id] ? (
@@ -743,51 +1138,23 @@ export default function SellerFormPage() {
                 {sector.industryGroups.map((group) => (
                   <div key={group.id} className="pl-2">
                     <div className="flex items-center">
-                      <Checkbox
+                      <input
+                        type="radio"
                         id={`group-${group.id}`}
-                        checked={!!industrySelection.industryGroups[group.id]}
-                        onCheckedChange={() => {
-                          toggleIndustryGroup(group, sector)
-                        }}
-                        className="mr-2 border-[#d0d5dd]"
+                        name="industry"
+                        checked={formData.selectedIndustryDisplay === group.name}
+                        onChange={() => handleIndustryRadioChange(group.name)}
+                        className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9]"
                       />
                       <div
                         className="flex items-center cursor-pointer flex-1"
                         onClick={() => toggleIndustryGroupExpansion(group.id)}
                       >
-                        {expandedIndustryGroups[group.id] ? (
-                          <ChevronDown className="h-3 w-3 mr-1 text-gray-400" />
-                        ) : (
-                          <ChevronRight className="h-3 w-3 mr-1 text-gray-400" />
-                        )}
                         <Label htmlFor={`group-${group.id}`} className="text-[#344054] cursor-pointer">
                           {group.name}
                         </Label>
                       </div>
                     </div>
-
-                    {expandedIndustryGroups[group.id] && (
-                      <div className="ml-6 mt-1 space-y-1">
-                        {group.industries.map((industry) => (
-                          <div key={industry.id} className="flex items-center">
-                            <Checkbox
-                              id={`industry-${industry.id}`}
-                              checked={!!industrySelection.industries[industry.id]}
-                              onCheckedChange={() => {
-                                toggleIndustry(industry, group, sector)
-                              }}
-                              className="mr-2 border-[#d0d5dd]"
-                            />
-                            <Label
-                              htmlFor={`industry-${industry.id}`}
-                              className="text-[#344054] cursor-pointer text-sm"
-                            >
-                              {industry.name}
-                            </Label>
-                          </div>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 ))}
               </div>
@@ -798,17 +1165,14 @@ export default function SellerFormPage() {
     )
   }
 
-  // Handle file selection
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const newFiles: File[] = []
       let hasError = false
 
-      // Check each file
       for (let i = 0; i < e.target.files.length; i++) {
         const file = e.target.files[i]
 
-        // Validate file type
         const allowedTypes = [
           "application/pdf",
           "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -830,7 +1194,6 @@ export default function SellerFormPage() {
           break
         }
 
-        // Check file size (10MB limit)
         if (file.size > 10 * 1024 * 1024) {
           setFileError(`File ${file.name} exceeds 10MB limit`)
           hasError = true
@@ -842,7 +1205,6 @@ export default function SellerFormPage() {
 
       if (!hasError) {
         setFileError(null)
-        // Add to documents array (append to existing)
         setFormData((prev) => ({
           ...prev,
           documents: [...prev.documents, ...newFiles],
@@ -863,15 +1225,12 @@ export default function SellerFormPage() {
     }))
   }
 
-  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
 
-    // Add validation errors object
     const errors: { [key: string]: string } = {}
     try {
-      // Validate form - update this section
       if (!formData.dealTitle.trim()) throw new Error("Deal title is required")
       if (!formData.companyDescription.trim()) throw new Error("Company description is required")
       if (formData.geographySelections.length === 0) throw new Error("Please select a geography")
@@ -879,15 +1238,15 @@ export default function SellerFormPage() {
       if (!formData.yearsInBusiness || formData.yearsInBusiness < 0)
         throw new Error("Years in business must be a positive number")
       if (!formData.companyType || formData.companyType.length === 0) throw new Error("Please select a buyer type")
-      // Validate business models
+
       if (formData.businessModels.length === 0) {
         errors.businessModels = "Please select at least one business model."
       }
 
-       if (!formData.managementPreferences.trim()) {
-      errors.managementPreferences = "Please describe why your client is selling and their continuation plan."
-    }
-      // Validate capital availability
+      if (formData.managementPreferences.length === 0) {
+        errors.managementPreferences = "Please select at least one management preference."
+      }
+
       if (!formData.capitalAvailability || formData.capitalAvailability.length === 0) {
         errors.capitalAvailability = "Please select capital availability."
       }
@@ -895,24 +1254,28 @@ export default function SellerFormPage() {
         errors.companyType = "Please select at least one company type."
       }
 
-      // Validate that EBITDA is smaller than Revenue
       if (formData.trailingEBITDA >= formData.trailingRevenue && formData.trailingRevenue > 0) {
         errors.trailingEBITDA = "Trailing 12 Month EBITDA must be smaller than Trailing 12 Month Revenue."
       }
 
-      // Set field errors and return early if any
       setFieldErrors(errors)
       if (Object.keys(errors).length > 0) {
         setIsLoading(false)
         return
       }
 
-      // Get token and sellerId from localStorage
       const token = localStorage.getItem("token")
       const sellerId = localStorage.getItem("userId")
       if (!token || !sellerId) throw new Error("Authentication required")
 
       // Compose the payload (no timeline, createdAt, updatedAt)
+      const rewardLevelMap: Record<string, "Seed" | "Bloom" | "Fruit"> = {
+        seed: "Seed",
+        bloom: "Bloom",
+        fruit: "Fruit",
+      };
+
+      // Enhanced payload with hierarchical data
       const dealData: any = {
         title: formData.dealTitle,
         companyDescription: formData.companyDescription,
@@ -920,8 +1283,12 @@ export default function SellerFormPage() {
         dealType: "acquisition",
         status: "draft",
         visibility: selectedReward || "seed",
+        rewardLevel: rewardLevelMap[selectedReward || "seed"],
         industrySector: formData.industrySelections[0] || "Other",
         geographySelection: formData.geographySelections[0] || "Global",
+        // Add hierarchical data
+        geographyHierarchy: formData.geographyHierarchy,
+        industryHierarchy: formData.industryHierarchy,
         yearsInBusiness: formData.yearsInBusiness || 0,
         seller: sellerId,
         financialDetails: {
@@ -940,8 +1307,10 @@ export default function SellerFormPage() {
           assetLight: formData.businessModels.includes("asset-light"),
           assetHeavy: formData.businessModels.includes("asset-heavy"),
         },
-        // Update managementPreferences to store the text description
-        managementPreferences: formData.managementPreferences,
+        managementPreferences: {
+          retiringDivesting: formData.managementPreferences.includes("retiring-divesting"),
+          staffStay: formData.managementPreferences.includes("key-staff-stay"),
+        },
         buyerFit: {
           capitalAvailability: formData.capitalAvailability.map((item) =>
             item === "ready" ? "Ready to deploy immediately" : item === "need-raise" ? "Need to raise" : item,
@@ -967,37 +1336,22 @@ export default function SellerFormPage() {
       }
 
       console.log("Documents to upload:", formData.documents.length)
-      formData.documents.forEach((file, index) => {
-        console.log(`Document ${index}:`, file.name, file.size, file.type)
-      })
+      console.log("Geography hierarchy data:", formData.geographyHierarchy)
+      console.log("Industry hierarchy data:", formData.industryHierarchy)
 
-      // Get API URL from localStorage or use default
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
 
-      // Prepare FormData for multipart/form-data
       const multipartFormData = new FormData()
       multipartFormData.append("dealData", JSON.stringify(dealData))
 
-      // Append each file with the correct field name "files"
       formData.documents.forEach((file) => {
         multipartFormData.append("files", file)
       })
 
-      console.log("FormData contents:")
-      for (const [key, value] of multipartFormData.entries()) {
-        if (value instanceof File) {
-          console.log(key, `File: ${value.name} (${value.size} bytes)`)
-        } else {
-          console.log(key, value)
-        }
-      }
-
-      // Submit directly to the deals endpoint
       const response = await fetch(`${apiUrl}/deals`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
-          // Don't set Content-Type header - let the browser set it with boundary for multipart/form-data
         },
         body: multipartFormData,
       })
@@ -1066,7 +1420,8 @@ export default function SellerFormPage() {
                     <Image width={100} height={100} src="/seed.svg" alt="seed" className="w-20 h-20" />
                   </div>
                   <p className="text-sm mt-2 text-gray-600">
-                  This deal will be made widely available on other deal platforms. Most of our buyers refuse deals from this level - you will get very few buyer matches.
+                    This deal will be made widely available on other deal platforms. Most of our buyers refuse deals
+                    from this level - you will get very few buyer matches.
                   </p>
                 </div>
                 <div className="mt-auto">
@@ -1249,36 +1604,44 @@ export default function SellerFormPage() {
                     />
                   </div>
 
-                  {formData.industrySelections.length > 0 && (
+                  {formData.selectedIndustryDisplay && (
                     <div className="mb-4">
                       <div className="text-sm text-[#667085] mb-1">Selected </div>
                       <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
-                        {formData.industrySelections.map((industry, index) => (
-                          <span
-                            key={`selected-industry-${index}`}
-                            className="bg-gray-100 text-[#344054] text-xs rounded-full px-2 py-0.5 flex items-center group"
-                          >
-                            {industry}
-                            <button
-                              type="button"
-                              onClick={() => removeIndustry(industry)}
-                              className="ml-1 text-gray-400 hover:text-gray-600 focus:outline-none"
-                            >
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="h-3 w-3"
-                                viewBox="0 0 20 20"
-                                fill="currentColor"
-                              >
-                                <path
-                                  fillRule="evenodd"
-                                  d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                                  clipRule="evenodd"
-                                />
-                              </svg>
-                            </button>
+                        <span
+                          key="selected-industry-display"
+                          className="bg-gray-100 text-[#344054] text-xs rounded-full px-2 py-0.5 flex items-center group"
+                        >
+                          {formData.selectedIndustryDisplay}
+                          <span className="ml-1 text-gray-400 text-xs">
+                            ({formData.industrySelections.length} sub-industries)
                           </span>
-                        ))}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFormData((prev) => ({
+                                ...prev,
+                                industrySelections: [],
+                                selectedIndustryDisplay: undefined,
+                                industryHierarchy: undefined,
+                              }))
+                            }}
+                            className="ml-1 text-gray-400 hover:text-gray-600 focus:outline-none"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-3 w-3"
+                              viewBox="0 0 20 20"
+                              fill="currentColor"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          </button>
+                        </span>
                       </div>
                     </div>
                   )}
@@ -1302,85 +1665,103 @@ export default function SellerFormPage() {
                 className="w-full"
               />
             </div>
-              <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Business Models <span className="text-red-500">*</span>
-            </label>
-            {/* ... checkbox group */}
-            {fieldErrors.businessModels && <p className="text-red-500 text-sm mt-2">{fieldErrors.businessModels}</p>}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="recurring-revenue"
-                  checked={formData.businessModels.includes("recurring-revenue")}
-                  onCheckedChange={(checked) =>
-                    handleCheckboxChange(checked === true, "recurring-revenue", "businessModels")
-                  }
-                />
-                <label htmlFor="recurring-revenue" className="text-sm">
-                  Recurring Revenue
-                </label>
-              </div>
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Business Models <span className="text-red-500">*</span>
+              </label>
+              {fieldErrors.businessModels && <p className="text-red-500 text-sm mt-2">{fieldErrors.businessModels}</p>}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="recurring-revenue"
+                    checked={formData.businessModels.includes("recurring-revenue")}
+                    onCheckedChange={(checked) =>
+                      handleCheckboxChange(checked === true, "recurring-revenue", "businessModels")
+                    }
+                  />
+                  <label htmlFor="recurring-revenue" className="text-sm">
+                    Recurring Revenue
+                  </label>
+                </div>
 
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="project-based"
-                  checked={formData.businessModels.includes("project-based")}
-                  onCheckedChange={(checked) =>
-                    handleCheckboxChange(checked === true, "project-based", "businessModels")
-                  }
-                />
-                <label htmlFor="project-based" className="text-sm">
-                  Project-Based
-                </label>
-              </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="project-based"
+                    checked={formData.businessModels.includes("project-based")}
+                    onCheckedChange={(checked) =>
+                      handleCheckboxChange(checked === true, "project-based", "businessModels")
+                    }
+                  />
+                  <label htmlFor="project-based" className="text-sm">
+                    Project-Based
+                  </label>
+                </div>
 
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="asset-light"
-                  checked={formData.businessModels.includes("asset-light")}
-                  onCheckedChange={(checked) => handleCheckboxChange(checked === true, "asset-light", "businessModels")}
-                />
-                <label htmlFor="asset-light" className="text-sm">
-                  Asset Light
-                </label>
-              </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="asset-light"
+                    checked={formData.businessModels.includes("asset-light")}
+                    onCheckedChange={(checked) =>
+                      handleCheckboxChange(checked === true, "asset-light", "businessModels")
+                    }
+                  />
+                  <label htmlFor="asset-light" className="text-sm">
+                    Asset Light
+                  </label>
+                </div>
 
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="asset-heavy"
-                  checked={formData.businessModels.includes("asset-heavy")}
-                  onCheckedChange={(checked) => handleCheckboxChange(checked === true, "asset-heavy", "businessModels")}
-                />
-                <label htmlFor="asset-heavy" className="text-sm">
-                  Asset Heavy
-                </label>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="asset-heavy"
+                    checked={formData.businessModels.includes("asset-heavy")}
+                    onCheckedChange={(checked) =>
+                      handleCheckboxChange(checked === true, "asset-heavy", "businessModels")
+                    }
+                  />
+                  <label htmlFor="asset-heavy" className="text-sm">
+                    Asset Heavy
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Management Future Preferences <span className="text-red-500">*</span>
+              </label>
+              {fieldErrors.managementPreferences && (
+                <p className="text-red-500 text-sm mt-2">{fieldErrors.managementPreferences}</p>
+              )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="retiring-divesting"
+                    checked={formData.managementPreferences.includes("retiring-divesting")}
+                    onCheckedChange={(checked) =>
+                      handleCheckboxChange(checked === true, "retiring-divesting", "managementPreferences")
+                    }
+                  />
+                  <label htmlFor="retiring-divesting" className="text-sm">
+                    Retiring to divesting
+                  </label>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="key-staff-stay"
+                    checked={formData.managementPreferences.includes("key-staff-stay")}
+                    onCheckedChange={(checked) =>
+                      handleCheckboxChange(checked === true, "key-staff-stay", "managementPreferences")
+                    }
+                  />
+                  <label htmlFor="key-staff-stay" className="text-sm">
+                    Other Key Staff Will Stay
+                  </label>
+                </div>
               </div>
             </div>
           </div>
-
-        
-<div>
-  <Label htmlFor="managementPreferences" className="text-sm font-medium">
-    Management Future Preferences *
-  </Label>
-  <Textarea
-    id="managementPreferences"
-    placeholder="Describe why your client is selling and what their plan is for continuation."
-    value={formData.managementPreferences}
-    onChange={(e) => setFormData({ ...formData, managementPreferences: e.target.value })}
-    className="mt-1"
-    rows={4}
-  />
-  {fieldErrors.managementPreferences && (
-    <p className="text-sm text-red-600 mt-1">
-      {fieldErrors.managementPreferences}
-    </p>
-  )}
-</div>
-          </div>
         </section>
-        
 
         {/* Financials Section */}
         <section className="bg-[#f9f9f9] p-6 rounded-lg">
@@ -1408,7 +1789,6 @@ export default function SellerFormPage() {
                           "trailingRevenue",
                         )
 
-                        // Real-time validation for EBITDA
                         const validationError = validateEBITDAvsRevenue(formData.trailingEBITDA, numValue)
                         setRealtimeErrors((prev) => ({
                           ...prev,
@@ -1460,7 +1840,6 @@ export default function SellerFormPage() {
                         "trailingEBITDA",
                       )
 
-                      // Real-time validation
                       const validationError = validateEBITDAvsRevenue(numValue, formData.trailingRevenue)
                       setRealtimeErrors((prev) => ({
                         ...prev,
@@ -1602,8 +1981,6 @@ export default function SellerFormPage() {
               />
             </div>
           </div>
-
-         
         </section>
 
         {/* Buyer Fit / Ability to Close */}
@@ -1663,7 +2040,7 @@ export default function SellerFormPage() {
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  className="w-full justify-between text-left h-auto min-h-11 px-3 py-2 border border-gray-300 hover:border-gray-400 focus:border-[#3aafa9] focus:ring-2 focus:ring-[#3aafa9]/20 rounded-md overflow-hidden"
+                  className="w-full justify-between text-left h-auto min-h-11 px-3 py-2 border border-gray-300 hover:border-gray-400 focus:border-[#3aafa9] focus:ring-2 focus:ring-[#3aafa9]/20 rounded-md overflow-hidden bg-transparent"
                 >
                   <span
                     className={`${Array.isArray(formData.companyType) && formData.companyType.length > 0 ? "text-gray-900" : "text-gray-500"} truncate block pr-2`}
@@ -1689,7 +2066,6 @@ export default function SellerFormPage() {
                     </span>
                   </div>
 
-                  {/* ✨ NEW: Bulk action buttons */}
                   <div className="flex gap-2">
                     <button
                       type="button"
@@ -1745,7 +2121,7 @@ export default function SellerFormPage() {
                           <input
                             type="checkbox"
                             checked={isChecked}
-                            onChange={() => {}} // Controlled by onClick above
+                            onChange={() => {}}
                             className="h-4 w-4 border-gray-300 rounded appearance-none border-2 checked:bg-[#3aafa9] checked:border-[#3aafa9] focus:ring-[#3aafa9] focus:ring-2 transition-colors"
                           />
                           {isChecked && (
@@ -1772,8 +2148,6 @@ export default function SellerFormPage() {
                 </div>
               </PopoverContent>
             </Popover>
-
-           
           </div>
           {fieldErrors.companyType && <p className="text-red-500 text-sm mt-2">{fieldErrors.companyType}</p>}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1892,8 +2266,6 @@ export default function SellerFormPage() {
 
         {/* Seller Matching and Buyer Selection */}
         <section className="bg-[#f9f9f9] p-6 rounded-lg">
-          {/* <h2 className="text-xl font-semibold mb-6">Seller Matching and Buyer Selection</h2> */}
-
           <div>
             <p className="text-md font-medium text-gray-600 mb-4">
               By clicking on Submit you agree to CIM Ampliify{" "}
@@ -1903,9 +2275,10 @@ export default function SellerFormPage() {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                Terms and Conditions. 
+                Terms and Conditions.
               </Link>
-              &nbsp;After clicking on Submit you will be presented with a list of matched potential buyers for selection.
+              &nbsp;After clicking on Submit you will be presented with a list of matched potential buyers for
+              selection.
             </p>
           </div>
         </section>
