@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+
 import {
   Select,
   SelectContent,
@@ -65,11 +66,7 @@ const BUSINESS_MODELS = [
   "Asset Heavy",
 ];
 
-const MANAGEMENT_PREFERENCES = [
-  "Owner(s) Departing",
-  "Owner(s) Staying",
-  "Management Team Staying",
-];
+
 
 // Default API URL
 const DEFAULT_API_URL = "http://localhost:3001";
@@ -85,11 +82,6 @@ interface IndustrySelection {
   sectors: Record<string, boolean>;
   industryGroups: Record<string, boolean>;
   industries: Record<string, boolean>;
-}
-
-// Store selected management preferences separately from the form data
-interface ExtendedFormState {
-  selectedManagementPreferences: string[];
 }
 
 // Add BuyerProfile interface
@@ -161,12 +153,7 @@ export default function CompanyProfilePage() {
   // Available currencies
   const CURRENCIES = ["USD", "EUR", "GBP", "CAD", "AUD"];
 
-  // Extended form state for fields not in the CompanyProfile type
-  const [extendedFormState, setExtendedFormState] = useState<ExtendedFormState>(
-    {
-      selectedManagementPreferences: [],
-    }
-  );
+
 
   // Add a state variable to store the company profile ID
   const [profileId, setProfileId] = useState<string | null>(null);
@@ -311,7 +298,6 @@ export default function CompanyProfilePage() {
       minStakePercent: undefined,
       minYearsInBusiness: undefined,
       preferredBusinessModels: [],
-      managementTeamPreference: [],
       description: "",
     },
     agreements: {
@@ -455,19 +441,7 @@ export default function CompanyProfilePage() {
           setIndustrySelection(newIndustrySelection);
         }
 
-        // Update management preferences
-        if (profileData.targetCriteria?.managementTeamPreference) {
-          const preferences = Array.isArray(
-            profileData.targetCriteria.managementTeamPreference
-          )
-            ? profileData.targetCriteria.managementTeamPreference
-            : [profileData.targetCriteria.managementTeamPreference];
 
-          setExtendedFormState({
-            ...extendedFormState,
-            selectedManagementPreferences: preferences,
-          });
-        }
       }
     } catch (error) {
       console.error("Error fetching profile:", error);
@@ -649,30 +623,7 @@ export default function CompanyProfilePage() {
     }
   };
 
-  // Toggle management preference selection
-  const toggleManagementPreference = (preference: string) => {
-    const currentPreferences = [
-      ...extendedFormState.selectedManagementPreferences,
-    ];
-    const preferenceIndex = currentPreferences.indexOf(preference);
 
-    if (preferenceIndex >= 0) {
-      currentPreferences.splice(preferenceIndex, 1);
-    } else {
-      currentPreferences.push(preference);
-    }
-
-    setExtendedFormState({
-      ...extendedFormState,
-      selectedManagementPreferences: currentPreferences,
-    });
-
-    handleNestedChange(
-      "targetCriteria",
-      "managementTeamPreference",
-      currentPreferences
-    );
-  };
 
   // Geography selection handlers
   const toggleContinent = (continent: Continent) => {
@@ -1294,156 +1245,141 @@ export default function CompanyProfilePage() {
     return hasErrors ? "Please correct the errors in the form" : null;
   };
 
-  // Handle form submission
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+// Handle form submission
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    if (!authToken || !isClient) {
-      toast({
-        title: "Authentication Required",
-        description: "Please log in again to submit your profile.",
-        variant: "destructive",
-      });
-      router.push("/buyer/login");
-      return;
-    }
+  if (!authToken || !isClient) {
+    toast({
+      title: "Authentication Required",
+      description: "Please log in again to submit your profile.",
+      variant: "destructive",
+    });
+    router.push("/buyer/login");
+    return;
+  }
 
-    if (!profileId) {
-      toast({
-        title: "Profile Not Found",
-        description: "Please refresh the page and try again.",
-        variant: "destructive",
-      });
-      return;
-    }
+  if (!profileId) {
+    toast({
+      title: "Profile Not Found",
+      description: "Please refresh the page and try again.",
+      variant: "destructive",
+    });
+    return;
+  }
 
-    const validationError = validateForm();
-    if (validationError) {
-      toast({
-        title: "Validation Error",
-        description: "Please correct the errors in the form before submitting.",
-        variant: "destructive",
-      });
+  const validationError = validateForm();
+  if (validationError) {
+    toast({
+      title: "Validation Error",
+      description: "Please correct the errors in the form before submitting.",
+      variant: "destructive",
+    });
 
-      const firstErrorField = Object.keys(fieldErrors).find(
-        (key) => fieldErrors[key]
+    const firstErrorField = Object.keys(fieldErrors).find(
+      (key) => fieldErrors[key]
+    );
+    if (firstErrorField) {
+      const element = document.getElementById(
+        firstErrorField.replace(/\[|\]|\./g, "-")
       );
-      if (firstErrorField) {
-        const element = document.getElementById(
-          firstErrorField.replace(/\[|\]|\./g, "-")
-        );
-        if (element) {
-          element.scrollIntoView({ behavior: "smooth", block: "center" });
-          element.focus();
-        }
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "center" });
+        element.focus();
+      }
+    }
+
+    return;
+  }
+
+  setIsSubmitting(true);
+  setSubmitStatus("idle");
+  setErrorMessage("");
+
+  try {
+
+    const profileData = {
+      ...formData,
+    };
+
+    console.log(
+      "Company Profile - Updating profile at:",
+      `${apiUrl}/company-profiles/${profileId}`
+    );
+    console.log(
+      "Company Profile - Using token:",
+      authToken.substring(0, 10) + "..."
+    );
+    console.log("Company Profile - Profile ID:", profileId);
+
+    const updateData = { ...profileData };
+    delete (updateData as any)._id;
+    delete (updateData as any).createdAt;
+    delete (updateData as any).updatedAt;
+    delete (updateData as any).__v;
+    delete (updateData as any).buyer;
+
+    console.log(
+      "Company Profile - Update data:",
+      JSON.stringify(updateData, null, 2)
+    );
+
+    const response = await fetch(`${apiUrl}/company-profiles/${profileId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${authToken}`,
+      },
+      body: JSON.stringify(updateData),
+    });
+
+    console.log("Company Profile - Response status:", response.status);
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error("API Error Response:", errorData);
+
+      if (response.status === 401) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("userId");
+        toast({
+          title: "Authentication Error",
+          description: "Your session has expired. Please log in again.",
+          variant: "destructive",
+        });
+
+        setTimeout(() => {
+          router.push("/buyer/login?session=expired");
+        }, 2000);
+
+        throw new Error("Authentication expired. Please log in again.");
       }
 
-      return;
+      throw new Error(
+        `API Error: ${response.status} - ${JSON.stringify(errorData)}`
+      );
     }
 
-    setIsSubmitting(true);
-    setSubmitStatus("idle");
-    setErrorMessage("");
+    const result = await response.json();
+    console.log("Company Profile - Update successful:", result);
 
-    try {
-      if (!Array.isArray(formData.targetCriteria.managementTeamPreference)) {
-        formData.targetCriteria.managementTeamPreference = formData
-          .targetCriteria.managementTeamPreference
-          ? [formData.targetCriteria.managementTeamPreference]
-          : [];
-      }
+    setSubmitStatus("success");
 
-      const profileData = {
-        ...formData,
-      };
+    // ✅ Redirect to /buyer/deals directly
+    setTimeout(() => {
+      router.push("/buyer/deals");
+    }, 2000);
+  } catch (error: any) {
+    console.error("Update error:", error);
+    setSubmitStatus("error");
+    setErrorMessage(
+      error.message || "An error occurred while updating your profile."
+    );
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
-      console.log(
-        "Company Profile - Updating profile at:",
-        `${apiUrl}/company-profiles/${profileId}`
-      );
-      console.log(
-        "Company Profile - Using token:",
-        authToken.substring(0, 10) + "..."
-      );
-      console.log("Company Profile - Profile ID:", profileId);
-
-      const updateData = { ...profileData };
-      delete (updateData as any)._id;
-      delete (updateData as any).createdAt;
-      delete (updateData as any).updatedAt;
-      delete (updateData as any).__v;
-      delete (updateData as any).buyer;
-
-      console.log(
-        "Company Profile - Update data:",
-        JSON.stringify(updateData, null, 2)
-      );
-
-      const response = await fetch(`${apiUrl}/company-profiles/${profileId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
-        },
-        body: JSON.stringify(updateData),
-      });
-
-      console.log("Company Profile - Response status:", response.status);
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error("API Error Response:", errorData);
-
-        if (response.status === 401) {
-          localStorage.removeItem("token");
-          localStorage.removeItem("userId");
-          toast({
-            title: "Authentication Error",
-            description: "Your session has expired. Please log in again.",
-            variant: "destructive",
-          });
-
-          setTimeout(() => {
-            router.push("/buyer/login?session=expired");
-          }, 2000);
-
-          throw new Error("Authentication expired. Please log in again.");
-        }
-
-        throw new Error(
-          `API Error: ${response.status} - ${JSON.stringify(errorData)}`
-        );
-      }
-
-      const result = await response.json();
-      console.log("Company Profile - Update successful:", result);
-
-      setSubmitStatus("success");
-      // toast({
-      //   title: "Profile Updated",
-      //   description: "Your company profile has been successfully updated.",
-      //   variant: "default",
-      // })
-
-      setTimeout(() => {
-        router.push("/buyer/company-profile?profileSubmitted=true");
-      }, 2000);
-    } catch (error: any) {
-      console.error("Update error:", error);
-      setSubmitStatus("error");
-      setErrorMessage(
-        error.message || "An error occurred while updating your profile."
-      );
-
-      // toast({
-      //   title: "Update Failed",
-      //   description: error.message || "An error occurred while updating your profile.",
-      //   variant: "destructive",
-      // })
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   // Render the hierarchical geography selection
   const renderGeographySelection = () => {
@@ -2726,37 +2662,7 @@ export default function CompanyProfilePage() {
                 </div>
               </div>
 
-              {/* Management Team Preference */}
-              <div className="bg-white rounded-lg p-6 shadow-sm mb-6">
-                <h2 className="text-[#2f2b43] text-lg font-medium mb-4">
-                  Management Future Preferences
-                </h2>
-                <div className="flex flex-wrap gap-6">
-                  {MANAGEMENT_PREFERENCES.map((preference) => (
-                    <div
-                      key={preference}
-                      className="flex items-center space-x-2"
-                    >
-                      <Checkbox
-                        id={`preference-${preference}`}
-                        className="border-[#d0d5dd]"
-                        checked={extendedFormState.selectedManagementPreferences.includes(
-                          preference
-                        )}
-                        onCheckedChange={() =>
-                          toggleManagementPreference(preference)
-                        }
-                      />
-                      <Label
-                        htmlFor={`preference-${preference}`}
-                        className="text-[#344054]"
-                      >
-                        {preference}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-              </div>
+
 
               {/* Description of Ideal Target(s) */}
               <div className="bg-white rounded-lg p-6 shadow-sm mb-6">

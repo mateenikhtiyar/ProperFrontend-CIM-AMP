@@ -1134,7 +1134,7 @@ export default function SellerDashboardPage() {
                           ))
                         ) : (
                           <div className="text-center text-amber-600 text-sm mt-2">
-                            No buyers found. Please ensure there are interested buyers before completing the deal.
+                           We did not present any buyers.  Please click No
                           </div>
                         )}
                       </div>
