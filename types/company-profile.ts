@@ -23,7 +23,6 @@ export interface TargetCriteria {
   minStakePercent?: number
   minYearsInBusiness?: number
   preferredBusinessModels: string[]
-  managementTeamPreference: string[]
   description?: string
 }
 

@@ -49,11 +49,11 @@ export default function DealCard({ deal }: DealCardProps) {
           </div>
           <div>
             <span className="text-[#667085]">Trailing 12-Month EBITDA: </span>
-            <span>${deal.trailingEBITDA.toLocaleString()}</span>
+            <span>${deal.trailingEbitda.toLocaleString()}</span>
           </div>
           <div>
             <span className="text-[#667085]">Average 3-YEAR REVENUE GROWTH IN %: </span>
-            <span>${deal.revenueGrowth.toLocaleString()}</span>
+            <span>${deal.averageGrowth.toLocaleString()}</span>
           </div>
           <div>
             <span className="text-[#667085]">Net Income: </span>
@@ -64,12 +64,8 @@ export default function DealCard({ deal }: DealCardProps) {
             <span>${deal.askingPrice.toLocaleString()}</span>
           </div>
           <div>
-            <span className="text-[#667085]">Business Mode: </span>
-            <span>{deal.businessMode}</span>
-          </div>
-          <div className="col-span-2">
-            <span className="text-[#667085]">Management Future Preferences: </span>
-            <span>{deal.managementPreferences}</span>
+            <span className="text-[#667085]">Business Model: </span>
+            <span>{deal.businessModel}</span>
           </div>
         </div>
       </div>

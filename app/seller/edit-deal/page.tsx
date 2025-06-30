@@ -2025,8 +2025,11 @@ const handleCheckboxChange = (
                 />
               </div>
             </div>
+            </section>
 
-            {/* ✅ Fixed: Capital Availability with exact enum values */}
+{/* Buyer Fit / Ability to Close */}
+<section className="bg-[#f9f9f9] p-6 rounded-lg">
+  <h2 className="text-xl font-semibold mb-6">Buyer Fit / Ability to Close</h2>
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-3">
                 Capital Availability <span className="text-red-500">*</span>

@@ -51,7 +51,6 @@ interface CompanyProfile {
     minStakePercent?: number
     minYearsInBusiness?: number
     preferredBusinessModels: string[]
-    managementTeamPreference?: string
     description?: string
   }
 }

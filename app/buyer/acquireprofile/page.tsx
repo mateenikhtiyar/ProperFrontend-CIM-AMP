@@ -74,11 +74,6 @@ const BUSINESS_MODELS = [
   "Asset Heavy",
 ];
 
-const MANAGEMENT_PREFERENCES = [
-  "Owner(s) Departing",
-  "Owner(s) Staying",
-  "Management Team Staying",
-];
 
 // Default API URL
 const DEFAULT_API_URL = "http://localhost:3001";
@@ -94,12 +89,6 @@ interface IndustrySelection {
   sectors: Record<string, boolean>;
   industryGroups: Record<string, boolean>;
   industries: Record<string, boolean>;
-}
-
-// Store selected management preferences separately from the form data
-// to avoid TypeScript errors with the CompanyProfile type
-interface ExtendedFormState {
-  selectedManagementPreferences: string[];
 }
 
 export default function AcquireProfilePage() {
@@ -160,12 +149,7 @@ export default function AcquireProfilePage() {
   // Available currencies
   const CURRENCIES = ["USD", "EUR", "GBP", "CAD", "AUD"];
 
-  // Extended form state for fields not in the CompanyProfile type
-  const [extendedFormState, setExtendedFormState] = useState<ExtendedFormState>(
-    {
-      selectedManagementPreferences: [],
-    }
-  );
+
 
   // Add a new state for field-specific errors after the other state declarations (around line 100)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -429,20 +413,7 @@ export default function AcquireProfilePage() {
         setIndustrySelection(newIndustrySelection);
       }
 
-      // Update management preferences
-      if (profileData.targetCriteria?.managementTeamPreference) {
-        // Convert from array to array for the UI state (if it's a string, convert to array)
-        const preferences = Array.isArray(
-          profileData.targetCriteria.managementTeamPreference
-        )
-          ? profileData.targetCriteria.managementTeamPreference
-          : [profileData.targetCriteria.managementTeamPreference];
 
-        setExtendedFormState({
-          ...extendedFormState,
-          selectedManagementPreferences: preferences,
-        });
-      }
 
       toast({
         title: "Profile Loaded",
@@ -480,7 +451,6 @@ export default function AcquireProfilePage() {
       minStakePercent: undefined,
       minYearsInBusiness: undefined,
       preferredBusinessModels: [],
-      managementTeamPreference: [], // Changed from string to empty array
       description: "",
     },
     agreements: {
@@ -640,34 +610,6 @@ export default function AcquireProfilePage() {
     }
   };
 
-  // Toggle management preference selection
-  const toggleManagementPreference = (preference: string) => {
-    const currentPreferences = [
-      ...extendedFormState.selectedManagementPreferences,
-    ];
-    const preferenceIndex = currentPreferences.indexOf(preference);
-
-    if (preferenceIndex >= 0) {
-      // Remove preference if already selected
-      currentPreferences.splice(preferenceIndex, 1);
-    } else {
-      // Add preference if not selected
-      currentPreferences.push(preference);
-    }
-
-    setExtendedFormState({
-      ...extendedFormState,
-      selectedManagementPreferences: currentPreferences,
-    });
-
-    // Update the managementTeamPreference in the form data
-    // Use the array of selected preferences
-    handleNestedChange(
-      "targetCriteria",
-      "managementTeamPreference",
-      currentPreferences
-    );
-  };
 
   // Geography selection handlers
   const toggleContinent = (continent: Continent) => {
@@ -1459,13 +1401,6 @@ export default function AcquireProfilePage() {
     setErrorMessage("");
 
     try {
-      // Ensure managementTeamPreference is an array
-      if (!Array.isArray(formData.targetCriteria.managementTeamPreference)) {
-        formData.targetCriteria.managementTeamPreference = formData
-          .targetCriteria.managementTeamPreference
-          ? [formData.targetCriteria.managementTeamPreference]
-          : [];
-      }
 
       // Prepare profile data according to API schema - only include expected fields
       const profileData = {
@@ -1496,8 +1431,6 @@ export default function AcquireProfilePage() {
           minYearsInBusiness: formData.targetCriteria.minYearsInBusiness,
           preferredBusinessModels:
             formData.targetCriteria.preferredBusinessModels,
-          managementTeamPreference:
-            formData.targetCriteria.managementTeamPreference,
           description: formData.targetCriteria.description,
         },
         agreements: {
@@ -2799,34 +2732,7 @@ export default function AcquireProfilePage() {
                 ))}
               </div>
             </div>
-            {/* Management Future Preferences */}
-            <div className="bg-white rounded-lg p-6 shadow-sm mb-6">
-              <h2 className="text-[#2f2b43] text-lg font-medium mb-4">
-                Management Future Preferences
-              </h2>
-              <div className="flex flex-wrap gap-6">
-                {MANAGEMENT_PREFERENCES.map((preference) => (
-                  <div key={preference} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`preference-${preference}`}
-                      className="border-[#d0d5dd]"
-                      checked={extendedFormState.selectedManagementPreferences.includes(
-                        preference
-                      )}
-                      onCheckedChange={() =>
-                        toggleManagementPreference(preference)
-                      }
-                    />
-                    <Label
-                      htmlFor={`preference-${preference}`}
-                      className="text-[#344054]"
-                    >
-                      {preference}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-            </div>
+
             {/* Description of Ideal Target(s) */}
             <div className="bg-white rounded-lg p-6 shadow-sm mb-6">
               <h2 className="text-[#2f2b43] text-lg font-medium mb-4">
@@ -3063,4 +2969,3 @@ export default function AcquireProfilePage() {
     </div>
   );
 }
-
