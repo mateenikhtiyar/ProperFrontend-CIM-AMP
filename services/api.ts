@@ -42,9 +42,7 @@ api.interceptors.response.use(
       localStorage.removeItem("token")
       localStorage.removeItem("userId")
       localStorage.removeItem("userRole")
-      if (typeof window !== "undefined") {
-        window.location.href = "/login?session=expired"
-      }
+    
     }
     return Promise.reject(error)
   },
