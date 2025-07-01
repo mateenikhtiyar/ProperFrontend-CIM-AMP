@@ -45,6 +45,8 @@ import {
   type IndustryGroup,
   type Industry,
 } from "@/lib/industry-data";
+import GeographySelector from "@/components/GeographySelector";
+import { Country, State, City } from "country-state-city";
 
 // Add a direct import for the API service at the top of the file
 // Remove: `import { submitCompanyProfile } from "@/services/api"`
@@ -73,7 +75,6 @@ const BUSINESS_MODELS = [
   "Asset Light",
   "Asset Heavy",
 ];
-
 
 // Default API URL
 const DEFAULT_API_URL = "http://localhost:3001";
@@ -148,8 +149,6 @@ export default function AcquireProfilePage() {
 
   // Available currencies
   const CURRENCIES = ["USD", "EUR", "GBP", "CAD", "AUD"];
-
-
 
   // Add a new state for field-specific errors after the other state declarations (around line 100)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -362,9 +361,7 @@ export default function AcquireProfilePage() {
             if (region.subRegions) {
               region.subRegions.forEach((subRegion) => {
                 if (
-                  profileData.targetCriteria.countries.includes(
-                    subRegion.name
-                  )
+                  profileData.targetCriteria.countries.includes(subRegion.name)
                 ) {
                   newGeoSelection.subRegions[subRegion.id] = true;
                 }
@@ -412,8 +409,6 @@ export default function AcquireProfilePage() {
 
         setIndustrySelection(newIndustrySelection);
       }
-
-
 
       toast({
         title: "Profile Loaded",
@@ -609,7 +604,6 @@ export default function AcquireProfilePage() {
       ]);
     }
   };
-
 
   // Geography selection handlers
   const toggleContinent = (continent: Continent) => {
@@ -912,49 +906,37 @@ export default function AcquireProfilePage() {
   // Update the industries array in formData based on the hierarchical selection
   const updateIndustriesInFormData = (selection: IndustrySelection) => {
     if (!industryData) return;
-
+  
     const selectedIndustries: string[] = [];
-
+  
     industryData.sectors.forEach((sector) => {
       const sectorSelected = selection.sectors[sector.id];
-
-      // Check if all industry groups in this sector are selected
-      const allGroupsSelected = sector.industryGroups.every((group) => {
-        return group.industries.every(
-          (industry) => selection.industries[industry.id]
-        );
-      });
-
-      if (sectorSelected && allGroupsSelected) {
-        // If sector is selected and all its groups/industries are selected, send only the sector
-        selectedIndustries.push(sector.name);
-      } else {
-        // Otherwise, check individual groups and industries
-        sector.industryGroups.forEach((group) => {
-          const groupSelected = selection.industryGroups[group.id];
-
-          // Check if all industries in this group are selected
-          const allIndustriesSelected = group.industries.every(
-            (industry) => selection.industries[industry.id]
-          );
-
-          if (groupSelected && allIndustriesSelected) {
-            // If group is selected and all its industries are selected, send only the group
-            selectedIndustries.push(group.name);
-          } else {
-            // Otherwise, send only the selected industries
-            group.industries.forEach((industry) => {
-              if (selection.industries[industry.id]) {
-                selectedIndustries.push(industry.name);
-              }
-            });
+  
+      if (sectorSelected) {
+        selectedIndustries.push(sector.name); // ✅ include sector name
+      }
+  
+      sector.industryGroups.forEach((group) => {
+        const groupSelected = selection.industryGroups[group.id];
+  
+        if (groupSelected) {
+          selectedIndustries.push(group.name); // ✅ include group name
+        }
+  
+        group.industries.forEach((industry) => {
+          if (selection.industries[industry.id]) {
+            selectedIndustries.push(industry.name); // ✅ include individual industries
           }
         });
-      }
+      });
     });
-
-    handleNestedChange("targetCriteria", "industrySectors", selectedIndustries);
+  
+    // Remove duplicates just in case
+    const uniqueIndustries = [...new Set(selectedIndustries)];
+  
+    handleNestedChange("targetCriteria", "industrySectors", uniqueIndustries);
   };
+  
 
   const removeIndustry = (industryToRemove: string) => {
     if (!industryData) return;
@@ -1401,7 +1383,6 @@ export default function AcquireProfilePage() {
     setErrorMessage("");
 
     try {
-
       // Prepare profile data according to API schema - only include expected fields
       const profileData = {
         companyName: formData.companyName,
@@ -1502,114 +1483,6 @@ export default function AcquireProfilePage() {
     }
   };
 
-  // Render the hierarchical geography selection
-  const renderGeographySelection = () => {
-    const filteredData = filterGeographyData();
-    if (!filteredData) return <div>Loading geography data...</div>;
-
-    return (
-      <div className="space-y-2 font-poppins">
-        {filteredData.continents.map((continent) => (
-          <div key={continent.id} className="border-b border-gray-100 pb-1">
-            <div className="flex items-center">
-              <Checkbox
-                id={`continent-${continent.id}`}
-                checked={!!geoSelection.continents[continent.id]}
-                onCheckedChange={(checked) => {
-                  toggleContinent(continent);
-                }}
-                className="mr-2 border-[#d0d5dd]"
-              />
-              <div
-                className="flex items-center cursor-pointer flex-1"
-                onClick={() => toggleContinentExpansion(continent.id)}
-              >
-                {expandedContinents[continent.id] ? (
-                  <ChevronDown className="h-4 w-4 mr-1 text-gray-500" />
-                ) : (
-                  <ChevronRight className="h-4 w-4 mr-1 text-gray-500" />
-                )}
-                <Label
-                  htmlFor={`continent-${continent.id}`}
-                  className="text-[#344054] cursor-pointer font-medium"
-                >
-                  {continent.name}
-                </Label>
-              </div>
-            </div>
-
-            {expandedContinents[continent.id] && (
-              <div className="ml-6 mt-1 space-y-1">
-                {continent.regions.map((region) => (
-                  <div key={region.id} className="pl-2">
-                    <div className="flex items-center">
-                      <Checkbox
-                        id={`region-${region.id}`}
-                        checked={!!geoSelection.regions[region.id]}
-                        onCheckedChange={(checked) => {
-                          toggleRegion(region, continent);
-                        }}
-                        className="mr-2 border-[#d0d5dd]"
-                      />
-                      {region.subRegions && region.subRegions.length > 0 ? (
-                        <div
-                          className="flex items-center cursor-pointer flex-1"
-                          onClick={() => toggleRegionExpansion(region.id)}
-                        >
-                          {expandedRegions[region.id] ? (
-                            <ChevronDown className="h-3 w-3 mr-1 text-gray-400" />
-                          ) : (
-                            <ChevronRight className="h-3 w-3 mr-1 text-gray-400" />
-                          )}
-                          <Label
-                            htmlFor={`region-${region.id}`}
-                            className="text-[#344054] cursor-pointer"
-                          >
-                            {region.name}
-                          </Label>
-                        </div>
-                      ) : (
-                        <Label
-                          htmlFor={`region-${region.id}`}
-                          className="text-[#344054] cursor-pointer"
-                        >
-                          {region.name}
-                        </Label>
-                      )}
-                    </div>
-
-                    {region.subRegions && expandedRegions[region.id] && (
-                      <div className="ml-6 mt-1 space-y-1">
-                        {region.subRegions.map((subRegion) => (
-                          <div key={subRegion.id} className="flex items-center">
-                            <Checkbox
-                              id={`subregion-${subRegion.id}`}
-                              checked={!!geoSelection.subRegions[subRegion.id]}
-                              onCheckedChange={(checked) => {
-                                toggleSubRegion(subRegion, region, continent);
-                              }}
-                              className="mr-2 border-[#0bd4db54d]"
-                            />
-                            <Label
-                              htmlFor={`subregion-${subRegion.id}`}
-                              className="text-[#344054] cursor-pointer text-sm"
-                            >
-                              {subRegion.name}
-                            </Label>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-    );
-  };
-
   // Render the hierarchical industry selection
   const renderIndustrySelection = () => {
     const filteredData = filterIndustryData();
@@ -1700,6 +1573,122 @@ export default function AcquireProfilePage() {
     );
   };
 
+  // Add expansion state for countries and states
+  const [expandedCountries, setExpandedCountries] = useState<Record<string, boolean>>({});
+  const [expandedStates, setExpandedStates] = useState<Record<string, boolean>>({});
+
+  // Helper to load states and cities for a country
+  const getStatesAndCities = (countryCode: string) => {
+    const states = State.getStatesOfCountry(countryCode);
+    return states.map((state) => ({
+      ...state,
+      cities: City.getCitiesOfState(countryCode, state.isoCode),
+    }));
+  };
+
+  // Render hierarchical geography selection
+  const renderGeographySelection = () => {
+    const allCountries = Country.getAllCountries();
+    return (
+      <div className="space-y-2 font-poppins">
+        {allCountries.map((country) => (
+          <div key={country.isoCode} className="border-b border-gray-100 pb-1">
+            <div className="flex items-center">
+              <input
+                type="radio"
+                id={`geo-${country.isoCode}`}
+                name="geography"
+                checked={formData.targetCriteria.countries.includes(country.name)}
+                onChange={() => {
+                  setFormData((prev) => ({
+                    ...prev,
+                    targetCriteria: { ...prev.targetCriteria, countries: [country.name] },
+                  }));
+                }}
+                className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9]"
+              />
+              <div
+                className="flex items-center cursor-pointer flex-1"
+                onClick={() => setExpandedCountries((prev) => ({ ...prev, [country.isoCode]: !prev[country.isoCode] }))}
+              >
+                {expandedCountries[country.isoCode] ? (
+                  <ChevronDown className="h-4 w-4 mr-1 text-gray-500" />
+                ) : (
+                  <ChevronRight className="h-4 w-4 mr-1 text-gray-500" />
+                )}
+                <Label htmlFor={`geo-${country.isoCode}`} className="text-[#344054] cursor-pointer font-medium">
+                  {country.name}
+                </Label>
+              </div>
+            </div>
+            {expandedCountries[country.isoCode] && (
+              <div className="ml-6 mt-1 space-y-1">
+                {getStatesAndCities(country.isoCode).map((state) => (
+                  <div key={state.isoCode} className="pl-2">
+                    <div className="flex items-center">
+                      <input
+                        type="radio"
+                        id={`geo-${country.isoCode}-${state.isoCode}`}
+                        name="geography"
+                        checked={formData.targetCriteria.countries.includes(`${country.name} > ${state.name}`)}
+                        onChange={() => {
+                          setFormData((prev) => ({
+                            ...prev,
+                            targetCriteria: { ...prev.targetCriteria, countries: [`${country.name} > ${state.name}`] },
+                          }));
+                        }}
+                        className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9]"
+                      />
+                      <div
+                        className="flex items-center cursor-pointer flex-1"
+                        onClick={() => setExpandedStates((prev) => ({ ...prev, [`${country.isoCode}-${state.isoCode}`]: !prev[`${country.isoCode}-${state.isoCode}`] }))}
+                      >
+                        {expandedStates[`${country.isoCode}-${state.isoCode}`] ? (
+                          <ChevronDown className="h-4 w-4 mr-1 text-gray-500" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4 mr-1 text-gray-500" />
+                        )}
+                        <Label htmlFor={`geo-${country.isoCode}-${state.isoCode}`} className="text-[#344054] cursor-pointer">
+                          {state.name}
+                        </Label>
+                      </div>
+                    </div>
+                    {expandedStates[`${country.isoCode}-${state.isoCode}`] && state.cities.length > 0 && (
+                      <div className="ml-6 mt-1 space-y-1">
+                        {state.cities.slice(0, 10).map((city, cityIndex) => (
+                          <div key={`city-${city.name}-${cityIndex}`} className="pl-4">
+                            <div className="flex items-center">
+                              <input
+                                type="radio"
+                                id={`geo-${country.isoCode}-${state.isoCode}-${city.name}`}
+                                name="geography"
+                                checked={formData.targetCriteria.countries.includes(`${country.name} > ${state.name} > ${city.name}`)}
+                                onChange={() => {
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    targetCriteria: { ...prev.targetCriteria, countries: [`${country.name} > ${state.name} > ${city.name}`] },
+                                  }));
+                                }}
+                                className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9]"
+                              />
+                              <Label htmlFor={`geo-${country.isoCode}-${state.isoCode}-${city.name}`} className="text-[#344054] cursor-pointer">
+                                {city.name}
+                              </Label>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-[#f0f4f8] py-8 px-4 font-poppins">
       <div className="max-w-4xl mx-auto space-y-6">
@@ -1760,7 +1749,9 @@ export default function AcquireProfilePage() {
                   Company Name <span className="text-red-500">*</span>
                 </Label>
                 {formData.companyName === "" && (
-                  <div className="text-red-500 text-xs mb-1">Warning: companyName is empty!</div>
+                  <div className="text-red-500 text-xs mb-1">
+                    Warning: companyName is empty!
+                  </div>
                 )}
                 <Input
                   id="companyName"
@@ -2144,84 +2135,63 @@ export default function AcquireProfilePage() {
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              {/* geo graphy */}
               <div>
                 <Label className="text-[#667085] text-sm mb-1.5 block">
                   Geographies
                 </Label>
-                <div className="border border-[#d0d5dd] rounded-md p-4 h-80 flex flex-col">
-                  <div className="relative mb-4">
-                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-[#667085]" />
-                    <div className="flex">
-                      <Input
-                        placeholder="Search countries..."
-                        className="pl-8 border-[#d0d5dd] rounded-r-none"
-                        value={countrySearchTerm}
-                        onChange={(e) => setCountrySearchTerm(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" && countrySearchTerm) {
-                            e.preventDefault();
-                            selectSearchedCountry(countrySearchTerm);
-                          }
-                        }}
-                      />
-                      <Button
-                        type="button"
-                        className="rounded-l-none"
-                        onClick={() =>
-                          countrySearchTerm &&
-                          selectSearchedCountry(countrySearchTerm)
-                        }
-                        disabled={!countrySearchTerm}
-                      >
-                        Select
-                      </Button>
-                    </div>
-                  </div>
 
-                  {formData.targetCriteria.countries.length > 0 && (
-                    <div className="mb-4">
-                      <div className="text-sm text-[#667085] mb-1">
-                        Selected Countries
-                      </div>
-                      <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
-                        {formData.targetCriteria.countries.map(
-                          (country, index) => (
-                            <span
-                              key={`selected-country-${index}`}
-                              className="bg-gray-100 text-[#344054] text-xs rounded-full px-2 py-0.5 flex items-center group"
+                {/* Geography Selector Section */}
+                {formData.targetCriteria.countries.length > 0 && (
+                  <div className="mb-4">
+                    <div className="text-sm text-[#667085] mb-1">Selected</div>
+                    <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
+                      {formData.targetCriteria.countries.map((country, index) => (
+                        <span
+                          key={`selected-country-${index}`}
+                          className="bg-gray-100 text-[#344054] text-xs rounded-full px-2 py-0.5 flex items-center group"
+                        >
+                          {country}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                targetCriteria: {
+                                  ...prev.targetCriteria,
+                                  countries: [],
+                                },
+                              }))
+                            }
+                            className="ml-1 text-gray-400 hover:text-gray-600 focus:outline-none"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-3 w-3"
+                              viewBox="0 0 20 20"
+                              fill="currentColor"
                             >
-                              {country}
-                              <button
-                                type="button"
-                                onClick={() => removeCountry(country)}
-                                className="ml-1 text-gray-400 hover:text-gray-600 focus:outline-none"
-                              >
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  className="h-3 w-3"
-                                  viewBox="0 0 20 20"
-                                  fill="currentColor"
-                                >
-                                  <path
-                                    fillRule="evenodd"
-                                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                                    clipRule="evenodd"
-                                  />
-                                </svg>
-                              </button>
-                            </span>
-                          )
-                        )}
-                      </div>
+                              <path
+                                fillRule="evenodd"
+                                d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          </button>
+                        </span>
+                      ))}
                     </div>
-                  )}
-
-                  <div className="flex-1 overflow-y-auto">
-                    {renderGeographySelection()}
                   </div>
-                </div>
+                )}
+                <GeographySelector
+                  selectedCountries={formData.targetCriteria.countries}
+                  onChange={countries => setFormData(prev => ({
+                    ...prev,
+                    targetCriteria: { ...prev.targetCriteria, countries },
+                  }))}
+                />
               </div>
-
+              {/* industry sector */}
               <div>
                 <Label className="text-[#667085] text-sm mb-1.5 block">
                   Industry Sectors
@@ -2678,33 +2648,31 @@ export default function AcquireProfilePage() {
               </div>
 
               <div>
-                    <Label
-                      htmlFor="minYearsInBusiness"
-                      className="text-[#667085] text-sm mb-1.5 block"
-                    >
-                      Minimum Years in Business
-                      <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="minYearsInBusiness"
-                      type="number"
-                      className={`border-[#d0d5dd] ${
-                        fieldErrors["targetCriteria.minYearsInBusiness"]
-                          ? "border-red-500 focus-visible:ring-red-500"
-                          : ""
-                      }`}
-                      value={formData.targetCriteria.minYearsInBusiness ?? ""}
-                      onChange={(e) =>
-                        handleNestedChange(
-                          "targetCriteria",
-                          "minYearsInBusiness",
-                          e.target.value === ""
-                            ? undefined
-                            : Number(e.target.value)
-                        )
-                      }
-                    />
-                  </div>
+                <Label
+                  htmlFor="minYearsInBusiness"
+                  className="text-[#667085] text-sm mb-1.5 block"
+                >
+                  Minimum Years in Business
+                  <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="minYearsInBusiness"
+                  type="number"
+                  className={`border-[#d0d5dd] ${
+                    fieldErrors["targetCriteria.minYearsInBusiness"]
+                      ? "border-red-500 focus-visible:ring-red-500"
+                      : ""
+                  }`}
+                  value={formData.targetCriteria.minYearsInBusiness ?? ""}
+                  onChange={(e) =>
+                    handleNestedChange(
+                      "targetCriteria",
+                      "minYearsInBusiness",
+                      e.target.value === "" ? undefined : Number(e.target.value)
+                    )
+                  }
+                />
+              </div>
             </div>
             {/* Preferred Business Models */}
             <div className="rounded-lg p-6 shadow-sm mb-6">
