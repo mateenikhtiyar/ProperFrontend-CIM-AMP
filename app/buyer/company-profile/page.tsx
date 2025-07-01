@@ -47,6 +47,8 @@ import {
   type IndustryGroup,
   type Industry,
 } from "@/lib/industry-data";
+import GeographySelector from "@/components/GeographySelector";
+import { Country, State, City } from "country-state-city";
 
 const COMPANY_TYPES = [
   "Buy Side Mandate",
@@ -65,8 +67,6 @@ const BUSINESS_MODELS = [
   "Asset Light",
   "Asset Heavy",
 ];
-
-
 
 // Default API URL
 const DEFAULT_API_URL = "http://localhost:3001";
@@ -152,8 +152,6 @@ export default function CompanyProfilePage() {
 
   // Available currencies
   const CURRENCIES = ["USD", "EUR", "GBP", "CAD", "AUD"];
-
-
 
   // Add a state variable to store the company profile ID
   const [profileId, setProfileId] = useState<string | null>(null);
@@ -440,8 +438,6 @@ export default function CompanyProfilePage() {
 
           setIndustrySelection(newIndustrySelection);
         }
-
-
       }
     } catch (error) {
       console.error("Error fetching profile:", error);
@@ -622,8 +618,6 @@ export default function CompanyProfilePage() {
       ]);
     }
   };
-
-
 
   // Geography selection handlers
   const toggleContinent = (continent: Continent) => {
@@ -891,7 +885,6 @@ export default function CompanyProfilePage() {
     updateIndustriesInFormData(newIndustrySelection);
   };
 
-  // Update the industries array in formData based on the hierarchical selection
   const updateIndustriesInFormData = (selection: IndustrySelection) => {
     if (!industryData) return;
 
@@ -900,42 +893,27 @@ export default function CompanyProfilePage() {
     industryData.sectors.forEach((sector) => {
       const sectorSelected = selection.sectors[sector.id];
 
-      // Check if all industry groups in this sector are selected
-      const allGroupsSelected = sector.industryGroups.every((group) => {
-        return group.industries.every(
-          (industry) => selection.industries[industry.id]
-        );
-      });
+      if (sectorSelected) {
+        selectedIndustries.push(sector.name); // ✅ include sector name
+      }
 
-      if (sectorSelected && allGroupsSelected) {
-        // If sector is selected and all its groups/industries are selected, send only the sector
-        selectedIndustries.push(sector.name);
-      } else {
-        // Otherwise, check individual groups and industries
-        sector.industryGroups.forEach((group) => {
-          const groupSelected = selection.industryGroups[group.id];
+      sector.industryGroups.forEach((group) => {
+        const groupSelected = selection.industryGroups[group.id];
 
-          // Check if all industries in this group are selected
-          const allIndustriesSelected = group.industries.every(
-            (industry) => selection.industries[industry.id]
-          );
+        if (groupSelected) {
+          selectedIndustries.push(group.name); // ✅ include group name
+        }
 
-          if (groupSelected && allIndustriesSelected) {
-            // If group is selected and all its industries are selected, send only the group
-            selectedIndustries.push(group.name);
-          } else {
-            // Otherwise, send only the selected industries
-            group.industries.forEach((industry) => {
-              if (selection.industries[industry.id]) {
-                selectedIndustries.push(industry.name);
-              }
-            });
+        group.industries.forEach((industry) => {
+          if (selection.industries[industry.id]) {
+            selectedIndustries.push(industry.name); // ✅ include each selected sub-industry
           }
         });
-      }
+      });
     });
 
-    handleNestedChange("targetCriteria", "industrySectors", selectedIndustries);
+    const uniqueIndustries = [...new Set(selectedIndustries)]; // remove duplicates
+    handleNestedChange("targetCriteria", "industrySectors", uniqueIndustries);
   };
 
   const removeIndustry = (industryToRemove: string) => {
@@ -1245,236 +1223,238 @@ export default function CompanyProfilePage() {
     return hasErrors ? "Please correct the errors in the form" : null;
   };
 
-// Handle form submission
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
+  // Handle form submission
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-  if (!authToken || !isClient) {
-    toast({
-      title: "Authentication Required",
-      description: "Please log in again to submit your profile.",
-      variant: "destructive",
-    });
-    router.push("/buyer/login");
-    return;
-  }
-
-  if (!profileId) {
-    toast({
-      title: "Profile Not Found",
-      description: "Please refresh the page and try again.",
-      variant: "destructive",
-    });
-    return;
-  }
-
-  const validationError = validateForm();
-  if (validationError) {
-    toast({
-      title: "Validation Error",
-      description: "Please correct the errors in the form before submitting.",
-      variant: "destructive",
-    });
-
-    const firstErrorField = Object.keys(fieldErrors).find(
-      (key) => fieldErrors[key]
-    );
-    if (firstErrorField) {
-      const element = document.getElementById(
-        firstErrorField.replace(/\[|\]|\./g, "-")
-      );
-      if (element) {
-        element.scrollIntoView({ behavior: "smooth", block: "center" });
-        element.focus();
-      }
+    if (!authToken || !isClient) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in again to submit your profile.",
+        variant: "destructive",
+      });
+      router.push("/buyer/login");
+      return;
     }
 
-    return;
-  }
-
-  setIsSubmitting(true);
-  setSubmitStatus("idle");
-  setErrorMessage("");
-
-  try {
-
-    const profileData = {
-      ...formData,
-    };
-
-    console.log(
-      "Company Profile - Updating profile at:",
-      `${apiUrl}/company-profiles/${profileId}`
-    );
-    console.log(
-      "Company Profile - Using token:",
-      authToken.substring(0, 10) + "..."
-    );
-    console.log("Company Profile - Profile ID:", profileId);
-
-    const updateData = { ...profileData };
-    delete (updateData as any)._id;
-    delete (updateData as any).createdAt;
-    delete (updateData as any).updatedAt;
-    delete (updateData as any).__v;
-    delete (updateData as any).buyer;
-
-    console.log(
-      "Company Profile - Update data:",
-      JSON.stringify(updateData, null, 2)
-    );
-
-    const response = await fetch(`${apiUrl}/company-profiles/${profileId}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${authToken}`,
-      },
-      body: JSON.stringify(updateData),
-    });
-
-    console.log("Company Profile - Response status:", response.status);
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error("API Error Response:", errorData);
-
-      if (response.status === 401) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("userId");
-        toast({
-          title: "Authentication Error",
-          description: "Your session has expired. Please log in again.",
-          variant: "destructive",
-        });
-
-        setTimeout(() => {
-          router.push("/buyer/login?session=expired");
-        }, 2000);
-
-        throw new Error("Authentication expired. Please log in again.");
-      }
-
-      throw new Error(
-        `API Error: ${response.status} - ${JSON.stringify(errorData)}`
-      );
+    if (!profileId) {
+      toast({
+        title: "Profile Not Found",
+        description: "Please refresh the page and try again.",
+        variant: "destructive",
+      });
+      return;
     }
 
-    const result = await response.json();
-    console.log("Company Profile - Update successful:", result);
+    const validationError = validateForm();
+    if (validationError) {
+      toast({
+        title: "Validation Error",
+        description: "Please correct the errors in the form before submitting.",
+        variant: "destructive",
+      });
 
-    setSubmitStatus("success");
+      const firstErrorField = Object.keys(fieldErrors).find(
+        (key) => fieldErrors[key]
+      );
+      if (firstErrorField) {
+        const element = document.getElementById(
+          firstErrorField.replace(/\[|\]|\./g, "-")
+        );
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "center" });
+          element.focus();
+        }
+      }
 
-    // ✅ Redirect to /buyer/deals directly
-    setTimeout(() => {
-      router.push("/buyer/deals");
-    }, 2000);
-  } catch (error: any) {
-    console.error("Update error:", error);
-    setSubmitStatus("error");
-    setErrorMessage(
-      error.message || "An error occurred while updating your profile."
-    );
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+      return;
+    }
 
+    setIsSubmitting(true);
+    setSubmitStatus("idle");
+    setErrorMessage("");
 
-  // Render the hierarchical geography selection
+    try {
+      const profileData = {
+        ...formData,
+      };
+
+      console.log(
+        "Company Profile - Updating profile at:",
+        `${apiUrl}/company-profiles/${profileId}`
+      );
+      console.log(
+        "Company Profile - Using token:",
+        authToken.substring(0, 10) + "..."
+      );
+      console.log("Company Profile - Profile ID:", profileId);
+
+      const updateData = { ...profileData };
+      delete (updateData as any)._id;
+      delete (updateData as any).createdAt;
+      delete (updateData as any).updatedAt;
+      delete (updateData as any).__v;
+      delete (updateData as any).buyer;
+
+      console.log(
+        "Company Profile - Update data:",
+        JSON.stringify(updateData, null, 2)
+      );
+
+      const response = await fetch(`${apiUrl}/company-profiles/${profileId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
+        },
+        body: JSON.stringify(updateData),
+      });
+
+      console.log("Company Profile - Response status:", response.status);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error("API Error Response:", errorData);
+
+        if (response.status === 401) {
+          localStorage.removeItem("token");
+          localStorage.removeItem("userId");
+          toast({
+            title: "Authentication Error",
+            description: "Your session has expired. Please log in again.",
+            variant: "destructive",
+          });
+
+          setTimeout(() => {
+            router.push("/buyer/login?session=expired");
+          }, 2000);
+
+          throw new Error("Authentication expired. Please log in again.");
+        }
+
+        throw new Error(
+          `API Error: ${response.status} - ${JSON.stringify(errorData)}`
+        );
+      }
+
+      const result = await response.json();
+      console.log("Company Profile - Update successful:", result);
+
+      setSubmitStatus("success");
+
+      // ✅ Redirect to /buyer/deals directly
+      setTimeout(() => {
+        router.push("/buyer/deals");
+      }, 2000);
+    } catch (error: any) {
+      console.error("Update error:", error);
+      setSubmitStatus("error");
+      setErrorMessage(
+        error.message || "An error occurred while updating your profile."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Helper to load states and cities for a country
+  const getStatesAndCities = (countryCode: string) => {
+    const states = State.getStatesOfCountry(countryCode);
+    return states.map((state) => ({
+      ...state,
+      cities: City.getCitiesOfState(countryCode, state.isoCode),
+    }));
+  };
+
+  // Render hierarchical geography selection
   const renderGeographySelection = () => {
-    const filteredData = filterGeographyData();
-    if (!filteredData) return <div>Loading geography data...</div>;
-
+    const allCountries = Country.getAllCountries();
     return (
       <div className="space-y-2 font-poppins">
-        {filteredData.continents.map((continent) => (
-          <div key={continent.id} className="border-b border-gray-100 pb-1">
+        {allCountries.map((country) => (
+          <div key={country.isoCode} className="border-b border-gray-100 pb-1">
             <div className="flex items-center">
-              <Checkbox
-                id={`continent-${continent.id}`}
-                checked={!!geoSelection.continents[continent.id]}
-                onCheckedChange={(checked) => {
-                  toggleContinent(continent);
+              <input
+                type="radio"
+                id={`geo-${country.isoCode}`}
+                name="geography"
+                checked={formData.targetCriteria.countries.includes(country.name)}
+                onChange={() => {
+                  setFormData((prev) => ({
+                    ...prev,
+                    targetCriteria: { ...prev.targetCriteria, countries: [country.name] },
+                  }));
                 }}
-                className="mr-2 border-[#d0d5dd]"
+                className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9]"
               />
               <div
                 className="flex items-center cursor-pointer flex-1"
-                onClick={() => toggleContinentExpansion(continent.id)}
+                onClick={() => setExpandedCountries((prev) => ({ ...prev, [country.isoCode]: !prev[country.isoCode] }))}
               >
-                {expandedContinents[continent.id] ? (
+                {expandedCountries[country.isoCode] ? (
                   <ChevronDown className="h-4 w-4 mr-1 text-gray-500" />
                 ) : (
                   <ChevronRight className="h-4 w-4 mr-1 text-gray-500" />
                 )}
-                <Label
-                  htmlFor={`continent-${continent.id}`}
-                  className="text-[#344054] cursor-pointer font-medium"
-                >
-                  {continent.name}
+                <Label htmlFor={`geo-${country.isoCode}`} className="text-[#344054] cursor-pointer font-medium">
+                  {country.name}
                 </Label>
               </div>
             </div>
-
-            {expandedContinents[continent.id] && (
+            {expandedCountries[country.isoCode] && (
               <div className="ml-6 mt-1 space-y-1">
-                {continent.regions.map((region) => (
-                  <div key={region.id} className="pl-2">
+                {getStatesAndCities(country.isoCode).map((state) => (
+                  <div key={state.isoCode} className="pl-2">
                     <div className="flex items-center">
-                      <Checkbox
-                        id={`region-${region.id}`}
-                        checked={!!geoSelection.regions[region.id]}
-                        onCheckedChange={(checked) => {
-                          toggleRegion(region, continent);
+                      <input
+                        type="radio"
+                        id={`geo-${country.isoCode}-${state.isoCode}`}
+                        name="geography"
+                        checked={formData.targetCriteria.countries.includes(`${country.name} > ${state.name}`)}
+                        onChange={() => {
+                          setFormData((prev) => ({
+                            ...prev,
+                            targetCriteria: { ...prev.targetCriteria, countries: [`${country.name} > ${state.name}`] },
+                          }));
                         }}
-                        className="mr-2 border-[#d0d5dd]"
+                        className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9]"
                       />
-                      {region.subRegions && region.subRegions.length > 0 ? (
-                        <div
-                          className="flex items-center cursor-pointer flex-1"
-                          onClick={() => toggleRegionExpansion(region.id)}
-                        >
-                          {expandedRegions[region.id] ? (
-                            <ChevronDown className="h-3 w-3 mr-1 text-gray-400" />
-                          ) : (
-                            <ChevronRight className="h-3 w-3 mr-1 text-gray-400" />
-                          )}
-                          <Label
-                            htmlFor={`region-${region.id}`}
-                            className="text-[#344054] cursor-pointer"
-                          >
-                            {region.name}
-                          </Label>
-                        </div>
-                      ) : (
-                        <Label
-                          htmlFor={`region-${region.id}`}
-                          className="text-[#344054] cursor-pointer"
-                        >
-                          {region.name}
+                      <div
+                        className="flex items-center cursor-pointer flex-1"
+                        onClick={() => setExpandedStates((prev) => ({ ...prev, [`${country.isoCode}-${state.isoCode}`]: !prev[`${country.isoCode}-${state.isoCode}`] }))}
+                      >
+                        {expandedStates[`${country.isoCode}-${state.isoCode}`] ? (
+                          <ChevronDown className="h-4 w-4 mr-1 text-gray-500" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4 mr-1 text-gray-500" />
+                        )}
+                        <Label htmlFor={`geo-${country.isoCode}-${state.isoCode}`} className="text-[#344054] cursor-pointer">
+                          {state.name}
                         </Label>
-                      )}
+                      </div>
                     </div>
-
-                    {region.subRegions && expandedRegions[region.id] && (
+                    {expandedStates[`${country.isoCode}-${state.isoCode}`] && state.cities.length > 0 && (
                       <div className="ml-6 mt-1 space-y-1">
-                        {region.subRegions.map((subRegion) => (
-                          <div key={subRegion.id} className="flex items-center">
-                            <Checkbox
-                              id={`subregion-${subRegion.id}`}
-                              checked={!!geoSelection.subRegions[subRegion.id]}
-                              onCheckedChange={(checked) => {
-                                toggleSubRegion(subRegion, region, continent);
-                              }}
-                              className="mr-2 border-[#d0d5dd]"
-                            />
-                            <Label
-                              htmlFor={`subregion-${subRegion.id}`}
-                              className="text-[#344054] cursor-pointer text-sm"
-                            >
-                              {subRegion.name}
-                            </Label>
+                        {state.cities.slice(0, 10).map((city, cityIndex) => (
+                          <div key={`city-${city.name}-${cityIndex}`} className="pl-4">
+                            <div className="flex items-center">
+                              <input
+                                type="radio"
+                                id={`geo-${country.isoCode}-${state.isoCode}-${city.name}`}
+                                name="geography"
+                                checked={formData.targetCriteria.countries.includes(`${country.name} > ${state.name} > ${city.name}`)}
+                                onChange={() => {
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    targetCriteria: { ...prev.targetCriteria, countries: [`${country.name} > ${state.name} > ${city.name}`] },
+                                  }));
+                                }}
+                                className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9]"
+                              />
+                              <Label htmlFor={`geo-${country.isoCode}-${state.isoCode}-${city.name}`} className="text-[#344054] cursor-pointer">
+                                {city.name}
+                              </Label>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -1618,6 +1598,10 @@ const handleSubmit = async (e: React.FormEvent) => {
     localStorage.removeItem("userId");
     router.push("/buyer/login");
   };
+
+  // Add expansion state for countries and states for the geography selector UI
+  const [expandedCountries, setExpandedCountries] = useState<Record<string, boolean>>({});
+  const [expandedStates, setExpandedStates] = useState<Record<string, boolean>>({});
 
   if (!isClient) {
     return <div>Loading...</div>;
@@ -2115,80 +2099,57 @@ const handleSubmit = async (e: React.FormEvent) => {
                     <Label className="text-[#667085] text-sm mb-1.5 block">
                       Geographies
                     </Label>
-                    <div className="border border-[#d0d5dd] rounded-md p-4 h-80 flex flex-col">
-                      <div className="relative mb-4">
-                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-[#667085]" />
-                        <div className="flex">
-                          <Input
-                            placeholder="Search countries..."
-                            className="pl-8 border-[#d0d5dd] rounded-r-none"
-                            value={countrySearchTerm}
-                            onChange={(e) =>
-                              setCountrySearchTerm(e.target.value)
-                            }
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter" && countrySearchTerm) {
-                                e.preventDefault();
-                                selectSearchedCountry(countrySearchTerm);
-                              }
-                            }}
-                          />
-                          <Button
-                            type="button"
-                            className="rounded-l-none"
-                            onClick={() =>
-                              countrySearchTerm &&
-                              selectSearchedCountry(countrySearchTerm)
-                            }
-                            disabled={!countrySearchTerm}
-                          >
-                            Select
-                          </Button>
-                        </div>
-                      </div>
-
-                      {formData.targetCriteria.countries.length > 0 && (
-                        <div className="mb-4">
-                          <div className="text-sm text-[#667085] mb-1">
-                            Selected Countries
-                          </div>
-                          <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
-                            {formData.targetCriteria.countries.map(
-                              (country, index) => (
-                                <span
-                                  key={`selected-country-${index}`}
-                                  className="bg-gray-100 text-[#344054] text-xs rounded-full px-2 py-0.5 flex items-center group"
+                    
+                    {/* Geography Selector Section */}
+                    {formData.targetCriteria.countries.length > 0 && (
+                      <div className="mb-4">
+                        <div className="text-sm text-[#667085] mb-1">Selected</div>
+                        <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
+                          {formData.targetCriteria.countries.map((country, index) => (
+                            <span
+                              key={`selected-country-${index}`}
+                              className="bg-gray-100 text-[#344054] text-xs rounded-full px-2 py-0.5 flex items-center group"
+                            >
+                              {country}
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    targetCriteria: {
+                                      ...prev.targetCriteria,
+                                      countries: [],
+                                    },
+                                  }))
+                                }
+                                className="ml-1 text-gray-400 hover:text-gray-600 focus:outline-none"
+                              >
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  className="h-3 w-3"
+                                  viewBox="0 0 20 20"
+                                  fill="currentColor"
                                 >
-                                  {country}
-                                  <button
-                                    type="button"
-                                    onClick={() => removeCountry(country)}
-                                    className="ml-1 text-gray-400 hover:text-gray-600 focus:outline-none"
-                                  >
-                                    <svg
-                                      xmlns="http://www.w3.org/2000/svg"
-                                      className="h-3 w-3"
-                                      viewBox="0 0 20 20"
-                                      fill="currentColor"
-                                    >
-                                      <path
-                                        fillRule="evenodd"
-                                        d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                                        clipRule="evenodd"
-                                      />
-                                    </svg>
-                                  </button>
-                                </span>
-                              )
-                            )}
-                          </div>
+                                  <path
+                                    fillRule="evenodd"
+                                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                    clipRule="evenodd"
+                                  />
+                                </svg>
+                              </button>
+                            </span>
+                          ))}
                         </div>
-                      )}
-
-                      <div className="flex-1 overflow-y-auto">
-                        {renderGeographySelection()}
                       </div>
-                    </div>
+                    )}
+                    <GeographySelector
+                      selectedCountries={formData.targetCriteria.countries}
+                      onChange={countries => setFormData(prev => ({
+                        ...prev,
+                        targetCriteria: { ...prev.targetCriteria, countries },
+                      }))}
+                    />
+                    
                   </div>
 
                   <div>
@@ -2662,8 +2623,6 @@ const handleSubmit = async (e: React.FormEvent) => {
                 </div>
               </div>
 
-
-
               {/* Description of Ideal Target(s) */}
               <div className="bg-white rounded-lg p-6 shadow-sm mb-6">
                 <h2 className="text-[#2f2b43] text-lg font-medium mb-4">
@@ -2714,9 +2673,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                     <Checkbox
                       id="doNotSendMarketedDeals"
                       className="mt-1 border-[#d0d5dd]"
-                      checked={
-                        formData.preferences.doNotSendMarketedDeals
-                      }
+                      checked={formData.preferences.doNotSendMarketedDeals}
                       onCheckedChange={(checked) =>
                         handleNestedChange(
                           "preferences",

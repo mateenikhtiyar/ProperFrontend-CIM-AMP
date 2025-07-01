@@ -1900,7 +1900,7 @@ const handleCheckboxChange = (
                   <Input
                     id="trailingEBITDA"
                     type="text"
-                    value={formData.trailingEBITDA ? formatNumberWithCommas(formData.trailingEBITDA) : ""}
+                    value={formData.trailingEBITDA !== undefined && formData.trailingEBITDA !== null ? formatNumberWithCommas(formData.trailingEBITDA) : ""}
                     onChange={(e) => {
                       const rawValue = e.target.value.replace(/,/g, "")
                       if (rawValue === "" || /^-?\d*$/.test(rawValue)) {
@@ -1921,7 +1921,7 @@ const handleCheckboxChange = (
                   <Input
                     id="revenueGrowth"
                     type="text"
-                    value={formData.revenueGrowth ? formatNumberWithCommas(formData.revenueGrowth) : ""}
+                    value={formData.revenueGrowth !== undefined && formData.revenueGrowth !== null ? formatNumberWithCommas(formData.revenueGrowth) : ""}
                     onChange={(e) => {
                       const rawValue = e.target.value.replace(/,/g, "")
                       if (rawValue === "" || /^-?\d*$/.test(rawValue)) {

@@ -1,314 +1,328 @@
-"use client";
+"use client"
 
-import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
-import Image from "next/image";
-import {
-  Eye,
-  Clock,
-  LogOut,
-  ArrowLeft,
-  User,
-  Users,
-  Clock3,
-  XCircle,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useAuth } from "@/contexts/auth-context";
-import SellerProtectedRoute from "@/components/seller/protected-route";
-import { Checkbox } from "@/components/ui/checkbox";
-import { toast } from "@/components/ui/use-toast";
-import { Toaster } from "@/components/ui/toaster";
+import { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import Link from "next/link"
+import Image from "next/image"
+import { Eye, Clock, LogOut, ArrowLeft, User, Users, Clock3, XCircle, X } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
+import { useAuth } from "@/contexts/auth-context"
+import SellerProtectedRoute from "@/components/seller/protected-route"
+import { Checkbox } from "@/components/ui/checkbox"
+import { toast } from "@/components/ui/use-toast"
 
 // Updated interfaces to match API structure
 interface SellerProfile {
-  _id: string;
-  fullName: string;
-  email: string;
-  companyName: string;
-  role: string;
-  profilePicture: string | null;
+  _id: string
+  fullName: string
+  email: string
+  companyName: string
+  role: string
+  profilePicture: string | null
 }
 
 interface DealDocument {
-  filename: string;
-  originalName: string;
-  path: string;
-  size: number;
-  mimetype: string;
-  uploadedAt: string;
+  filename: string
+  originalName: string
+  path: string
+  size: number
+  mimetype: string
+  uploadedAt: string
 }
 
 interface InvitationStatus {
   [buyerId: string]: {
-    invitedAt: string;
-    respondedAt?: string;
-    response?: string;
-    notes?: string;
-    _id: string;
-  };
+    invitedAt: string
+    respondedAt?: string
+    response?: string
+    notes?: string
+    _id: string
+  }
 }
 
 interface Deal {
-  _id: string;
-  id?: string;
-  title: string;
-  companyDescription: string;
-  dealType: string;
-  status: string;
-  visibility?: string;
-  industrySector: string;
-  geographySelection: string;
-
-  employeeCount?: number;
+  _id: string
+  id?: string
+  title: string
+  companyDescription: string
+  dealType: string
+  status: string
+  visibility?: string
+  industrySector: string
+  geographySelection: string
+  employeeCount?: number
   financialDetails: {
-    trailingRevenueCurrency?: string;
-    trailingRevenueAmount?: number;
-    trailingEBITDACurrency?: string;
-    trailingEBITDAAmount?: number;
-    avgRevenueGrowth?: number;
-    netIncome?: number;
-    askingPrice?: number;
-    finalSalePrice?: number;
-  };
+    trailingRevenueCurrency?: string
+    trailingRevenueAmount?: number
+    trailingEBITDACurrency?: string
+    trailingEBITDAAmount?: number
+    avgRevenueGrowth?: number
+    netIncome?: number
+    askingPrice?: number
+    finalSalePrice?: number
+  }
   businessModel: {
-    recurringRevenue?: boolean;
-    projectBased?: boolean;
-    assetLight?: boolean;
-    assetHeavy?: boolean;
-  };
-  managementPreferences: {
-    retiringDivesting?: boolean;
-    staffStay?: boolean;
-  };
+    recurringRevenue?: boolean
+    projectBased?: boolean
+    assetLight?: boolean
+    assetHeavy?: boolean
+  }
+
   buyerFit: {
-    capitalAvailability?: string;
-    minPriorAcquisitions?: number;
-    minTransactionSize?: number;
-  };
-  targetedBuyers: string[];
-  interestedBuyers: string[];
-  tags: string[];
-  isPublic: boolean;
-  isFeatured: boolean;
-  stakePercentage?: number;
-  documents: DealDocument[];
+    capitalAvailability?: string
+    minPriorAcquisitions?: number
+    minTransactionSize?: number
+  }
+  targetedBuyers: string[]
+  interestedBuyers: string[]
+  tags: string[]
+  isPublic: boolean
+  isFeatured: boolean
+  stakePercentage?: number
+  documents: DealDocument[]
   timeline: {
-    createdAt: string;
-    updatedAt: string;
-    publishedAt?: string;
-    completedAt?: string;
-  };
-  invitationStatus?: InvitationStatus;
+    createdAt: string
+    updatedAt: string
+    publishedAt?: string
+    completedAt?: string
+  }
+  invitationStatus?: InvitationStatus
 }
 
 interface Buyer {
-  _id: string;
-  buyerId: string;
-  buyerName: string;
-  buyerEmail: string;
-  companyName: string;
-  status: string;
-  invitedAt: string;
-  lastActivity?: string;
+  _id: string
+  buyerId: string
+  buyerName: string
+  buyerEmail: string
+  companyName: string
+  companyProfileId?: string
+  status: string
+  invitedAt: string
+  lastActivity?: string
+}
+
+interface CompanyProfile {
+  _id: string
+  companyName: string
+  companyType: string
+  description?: string
+  capitalEntity?: string
+  dealsCompletedLast5Years: number
+  averageDealSize: number
+  preferences: {
+    stopSendingDeals: boolean
+    dontShowMyDeals: boolean
+    dontSendDealsToMyCompetitors: boolean
+    allowBuyerLikeDeals: boolean
+  }
+  targetCriteria: {
+    countries: string[]
+    industrySectors: string[]
+    revenueMin?: number
+    revenueMax?: number
+    ebitdaMin?: number
+    ebitdaMax?: number
+    transactionSizeMin?: number
+    transactionSizeMax?: number
+    revenueGrowth?: number
+    minStakePercent?: number
+    minYearsInBusiness?: number
+    preferredBusinessModels: string[]
+    description?: string
+  }
 }
 
 interface StatusSummary {
-  deal: Deal;
+  deal: Deal
   buyersByStatus: {
-    active: Buyer[];
-    pending: Buyer[];
-    rejected: Buyer[];
-  };
+    active: Buyer[]
+    pending: Buyer[]
+    rejected: Buyer[]
+  }
   summary: {
-    totalTargeted: number;
-    totalActive: number;
-    totalPending: number;
-    totalRejected: number;
-  };
+    totalTargeted: number
+    totalActive: number
+    totalPending: number
+    totalRejected: number
+  }
 }
 
 interface MatchedBuyer {
-  _id: string;
-  buyerId: string;
-  buyerName: string;
-  buyerEmail: string;
-  companyName: string;
-  companyType: string;
-  description?: string;
-  capitalEntity?: string      // Add this
-  dealsCompletedLast5Years: number  // Add this
-  averageDealSize: number 
+  _id: string
+  buyerId: string
+  buyerName: string
+  buyerEmail: string
+  companyName: string
+  companyType: string
+  description?: string
+  capitalEntity?: string
+  dealsCompletedLast5Years: number
+  averageDealSize: number
   preferences: {
-    stopSendingDeals: boolean;
-    doNotSendMarketedDeals: boolean;
-    allowBuyerLikeDeals: boolean;
-  };
+    stopSendingDeals: boolean
+    doNotSendMarketedDeals: boolean
+    allowBuyerLikeDeals: boolean
+  }
   targetCriteria: {
-    countries: string[];
-    industrySectors: string[];
-    revenueMin?: number;
-    revenueMax?: number;
-    ebitdaMin?: number;
-    ebitdaMax?: number;
-    transactionSizeMin?: number;
-    transactionSizeMax?: number;
-    revenueGrowth?: number;
-    minStakePercent?: number;
-    minYearsInBusiness?: number;
-    preferredBusinessModels: string[];
-    managementTeamPreference: string[];
-    description?: string;
-  };
-  totalMatchScore: number;
-  matchPercentage: number;
+    countries: string[]
+    industrySectors: string[]
+    revenueMin?: number
+    revenueMax?: number
+    ebitdaMin?: number
+    ebitdaMax?: number
+    transactionSizeMin?: number
+    transactionSizeMax?: number
+    revenueGrowth?: number
+    minStakePercent?: number
+    minYearsInBusiness?: number
+    preferredBusinessModels: string[]
+    description?: string
+  }
+  totalMatchScore: number
+  matchPercentage: number
   matchDetails: {
-    industryMatch: boolean;
-    geographyMatch: boolean;
-    revenueMatch: boolean;
-    ebitdaMatch: boolean;
-    transactionSizeMatch: boolean;
-    businessModelMatch: boolean;
-    managementMatch: boolean;
-    yearsMatch: boolean;
-  };
+    industryMatch: boolean
+    geographyMatch: boolean
+    revenueMatch: boolean
+    ebitdaMatch: boolean
+    transactionSizeMatch: boolean
+    businessModelMatch: boolean
+    yearsMatch: boolean
+  }
 }
 
 export default function DealDetailsPage() {
-  const [deal, setDeal] = useState<Deal | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [statusSummary, setStatusSummary] = useState<StatusSummary | null>(
-    null
-  );
-  const [userProfile, setUserProfile] = useState<any>(null);
-  const [sellerProfile, setSellerProfile] = useState<SellerProfile | null>(
-    null
-  );
-  const [matchedBuyers, setMatchedBuyers] = useState<MatchedBuyer[]>([]);
-  const [selectedBuyers, setSelectedBuyers] = useState<string[]>([]);
-  const [loadingBuyers, setLoadingBuyers] = useState(false);
-  const [sending, setSending] = useState(false);
-  const [showBuyersForNewDeal, setShowBuyersForNewDeal] = useState(false);
-  const [selectAllDropdownOpen, setSelectAllDropdownOpen] = useState(false);
+  const [deal, setDeal] = useState<Deal | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [statusSummary, setStatusSummary] = useState<StatusSummary | null>(null)
+  const [userProfile, setUserProfile] = useState<any>(null)
+  const [sellerProfile, setSellerProfile] = useState<SellerProfile | null>(null)
+  const [matchedBuyers, setMatchedBuyers] = useState<MatchedBuyer[]>([])
+  const [selectedBuyers, setSelectedBuyers] = useState<string[]>([])
+  const [loadingBuyers, setLoadingBuyers] = useState(false)
+  const [sending, setSending] = useState(false)
+  const [selectedBuyer, setSelectedBuyer] = useState<Buyer | null>(null)
+  const [selectedCompanyProfile, setSelectedCompanyProfile] = useState<CompanyProfile | null>(null)
+  const [isPopupOpen, setIsPopupOpen] = useState(false)
+  const [loadingCompanyProfile, setLoadingCompanyProfile] = useState(false)
+  const [showBuyersForNewDeal, setShowBuyersForNewDeal] = useState(false)
+  const [selectAllDropdownOpen, setSelectAllDropdownOpen] = useState(false)
 
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const { logout } = useAuth();
-  const dealId = searchParams.get("id");
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const { logout } = useAuth()
+  const dealId = searchParams.get("id")
 
   // Fetch seller profile
   useEffect(() => {
     const fetchSellerProfile = async () => {
       try {
-        const token = localStorage.getItem("token");
-        const apiUrl =
-          localStorage.getItem("apiUrl") || "http://localhost:3001";
-
+        const token = localStorage.getItem("token")
+        const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
         const response = await fetch(`${apiUrl}/sellers/profile`, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-        });
-
+        })
         if (response.ok) {
-          const data = await response.json();
-          setSellerProfile(data);
+          const data = await response.json()
+          setSellerProfile(data)
           setUserProfile({
             fullName: data.fullName,
             location: data.companyName,
             phone: data.email,
             profilePicture: data.profilePicture,
-          });
+          })
         }
       } catch (error) {
-        console.error("Error fetching seller profile:", error);
+        console.error("Error fetching seller profile:", error)
       }
-    };
-    fetchSellerProfile();
-  }, []);
+    }
+    fetchSellerProfile()
+  }, [])
 
   // Fetch deal details
   useEffect(() => {
     if (!dealId) {
-      router.push("/seller/dashboard");
-      return;
+      router.push("/seller/dashboard")
+      return
     }
-
     const fetchDealDetails = async () => {
       try {
-        setLoading(true);
-        const token = localStorage.getItem("token");
-        const apiUrl =
-          localStorage.getItem("apiUrl") || "http://localhost:3001";
-
+        setLoading(true)
+        const token = localStorage.getItem("token")
+        const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
         if (!token) {
-          router.push("/seller/login?error=no_token");
-          return;
+          router.push("/seller/login?error=no_token")
+          return
         }
-
         const response = await fetch(`${apiUrl}/deals/${dealId}`, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-        });
-
+        })
         if (!response.ok) {
-          throw new Error(
-            `API Error: ${response.status} ${response.statusText}`
-          );
+          throw new Error(`API Error: ${response.status} ${response.statusText}`)
         }
-
-        const data = await response.json();
-        setDeal(data);
-        setError(null);
+        const data = await response.json()
+        setDeal(data)
+        setError(null)
       } catch (err: any) {
-        console.error("Error fetching deal details:", err);
-        setError(err.message || "Failed to load deal details");
-
-        if (
-          err.message.includes("Authentication") ||
-          err.message.includes("Forbidden")
-        ) {
-          router.push("/seller/login?error=auth_failed");
+        console.error("Error fetching deal details:", err)
+        setError(err.message || "Failed to load deal details")
+        if (err.message.includes("Authentication") || err.message.includes("Forbidden")) {
+          router.push("/seller/login?error=auth_failed")
         }
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
+    }
+    fetchDealDetails()
+  }, [dealId, router])
 
-    fetchDealDetails();
-  }, [dealId, router]);
+  // Fetch company profile
+  const fetchCompanyProfile = async (companyProfileId: string) => {
+    try {
+      setLoadingCompanyProfile(true)
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+      const response = await fetch(`${apiUrl}/company-profiles/public/${companyProfileId}`)
+
+      if (response.ok) {
+        const companyData = await response.json()
+        setSelectedCompanyProfile(companyData)
+      } else {
+        console.error("Failed to fetch company profile:", response.status)
+        setSelectedCompanyProfile(null)
+      }
+    } catch (error) {
+      console.error("Error fetching company profile:", error)
+      setSelectedCompanyProfile(null)
+    } finally {
+      setLoadingCompanyProfile(false)
+    }
+  }
 
   // Fetch status summary
   const fetchStatusSummary = async () => {
     try {
-      setLoadingBuyers(true);
-      const token = localStorage.getItem("token");
-      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
-
+      setLoadingBuyers(true)
+      const token = localStorage.getItem("token")
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
       const response = await fetch(`${apiUrl}/deals/${dealId}/status-summary`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-      });
-
+      })
       if (response.ok) {
-        const data = await response.json();
-
-        // Process invitation status to create buyer list
-        const processedBuyers: Buyer[] = [];
-
+        const data = await response.json()
+        const processedBuyers: Buyer[] = []
         if (data.deal?.invitationStatus) {
-          // Get all buyer IDs
-          const buyerIds = Object.keys(data.deal.invitationStatus);
-
-          // Fetch buyer details for each buyer ID
+          const buyerIds = Object.keys(data.deal.invitationStatus)
           const buyerDetailsPromises = buyerIds.map(async (buyerId) => {
             try {
               const buyerResponse = await fetch(`${apiUrl}/buyers/${buyerId}`, {
@@ -316,67 +330,41 @@ export default function DealDetailsPage() {
                   Authorization: `Bearer ${token}`,
                   "Content-Type": "application/json",
                 },
-              });
-
+              })
               if (buyerResponse.ok) {
-                return await buyerResponse.json();
+                return await buyerResponse.json()
               } else {
-                console.error(
-                  `Failed to fetch buyer ${buyerId}:`,
-                  buyerResponse.status
-                );
-                return null;
+                console.error(`Failed to fetch buyer ${buyerId}:`, buyerResponse.status)
+                return null
               }
             } catch (error) {
-              console.error(`Error fetching buyer ${buyerId}:`, error);
-              return null;
+              console.error(`Error fetching buyer ${buyerId}:`, error)
+              return null
             }
-          });
-
-          // Wait for all buyer details to be fetched
-          const buyerDetails = await Promise.all(buyerDetailsPromises);
-
-          // Combine invitation status with buyer details
+          })
+          const buyerDetails = await Promise.all(buyerDetailsPromises)
           for (let i = 0; i < buyerIds.length; i++) {
-            const buyerId = buyerIds[i];
-            const invitation = data.deal.invitationStatus[buyerId];
-            const buyerInfo = buyerDetails[i];
-
+            const buyerId = buyerIds[i]
+            const invitation = data.deal.invitationStatus[buyerId]
+            const buyerInfo = buyerDetails[i]
             processedBuyers.push({
               _id: buyerId,
               buyerId: buyerId,
-              buyerName:
-                buyerInfo?.fullName ||
-                buyerInfo?.name ||
-                `Buyer ${buyerId.slice(-4)}`,
+              buyerName: buyerInfo?.fullName || buyerInfo?.name || `Buyer ${buyerId.slice(-4)}`,
               buyerEmail: buyerInfo?.email || "Email not available",
-              companyName:
-                buyerInfo?.companyName ||
-                buyerInfo?.company ||
-                "Company not available",
+              companyName: buyerInfo?.companyName || buyerInfo?.company || "Company not available",
+              companyProfileId: buyerInfo?.companyProfileId,
               status: invitation.response || "pending",
               invitedAt: invitation.invitedAt,
               lastActivity: invitation.respondedAt,
-            });
+            })
           }
         }
-
-        // Categorize buyers by status
         const categorizedBuyers = {
-          active: processedBuyers.filter(
-            (buyer) =>
-              buyer.status === "accepted" || buyer.status === "interested"
-          ),
-          pending: processedBuyers.filter(
-            (buyer) => buyer.status === "pending" || !buyer.status
-          ),
-          rejected: processedBuyers.filter(
-            (buyer) =>
-              buyer.status === "rejected" || buyer.status === "declined"
-          ),
-        };
-
-        // Update the data structure with processed buyers
+          active: processedBuyers.filter((buyer) => buyer.status === "accepted" || buyer.status === "interested"),
+          pending: processedBuyers.filter((buyer) => buyer.status === "pending" || !buyer.status),
+          rejected: processedBuyers.filter((buyer) => buyer.status === "rejected" || buyer.status === "declined"),
+        }
         const updatedData = {
           ...data,
           buyersByStatus: categorizedBuyers,
@@ -386,226 +374,192 @@ export default function DealDetailsPage() {
             totalPending: categorizedBuyers.pending.length,
             totalRejected: categorizedBuyers.rejected.length,
           },
-        };
-
-        setStatusSummary(updatedData);
+        }
+        setStatusSummary(updatedData)
       } else {
-        console.error("Failed to fetch status summary:", response.status);
+        console.error("Failed to fetch status summary:", response.status)
       }
     } catch (error) {
-      console.error("Error fetching status summary:", error);
+      console.error("Error fetching status summary:", error)
     } finally {
-      setLoadingBuyers(false);
+      setLoadingBuyers(false)
     }
-  };
+  }
 
   useEffect(() => {
-    if (!dealId) return;
-
-    fetchStatusSummary();
-  }, [dealId]);
+    if (!dealId) return
+    fetchStatusSummary()
+  }, [dealId])
 
   // Check for newly created deal and fetch matching buyers
   useEffect(() => {
-    const isNewDeal = searchParams.get("newDeal");
-
+    const isNewDeal = searchParams.get("newDeal")
     if (isNewDeal === "true" && deal) {
-      setShowBuyersForNewDeal(true);
-
+      setShowBuyersForNewDeal(true)
       const fetchMatchingBuyers = async () => {
         try {
-          setLoadingBuyers(true);
-          const token = localStorage.getItem("token");
-          const apiUrl =
-            localStorage.getItem("apiUrl") || "http://localhost:3001";
-
-          const response = await fetch(
-            `${apiUrl}/deals/${dealId}/matching-buyers`,
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-                "Content-Type": "application/json",
-              },
-            }
-          );
-
+          setLoadingBuyers(true)
+          const token = localStorage.getItem("token")
+          const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+          const response = await fetch(`${apiUrl}/deals/${dealId}/matching-buyers`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          })
           if (response.ok) {
-            const buyers = await response.json();
-            setMatchedBuyers(buyers);
+            const buyers = await response.json()
+            setMatchedBuyers(buyers)
           } else {
-            setMatchedBuyers([]);
+            setMatchedBuyers([])
           }
         } catch (error) {
-          console.error("Error fetching matching buyers:", error);
-          setMatchedBuyers([]);
+          console.error("Error fetching matching buyers:", error)
+          setMatchedBuyers([])
         } finally {
-          setLoadingBuyers(false);
+          setLoadingBuyers(false)
         }
-      };
-
-      fetchMatchingBuyers();
+      }
+      fetchMatchingBuyers()
     }
-  }, [deal, dealId, searchParams]);
+  }, [deal, dealId, searchParams])
 
   const handleLogout = () => {
-    logout();
-    router.push("/seller/login");
-  };
+    logout()
+    router.push("/seller/login")
+  }
 
   // Helper functions
-  const getBusinessModel = (model: Deal["businessModel"]): string => {
-    const models = [];
-    if (model.recurringRevenue) models.push("Recurring Revenue");
-    if (model.projectBased) models.push("Project-Based");
-    if (model.assetLight) models.push("Asset Light");
-    if (model.assetHeavy) models.push("Asset Heavy");
-    return models.length > 0 ? models[0] : "Not specified";
-  };
+  const handleBuyerClick = async (buyer: Buyer) => {
+    setSelectedBuyer(buyer)
+    setIsPopupOpen(true)
+
+    // Fetch company profile if companyProfileId exists
+    if (buyer.companyProfileId) {
+      await fetchCompanyProfile(buyer.companyProfileId)
+    }
+  }
+
+  const closePopup = () => {
+    setIsPopupOpen(false)
+    setSelectedBuyer(null)
+    setSelectedCompanyProfile(null)
+  }
 
   const getProfilePictureUrl = (path: string | null) => {
-    if (!path) return null;
-    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
-    const formattedPath = path.replace(/\\/g, "/");
-    return `${apiUrl}/${
-      formattedPath.startsWith("/") ? formattedPath.slice(1) : formattedPath
-    }`;
-  };
-
+    if (!path) return null
+    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+    const formattedPath = path.replace(/\\/g, "/")
+    return `${apiUrl}/${formattedPath.startsWith("/") ? formattedPath.slice(1) : formattedPath}`
+  }
 
   const formatCurrency = (amount = 0, currency = "USD($)"): string => {
     const currencySymbol = currency.includes("USD")
       ? "$"
       : currency.includes("EUR")
-      ? "€"
-      : currency.includes("GBP")
-      ? "£"
-      : "$";
-    return `${currencySymbol}${amount.toLocaleString()}`;
-  };
+        ? "€"
+        : currency.includes("GBP")
+          ? "£"
+          : "$"
+    return `${currencySymbol}${amount.toLocaleString()}`
+  }
 
   const formatDate = (dateString: string): string => {
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
-    });
-  };
+    })
+  }
 
   const getStatusColor = (status: string): string => {
     if (!status) {
-      return "bg-gray-100 text-gray-700";
+      return "bg-gray-100 text-gray-700"
     }
-
     switch (status.toLowerCase()) {
       case "active":
       case "accepted":
       case "interested":
-        return "bg-green-100 text-green-700";
+        return "bg-green-100 text-green-700"
       case "pending":
       case "invited":
       case "viewed":
-        return "bg-blue-100 text-blue-700";
+        return "bg-blue-100 text-blue-700"
       case "rejected":
       case "passed":
-        return "bg-red-100 text-red-700";
+        return "bg-red-100 text-red-700"
       default:
-        return "bg-gray-100 text-gray-700";
+        return "bg-gray-100 text-gray-700"
     }
-  };
-
-  const downloadDocument = (doc: DealDocument) => {
-    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
-    const link = document.createElement("a");
-    link.href = `${apiUrl}/uploads/deal-documents/${doc.filename}`;
-    link.download = doc.originalName;
-    link.target = "_blank";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+  }
 
   const toggleBuyerSelection = (buyerId: string) => {
     setSelectedBuyers((prev) => {
-      const newSelection = prev.includes(buyerId)
-        ? prev.filter((id) => id !== buyerId)
-        : [...prev, buyerId];
-      return newSelection;
-    });
-  };
+      const newSelection = prev.includes(buyerId) ? prev.filter((id) => id !== buyerId) : [...prev, buyerId]
+      return newSelection
+    })
+  }
 
   const selectAllBuyers = () => {
-    const allBuyerIds = matchedBuyers.map((buyer) => buyer._id);
-    setSelectedBuyers(allBuyerIds);
-    setSelectAllDropdownOpen(false);
-  };
+    const allBuyerIds = matchedBuyers.map((buyer) => buyer._id)
+    setSelectedBuyers(allBuyerIds)
+    setSelectAllDropdownOpen(false)
+  }
 
   const deselectAllBuyers = () => {
-    setSelectedBuyers([]);
-    setSelectAllDropdownOpen(false);
-  };
+    setSelectedBuyers([])
+    setSelectAllDropdownOpen(false)
+  }
 
   const handleSendInvite = async (buyerIds?: string[]) => {
-    const targetBuyers = buyerIds || selectedBuyers;
-
+    const targetBuyers = buyerIds || selectedBuyers
     if (targetBuyers.length === 0) {
       toast({
         title: "No buyers selected",
         description: "Please select at least one buyer to send an invite",
         variant: "destructive",
-      });
-      return;
+      })
+      return
     }
-
     if (!dealId) {
       toast({
         title: "No deal available",
         description: "No deal ID found to send invites for.",
         variant: "destructive",
-      });
-      return;
+      })
+      return
     }
-
     try {
-      setSending(true);
-      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
-      const token = localStorage.getItem("token");
-
+      setSending(true)
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+      const token = localStorage.getItem("token")
       if (!token) {
         toast({
           title: "Authentication required",
           description: "Please log in again",
           variant: "destructive",
-        });
-        router.push("/seller/login");
-        return;
+        })
+        router.push("/seller/login")
+        return
       }
-
-      // Extract the correct buyer IDs from the matched buyers data
       const actualBuyerIds = targetBuyers
         .map((selectedProfileId) => {
-          const buyerProfile = matchedBuyers.find(
-            (b) => b._id === selectedProfileId
-          );
-
+          const buyerProfile = matchedBuyers.find((b) => b._id === selectedProfileId)
           if (!buyerProfile || !buyerProfile.buyerId) {
-            return null;
+            return null
           }
-
-          return buyerProfile.buyerId;
+          return buyerProfile.buyerId
         })
-        .filter(Boolean);
-
+        .filter(Boolean)
       if (actualBuyerIds.length === 0) {
         toast({
           title: "Error",
           description: "No valid buyer IDs found. Please try again.",
           variant: "destructive",
-        });
-        return;
+        })
+        return
       }
-
-      const requestBody = { buyerIds: actualBuyerIds };
-
+      const requestBody = { buyerIds: actualBuyerIds }
       const response = await fetch(`${apiUrl}/deals/${dealId}/target-buyers`, {
         method: "POST",
         headers: {
@@ -613,90 +567,65 @@ export default function DealDetailsPage() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(requestBody),
-      });
-
+      })
       if (!response.ok) {
-        const errorText = await response.text();
-        let errorData;
+        const errorText = await response.text()
+        let errorData
         try {
-          errorData = JSON.parse(errorText);
+          errorData = JSON.parse(errorText)
         } catch {
-          errorData = { message: errorText };
+          errorData = { message: errorText }
         }
-        throw new Error(
-          errorData.message ||
-            `API Error: ${response.status} ${response.statusText}`
-        );
+        throw new Error(errorData.message || `API Error: ${response.status} ${response.statusText}`)
       }
-
-      const result = await response.json();
-
+      const result = await response.json()
       toast({
         title: "Invites sent successfully",
         description: `Sent invites to ${actualBuyerIds.length} buyer(s)`,
-      });
-
-      // Hide buyers section after sending invites
-      setShowBuyersForNewDeal(false);
-
-      // Clear selected buyers
-      setSelectedBuyers([]);
-
-      // Refresh the status summary
-      fetchStatusSummary();
+      })
+      setShowBuyersForNewDeal(false)
+      setSelectedBuyers([])
+      fetchStatusSummary()
     } catch (error: any) {
-      console.error("Error sending invites:", error);
+      console.error("Error sending invites:", error)
       toast({
         title: "Error sending invites",
-        description:
-          error.message || "Failed to send invites. Please try again.",
+        description: error.message || "Failed to send invites. Please try again.",
         variant: "destructive",
-      });
+      })
     } finally {
-      setSending(false);
+      setSending(false)
     }
-  };
-
-  const handleSingleInvite = async (buyerId: string) => {
-    await handleSendInvite([buyerId]);
-  };
+  }
 
   const handleInviteBuyersClick = async () => {
-    setShowBuyersForNewDeal(true);
-
+    setShowBuyersForNewDeal(true)
     const fetchMatchingBuyers = async () => {
       try {
-        setLoadingBuyers(true);
-        const token = localStorage.getItem("token");
-        const apiUrl =
-          localStorage.getItem("apiUrl") || "http://localhost:3001";
-
-        const response = await fetch(
-          `${apiUrl}/deals/${dealId}/matching-buyers`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
+        setLoadingBuyers(true)
+        const token = localStorage.getItem("token")
+        const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+        const response = await fetch(`${apiUrl}/deals/${dealId}/matching-buyers`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        })
         if (response.ok) {
-          const buyers = await response.json();
-          setMatchedBuyers(buyers);
+          const buyers = await response.json()
+          setMatchedBuyers(buyers)
         } else {
-          setMatchedBuyers([]);
+          setMatchedBuyers([])
         }
       } catch (error) {
-        console.error("Error fetching matching buyers:", error);
-        setMatchedBuyers([]);
+        console.error("Error fetching matching buyers:", error)
+        setMatchedBuyers([])
       } finally {
-        setLoadingBuyers(false);
+        setLoadingBuyers(false)
       }
-    };
-
-    await fetchMatchingBuyers();
-  };
+    }
+    await fetchMatchingBuyers()
+  }
 
   return (
     <SellerProtectedRoute>
@@ -705,28 +634,16 @@ export default function DealDetailsPage() {
         <div className="w-64 bg-white border-r border-gray-200 p-6 flex flex-col">
           <div className="mb-8">
             <Link href="/seller/dashboard">
-              <Image
-                src="/logo.svg"
-                alt="CIM Amplify Logo"
-                width={150}
-                height={50}
-                className="h-auto"
-              />
+              <Image src="/logo.svg" alt="CIM Amplify Logo" width={150} height={50} className="h-auto" />
             </Link>
           </div>
-
           <nav className="flex-1 space-y-6">
             <Button
               variant="secondary"
               className="w-full justify-start gap-3 font-normal bg-teal-100 text-teal-700 hover:bg-teal-200"
               onClick={() => router.push("/seller/dashboard")}
             >
-              <svg
-                className="h-5 w-5"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
+              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path
                   d="M16.5 6L12 1.5L7.5 6M3.75 8.25H20.25M5.25 8.25V19.5C5.25 19.9142 5.58579 20.25 6 20.25H18C18.4142 20.25 18.75 19.9142 18.75 19.5V8.25"
                   stroke="currentColor"
@@ -737,7 +654,6 @@ export default function DealDetailsPage() {
               </svg>
               <span>My Deals</span>
             </Button>
-
             <Button
               variant="ghost"
               className="w-full justify-start gap-3 font-normal"
@@ -746,7 +662,6 @@ export default function DealDetailsPage() {
               <Eye className="h-5 w-5" />
               <span>View Profile</span>
             </Button>
-
             <Button
               variant="ghost"
               className="w-full justify-start gap-3 font-normal"
@@ -755,7 +670,6 @@ export default function DealDetailsPage() {
               <Clock className="h-5 w-5" />
               <span>Off Market</span>
             </Button>
-
             <Button
               variant="ghost"
               className="w-full justify-start gap-3 font-normal text-red-600 hover:text-red-700 hover:bg-red-50 mt-auto"
@@ -772,39 +686,25 @@ export default function DealDetailsPage() {
           {/* Header */}
           <header className="bg-white border-b border-gray-200 p-6 flex justify-between items-center">
             <div className="flex items-center">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="mr-4"
-                onClick={() => router.push("/seller/dashboard")}
-              >
+              <Button variant="ghost" size="icon" className="mr-4" onClick={() => router.push("/seller/dashboard")}>
                 <ArrowLeft className="h-5 w-5" />
               </Button>
               <h1 className="text-2xl font-bold text-gray-800">
-                {showBuyersForNewDeal
-                  ? "Choose Buyers"
-                  : "Buyer Status Summary"}
+                {showBuyersForNewDeal ? "Choose Buyers" : "Buyer Status Summary"}
               </h1>
             </div>
-
             <div className="flex items-center gap-3">
               <div className="text-right">
-                <div className="font-medium">
-                  {userProfile?.fullName || sellerProfile?.fullName || "User"}
-                </div>
+                <div className="font-medium">{userProfile?.fullName || sellerProfile?.fullName || "User"}</div>
               </div>
               <div className="relative h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center text-white font-medium overflow-hidden">
                 {sellerProfile?.profilePicture ? (
                   <img
-                    src={
-                      getProfilePictureUrl(sellerProfile.profilePicture) ||
-                      "/placeholder.svg"
-                    }
+                    src={getProfilePictureUrl(sellerProfile.profilePicture) || "/placeholder.svg"}
                     alt={sellerProfile.fullName}
                     className="h-full w-full object-cover"
                     onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).src =
-                        "/placeholder.svg";
+                      ;(e.currentTarget as HTMLImageElement).src = "/placeholder.svg"
                     }}
                   />
                 ) : (
@@ -828,8 +728,7 @@ export default function DealDetailsPage() {
                 <div className="bg-white rounded-lg shadow p-6 mb-6">
                   <div className="flex justify-between items-center mb-6 space-x-4">
                     <h2 className="text-lg font-medium">
-                      Your deal has been matched to the following buyers. Please
-                      pick the buyers you wish to engage
+                      Your deal has been matched to the following buyers. Please pick the buyers you wish to engage
                     </h2>
                     <div className="flex items-center space-x-4">
                       <div className="space-x-4 flex">
@@ -839,29 +738,17 @@ export default function DealDetailsPage() {
                           onClick={() => handleSendInvite()}
                           disabled={selectedBuyers.length === 0 || sending}
                         >
-                          {sending
-                            ? "Sending..."
-                            : `Send Invite${
-                                selectedBuyers.length > 1 ? "s" : ""
-                              }`}
-                          {selectedBuyers.length > 0 &&
-                            ` (${selectedBuyers.length})`}
+                          {sending ? "Sending..." : `Send Invite${selectedBuyers.length > 1 ? "s" : ""}`}
+                          {selectedBuyers.length > 0 && ` (${selectedBuyers.length})`}
                         </Button>
                         <div className="relative">
                           <Button
                             variant="outline"
-                            className="flex items-center"
-                            onClick={() =>
-                              setSelectAllDropdownOpen(!selectAllDropdownOpen)
-                            }
+                            className="flex items-center bg-transparent"
+                            onClick={() => setSelectAllDropdownOpen(!selectAllDropdownOpen)}
                           >
                             Select All{" "}
-                            <svg
-                              className="ml-2 h-4 w-4"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
+                            <svg className="ml-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
@@ -892,29 +779,20 @@ export default function DealDetailsPage() {
                       </div>
                     </div>
                   </div>
-
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {matchedBuyers.map((buyer) => (
-                      <div
-                        key={buyer._id}
-                        className="border border-gray-200 rounded-lg overflow-hidden"
-                      >
+                      <div key={buyer._id} className="border border-gray-200 rounded-lg overflow-hidden">
                         <div className="p-4 flex items-start">
                           <Checkbox
                             id={`buyer-${buyer._id}`}
                             checked={selectedBuyers.includes(buyer._id)}
-                            onCheckedChange={() =>
-                              toggleBuyerSelection(buyer._id)
-                            }
+                            onCheckedChange={() => toggleBuyerSelection(buyer._id)}
                             className="mt-1 mr-3"
                           />
                           <div className="flex-1">
                             <div className="flex justify-between items-start mb-4">
-                              <h3 className="text-lg font-medium text-teal-500">
-                                {buyer.companyName || "Anonymous"}
-                              </h3>
+                              <h3 className="text-lg font-medium text-teal-500">{buyer.companyName || "Anonymous"}</h3>
                             </div>
-
                             <div className="mb-6">
                               <h4 className="font-medium mb-2">Overview</h4>
                               <div className="space-y-1 text-sm">
@@ -928,76 +806,74 @@ export default function DealDetailsPage() {
                                 </div>
                               </div>
                             </div>
-
                             <div className="mb-6">
                               <h4 className="font-medium mb-2">Target Criteria</h4>
                               <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
                                 <div>
-                                  <span className="text-gray-500">Revenue Range: </span>
-                                  ${buyer.targetCriteria?.revenueMin?.toLocaleString() ?? 'N/A'} - ${buyer.targetCriteria?.revenueMax?.toLocaleString() ?? 'N/A'}
+                                  <span className="text-gray-500">Revenue Range: </span>$
+                                  {buyer.targetCriteria?.revenueMin?.toLocaleString() ?? "N/A"} - $
+                                  {buyer.targetCriteria?.revenueMax?.toLocaleString() ?? "N/A"}
                                 </div>
                                 <div>
-                                  <span className="text-gray-500">EBITDA Range: </span>
-                                  ${buyer.targetCriteria?.ebitdaMin?.toLocaleString() ?? 'N/A'} - ${buyer.targetCriteria?.ebitdaMax?.toLocaleString() ?? 'N/A'}
+                                  <span className="text-gray-500">EBITDA Range: </span>$
+                                  {buyer.targetCriteria?.ebitdaMin?.toLocaleString() ?? "N/A"} - $
+                                  {buyer.targetCriteria?.ebitdaMax?.toLocaleString() ?? "N/A"}
                                 </div>
                                 <div>
-                                  <span className="text-gray-500">Transaction Size: </span>
-                                  ${buyer.targetCriteria?.transactionSizeMin?.toLocaleString() ?? 'N/A'} - ${buyer.targetCriteria?.transactionSizeMax?.toLocaleString() ?? 'N/A'}
+                                  <span className="text-gray-500">Transaction Size: </span>$
+                                  {buyer.targetCriteria?.transactionSizeMin?.toLocaleString() ?? "N/A"} - $
+                                  {buyer.targetCriteria?.transactionSizeMax?.toLocaleString() ?? "N/A"}
                                 </div>
                                 <div>
                                   <span className="text-gray-500">Revenue Growth: </span>
-                                  {buyer.targetCriteria?.revenueGrowth ?? 'N/A'}%
+                                  {buyer.targetCriteria?.revenueGrowth ?? "N/A"}%
                                 </div>
                                 <div>
                                   <span className="text-gray-500">Min Years in Business: </span>
-                                  {buyer.targetCriteria?.minYearsInBusiness ?? 'N/A'}
+                                  {buyer.targetCriteria?.minYearsInBusiness ?? "N/A"}
                                 </div>
                                 <div className="col-span-2">
                                   <span className="text-gray-500">Description of ideal targets: </span>
-                                  {buyer.targetCriteria?.description || 'Not provided'}
+                                  {buyer.targetCriteria?.description || "Not provided"}
                                 </div>
-                                {/* --- Additional Fields --- */}
                                 <div>
                                   <span className="text-gray-500">Company Type: </span>
-                                  {buyer.companyType || 'N/A'}
+                                  {buyer.companyType || "N/A"}
                                 </div>
                                 <div>
                                   <span className="text-gray-500">Capital Availability: </span>
-                                  {buyer.capitalEntity || 'N/A'}
+                                  {buyer.capitalEntity || "N/A"}
                                 </div>
                                 <div>
                                   <span className="text-gray-500">Deals Completed (5 yrs): </span>
-                                  {buyer.dealsCompletedLast5Years !== undefined && buyer.dealsCompletedLast5Years !== null ? buyer.dealsCompletedLast5Years : 'N/A'}
+                                  {buyer.dealsCompletedLast5Years !== undefined &&
+                                  buyer.dealsCompletedLast5Years !== null
+                                    ? buyer.dealsCompletedLast5Years
+                                    : "N/A"}
                                 </div>
                                 <div>
                                   <span className="text-gray-500">Avg Transaction Value: </span>
-                                  {buyer.averageDealSize !== undefined && buyer.averageDealSize !== null ? `$${buyer.averageDealSize.toLocaleString()}` : '$N/A'}
+                                  {buyer.averageDealSize !== undefined && buyer.averageDealSize !== null
+                                    ? `$${buyer.averageDealSize.toLocaleString()}`
+                                    : "$N/A"}
                                 </div>
                                 <div>
                                   <span className="text-gray-500">3-Yr Avg Revenue Growth: </span>
-                                  {buyer.targetCriteria?.revenueGrowth !== undefined && buyer.targetCriteria?.revenueGrowth !== null ? `${buyer.targetCriteria.revenueGrowth}%` : 'N/A'}
+                                  {buyer.targetCriteria?.revenueGrowth !== undefined &&
+                                  buyer.targetCriteria?.revenueGrowth !== null
+                                    ? `${buyer.targetCriteria.revenueGrowth}%`
+                                    : "N/A"}
                                 </div>
                                 <div className="col-span-2">
                                   <span className="text-gray-500">Preferred Business Models: </span>
                                   {buyer.targetCriteria?.preferredBusinessModels?.length
-                                    ? buyer.targetCriteria.preferredBusinessModels.join(', ')
-                                    : 'Not specified'}
+                                    ? buyer.targetCriteria.preferredBusinessModels.join(", ")
+                                    : "Not specified"}
                                 </div>
                               </div>
                             </div>
                           </div>
                         </div>
-
-                        {/* <div className="bg-gray-50 p-3 text-right">
-                          <Button
-                            variant="default"
-                            className="bg-teal-500 hover:bg-teal-600"
-                            onClick={() => handleSingleInvite(buyer._id)}
-                            disabled={sending}
-                          >
-                            {sending ? "Sending..." : "Send Invite"}
-                          </Button>
-                        </div> */}
                       </div>
                     ))}
                   </div>
@@ -1032,24 +908,17 @@ export default function DealDetailsPage() {
               </div>
             ) : error ? (
               <div className="bg-white rounded-lg shadow p-6 text-center">
-                <div className="text-red-500 text-lg mb-2">
-                  Error loading deal details
-                </div>
+                <div className="text-red-500 text-lg mb-2">Error loading deal details</div>
                 <p className="text-gray-600 mb-4">{error}</p>
-                <Button onClick={() => router.push("/seller/dashboard")}>
-                  Back to Dashboard
-                </Button>
+                <Button onClick={() => router.push("/seller/dashboard")}>Back to Dashboard</Button>
               </div>
             ) : deal ? (
               <>
                 {/* Buyer Status Summary */}
                 <div className="bg-white rounded-lg shadow mb-6">
                   <div className="p-6 border-b border-gray-200">
-                    <h3 className="text-lg text-[#0D9488] font-medium">
-                      {deal.title}
-                    </h3>
+                    <h3 className="text-lg text-[#0D9488] font-medium">{deal.title}</h3>
                   </div>
-
                   <div className="p-6">
                     {loadingBuyers ? (
                       <div className="text-center py-8">
@@ -1061,133 +930,88 @@ export default function DealDetailsPage() {
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                           <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                             <div className="flex items-center justify-between mb-2">
-                              <span className="text-gray-500 text-sm">
-                                Total Targeted
-                              </span>
+                              <span className="text-gray-500 text-sm">Total Targeted</span>
                               <Users className="h-5 w-5 text-gray-400" />
                             </div>
-                            <div className="text-2xl font-semibold">
-                              {statusSummary.summary.totalTargeted}
-                            </div>
+                            <div className="text-2xl font-semibold">{statusSummary.summary.totalTargeted}</div>
                           </div>
                           <div className="bg-green-50 p-4 rounded-lg border border-green-200">
                             <div className="flex items-center justify-between mb-2">
-                              <span className="text-green-600 text-sm">
-                                Active
-                              </span>
+                              <span className="text-green-600 text-sm">Active</span>
                               <Users className="h-5 w-5 text-green-500" />
                             </div>
-                            <div className="text-2xl font-semibold">
-                              {statusSummary.summary.totalActive}
-                            </div>
+                            <div className="text-2xl font-semibold">{statusSummary.summary.totalActive}</div>
                           </div>
                           <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                             <div className="flex items-center justify-between mb-2">
-                              <span className="text-blue-600 text-sm">
-                                Pending
-                              </span>
+                              <span className="text-blue-600 text-sm">Pending</span>
                               <Clock3 className="h-5 w-5 text-blue-500" />
                             </div>
-                            <div className="text-2xl font-semibold">
-                              {statusSummary.summary.totalPending}
-                            </div>
+                            <div className="text-2xl font-semibold">{statusSummary.summary.totalPending}</div>
                           </div>
                           <div className="bg-red-50 p-4 rounded-lg border border-red-200">
                             <div className="flex items-center justify-between mb-2">
-                              <span className="text-red-600 text-sm">
-                                Rejected
-                              </span>
+                              <span className="text-red-600 text-sm">Rejected</span>
                               <XCircle className="h-5 w-5 text-red-500" />
                             </div>
-                            <div className="text-2xl font-semibold">
-                              {statusSummary.summary.totalRejected}
-                            </div>
+                            <div className="text-2xl font-semibold">{statusSummary.summary.totalRejected}</div>
                           </div>
                         </div>
 
                         {/* Active Buyers */}
                         {statusSummary.buyersByStatus.active.length > 0 && (
                           <div className="mb-6">
-                            <h4 className="text-md font-medium mb-3 text-green-700">
-                              Active Buyers
-                            </h4>
+                            <h4 className="text-md font-medium mb-3 text-green-700">Active Buyers</h4>
                             <div className="overflow-x-auto">
                               <table className="w-full">
                                 <thead>
                                   <tr className="text-left border-b border-gray-200">
-                                    <th className="pb-3 font-medium text-gray-600">
-                                      Buyer
-                                    </th>
-                                    <th className="pb-3 font-medium text-gray-600">
-                                      Company
-                                    </th>
-                                    <th className="pb-3 font-medium text-gray-600">
-                                      Status
-                                    </th>
-                                    <th className="pb-3 font-medium text-gray-600">
-                                      Date
-                                    </th>
+                                    <th className="pb-3 font-medium text-gray-600">Buyer</th>
+                                    <th className="pb-3 font-medium text-gray-600">Company</th>
+                                    <th className="pb-3 font-medium text-gray-600">Status</th>
+                                    <th className="pb-3 font-medium text-gray-600">Date</th>
                                   </tr>
                                 </thead>
                                 <tbody>
-                                  {statusSummary.buyersByStatus.active.map(
-                                    (buyer) => (
-                                      <tr
-                                        key={buyer._id}
-                                        className="border-b border-gray-100"
-                                      >
-                                        <td className="py-4">
-                                          <div className="flex items-center">
-                                            <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 mr-3">
-                                              {buyer.buyerName &&
-                                              buyer.buyerName !==
-                                                `Buyer ${buyer.buyerId.slice(
-                                                  -4
-                                                )}` ? (
-                                                buyer.buyerName
-                                                  .charAt(0)
-                                                  .toUpperCase()
-                                              ) : (
-                                                <User className="h-5 w-5" />
-                                              )}
-                                            </div>
-                                            <div>
-                                              <p className="font-medium">
-                                                {buyer.buyerName}
-                                              </p>
-                                              <p className="text-sm text-gray-500">
-                                                {buyer.buyerEmail}
-                                              </p>
-                                            </div>
+                                  {statusSummary.buyersByStatus.active.map((buyer) => (
+                                    <tr key={buyer._id} className="border-b border-gray-100">
+                                      <td className="py-4">
+                                        <div className="flex items-center">
+                                          <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 mr-3">
+                                            {buyer.buyerName &&
+                                            buyer.buyerName !== `Buyer ${buyer.buyerId.slice(-4)}` ? (
+                                              buyer.buyerName.charAt(0).toUpperCase()
+                                            ) : (
+                                              <User className="h-5 w-5" />
+                                            )}
                                           </div>
-                                        </td>
-                                        <td className="py-4">
-                                          <span
-                                            className={
-                                              buyer.companyName ===
-                                              "Company not available"
-                                                ? "text-gray-500 text-sm"
-                                                : ""
-                                            }
-                                          >
-                                            {buyer.companyName}
-                                          </span>
-                                        </td>
-                                        <td className="py-4">
-                                          <span
-                                            className={`px-3 py-1 rounded-full text-xs capitalize ${getStatusColor(
-                                              buyer.status
-                                            )}`}
-                                          >
-                                            {buyer.status}
-                                          </span>
-                                        </td>
-                                        <td className="py-4">
-                                          {formatDate(buyer.invitedAt)}
-                                        </td>
-                                      </tr>
-                                    )
-                                  )}
+                                          <div>
+                                            <p className="font-medium">{buyer.buyerName}</p>
+                                            <p className="text-sm text-gray-500">{buyer.buyerEmail}</p>
+                                          </div>
+                                        </div>
+                                      </td>
+                                      <td className="py-4">
+                                        <span
+                                          className={
+                                            buyer.companyName === "Company not available" ? "text-gray-500 text-sm" : ""
+                                          }
+                                        >
+                                          {buyer.companyName}
+                                        </span>
+                                      </td>
+                                      <td className="py-4">
+                                        <span
+                                          className={`px-3 py-1 rounded-full text-xs capitalize ${getStatusColor(
+                                            buyer.status,
+                                          )}`}
+                                        >
+                                          {buyer.status}
+                                        </span>
+                                      </td>
+                                      <td className="py-4">{formatDate(buyer.invitedAt)}</td>
+                                    </tr>
+                                  ))}
                                 </tbody>
                               </table>
                             </div>
@@ -1197,88 +1021,307 @@ export default function DealDetailsPage() {
                         {/* Pending Buyers */}
                         {statusSummary.buyersByStatus.pending.length > 0 && (
                           <div className="mb-6">
-                            <h4 className="text-md font-medium mb-3 text-blue-700">
-                              Pending Buyers
-                            </h4>
+                            <h4 className="text-md font-medium mb-3 text-blue-700">Pending Buyers</h4>
                             <div className="overflow-x-auto">
                               <table className="w-full">
                                 <thead>
                                   <tr className="text-left border-b border-gray-200">
-                                    <th className="pb-3 font-medium text-gray-600">
-                                      Buyer
-                                    </th>
-                                    <th className="pb-3 font-medium text-gray-600">
-                                      Company
-                                    </th>
-                                    <th className="pb-3 font-medium text-gray-600">
-                                      Status
-                                    </th>
-                                    <th className="pb-3 font-medium text-gray-600">
-                                      Date
-                                    </th>
+                                    <th className="pb-3 font-medium text-gray-600">Buyer</th>
+                                    <th className="pb-3 font-medium text-gray-600">Company</th>
+                                    <th className="pb-3 font-medium text-gray-600">Status</th>
+                                    <th className="pb-3 font-medium text-gray-600">Date</th>
                                   </tr>
                                 </thead>
                                 <tbody>
-                                  {statusSummary.buyersByStatus.pending.map(
-                                    (buyer) => (
-                                      <tr
-                                        key={buyer._id}
-                                        className="border-b border-gray-100"
-                                      >
-                                        <td className="py-4">
-                                          <div className="flex items-center">
-                                            <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 mr-3">
-                                              {buyer.buyerName &&
-                                              buyer.buyerName !==
-                                                `Buyer ${buyer.buyerId.slice(
-                                                  -4
-                                                )}` ? (
-                                                buyer.buyerName
-                                                  .charAt(0)
-                                                  .toUpperCase()
-                                              ) : (
-                                                <User className="h-5 w-5" />
-                                              )}
-                                            </div>
-                                            <div>
-                                              <p className="font-medium">
-                                                {buyer.buyerName}
-                                              </p>
-                                              <p className="text-sm text-gray-500">
-                                                {buyer.buyerEmail}
-                                              </p>
-                                            </div>
+                                  {statusSummary.buyersByStatus.pending.map((buyer) => (
+                                    <tr
+                                      key={buyer._id}
+                                      className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
+                                      onClick={() => handleBuyerClick(buyer)}
+                                    >
+                                      <td className="py-4">
+                                        <div className="flex items-center">
+                                          <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 mr-3">
+                                            {buyer.buyerName &&
+                                            buyer.buyerName !== `Buyer ${buyer.buyerId.slice(-4)}` ? (
+                                              buyer.buyerName.charAt(0).toUpperCase()
+                                            ) : (
+                                              <User className="h-5 w-5" />
+                                            )}
                                           </div>
-                                        </td>
-                                        <td className="py-4">
-                                          <span
-                                            className={
-                                              buyer.companyName ===
-                                              "Company not available"
-                                                ? "text-gray-500 text-sm"
-                                                : ""
-                                            }
-                                          >
-                                            {buyer.companyName}
-                                          </span>
-                                        </td>
-                                        <td className="py-4">
-                                          <span
-                                            className={`px-3 py-1 rounded-full text-xs capitalize ${getStatusColor(
-                                              buyer.status
-                                            )}`}
-                                          >
-                                            {buyer.status}
-                                          </span>
-                                        </td>
-                                        <td className="py-4">
-                                          {formatDate(buyer.invitedAt)}
-                                        </td>
-                                      </tr>
-                                    )
-                                  )}
+                                          <div>
+                                            <p className="font-medium">{buyer.buyerName}</p>
+                                            <p className="text-sm text-gray-500">{buyer.buyerEmail}</p>
+                                          </div>
+                                        </div>
+                                      </td>
+                                      <td className="py-4">
+                                        <span
+                                          className={
+                                            buyer.companyName === "Company not available" ? "text-gray-500 text-sm" : ""
+                                          }
+                                        >
+                                          {buyer.companyName}
+                                        </span>
+                                      </td>
+                                      <td className="py-4">
+                                        <span
+                                          className={`px-3 py-1 rounded-full text-xs capitalize ${getStatusColor(
+                                            buyer.status,
+                                          )}`}
+                                        >
+                                          {buyer.status}
+                                        </span>
+                                      </td>
+                                      <td className="py-4">{formatDate(buyer.invitedAt)}</td>
+                                    </tr>
+                                  ))}
                                 </tbody>
                               </table>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Buyer Details Popup */}
+                        {isPopupOpen && selectedBuyer && (
+                          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                            <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+                              <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex justify-between items-center">
+                                <h2 className="text-xl font-semibold text-gray-900">Buyer Details</h2>
+                                <button
+                                  onClick={closePopup}
+                                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                                >
+                                  <X className="h-5 w-5" />
+                                </button>
+                              </div>
+                              <div className="p-6">
+                                {loadingCompanyProfile ? (
+                                  <div className="text-center py-8">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#3aafa9] mx-auto mb-4"></div>
+                                    <p className="text-gray-600">Loading company profile...</p>
+                                  </div>
+                                ) : (
+                                  <div className="border border-gray-200 rounded-lg overflow-hidden">
+                                    <div className="p-6">
+                                      <div className="flex justify-between items-start mb-6">
+                                        <h3 className="text-2xl font-medium text-teal-500">
+                                          {selectedCompanyProfile?.companyName ||
+                                            selectedBuyer.companyName ||
+                                            "Anonymous"}
+                                        </h3>
+                                      </div>
+
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        {/* Basic Information */}
+                                        <div className="mb-6">
+                                          <h4 className="text-lg font-medium mb-4 text-gray-800">Basic Information</h4>
+                                          <div className="space-y-3 text-sm">
+                                            <div>
+                                              <span className="text-gray-500 font-medium">Contact Name: </span>
+                                              <span className="text-gray-900">
+                                                {selectedBuyer.buyerName || "Unknown"}
+                                              </span>
+                                            </div>
+                                            <div>
+                                              <span className="text-gray-500 font-medium">Email: </span>
+                                              <span className="text-gray-900">
+                                                {selectedBuyer.buyerEmail || "Not provided"}
+                                              </span>
+                                            </div>
+                                            <div>
+                                              <span className="text-gray-500 font-medium">Company Type: </span>
+                                              <span className="text-gray-900">
+                                                {selectedCompanyProfile?.companyType || "Not specified"}
+                                              </span>
+                                            </div>
+                                            <div>
+                                              <span className="text-gray-500 font-medium">Capital Availability: </span>
+                                              <span className="text-gray-900">
+                                                {selectedCompanyProfile?.capitalEntity === "need_to_raise"
+                                                  ? "Need to raise"
+                                                  : selectedCompanyProfile?.capitalEntity === "have_capital"
+                                                    ? "Have capital"
+                                                    : selectedCompanyProfile?.capitalEntity || "Not specified"}
+                                              </span>
+                                            </div>
+                                            {selectedCompanyProfile?.description && (
+                                              <div>
+                                                <span className="text-gray-500 font-medium">Company Description: </span>
+                                                <span className="text-gray-900">
+                                                  {selectedCompanyProfile.description}
+                                                </span>
+                                              </div>
+                                            )}
+                                          </div>
+                                        </div>
+
+                                        {/* Deal Experience */}
+                                        <div className="mb-6">
+                                          <h4 className="text-lg font-medium mb-4 text-gray-800">Deal Experience</h4>
+                                          <div className="space-y-3 text-sm">
+                                            <div>
+                                              <span className="text-gray-500 font-medium">
+                                                Deals Completed (Last 5 years):{" "}
+                                              </span>
+                                              <span className="text-gray-900 font-semibold">
+                                                {selectedCompanyProfile?.dealsCompletedLast5Years?.toLocaleString() ||
+                                                  "Not provided"}
+                                              </span>
+                                            </div>
+                                            <div>
+                                              <span className="text-gray-500 font-medium">Average Deal Size: </span>
+                                              <span className="text-gray-900 font-semibold">
+                                                $
+                                                {selectedCompanyProfile?.averageDealSize?.toLocaleString() ||
+                                                  "Not provided"}
+                                              </span>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      {/* Target Criteria */}
+                                      {selectedCompanyProfile?.targetCriteria && (
+                                        <div className="mb-6 border-t pt-6">
+                                          <h4 className="text-lg font-medium mb-4 text-gray-800">
+                                            Target Investment Criteria
+                                          </h4>
+                                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-sm">
+                                            <div>
+                                              <span className="text-gray-500 font-medium">Revenue Range: </span>
+                                              <div className="text-gray-900 font-semibold">
+                                                $
+                                                {selectedCompanyProfile.targetCriteria.revenueMin?.toLocaleString() ||
+                                                  0}{" "}
+                                                - $
+                                                {selectedCompanyProfile.targetCriteria.revenueMax?.toLocaleString() ||
+                                                  "∞"}
+                                              </div>
+                                            </div>
+                                            <div>
+                                              <span className="text-gray-500 font-medium">EBITDA Range: </span>
+                                              <div className="text-gray-900 font-semibold">
+                                                $
+                                                {selectedCompanyProfile.targetCriteria.ebitdaMin?.toLocaleString() || 0}{" "}
+                                                - $
+                                                {selectedCompanyProfile.targetCriteria.ebitdaMax?.toLocaleString() ||
+                                                  "∞"}
+                                              </div>
+                                            </div>
+                                            <div>
+                                              <span className="text-gray-500 font-medium">Transaction Size: </span>
+                                              <div className="text-gray-900 font-semibold">
+                                                $
+                                                {selectedCompanyProfile.targetCriteria.transactionSizeMin?.toLocaleString() ||
+                                                  0}{" "}
+                                                - $
+                                                {selectedCompanyProfile.targetCriteria.transactionSizeMax?.toLocaleString() ||
+                                                  "∞"}
+                                              </div>
+                                            </div>
+                                            <div>
+                                              <span className="text-gray-500 font-medium">Min Revenue Growth: </span>
+                                              <div className="text-gray-900 font-semibold">
+                                                {selectedCompanyProfile.targetCriteria.revenueGrowth
+                                                  ? `${selectedCompanyProfile.targetCriteria.revenueGrowth}%`
+                                                  : "Any"}
+                                              </div>
+                                            </div>
+                                            <div>
+                                              <span className="text-gray-500 font-medium">Min Years in Business: </span>
+                                              <div className="text-gray-900 font-semibold">
+                                                {selectedCompanyProfile.targetCriteria.minYearsInBusiness || "Any"}
+                                              </div>
+                                            </div>
+                                            
+                                          </div>
+
+                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                                            <div>
+                                              <span className="text-gray-500 font-medium">
+                                                Preferred Business Models:{" "}
+                                              </span>
+                                              <div className="text-gray-900 mt-1">
+                                                {selectedCompanyProfile.targetCriteria.preferredBusinessModels?.length >
+                                                0
+                                                  ? selectedCompanyProfile.targetCriteria.preferredBusinessModels.join(
+                                                      ", ",
+                                                    )
+                                                  : "Not specified"}
+                                              </div>
+                                            </div>
+                                            <div>
+                                              <span className="text-gray-500 font-medium">Target Industries: </span>
+                                              <div className="text-gray-900 mt-1">
+                                                {selectedCompanyProfile.targetCriteria.industrySectors?.length > 0
+                                                  ? selectedCompanyProfile.targetCriteria.industrySectors.join(", ")
+                                                  : "Not specified"}
+                                              </div>
+                                            </div>
+                                            <div>
+                                              <span className="text-gray-500 font-medium">Target Countries: </span>
+                                              <div className="text-gray-900 mt-1">
+                                                {selectedCompanyProfile.targetCriteria.countries?.length > 0
+                                                  ? selectedCompanyProfile.targetCriteria.countries.join(", ")
+                                                  : "Not specified"}
+                                              </div>
+                                            </div>
+                                          </div>
+
+                                          {selectedCompanyProfile.targetCriteria.description && (
+                                            <div className="mt-6">
+                                              <span className="text-gray-500 font-medium">
+                                                Investment Focus Description:{" "}
+                                              </span>
+                                              <div className="text-gray-900 mt-2 p-4 bg-gray-50 rounded-lg">
+                                                {selectedCompanyProfile.targetCriteria.description}
+                                              </div>
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
+
+                                      {/* Preferences */}
+                                      {selectedCompanyProfile?.preferences && (
+                                        <div className="border-t pt-6">
+                                          <h4 className="text-lg font-medium mb-4 text-gray-800">
+                                            Communication Preferences
+                                          </h4>
+                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                            <div className="flex items-center">
+                                              <span className="text-gray-500 font-medium">Stop Sending Deals: </span>
+                                              <span
+                                                className={`ml-2 px-2 py-1 rounded-full text-xs ${
+                                                  selectedCompanyProfile.preferences.stopSendingDeals
+                                                    ? "bg-red-100 text-red-700"
+                                                    : "bg-green-100 text-green-700"
+                                                }`}
+                                              >
+                                                {selectedCompanyProfile.preferences.stopSendingDeals ? "Yes" : "No"}
+                                              </span>
+                                            </div>
+                                            <div className="flex items-center">
+                                              <span className="text-gray-500 font-medium">
+                                                Allow Buyer-like Deals:{" "}
+                                              </span>
+                                              <span
+                                                className={`ml-2 px-2 py-1 rounded-full text-xs ${
+                                                  selectedCompanyProfile.preferences.allowBuyerLikeDeals
+                                                    ? "bg-green-100 text-green-700"
+                                                    : "bg-red-100 text-red-700"
+                                                }`}
+                                              >
+                                                {selectedCompanyProfile.preferences.allowBuyerLikeDeals ? "Yes" : "No"}
+                                              </span>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           </div>
                         )}
@@ -1286,138 +1329,85 @@ export default function DealDetailsPage() {
                         {/* Rejected Buyers */}
                         {statusSummary.buyersByStatus.rejected.length > 0 && (
                           <div>
-                            <h4 className="text-md font-medium mb-3 text-red-700">
-                              Rejected Buyers
-                            </h4>
+                            <h4 className="text-md font-medium mb-3 text-red-700">Rejected Buyers</h4>
                             <div className="overflow-x-auto">
                               <table className="w-full">
                                 <thead>
                                   <tr className="text-left border-b border-gray-200">
-                                    <th className="pb-3 font-medium text-gray-600">
-                                      Buyer
-                                    </th>
-                                    <th className="pb-3 font-medium text-gray-600">
-                                      Company
-                                    </th>
-                                    <th className="pb-3 font-medium text-gray-600">
-                                      Status
-                                    </th>
-                                    <th className="pb-3 font-medium text-gray-600">
-                                      Date
-                                    </th>
+                                    <th className="pb-3 font-medium text-gray-600">Buyer</th>
+                                    <th className="pb-3 font-medium text-gray-600">Company</th>
+                                    <th className="pb-3 font-medium text-gray-600">Status</th>
+                                    <th className="pb-3 font-medium text-gray-600">Date</th>
                                   </tr>
                                 </thead>
                                 <tbody>
-                                  {statusSummary.buyersByStatus.rejected.map(
-                                    (buyer) => (
-                                      <tr
-                                        key={buyer._id}
-                                        className="border-b border-gray-100"
-                                      >
-                                        <td className="py-4">
-                                          <div className="flex items-center">
-                                            <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 mr-3">
-                                              {buyer.buyerName &&
-                                              buyer.buyerName !==
-                                                `Buyer ${buyer.buyerId.slice(
-                                                  -4
-                                                )}` ? (
-                                                buyer.buyerName
-                                                  .charAt(0)
-                                                  .toUpperCase()
-                                              ) : (
-                                                <User className="h-5 w-5" />
-                                              )}
-                                            </div>
-                                            <div>
-                                              <p className="font-medium">
-                                                {buyer.buyerName}
-                                              </p>
-                                              <p className="text-sm text-gray-500">
-                                                {buyer.buyerEmail}
-                                              </p>
-                                            </div>
+                                  {statusSummary.buyersByStatus.rejected.map((buyer) => (
+                                    <tr key={buyer._id} className="border-b border-gray-100">
+                                      <td className="py-4">
+                                        <div className="flex items-center">
+                                          <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 mr-3">
+                                            {buyer.buyerName &&
+                                            buyer.buyerName !== `Buyer ${buyer.buyerId.slice(-4)}` ? (
+                                              buyer.buyerName.charAt(0).toUpperCase()
+                                            ) : (
+                                              <User className="h-5 w-5" />
+                                            )}
                                           </div>
-                                        </td>
-                                        <td className="py-4">
-                                          <span
-                                            className={
-                                              buyer.companyName ===
-                                              "Company not available"
-                                                ? "text-gray-500 text-sm"
-                                                : ""
-                                            }
-                                          >
-                                            {buyer.companyName}
-                                          </span>
-                                        </td>
-                                        <td className="py-4">
-                                          <span
-                                            className={`px-3 py-1 rounded-full text-xs capitalize ${getStatusColor(
-                                              buyer.status
-                                            )}`}
-                                          >
-                                            {buyer.status}
-                                          </span>
-                                        </td>
-                                        <td className="py-4">
-                                          {formatDate(buyer.invitedAt)}
-                                        </td>
-                                      </tr>
-                                    )
-                                  )}
+                                          <div>
+                                            <p className="font-medium">{buyer.buyerName}</p>
+                                            <p className="text-sm text-gray-500">{buyer.buyerEmail}</p>
+                                          </div>
+                                        </div>
+                                      </td>
+                                      <td className="py-4">
+                                        <span
+                                          className={
+                                            buyer.companyName === "Company not available" ? "text-gray-500 text-sm" : ""
+                                          }
+                                        >
+                                          {buyer.companyName}
+                                        </span>
+                                      </td>
+                                      <td className="py-4">
+                                        <span
+                                          className={`px-3 py-1 rounded-full text-xs capitalize ${getStatusColor(
+                                            buyer.status,
+                                          )}`}
+                                        >
+                                          {buyer.status}
+                                        </span>
+                                      </td>
+                                      <td className="py-4">{formatDate(buyer.invitedAt)}</td>
+                                    </tr>
+                                  ))}
                                 </tbody>
                               </table>
                             </div>
                           </div>
                         )}
 
-                        {/* No buyers case */}
-                        {/* {statusSummary.summary.totalTargeted === 0 && ( */}
-                        <div className="text-center py-8">
-                          {/* <p className="text-gray-500 mb-4">No buyers have been invited yet</p> */}
+                        {/* Invite More Buyers Button */}
+                        <div className="mt-6 pt-6 border-t border-gray-200">
                           <Button
-                            className="bg-teal-500 hover:bg-teal-600"
                             onClick={handleInviteBuyersClick}
-                            disabled={loadingBuyers}
+                            className="bg-teal-500 hover:bg-teal-600 text-white"
                           >
-                            {loadingBuyers ? "Loading..." : "Invite Buyers"}
+                            Invite More Buyers
                           </Button>
                         </div>
-                        {/* )} */}
                       </div>
                     ) : (
-                      <div className="text-center py-8">
-                        <p className="text-gray-500 mb-4">
-                          Failed to load buyer status information
-                        </p>
-                        <Button
-                          variant="outline"
-                          onClick={() =>
-                            router.push(
-                              `/seller/dashboard?newDeal=${dealId}&success=true`
-                            )
-                          }
-                        >
-                          Back to Dashboard
-                        </Button>
-                      </div>
+                      <div className="text-center py-8 text-gray-600">No buyer status data available</div>
                     )}
                   </div>
                 </div>
+
+ 
               </>
-            ) : (
-              <div className="bg-white rounded-lg shadow p-6 text-center">
-                <div className="text-gray-500 text-lg mb-2">Deal not found</div>
-                <Button onClick={() => router.push("/seller/dashboard")}>
-                  Back to Dashboard
-                </Button>
-              </div>
-            )}
+            ) : null}
           </div>
         </div>
       </div>
-      <Toaster />
     </SellerProtectedRoute>
-  );
+  )
 }

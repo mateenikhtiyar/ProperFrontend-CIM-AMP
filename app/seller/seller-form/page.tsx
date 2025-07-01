@@ -1828,18 +1828,15 @@ export default function SellerFormPage() {
                 <Input
                   id="trailingEBITDA"
                   type="text"
-                  value={formData.trailingEBITDA ? formatNumberWithCommas(formData.trailingEBITDA) : ""}
+                  value={formData.trailingEBITDA !== undefined && formData.trailingEBITDA !== null ? formatNumberWithCommas(formData.trailingEBITDA) : ""}
                   onChange={(e) => {
                     const rawValue = e.target.value.replace(/,/g, "")
                     if (rawValue === "" || /^-?\d*$/.test(rawValue)) {
                       const numValue = rawValue === "" ? 0 : Number.parseFloat(rawValue)
                       handleNumberChange(
-                        {
-                          target: { value: rawValue },
-                        } as React.ChangeEvent<HTMLInputElement>,
+                        { target: { value: rawValue } } as React.ChangeEvent<HTMLInputElement>,
                         "trailingEBITDA",
                       )
-
                       const validationError = validateEBITDAvsRevenue(numValue, formData.trailingRevenue)
                       setRealtimeErrors((prev) => ({
                         ...prev,
@@ -1863,18 +1860,12 @@ export default function SellerFormPage() {
                 <Input
                   id="revenueGrowth"
                   type="text"
-                  value={
-                    formData.revenueGrowth !== undefined && formData.revenueGrowth !== null
-                      ? formatNumberWithCommas(formData.revenueGrowth)
-                      : ""
-                  }
+                  value={formData.revenueGrowth !== undefined && formData.revenueGrowth !== null ? formatNumberWithCommas(formData.revenueGrowth) : ""}
                   onChange={(e) => {
                     const rawValue = e.target.value.replace(/,/g, "")
                     if (rawValue === "" || /^-?\d*$/.test(rawValue)) {
                       handleNumberChange(
-                        {
-                          target: { value: rawValue },
-                        } as React.ChangeEvent<HTMLInputElement>,
+                        { target: { value: rawValue } } as React.ChangeEvent<HTMLInputElement>,
                         "revenueGrowth",
                       )
                     }
