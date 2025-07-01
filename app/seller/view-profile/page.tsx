@@ -1,160 +1,194 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState, useEffect, useRef } from "react"
-import Image from "next/image"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { getSellerProfile } from "@/services/api"
-import { Pencil, HandshakeIcon, History, LogOut, Eye, EyeOff, Camera, Loader2 } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Skeleton } from "@/components/ui/skeleton"
-import { toast } from "@/components/ui/use-toast"
-import { Toaster } from "@/components/ui/toaster"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
-import { useAuth } from "@/contexts/auth-context"
-import SellerProtectedRoute from "@/components/seller/protected-route"
+import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { getSellerProfile } from "@/services/api";
+import {
+  Pencil,
+  HandshakeIcon,
+  History,
+  LogOut,
+  Eye,
+  EyeOff,
+  Camera,
+  Loader2,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "@/components/ui/use-toast";
+import { Toaster } from "@/components/ui/toaster";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { useAuth } from "@/contexts/auth-context";
+import SellerProtectedRoute from "@/components/seller/protected-route";
 
 interface SellerProfile {
-  id: string
-  fullName: string
-  email: string
-  phoneNumber?: string
-  title?: string
-  companyName?: string
-  website?: string
-  location?: string
-  profilePicture?: string
+  id: string;
+  fullName: string;
+  email: string;
+  phoneNumber?: string;
+  title?: string;
+  companyName?: string;
+  website?: string;
+  location?: string;
+  profilePicture?: string;
 }
 
 // Define which fields are editable based on backend DTO
-const EDITABLE_FIELDS = ["fullName", "email", "companyName", "phoneNumber", "website", "title"] as const
-type EditableField = (typeof EDITABLE_FIELDS)[number]
+const EDITABLE_FIELDS = [
+  "fullName",
+  "email",
+  "companyName",
+  "phoneNumber",
+  "website",
+  "title",
+] as const;
+type EditableField = (typeof EDITABLE_FIELDS)[number];
 
 export default function ViewProfilePage() {
-  const [profile, setProfile] = useState<SellerProfile | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [editMode, setEditMode] = useState(false)
-  const [editValues, setEditValues] = useState<Partial<SellerProfile>>({})
-  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false)
+  const [profile, setProfile] = useState<SellerProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [editMode, setEditMode] = useState(false);
+  const [editValues, setEditValues] = useState<Partial<SellerProfile>>({});
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [passwordData, setPasswordData] = useState({
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
-  })
+  });
   const [showPasswords, setShowPasswords] = useState({
     current: false,
     new: false,
     confirm: false,
-  })
-  const [updating, setUpdating] = useState(false)
-  const [uploadingImage, setUploadingImage] = useState(false)
-  const [uploadError, setUploadError] = useState<string | null>(null)
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
-  const router = useRouter()
-  const { logout } = useAuth()
+  });
+  const [updating, setUpdating] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [validationErrors, setValidationErrors] = useState<
+    Record<string, string>
+  >({});
+  const router = useRouter();
+  const { logout } = useAuth();
 
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Helper function to get profile picture URL
   const getProfilePictureUrl = (profilePicture: string | null) => {
-    if (!profilePicture) return null
+    if (!profilePicture) return null;
 
-    if (profilePicture.startsWith("http")) return profilePicture
+    if (profilePicture.startsWith("http")) return profilePicture;
 
-    const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
-    const formattedPath = profilePicture.replace(/\\/g, "/")
+    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
+    const formattedPath = profilePicture.replace(/\\/g, "/");
 
-    return `${apiUrl}/${formattedPath.startsWith("/") ? formattedPath.substring(1) : formattedPath}`
-  }
+    return `${apiUrl}/${
+      formattedPath.startsWith("/") ? formattedPath.substring(1) : formattedPath
+    }`;
+  };
 
   // Validation function for website URL
   const validateWebsite = (url: string): boolean => {
-    if (!url.trim()) return true // Empty is valid (optional field)
+    if (!url.trim()) return true; // Empty is valid (optional field)
 
     try {
-      const urlPattern = /^https?:\/\/.+/
-      return urlPattern.test(url.trim())
+      const urlPattern = /^https?:\/\/.+/;
+      return urlPattern.test(url.trim());
     } catch {
-      return false
+      return false;
     }
-  }
+  };
 
   // Validate all fields
   const validateFields = (): boolean => {
-    const errors: Record<string, string> = {}
+    const errors: Record<string, string> = {};
 
     // Validate email
-    if (editValues.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editValues.email.trim())) {
-      errors.email = "Please enter a valid email address"
+    if (
+      editValues.email &&
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editValues.email.trim())
+    ) {
+      errors.email = "Please enter a valid email address";
     }
 
     // Validate website
     if (editValues.website && !validateWebsite(editValues.website)) {
-      errors.website = "Website must be a valid URL (e.g., https://example.com)"
+      errors.website =
+        "Website must be a valid URL (e.g., https://example.com)";
     }
 
-    setValidationErrors(errors)
-    return Object.keys(errors).length === 0
-  }
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   useEffect(() => {
-    if (typeof window === "undefined") return
+    if (typeof window === "undefined") return;
 
     const fetchProfile = async () => {
       try {
-        setLoading(true)
+        setLoading(true);
 
-        const token = localStorage.getItem("token")
+        const token = localStorage.getItem("token");
         if (!token) {
-          console.error("View Profile - No authentication token found, redirecting to login")
-          router.push("/seller/login?error=no_token")
-          return
+          console.error(
+            "View Profile - No authentication token found, redirecting to login"
+          );
+          router.push("/seller/login?error=no_token");
+          return;
         }
 
-        console.log("View Profile - Attempting to fetch profile")
-        const data = await getSellerProfile()
-        console.log("Profile data:", data)
-        setProfile(data)
-        setEditValues(data)
-        setError(null)
+        console.log("View Profile - Attempting to fetch profile");
+        const data = await getSellerProfile();
+        console.log("Profile data:", data);
+        setProfile(data);
+        setEditValues(data);
+        setError(null);
       } catch (err: any) {
-        console.error("Error fetching profile:", err)
-        setError(err.message || "Failed to load profile")
+        console.error("Error fetching profile:", err);
+        setError(err.message || "Failed to load profile");
         toast({
           title: "Error",
           description: err.message || "Failed to load profile",
           variant: "destructive",
-        })
+        });
 
         if (
           err.message === "Authentication expired" ||
           err.message === "No authentication token found" ||
           err.message === "Failed to fetch profile: 403"
         ) {
-          console.log("View Profile - Authentication error, redirecting to login")
-          router.push("/seller/login?error=auth_failed")
+          console.log(
+            "View Profile - Authentication error, redirecting to login"
+          );
+          router.push("/seller/login?error=auth_failed");
         }
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchProfile()
-  }, [router])
+    fetchProfile();
+  }, [router]);
 
   const handleEditToggle = () => {
     if (editMode) {
       // Reset values when canceling
-      setEditValues(profile || {})
-      setValidationErrors({})
+      setEditValues(profile || {});
+      setValidationErrors({});
     }
-    setEditMode(!editMode)
-  }
+    setEditMode(!editMode);
+  };
 
   const handleSaveAll = async () => {
     // Validate fields before saving
@@ -163,13 +197,13 @@ export default function ViewProfilePage() {
         title: "Validation Error",
         description: "Please fix the errors before saving",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
     try {
-      setUpdating(true)
-      const token = localStorage.getItem("token")
+      setUpdating(true);
+      const token = localStorage.getItem("token");
 
       // Always send all editable fields including website
       const updatePayload: any = {
@@ -179,43 +213,43 @@ export default function ViewProfilePage() {
         phoneNumber: editValues.phoneNumber?.trim() || "",
         website: editValues.website?.trim() || "",
         title: editValues.title?.trim() || "",
-      }
+      };
 
-      const response = await fetch("https://api.cimamplify.com/sellers/me", {
+      const response = await fetch("http://localhost:3001/sellers/me", {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(updatePayload),
-      })
+      });
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || "Failed to update profile")
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update profile");
       }
 
-      const updatedProfile = await response.json()
-      setProfile(updatedProfile)
-      setEditValues(updatedProfile)
-      setEditMode(false)
-      setValidationErrors({})
+      const updatedProfile = await response.json();
+      setProfile(updatedProfile);
+      setEditValues(updatedProfile);
+      setEditMode(false);
+      setValidationErrors({});
 
       toast({
         title: "Success",
         description: "Profile updated successfully",
-      })
+      });
     } catch (error: any) {
-      console.error("Error updating profile:", error)
+      console.error("Error updating profile:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to update profile",
         variant: "destructive",
-      })
+      });
     } finally {
-      setUpdating(false)
+      setUpdating(false);
     }
-  }
+  };
 
   const changePassword = async () => {
     if (passwordData.newPassword !== passwordData.confirmPassword) {
@@ -223,8 +257,8 @@ export default function ViewProfilePage() {
         title: "Error",
         description: "New passwords don't match",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
     if (passwordData.newPassword.length < 6) {
@@ -232,61 +266,69 @@ export default function ViewProfilePage() {
         title: "Error",
         description: "Password must be at least 6 characters long",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
     try {
-      setUpdating(true)
-      const token = localStorage.getItem("token")
+      setUpdating(true);
+      const token = localStorage.getItem("token");
 
       // Send all editable fields + password including website
       const updatePayload: any = {
         fullName: editValues.fullName?.trim() || profile?.fullName || "",
         email: editValues.email?.trim() || profile?.email || "",
-        companyName: editValues.companyName?.trim() || profile?.companyName || "",
-        phoneNumber: editValues.phoneNumber?.trim() || profile?.phoneNumber || "",
+        companyName:
+          editValues.companyName?.trim() || profile?.companyName || "",
+        phoneNumber:
+          editValues.phoneNumber?.trim() || profile?.phoneNumber || "",
         website: editValues.website?.trim() || profile?.website || "",
         title: editValues.title?.trim() || profile?.title || "",
         password: passwordData.newPassword,
-      }
+      };
 
-      const response = await fetch("https://api.cimamplify.com/sellers/me", {
+      const response = await fetch("http://localhost:3001/sellers/me", {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(updatePayload),
-      })
+      });
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || "Failed to change password")
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to change password");
       }
 
-      setIsPasswordDialogOpen(false)
-      setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" })
+      setIsPasswordDialogOpen(false);
+      setPasswordData({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
 
       toast({
         title: "Success",
         description: "Password changed successfully",
-      })
+      });
     } catch (error: any) {
-      console.error("Error changing password:", error)
+      console.error("Error changing password:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to change password",
         variant: "destructive",
-      })
+      });
     } finally {
-      setUpdating(false)
+      setUpdating(false);
     }
-  }
+  };
 
-  const handleProfilePictureUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
+  const handleProfilePictureUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
     // Validate file type
     if (!file.type.match(/image\/(jpeg|jpg|png|gif)/i)) {
@@ -294,8 +336,8 @@ export default function ViewProfilePage() {
         title: "Invalid file type",
         description: "Only image files (JPG, JPEG, PNG, GIF) are allowed.",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
     // Validate file size (5MB limit)
@@ -304,22 +346,22 @@ export default function ViewProfilePage() {
         title: "File too large",
         description: "File size should not exceed 5MB.",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
-    setUploadingImage(true)
-    setUploadError(null)
+    setUploadingImage(true);
+    setUploadError(null);
 
     try {
-      const token = localStorage.getItem("token")
+      const token = localStorage.getItem("token");
 
       // Get API URL from localStorage or use default
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
       // Create form data with 'file' as the field name
-      const formData = new FormData()
-      formData.append("file", file)
+      const formData = new FormData();
+      formData.append("file", file);
 
       // Upload the image
       const response = await fetch(`${apiUrl}/sellers/upload-profile-picture`, {
@@ -328,72 +370,72 @@ export default function ViewProfilePage() {
           Authorization: `Bearer ${token}`,
         },
         body: formData,
-      })
+      });
 
       if (!response.ok) {
         if (response.status === 401) {
           // Handle unauthorized
-          localStorage.removeItem("token")
-          localStorage.removeItem("userId")
-          router.push("/seller/login?session=expired")
-          throw new Error("Session expired. Please log in again.")
+          localStorage.removeItem("token");
+          localStorage.removeItem("userId");
+          router.push("/seller/login?session=expired");
+          throw new Error("Session expired. Please log in again.");
         }
-        throw new Error(`Failed to upload profile picture: ${response.status}`)
+        throw new Error(`Failed to upload profile picture: ${response.status}`);
       }
 
-      const data = await response.json()
+      const data = await response.json();
 
       // Update the seller profile with the new profile picture path
       if (profile) {
         setProfile({
           ...profile,
           profilePicture: data.profilePicture || profile.profilePicture,
-        })
+        });
         setEditValues({
           ...editValues,
           profilePicture: data.profilePicture || profile.profilePicture,
-        })
+        });
       }
 
       toast({
         title: "Success",
         description: "Profile picture uploaded successfully",
-      })
+      });
 
       // Refresh the profile data to get the updated profile picture
-      fetchSellerProfile()
+      fetchSellerProfile();
     } catch (err: any) {
-      console.error("Error uploading profile picture:", err)
-      setUploadError(err.message || "Failed to upload profile picture")
+      console.error("Error uploading profile picture:", err);
+      setUploadError(err.message || "Failed to upload profile picture");
       toast({
         title: "Error",
         description: err.message || "Failed to upload profile picture",
         variant: "destructive",
-      })
+      });
     } finally {
-      setUploadingImage(false)
+      setUploadingImage(false);
     }
-  }
+  };
 
   // Add a function to fetch just the seller profile
   const fetchSellerProfile = async () => {
     try {
-      const data = await getSellerProfile()
-      setProfile(data)
-      setEditValues(data)
+      const data = await getSellerProfile();
+      setProfile(data);
+      setEditValues(data);
     } catch (err) {
-      console.error("Error fetching seller profile:", err)
+      console.error("Error fetching seller profile:", err);
     }
-  }
+  };
 
   const triggerFileInput = () => {
-    fileInputRef.current?.click()
-  }
+    fileInputRef.current?.click();
+  };
 
   const handleLogout = () => {
-    logout()
-    router.push("/seller/login")
-  }
+    logout();
+    router.push("/seller/login");
+  };
 
   return (
     <SellerProtectedRoute>
@@ -402,7 +444,13 @@ export default function ViewProfilePage() {
         <div className="w-64 bg-white border-r border-gray-200 p-6 flex flex-col">
           <div className="mb-8">
             <Link href="/seller/dashboard">
-              <Image src="/logo.svg" alt="CIM Amplify Logo" width={150} height={50} className="h-auto" />
+              <Image
+                src="/logo.svg"
+                alt="CIM Amplify Logo"
+                width={150}
+                height={50}
+                className="h-auto"
+              />
             </Link>
           </div>
 
@@ -453,7 +501,10 @@ export default function ViewProfilePage() {
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-3">
                 {!editMode ? (
-                  <Button onClick={handleEditToggle} className="flex items-center gap-2">
+                  <Button
+                    onClick={handleEditToggle}
+                    className="flex items-center gap-2"
+                  >
                     <Pencil className="h-4 w-4" />
                     Edit Profile
                   </Button>
@@ -462,7 +513,11 @@ export default function ViewProfilePage() {
                     <Button onClick={handleSaveAll} disabled={updating}>
                       {updating ? "Saving..." : "Save Changes"}
                     </Button>
-                    <Button variant="outline" onClick={handleEditToggle} disabled={updating}>
+                    <Button
+                      variant="outline"
+                      onClick={handleEditToggle}
+                      disabled={updating}
+                    >
                       Cancel
                     </Button>
                   </div>
@@ -477,20 +532,28 @@ export default function ViewProfilePage() {
                 ) : (
                   <>
                     <div className="text-right">
-                      <div className="font-medium">{profile?.fullName || "User"}</div>
+                      <div className="font-medium">
+                        {profile?.fullName || "User"}
+                      </div>
                     </div>
                     <div className="relative h-10 w-10 rounded-full bg-gray-300 overflow-hidden flex items-center justify-center text-white font-medium">
                       {profile?.profilePicture ? (
                         <img
-                          src={getProfilePictureUrl(profile.profilePicture) || undefined}
+                          src={
+                            getProfilePictureUrl(profile.profilePicture) ||
+                            undefined
+                          }
                           alt={profile.fullName || "User"}
                           className="h-full w-full object-cover"
                           onError={(e) => {
-                            ;(e.target as HTMLImageElement).src = "/placeholder.svg"
+                            (e.target as HTMLImageElement).src =
+                              "/placeholder.svg";
                           }}
                         />
                       ) : (
-                        <span>{profile?.fullName ? profile.fullName.charAt(0) : "U"}</span>
+                        <span>
+                          {profile?.fullName ? profile.fullName.charAt(0) : "U"}
+                        </span>
                       )}
                     </div>
                   </>
@@ -525,9 +588,14 @@ export default function ViewProfilePage() {
             ) : error ? (
               <div className="bg-white rounded-lg shadow p-6">
                 <div className="text-center py-8">
-                  <div className="text-red-500 text-lg mb-2">Error loading profile</div>
+                  <div className="text-red-500 text-lg mb-2">
+                    Error loading profile
+                  </div>
                   <p className="text-gray-600">{error}</p>
-                  <Button className="mt-4" onClick={() => window.location.reload()}>
+                  <Button
+                    className="mt-4"
+                    onClick={() => window.location.reload()}
+                  >
                     Try Again
                   </Button>
                 </div>
@@ -539,22 +607,34 @@ export default function ViewProfilePage() {
                   <div className="relative h-40 w-40 rounded-lg bg-gray-200 overflow-hidden shrink-0">
                     {profile?.profilePicture ? (
                       <img
-                        src={getProfilePictureUrl(profile.profilePicture) || "/placeholder.svg"}
+                        src={
+                          getProfilePictureUrl(profile.profilePicture) ||
+                          "/placeholder.svg"
+                        }
                         alt={profile?.fullName || "Profile"}
                         className="h-40 w-40 rounded-lg object-cover"
                         onError={(e) => {
-                          ;(e.target as HTMLImageElement).src = "/placeholder.svg"
+                          (e.target as HTMLImageElement).src =
+                            "/placeholder.svg";
                         }}
                       />
                     ) : (
-                      <img src="/placeholder.svg" alt="Profile" className="h-40 w-40 rounded-lg object-cover" />
+                      <img
+                        src="/placeholder.svg"
+                        alt="Profile"
+                        className="h-40 w-40 rounded-lg object-cover"
+                      />
                     )}
                     <button
                       onClick={triggerFileInput}
                       className="absolute bottom-2 right-2 bg-teal-500 hover:bg-teal-600 text-white p-2 rounded-full shadow-md"
                       disabled={uploadingImage}
                     >
-                      {uploadingImage ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
+                      {uploadingImage ? (
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                      ) : (
+                        <Camera className="h-5 w-5" />
+                      )}
                     </button>
                     <input
                       type="file"
@@ -573,16 +653,25 @@ export default function ViewProfilePage() {
                         <div className="flex-1">
                           <Input
                             value={editValues.fullName || ""}
-                            onChange={(e) => setEditValues((prev) => ({ ...prev, fullName: e.target.value }))}
+                            onChange={(e) =>
+                              setEditValues((prev) => ({
+                                ...prev,
+                                fullName: e.target.value,
+                              }))
+                            }
                             placeholder="Enter your full name"
-                            className={validationErrors.fullName ? "border-red-500" : ""}
+                            className={
+                              validationErrors.fullName ? "border-red-500" : ""
+                            }
                           />
                           {validationErrors.fullName && (
-                            <p className="text-red-500 text-xs mt-1">{validationErrors.fullName}</p>
+                            <p className="text-red-500 text-xs mt-1">
+                              {validationErrors.fullName}
+                            </p>
                           )}
                         </div>
                       ) : (
-                        <span>{profile?.fullName || "Ivana Hug"}</span>
+                        <span>{profile?.fullName}</span>
                       )}
                     </div>
 
@@ -592,16 +681,27 @@ export default function ViewProfilePage() {
                         <div className="flex-1">
                           <Input
                             value={editValues.companyName || ""}
-                            onChange={(e) => setEditValues((prev) => ({ ...prev, companyName: e.target.value }))}
+                            onChange={(e) =>
+                              setEditValues((prev) => ({
+                                ...prev,
+                                companyName: e.target.value,
+                              }))
+                            }
                             placeholder="Enter company name"
-                            className={validationErrors.companyName ? "border-red-500" : ""}
+                            className={
+                              validationErrors.companyName
+                                ? "border-red-500"
+                                : ""
+                            }
                           />
                           {validationErrors.companyName && (
-                            <p className="text-red-500 text-xs mt-1">{validationErrors.companyName}</p>
+                            <p className="text-red-500 text-xs mt-1">
+                              {validationErrors.companyName}
+                            </p>
                           )}
                         </div>
                       ) : (
-                        <span>{profile?.companyName || "Sell Co"}</span>
+                        <span>{profile?.companyName}</span>
                       )}
                     </div>
 
@@ -611,16 +711,25 @@ export default function ViewProfilePage() {
                         <div className="flex-1">
                           <Input
                             value={editValues.title || ""}
-                            onChange={(e) => setEditValues((prev) => ({ ...prev, title: e.target.value }))}
+                            onChange={(e) =>
+                              setEditValues((prev) => ({
+                                ...prev,
+                                title: e.target.value,
+                              }))
+                            }
                             placeholder="Enter your title"
-                            className={validationErrors.title ? "border-red-500" : ""}
+                            className={
+                              validationErrors.title ? "border-red-500" : ""
+                            }
                           />
                           {validationErrors.title && (
-                            <p className="text-red-500 text-xs mt-1">{validationErrors.title}</p>
+                            <p className="text-red-500 text-xs mt-1">
+                              {validationErrors.title}
+                            </p>
                           )}
                         </div>
                       ) : (
-                        <span>{profile?.title || "CEO"}</span>
+                        <span>{profile?.title}</span>
                       )}
                     </div>
 
@@ -631,16 +740,27 @@ export default function ViewProfilePage() {
                           <Input
                             type="email"
                             value={editValues.email || ""}
-                            onChange={(e) => setEditValues((prev) => ({ ...prev, email: e.target.value }))}
+                            onChange={(e) =>
+                              setEditValues((prev) => ({
+                                ...prev,
+                                email: e.target.value,
+                              }))
+                            }
                             placeholder="Enter email"
-                            className={validationErrors.email ? "border-red-500" : ""}
+                            className={
+                              validationErrors.email ? "border-red-500" : ""
+                            }
                           />
                           {validationErrors.email && (
-                            <p className="text-red-500 text-xs mt-1">{validationErrors.email}</p>
+                            <p className="text-red-500 text-xs mt-1">
+                              {validationErrors.email}
+                            </p>
                           )}
                         </div>
                       ) : (
-                        <span>{profile?.email || "jmacinnes@mzzamplify.com"}</span>
+                        <span>
+                          {profile?.email}
+                        </span>
                       )}
                     </div>
 
@@ -650,16 +770,27 @@ export default function ViewProfilePage() {
                         <div className="flex-1">
                           <Input
                             value={editValues.phoneNumber || ""}
-                            onChange={(e) => setEditValues((prev) => ({ ...prev, phoneNumber: e.target.value }))}
+                            onChange={(e) =>
+                              setEditValues((prev) => ({
+                                ...prev,
+                                phoneNumber: e.target.value,
+                              }))
+                            }
                             placeholder="Enter phone number"
-                            className={validationErrors.phoneNumber ? "border-red-500" : ""}
+                            className={
+                              validationErrors.phoneNumber
+                                ? "border-red-500"
+                                : ""
+                            }
                           />
                           {validationErrors.phoneNumber && (
-                            <p className="text-red-500 text-xs mt-1">{validationErrors.phoneNumber}</p>
+                            <p className="text-red-500 text-xs mt-1">
+                              {validationErrors.phoneNumber}
+                            </p>
                           )}
                         </div>
                       ) : (
-                        <span>{profile?.phoneNumber || "+1 403 689-7627"}</span>
+                        <span>{profile?.phoneNumber}</span>
                       )}
                     </div>
 
@@ -669,19 +800,32 @@ export default function ViewProfilePage() {
                         <div className="flex-1">
                           <Input
                             value={editValues.website || ""}
-                            onChange={(e) => setEditValues((prev) => ({ ...prev, website: e.target.value }))}
+                            onChange={(e) =>
+                              setEditValues((prev) => ({
+                                ...prev,
+                                website: e.target.value,
+                              }))
+                            }
                             placeholder="Enter website (e.g., https://example.com)"
-                            className={validationErrors.website ? "border-red-500" : ""}
+                            className={
+                              validationErrors.website ? "border-red-500" : ""
+                            }
                           />
                           {validationErrors.website && (
-                            <p className="text-red-500 text-xs mt-1">{validationErrors.website}</p>
+                            <p className="text-red-500 text-xs mt-1">
+                              {validationErrors.website}
+                            </p>
                           )}
                         </div>
                       ) : (
                         <span>
                           {profile?.website ? (
                             <a
-                              href={profile.website.startsWith("http") ? profile.website : `https://${profile.website}`}
+                              href={
+                                profile.website.startsWith("http")
+                                  ? profile.website
+                                  : `https://${profile.website}`
+                              }
                               target="_blank"
                               rel="noopener noreferrer"
                               className="text-teal-600 hover:text-teal-800 underline"
@@ -689,14 +833,17 @@ export default function ViewProfilePage() {
                               {profile.website}
                             </a>
                           ) : (
-                            "www.sellco.com"
-                          )}
+                            <span className="text-gray-500"></span>
+                          )}{" "}
                         </span>
                       )}
                     </div>
 
                     <div className="mt-4">
-                      <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+                      <Dialog
+                        open={isPasswordDialogOpen}
+                        onOpenChange={setIsPasswordDialogOpen}
+                      >
                         <DialogTrigger asChild>
                           <Button variant="outline" size="sm">
                             Change Password
@@ -715,45 +862,79 @@ export default function ViewProfilePage() {
                                   type={showPasswords.new ? "text" : "password"}
                                   value={passwordData.newPassword}
                                   onChange={(e) =>
-                                    setPasswordData((prev) => ({ ...prev, newPassword: e.target.value }))
+                                    setPasswordData((prev) => ({
+                                      ...prev,
+                                      newPassword: e.target.value,
+                                    }))
                                   }
                                   placeholder="Enter new password (min 6 characters)"
                                 />
                                 <button
                                   type="button"
                                   className="absolute right-3 top-1/2 transform -translate-y-1/2"
-                                  onClick={() => setShowPasswords((prev) => ({ ...prev, new: !prev.new }))}
+                                  onClick={() =>
+                                    setShowPasswords((prev) => ({
+                                      ...prev,
+                                      new: !prev.new,
+                                    }))
+                                  }
                                 >
-                                  {showPasswords.new ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                  {showPasswords.new ? (
+                                    <EyeOff className="h-4 w-4" />
+                                  ) : (
+                                    <Eye className="h-4 w-4" />
+                                  )}
                                 </button>
                               </div>
                             </div>
                             <div>
-                              <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                              <Label htmlFor="confirmPassword">
+                                Confirm New Password
+                              </Label>
                               <div className="relative">
                                 <Input
                                   id="confirmPassword"
-                                  type={showPasswords.confirm ? "text" : "password"}
+                                  type={
+                                    showPasswords.confirm ? "text" : "password"
+                                  }
                                   value={passwordData.confirmPassword}
                                   onChange={(e) =>
-                                    setPasswordData((prev) => ({ ...prev, confirmPassword: e.target.value }))
+                                    setPasswordData((prev) => ({
+                                      ...prev,
+                                      confirmPassword: e.target.value,
+                                    }))
                                   }
                                   placeholder="Confirm new password"
                                 />
                                 <button
                                   type="button"
                                   className="absolute right-3 top-1/2 transform -translate-y-1/2"
-                                  onClick={() => setShowPasswords((prev) => ({ ...prev, confirm: !prev.confirm }))}
+                                  onClick={() =>
+                                    setShowPasswords((prev) => ({
+                                      ...prev,
+                                      confirm: !prev.confirm,
+                                    }))
+                                  }
                                 >
-                                  {showPasswords.confirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                  {showPasswords.confirm ? (
+                                    <EyeOff className="h-4 w-4" />
+                                  ) : (
+                                    <Eye className="h-4 w-4" />
+                                  )}
                                 </button>
                               </div>
                             </div>
                             <div className="flex justify-end gap-2">
-                              <Button variant="outline" onClick={() => setIsPasswordDialogOpen(false)}>
+                              <Button
+                                variant="outline"
+                                onClick={() => setIsPasswordDialogOpen(false)}
+                              >
                                 Cancel
                               </Button>
-                              <Button onClick={changePassword} disabled={updating}>
+                              <Button
+                                onClick={changePassword}
+                                disabled={updating}
+                              >
                                 {updating ? "Changing..." : "Change Password"}
                               </Button>
                             </div>
@@ -770,5 +951,5 @@ export default function ViewProfilePage() {
       </div>
       <Toaster />
     </SellerProtectedRoute>
-  )
+  );
 }

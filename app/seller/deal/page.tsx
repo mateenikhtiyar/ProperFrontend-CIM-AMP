@@ -4,14 +4,13 @@ import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
-import { Eye, Clock, LogOut, ArrowLeft, User, Users, Clock3, XCircle } from "lucide-react"
+import { Eye, Clock, LogOut, ArrowLeft, User, Users, Clock3, XCircle, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAuth } from "@/contexts/auth-context"
 import SellerProtectedRoute from "@/components/seller/protected-route"
 import { Checkbox } from "@/components/ui/checkbox"
 import { toast } from "@/components/ui/use-toast"
-import { Toaster } from "@/components/ui/toaster"
 
 // Updated interfaces to match API structure
 interface SellerProfile {
@@ -52,7 +51,6 @@ interface Deal {
   visibility?: string
   industrySector: string
   geographySelection: string
-
   employeeCount?: number
   financialDetails: {
     trailingRevenueCurrency?: string
@@ -70,10 +68,7 @@ interface Deal {
     assetLight?: boolean
     assetHeavy?: boolean
   }
-  managementPreferences: {
-    retiringDivesting?: boolean
-    staffStay?: boolean
-  }
+
   buyerFit: {
     capitalAvailability?: string
     minPriorAcquisitions?: number
@@ -101,9 +96,41 @@ interface Buyer {
   buyerName: string
   buyerEmail: string
   companyName: string
+  companyProfileId?: string
   status: string
   invitedAt: string
   lastActivity?: string
+}
+
+interface CompanyProfile {
+  _id: string
+  companyName: string
+  companyType: string
+  description?: string
+  capitalEntity?: string
+  dealsCompletedLast5Years: number
+  averageDealSize: number
+  preferences: {
+    stopSendingDeals: boolean
+    dontShowMyDeals: boolean
+    dontSendDealsToMyCompetitors: boolean
+    allowBuyerLikeDeals: boolean
+  }
+  targetCriteria: {
+    countries: string[]
+    industrySectors: string[]
+    revenueMin?: number
+    revenueMax?: number
+    ebitdaMin?: number
+    ebitdaMax?: number
+    transactionSizeMin?: number
+    transactionSizeMax?: number
+    revenueGrowth?: number
+    minStakePercent?: number
+    minYearsInBusiness?: number
+    preferredBusinessModels: string[]
+    description?: string
+  }
 }
 
 interface StatusSummary {
@@ -127,11 +154,14 @@ interface MatchedBuyer {
   buyerName: string
   buyerEmail: string
   companyName: string
+  companyType: string
   description?: string
+  capitalEntity?: string
+  dealsCompletedLast5Years: number
+  averageDealSize: number
   preferences: {
     stopSendingDeals: boolean
-    dontShowMyDeals: boolean
-    dontSendDealsToMyCompetitors: boolean
+    doNotSendMarketedDeals: boolean
     allowBuyerLikeDeals: boolean
   }
   targetCriteria: {
@@ -147,7 +177,6 @@ interface MatchedBuyer {
     minStakePercent?: number
     minYearsInBusiness?: number
     preferredBusinessModels: string[]
-    managementTeamPreference: string[]
     description?: string
   }
   totalMatchScore: number
@@ -159,7 +188,6 @@ interface MatchedBuyer {
     ebitdaMatch: boolean
     transactionSizeMatch: boolean
     businessModelMatch: boolean
-    managementMatch: boolean
     yearsMatch: boolean
   }
 }
@@ -175,6 +203,10 @@ export default function DealDetailsPage() {
   const [selectedBuyers, setSelectedBuyers] = useState<string[]>([])
   const [loadingBuyers, setLoadingBuyers] = useState(false)
   const [sending, setSending] = useState(false)
+  const [selectedBuyer, setSelectedBuyer] = useState<Buyer | null>(null)
+  const [selectedCompanyProfile, setSelectedCompanyProfile] = useState<CompanyProfile | null>(null)
+  const [isPopupOpen, setIsPopupOpen] = useState(false)
+  const [loadingCompanyProfile, setLoadingCompanyProfile] = useState(false)
   const [showBuyersForNewDeal, setShowBuyersForNewDeal] = useState(false)
   const [selectAllDropdownOpen, setSelectAllDropdownOpen] = useState(false)
 
@@ -188,15 +220,13 @@ export default function DealDetailsPage() {
     const fetchSellerProfile = async () => {
       try {
         const token = localStorage.getItem("token")
-        const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
-
+        const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
         const response = await fetch(`${apiUrl}/sellers/profile`, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
         })
-
         if (response.ok) {
           const data = await response.json()
           setSellerProfile(data)
@@ -220,36 +250,30 @@ export default function DealDetailsPage() {
       router.push("/seller/dashboard")
       return
     }
-
     const fetchDealDetails = async () => {
       try {
         setLoading(true)
         const token = localStorage.getItem("token")
-        const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
-
+        const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
         if (!token) {
           router.push("/seller/login?error=no_token")
           return
         }
-
         const response = await fetch(`${apiUrl}/deals/${dealId}`, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
         })
-
         if (!response.ok) {
           throw new Error(`API Error: ${response.status} ${response.statusText}`)
         }
-
         const data = await response.json()
         setDeal(data)
         setError(null)
       } catch (err: any) {
         console.error("Error fetching deal details:", err)
         setError(err.message || "Failed to load deal details")
-
         if (err.message.includes("Authentication") || err.message.includes("Forbidden")) {
           router.push("/seller/login?error=auth_failed")
         }
@@ -257,35 +281,48 @@ export default function DealDetailsPage() {
         setLoading(false)
       }
     }
-
     fetchDealDetails()
   }, [dealId, router])
+
+  // Fetch company profile
+  const fetchCompanyProfile = async (companyProfileId: string) => {
+    try {
+      setLoadingCompanyProfile(true)
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+      const response = await fetch(`${apiUrl}/company-profiles/public/${companyProfileId}`)
+
+      if (response.ok) {
+        const companyData = await response.json()
+        setSelectedCompanyProfile(companyData)
+      } else {
+        console.error("Failed to fetch company profile:", response.status)
+        setSelectedCompanyProfile(null)
+      }
+    } catch (error) {
+      console.error("Error fetching company profile:", error)
+      setSelectedCompanyProfile(null)
+    } finally {
+      setLoadingCompanyProfile(false)
+    }
+  }
 
   // Fetch status summary
   const fetchStatusSummary = async () => {
     try {
       setLoadingBuyers(true)
       const token = localStorage.getItem("token")
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
-
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
       const response = await fetch(`${apiUrl}/deals/${dealId}/status-summary`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
       })
-
       if (response.ok) {
         const data = await response.json()
-
-        // Process invitation status to create buyer list
         const processedBuyers: Buyer[] = []
-
         if (data.deal?.invitationStatus) {
-          // Get all buyer IDs
           const buyerIds = Object.keys(data.deal.invitationStatus)
-
-          // Fetch buyer details for each buyer ID
           const buyerDetailsPromises = buyerIds.map(async (buyerId) => {
             try {
               const buyerResponse = await fetch(`${apiUrl}/buyers/${buyerId}`, {
@@ -294,7 +331,6 @@ export default function DealDetailsPage() {
                   "Content-Type": "application/json",
                 },
               })
-
               if (buyerResponse.ok) {
                 return await buyerResponse.json()
               } else {
@@ -306,37 +342,29 @@ export default function DealDetailsPage() {
               return null
             }
           })
-
-          // Wait for all buyer details to be fetched
           const buyerDetails = await Promise.all(buyerDetailsPromises)
-
-          // Combine invitation status with buyer details
           for (let i = 0; i < buyerIds.length; i++) {
             const buyerId = buyerIds[i]
             const invitation = data.deal.invitationStatus[buyerId]
             const buyerInfo = buyerDetails[i]
-
             processedBuyers.push({
               _id: buyerId,
               buyerId: buyerId,
               buyerName: buyerInfo?.fullName || buyerInfo?.name || `Buyer ${buyerId.slice(-4)}`,
               buyerEmail: buyerInfo?.email || "Email not available",
               companyName: buyerInfo?.companyName || buyerInfo?.company || "Company not available",
+              companyProfileId: buyerInfo?.companyProfileId,
               status: invitation.response || "pending",
               invitedAt: invitation.invitedAt,
               lastActivity: invitation.respondedAt,
             })
           }
         }
-
-        // Categorize buyers by status
         const categorizedBuyers = {
           active: processedBuyers.filter((buyer) => buyer.status === "accepted" || buyer.status === "interested"),
           pending: processedBuyers.filter((buyer) => buyer.status === "pending" || !buyer.status),
           rejected: processedBuyers.filter((buyer) => buyer.status === "rejected" || buyer.status === "declined"),
         }
-
-        // Update the data structure with processed buyers
         const updatedData = {
           ...data,
           buyersByStatus: categorizedBuyers,
@@ -347,7 +375,6 @@ export default function DealDetailsPage() {
             totalRejected: categorizedBuyers.rejected.length,
           },
         }
-
         setStatusSummary(updatedData)
       } else {
         console.error("Failed to fetch status summary:", response.status)
@@ -361,30 +388,25 @@ export default function DealDetailsPage() {
 
   useEffect(() => {
     if (!dealId) return
-
     fetchStatusSummary()
   }, [dealId])
 
   // Check for newly created deal and fetch matching buyers
   useEffect(() => {
     const isNewDeal = searchParams.get("newDeal")
-
     if (isNewDeal === "true" && deal) {
       setShowBuyersForNewDeal(true)
-
       const fetchMatchingBuyers = async () => {
         try {
           setLoadingBuyers(true)
           const token = localStorage.getItem("token")
-          const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
-
+          const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
           const response = await fetch(`${apiUrl}/deals/${dealId}/matching-buyers`, {
             headers: {
               Authorization: `Bearer ${token}`,
               "Content-Type": "application/json",
             },
           })
-
           if (response.ok) {
             const buyers = await response.json()
             setMatchedBuyers(buyers)
@@ -398,7 +420,6 @@ export default function DealDetailsPage() {
           setLoadingBuyers(false)
         }
       }
-
       fetchMatchingBuyers()
     }
   }, [deal, dealId, searchParams])
@@ -409,20 +430,27 @@ export default function DealDetailsPage() {
   }
 
   // Helper functions
-  const getBusinessModel = (model: Deal["businessModel"]): string => {
-    const models = []
-    if (model.recurringRevenue) models.push("Recurring Revenue")
-    if (model.projectBased) models.push("Project-Based")
-    if (model.assetLight) models.push("Asset Light")
-    if (model.assetHeavy) models.push("Asset Heavy")
-    return models.length > 0 ? models[0] : "Not specified"
+  const handleBuyerClick = async (buyer: Buyer) => {
+    setSelectedBuyer(buyer)
+    setIsPopupOpen(true)
+
+    // Fetch company profile if companyProfileId exists
+    if (buyer.companyProfileId) {
+      await fetchCompanyProfile(buyer.companyProfileId)
+    }
   }
 
-  const getManagementPreferences = (prefs: Deal["managementPreferences"]): string => {
-    if (prefs.retiringDivesting && prefs.staffStay) return "Retiring to diversity"
-    if (prefs.retiringDivesting) return "Owner(s) Departing"
-    if (prefs.staffStay) return "Management Team Staying"
-    return "Not specified"
+  const closePopup = () => {
+    setIsPopupOpen(false)
+    setSelectedBuyer(null)
+    setSelectedCompanyProfile(null)
+  }
+
+  const getProfilePictureUrl = (path: string | null) => {
+    if (!path) return null
+    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+    const formattedPath = path.replace(/\\/g, "/")
+    return `${apiUrl}/${formattedPath.startsWith("/") ? formattedPath.slice(1) : formattedPath}`
   }
 
   const formatCurrency = (amount = 0, currency = "USD($)"): string => {
@@ -448,7 +476,6 @@ export default function DealDetailsPage() {
     if (!status) {
       return "bg-gray-100 text-gray-700"
     }
-
     switch (status.toLowerCase()) {
       case "active":
       case "accepted":
@@ -464,17 +491,6 @@ export default function DealDetailsPage() {
       default:
         return "bg-gray-100 text-gray-700"
     }
-  }
-
-  const downloadDocument = (doc: DealDocument) => {
-    const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
-    const link = document.createElement("a")
-    link.href = `${apiUrl}/uploads/deal-documents/${doc.filename}`
-    link.download = doc.originalName
-    link.target = "_blank"
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
   }
 
   const toggleBuyerSelection = (buyerId: string) => {
@@ -497,7 +513,6 @@ export default function DealDetailsPage() {
 
   const handleSendInvite = async (buyerIds?: string[]) => {
     const targetBuyers = buyerIds || selectedBuyers
-
     if (targetBuyers.length === 0) {
       toast({
         title: "No buyers selected",
@@ -506,7 +521,6 @@ export default function DealDetailsPage() {
       })
       return
     }
-
     if (!dealId) {
       toast({
         title: "No deal available",
@@ -515,12 +529,10 @@ export default function DealDetailsPage() {
       })
       return
     }
-
     try {
       setSending(true)
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
       const token = localStorage.getItem("token")
-
       if (!token) {
         toast({
           title: "Authentication required",
@@ -530,20 +542,15 @@ export default function DealDetailsPage() {
         router.push("/seller/login")
         return
       }
-
-      // Extract the correct buyer IDs from the matched buyers data
       const actualBuyerIds = targetBuyers
         .map((selectedProfileId) => {
           const buyerProfile = matchedBuyers.find((b) => b._id === selectedProfileId)
-
           if (!buyerProfile || !buyerProfile.buyerId) {
             return null
           }
-
           return buyerProfile.buyerId
         })
         .filter(Boolean)
-
       if (actualBuyerIds.length === 0) {
         toast({
           title: "Error",
@@ -552,9 +559,7 @@ export default function DealDetailsPage() {
         })
         return
       }
-
       const requestBody = { buyerIds: actualBuyerIds }
-
       const response = await fetch(`${apiUrl}/deals/${dealId}/target-buyers`, {
         method: "POST",
         headers: {
@@ -563,7 +568,6 @@ export default function DealDetailsPage() {
         },
         body: JSON.stringify(requestBody),
       })
-
       if (!response.ok) {
         const errorText = await response.text()
         let errorData
@@ -574,21 +578,13 @@ export default function DealDetailsPage() {
         }
         throw new Error(errorData.message || `API Error: ${response.status} ${response.statusText}`)
       }
-
       const result = await response.json()
-
       toast({
         title: "Invites sent successfully",
         description: `Sent invites to ${actualBuyerIds.length} buyer(s)`,
       })
-
-      // Hide buyers section after sending invites
       setShowBuyersForNewDeal(false)
-
-      // Clear selected buyers
       setSelectedBuyers([])
-
-      // Refresh the status summary
       fetchStatusSummary()
     } catch (error: any) {
       console.error("Error sending invites:", error)
@@ -602,26 +598,19 @@ export default function DealDetailsPage() {
     }
   }
 
-  const handleSingleInvite = async (buyerId: string) => {
-    await handleSendInvite([buyerId])
-  }
-
   const handleInviteBuyersClick = async () => {
     setShowBuyersForNewDeal(true)
-
     const fetchMatchingBuyers = async () => {
       try {
         setLoadingBuyers(true)
         const token = localStorage.getItem("token")
-        const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
-
+        const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
         const response = await fetch(`${apiUrl}/deals/${dealId}/matching-buyers`, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
         })
-
         if (response.ok) {
           const buyers = await response.json()
           setMatchedBuyers(buyers)
@@ -635,7 +624,6 @@ export default function DealDetailsPage() {
         setLoadingBuyers(false)
       }
     }
-
     await fetchMatchingBuyers()
   }
 
@@ -649,7 +637,6 @@ export default function DealDetailsPage() {
               <Image src="/logo.svg" alt="CIM Amplify Logo" width={150} height={50} className="h-auto" />
             </Link>
           </div>
-
           <nav className="flex-1 space-y-6">
             <Button
               variant="secondary"
@@ -667,7 +654,6 @@ export default function DealDetailsPage() {
               </svg>
               <span>My Deals</span>
             </Button>
-
             <Button
               variant="ghost"
               className="w-full justify-start gap-3 font-normal"
@@ -676,7 +662,6 @@ export default function DealDetailsPage() {
               <Eye className="h-5 w-5" />
               <span>View Profile</span>
             </Button>
-
             <Button
               variant="ghost"
               className="w-full justify-start gap-3 font-normal"
@@ -685,7 +670,6 @@ export default function DealDetailsPage() {
               <Clock className="h-5 w-5" />
               <span>Off Market</span>
             </Button>
-
             <Button
               variant="ghost"
               className="w-full justify-start gap-3 font-normal text-red-600 hover:text-red-700 hover:bg-red-50 mt-auto"
@@ -709,17 +693,19 @@ export default function DealDetailsPage() {
                 {showBuyersForNewDeal ? "Choose Buyers" : "Buyer Status Summary"}
               </h1>
             </div>
-
             <div className="flex items-center gap-3">
               <div className="text-right">
                 <div className="font-medium">{userProfile?.fullName || sellerProfile?.fullName || "User"}</div>
               </div>
-              <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center text-white font-medium overflow-hidden">
-                {userProfile?.profilePicture || sellerProfile?.profilePicture ? (
+              <div className="relative h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center text-white font-medium overflow-hidden">
+                {sellerProfile?.profilePicture ? (
                   <img
-                    src={userProfile?.profilePicture || sellerProfile?.profilePicture || "/placeholder.svg"}
-                    alt={userProfile?.fullName || sellerProfile?.fullName}
+                    src={getProfilePictureUrl(sellerProfile.profilePicture) || "/placeholder.svg"}
+                    alt={sellerProfile.fullName}
                     className="h-full w-full object-cover"
+                    onError={(e) => {
+                      ;(e.currentTarget as HTMLImageElement).src = "/placeholder.svg"
+                    }}
                   />
                 ) : (
                   (sellerProfile?.fullName || "U").charAt(0)
@@ -758,7 +744,7 @@ export default function DealDetailsPage() {
                         <div className="relative">
                           <Button
                             variant="outline"
-                            className="flex items-center"
+                            className="flex items-center bg-transparent"
                             onClick={() => setSelectAllDropdownOpen(!selectAllDropdownOpen)}
                           >
                             Select All{" "}
@@ -793,7 +779,6 @@ export default function DealDetailsPage() {
                       </div>
                     </div>
                   </div>
-
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {matchedBuyers.map((buyer) => (
                       <div key={buyer._id} className="border border-gray-200 rounded-lg overflow-hidden">
@@ -808,7 +793,6 @@ export default function DealDetailsPage() {
                             <div className="flex justify-between items-start mb-4">
                               <h3 className="text-lg font-medium text-teal-500">{buyer.companyName || "Anonymous"}</h3>
                             </div>
-
                             <div className="mb-6">
                               <h4 className="font-medium mb-2">Overview</h4>
                               <div className="space-y-1 text-sm">
@@ -822,52 +806,74 @@ export default function DealDetailsPage() {
                                 </div>
                               </div>
                             </div>
-
                             <div className="mb-6">
                               <h4 className="font-medium mb-2">Target Criteria</h4>
                               <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
                                 <div>
                                   <span className="text-gray-500">Revenue Range: </span>$
-                                  {buyer.targetCriteria?.revenueMin?.toLocaleString() || 0} - $
-                                  {buyer.targetCriteria?.revenueMax?.toLocaleString() || "∞"}
+                                  {buyer.targetCriteria?.revenueMin?.toLocaleString() ?? "N/A"} - $
+                                  {buyer.targetCriteria?.revenueMax?.toLocaleString() ?? "N/A"}
                                 </div>
                                 <div>
                                   <span className="text-gray-500">EBITDA Range: </span>$
-                                  {buyer.targetCriteria?.ebitdaMin?.toLocaleString() || 0} - $
-                                  {buyer.targetCriteria?.ebitdaMax?.toLocaleString() || "∞"}
+                                  {buyer.targetCriteria?.ebitdaMin?.toLocaleString() ?? "N/A"} - $
+                                  {buyer.targetCriteria?.ebitdaMax?.toLocaleString() ?? "N/A"}
                                 </div>
                                 <div>
                                   <span className="text-gray-500">Transaction Size: </span>$
-                                  {buyer.targetCriteria?.transactionSizeMin?.toLocaleString() || 0} - $
-                                  {buyer.targetCriteria?.transactionSizeMax?.toLocaleString() || "∞"}
+                                  {buyer.targetCriteria?.transactionSizeMin?.toLocaleString() ?? "N/A"} - $
+                                  {buyer.targetCriteria?.transactionSizeMax?.toLocaleString() ?? "N/A"}
                                 </div>
                                 <div>
                                   <span className="text-gray-500">Revenue Growth: </span>
-                                  {buyer.targetCriteria?.revenueGrowth || "Any"}%
+                                  {buyer.targetCriteria?.revenueGrowth ?? "N/A"}%
                                 </div>
                                 <div>
                                   <span className="text-gray-500">Min Years in Business: </span>
-                                  {buyer.targetCriteria?.minYearsInBusiness || "Any"}
+                                  {buyer.targetCriteria?.minYearsInBusiness ?? "N/A"}
                                 </div>
                                 <div className="col-span-2">
                                   <span className="text-gray-500">Description of ideal targets: </span>
                                   {buyer.targetCriteria?.description || "Not provided"}
                                 </div>
+                                <div>
+                                  <span className="text-gray-500">Company Type: </span>
+                                  {buyer.companyType || "N/A"}
+                                </div>
+                                <div>
+                                  <span className="text-gray-500">Capital Availability: </span>
+                                  {buyer.capitalEntity || "N/A"}
+                                </div>
+                                <div>
+                                  <span className="text-gray-500">Deals Completed (5 yrs): </span>
+                                  {buyer.dealsCompletedLast5Years !== undefined &&
+                                  buyer.dealsCompletedLast5Years !== null
+                                    ? buyer.dealsCompletedLast5Years
+                                    : "N/A"}
+                                </div>
+                                <div>
+                                  <span className="text-gray-500">Avg Transaction Value: </span>
+                                  {buyer.averageDealSize !== undefined && buyer.averageDealSize !== null
+                                    ? `$${buyer.averageDealSize.toLocaleString()}`
+                                    : "$N/A"}
+                                </div>
+                                <div>
+                                  <span className="text-gray-500">3-Yr Avg Revenue Growth: </span>
+                                  {buyer.targetCriteria?.revenueGrowth !== undefined &&
+                                  buyer.targetCriteria?.revenueGrowth !== null
+                                    ? `${buyer.targetCriteria.revenueGrowth}%`
+                                    : "N/A"}
+                                </div>
+                                <div className="col-span-2">
+                                  <span className="text-gray-500">Preferred Business Models: </span>
+                                  {buyer.targetCriteria?.preferredBusinessModels?.length
+                                    ? buyer.targetCriteria.preferredBusinessModels.join(", ")
+                                    : "Not specified"}
+                                </div>
                               </div>
                             </div>
                           </div>
                         </div>
-
-                        {/* <div className="bg-gray-50 p-3 text-right">
-                          <Button
-                            variant="default"
-                            className="bg-teal-500 hover:bg-teal-600"
-                            onClick={() => handleSingleInvite(buyer._id)}
-                            disabled={sending}
-                          >
-                            {sending ? "Sending..." : "Send Invite"}
-                          </Button>
-                        </div> */}
                       </div>
                     ))}
                   </div>
@@ -913,7 +919,6 @@ export default function DealDetailsPage() {
                   <div className="p-6 border-b border-gray-200">
                     <h3 className="text-lg text-[#0D9488] font-medium">{deal.title}</h3>
                   </div>
-
                   <div className="p-6">
                     {loadingBuyers ? (
                       <div className="text-center py-8">
@@ -1029,7 +1034,11 @@ export default function DealDetailsPage() {
                                 </thead>
                                 <tbody>
                                   {statusSummary.buyersByStatus.pending.map((buyer) => (
-                                    <tr key={buyer._id} className="border-b border-gray-100">
+                                    <tr
+                                      key={buyer._id}
+                                      className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
+                                      onClick={() => handleBuyerClick(buyer)}
+                                    >
                                       <td className="py-4">
                                         <div className="flex items-center">
                                           <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 mr-3">
@@ -1069,6 +1078,250 @@ export default function DealDetailsPage() {
                                   ))}
                                 </tbody>
                               </table>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Buyer Details Popup */}
+                        {isPopupOpen && selectedBuyer && (
+                          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                            <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+                              <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex justify-between items-center">
+                                <h2 className="text-xl font-semibold text-gray-900">Buyer Details</h2>
+                                <button
+                                  onClick={closePopup}
+                                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                                >
+                                  <X className="h-5 w-5" />
+                                </button>
+                              </div>
+                              <div className="p-6">
+                                {loadingCompanyProfile ? (
+                                  <div className="text-center py-8">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#3aafa9] mx-auto mb-4"></div>
+                                    <p className="text-gray-600">Loading company profile...</p>
+                                  </div>
+                                ) : (
+                                  <div className="border border-gray-200 rounded-lg overflow-hidden">
+                                    <div className="p-6">
+                                      <div className="flex justify-between items-start mb-6">
+                                        <h3 className="text-2xl font-medium text-teal-500">
+                                          {selectedCompanyProfile?.companyName ||
+                                            selectedBuyer.companyName ||
+                                            "Anonymous"}
+                                        </h3>
+                                      </div>
+
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        {/* Basic Information */}
+                                        <div className="mb-6">
+                                          <h4 className="text-lg font-medium mb-4 text-gray-800">Basic Information</h4>
+                                          <div className="space-y-3 text-sm">
+                                            <div>
+                                              <span className="text-gray-500 font-medium">Contact Name: </span>
+                                              <span className="text-gray-900">
+                                                {selectedBuyer.buyerName || "Unknown"}
+                                              </span>
+                                            </div>
+                                            <div>
+                                              <span className="text-gray-500 font-medium">Email: </span>
+                                              <span className="text-gray-900">
+                                                {selectedBuyer.buyerEmail || "Not provided"}
+                                              </span>
+                                            </div>
+                                            <div>
+                                              <span className="text-gray-500 font-medium">Company Type: </span>
+                                              <span className="text-gray-900">
+                                                {selectedCompanyProfile?.companyType || "Not specified"}
+                                              </span>
+                                            </div>
+                                            <div>
+                                              <span className="text-gray-500 font-medium">Capital Availability: </span>
+                                              <span className="text-gray-900">
+                                                {selectedCompanyProfile?.capitalEntity === "need_to_raise"
+                                                  ? "Need to raise"
+                                                  : selectedCompanyProfile?.capitalEntity === "have_capital"
+                                                    ? "Have capital"
+                                                    : selectedCompanyProfile?.capitalEntity || "Not specified"}
+                                              </span>
+                                            </div>
+                                            {selectedCompanyProfile?.description && (
+                                              <div>
+                                                <span className="text-gray-500 font-medium">Company Description: </span>
+                                                <span className="text-gray-900">
+                                                  {selectedCompanyProfile.description}
+                                                </span>
+                                              </div>
+                                            )}
+                                          </div>
+                                        </div>
+
+                                        {/* Deal Experience */}
+                                        <div className="mb-6">
+                                          <h4 className="text-lg font-medium mb-4 text-gray-800">Deal Experience</h4>
+                                          <div className="space-y-3 text-sm">
+                                            <div>
+                                              <span className="text-gray-500 font-medium">
+                                                Deals Completed (Last 5 years):{" "}
+                                              </span>
+                                              <span className="text-gray-900 font-semibold">
+                                                {selectedCompanyProfile?.dealsCompletedLast5Years?.toLocaleString() ||
+                                                  "Not provided"}
+                                              </span>
+                                            </div>
+                                            <div>
+                                              <span className="text-gray-500 font-medium">Average Deal Size: </span>
+                                              <span className="text-gray-900 font-semibold">
+                                                $
+                                                {selectedCompanyProfile?.averageDealSize?.toLocaleString() ||
+                                                  "Not provided"}
+                                              </span>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      {/* Target Criteria */}
+                                      {selectedCompanyProfile?.targetCriteria && (
+                                        <div className="mb-6 border-t pt-6">
+                                          <h4 className="text-lg font-medium mb-4 text-gray-800">
+                                            Target Investment Criteria
+                                          </h4>
+                                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-sm">
+                                            <div>
+                                              <span className="text-gray-500 font-medium">Revenue Range: </span>
+                                              <div className="text-gray-900 font-semibold">
+                                                $
+                                                {selectedCompanyProfile.targetCriteria.revenueMin?.toLocaleString() ||
+                                                  0}{" "}
+                                                - $
+                                                {selectedCompanyProfile.targetCriteria.revenueMax?.toLocaleString() ||
+                                                  "∞"}
+                                              </div>
+                                            </div>
+                                            <div>
+                                              <span className="text-gray-500 font-medium">EBITDA Range: </span>
+                                              <div className="text-gray-900 font-semibold">
+                                                $
+                                                {selectedCompanyProfile.targetCriteria.ebitdaMin?.toLocaleString() || 0}{" "}
+                                                - $
+                                                {selectedCompanyProfile.targetCriteria.ebitdaMax?.toLocaleString() ||
+                                                  "∞"}
+                                              </div>
+                                            </div>
+                                            <div>
+                                              <span className="text-gray-500 font-medium">Transaction Size: </span>
+                                              <div className="text-gray-900 font-semibold">
+                                                $
+                                                {selectedCompanyProfile.targetCriteria.transactionSizeMin?.toLocaleString() ||
+                                                  0}{" "}
+                                                - $
+                                                {selectedCompanyProfile.targetCriteria.transactionSizeMax?.toLocaleString() ||
+                                                  "∞"}
+                                              </div>
+                                            </div>
+                                            <div>
+                                              <span className="text-gray-500 font-medium">Min Revenue Growth: </span>
+                                              <div className="text-gray-900 font-semibold">
+                                                {selectedCompanyProfile.targetCriteria.revenueGrowth
+                                                  ? `${selectedCompanyProfile.targetCriteria.revenueGrowth}%`
+                                                  : "Any"}
+                                              </div>
+                                            </div>
+                                            <div>
+                                              <span className="text-gray-500 font-medium">Min Years in Business: </span>
+                                              <div className="text-gray-900 font-semibold">
+                                                {selectedCompanyProfile.targetCriteria.minYearsInBusiness || "Any"}
+                                              </div>
+                                            </div>
+                                            
+                                          </div>
+
+                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                                            <div>
+                                              <span className="text-gray-500 font-medium">
+                                                Preferred Business Models:{" "}
+                                              </span>
+                                              <div className="text-gray-900 mt-1">
+                                                {selectedCompanyProfile.targetCriteria.preferredBusinessModels?.length >
+                                                0
+                                                  ? selectedCompanyProfile.targetCriteria.preferredBusinessModels.join(
+                                                      ", ",
+                                                    )
+                                                  : "Not specified"}
+                                              </div>
+                                            </div>
+                                            <div>
+                                              <span className="text-gray-500 font-medium">Target Industries: </span>
+                                              <div className="text-gray-900 mt-1">
+                                                {selectedCompanyProfile.targetCriteria.industrySectors?.length > 0
+                                                  ? selectedCompanyProfile.targetCriteria.industrySectors.join(", ")
+                                                  : "Not specified"}
+                                              </div>
+                                            </div>
+                                            <div>
+                                              <span className="text-gray-500 font-medium">Target Countries: </span>
+                                              <div className="text-gray-900 mt-1">
+                                                {selectedCompanyProfile.targetCriteria.countries?.length > 0
+                                                  ? selectedCompanyProfile.targetCriteria.countries.join(", ")
+                                                  : "Not specified"}
+                                              </div>
+                                            </div>
+                                          </div>
+
+                                          {selectedCompanyProfile.targetCriteria.description && (
+                                            <div className="mt-6">
+                                              <span className="text-gray-500 font-medium">
+                                                Investment Focus Description:{" "}
+                                              </span>
+                                              <div className="text-gray-900 mt-2 p-4 bg-gray-50 rounded-lg">
+                                                {selectedCompanyProfile.targetCriteria.description}
+                                              </div>
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
+
+                                      {/* Preferences */}
+                                      {selectedCompanyProfile?.preferences && (
+                                        <div className="border-t pt-6">
+                                          <h4 className="text-lg font-medium mb-4 text-gray-800">
+                                            Communication Preferences
+                                          </h4>
+                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                            <div className="flex items-center">
+                                              <span className="text-gray-500 font-medium">Stop Sending Deals: </span>
+                                              <span
+                                                className={`ml-2 px-2 py-1 rounded-full text-xs ${
+                                                  selectedCompanyProfile.preferences.stopSendingDeals
+                                                    ? "bg-red-100 text-red-700"
+                                                    : "bg-green-100 text-green-700"
+                                                }`}
+                                              >
+                                                {selectedCompanyProfile.preferences.stopSendingDeals ? "Yes" : "No"}
+                                              </span>
+                                            </div>
+                                            <div className="flex items-center">
+                                              <span className="text-gray-500 font-medium">
+                                                Allow Buyer-like Deals:{" "}
+                                              </span>
+                                              <span
+                                                className={`ml-2 px-2 py-1 rounded-full text-xs ${
+                                                  selectedCompanyProfile.preferences.allowBuyerLikeDeals
+                                                    ? "bg-green-100 text-green-700"
+                                                    : "bg-red-100 text-red-700"
+                                                }`}
+                                              >
+                                                {selectedCompanyProfile.preferences.allowBuyerLikeDeals ? "Yes" : "No"}
+                                              </span>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           </div>
                         )}
@@ -1133,44 +1386,28 @@ export default function DealDetailsPage() {
                           </div>
                         )}
 
-                        {/* No buyers case */}
-                        {/* {statusSummary.summary.totalTargeted === 0 && ( */}
-                          <div className="text-center py-8">
-                            {/* <p className="text-gray-500 mb-4">No buyers have been invited yet</p> */}
-                            <Button
-                              className="bg-teal-500 hover:bg-teal-600"
-                              onClick={handleInviteBuyersClick}
-                              disabled={loadingBuyers}
-                            >
-                              {loadingBuyers ? "Loading..." : "Invite Buyers"}
-                            </Button>
-                          </div>
-                        {/* )} */}
+                        {/* Invite More Buyers Button */}
+                        <div className="mt-6 pt-6 border-t border-gray-200">
+                          <Button
+                            onClick={handleInviteBuyersClick}
+                            className="bg-teal-500 hover:bg-teal-600 text-white"
+                          >
+                            Invite More Buyers
+                          </Button>
+                        </div>
                       </div>
                     ) : (
-                      <div className="text-center py-8">
-                        <p className="text-gray-500 mb-4">Failed to load buyer status information</p>
-                        <Button
-                          variant="outline"
-                          onClick={() => router.push(`/seller/dashboard?newDeal=${dealId}&success=true`)}
-                        >
-                          Back to Dashboard
-                        </Button>
-                      </div>
+                      <div className="text-center py-8 text-gray-600">No buyer status data available</div>
                     )}
                   </div>
                 </div>
+
+ 
               </>
-            ) : (
-              <div className="bg-white rounded-lg shadow p-6 text-center">
-                <div className="text-gray-500 text-lg mb-2">Deal not found</div>
-                <Button onClick={() => router.push("/seller/dashboard")}>Back to Dashboard</Button>
-              </div>
-            )}
+            ) : null}
           </div>
         </div>
       </div>
-      <Toaster />
     </SellerProtectedRoute>
   )
 }

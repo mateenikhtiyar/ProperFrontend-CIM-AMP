@@ -47,4 +47,11 @@ export interface Deal {
   isFeatured: boolean
   stakePercentage: number
   documents?: string[]
+  trailingRevenueCurrency?: string
+  trailingRevenue: number
+  trailingEbitda: number
+  trailingEbitdaCurrency?: string
+  averageGrowth: number
+  netIncome: number
+  askingPrice: number
 }

@@ -5,10 +5,9 @@ export interface Contact {
 }
 
 export interface Preferences {
-  stopSendingDeals: boolean
-  dontShowMyDeals: boolean
-  dontSendDealsToMyCompetitors: boolean
-  allowBuyerLikeDeals: boolean
+  stopSendingDeals: boolean;
+  doNotSendMarketedDeals: boolean;
+  allowBuyerLikeDeals: boolean;
 }
 
 export interface TargetCriteria {
@@ -24,7 +23,6 @@ export interface TargetCriteria {
   minStakePercent?: number
   minYearsInBusiness?: number
   preferredBusinessModels: string[]
-  managementTeamPreference: string[]
   description?: string
 }
 

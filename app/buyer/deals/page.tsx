@@ -31,12 +31,17 @@ interface Deal {
   netIncome: number;
   askingPrice: number;
   businessModel: string;
-  managementPreference: string;
   phoneNumber: string;
   email: string;
   t12FreeCashFlow?: number; // <-- Add this line
   t12NetIncome?: number; // <-- Add this line
   documents?: Document[];
+  trailingRevenueCurrency?: string; // <-- Add this line
+  trailingEbitdaCurrency?: string;
+  t12FreeCashFlowCurrency?: string;
+  t12NetIncomeCurrency?: string;
+  netIncomeCurrency?: string;
+  askingPriceCurrency?: string;
 }
 
 interface Document {
@@ -85,7 +90,9 @@ export default function DealsPage() {
     phone: string;
     email: string;
   } | null>(null);
-  const [sellerInfoMap, setSellerInfoMap] = useState<{ [sellerId: string]: { name: string; email: string; phoneNumber: string } }>({});
+  const [sellerInfoMap, setSellerInfoMap] = useState<{
+    [sellerId: string]: { name: string; email: string; phoneNumber: string };
+  }>({});
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -104,7 +111,7 @@ export default function DealsPage() {
         return [];
       }
 
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
       // Map status to API endpoint
       let endpoint = "";
@@ -151,7 +158,8 @@ export default function DealsPage() {
         console.log("Raw deal from API:", deal);
         const mappedDeal = {
           id: deal._id,
-          sellerId: typeof deal.seller === "string" ? deal.seller : deal.seller?._id,
+          sellerId:
+            typeof deal.seller === "string" ? deal.seller : deal.seller?._id,
           title: deal.title,
           status: status,
           companyDescription: deal.companyDescription,
@@ -164,14 +172,17 @@ export default function DealsPage() {
           netIncome: deal.financialDetails?.netIncome || 0,
           askingPrice: deal.financialDetails?.askingPrice || 0,
           businessModel: getBusinessModelString(deal.businessModel),
-          managementPreference: getManagementPreferenceString(
-            deal.managementPreferences
-          ),
           phoneNumber: "Contact via platform",
           email: "Contact via platform",
           t12FreeCashFlow: deal.financialDetails?.t12FreeCashFlow || 0,
           t12NetIncome: deal.financialDetails?.t12NetIncome || 0,
           documents: deal.documents || [],
+          trailingRevenueCurrency: deal.financialDetails?.trailingRevenueCurrency || "$",
+          trailingEbitdaCurrency: deal.financialDetails?.trailingEBITDACurrency || "$",
+          t12FreeCashFlowCurrency: deal.financialDetails?.t12FreeCashFlowCurrency || "$",
+          t12NetIncomeCurrency: deal.financialDetails?.t12NetIncomeCurrency || "$",
+          netIncomeCurrency: deal.financialDetails?.netIncomeCurrency || "$",
+          askingPriceCurrency: deal.financialDetails?.askingPriceCurrency || "$",
         };
         console.log("Mapped deal:", mappedDeal);
         return mappedDeal;
@@ -225,15 +236,6 @@ export default function DealsPage() {
     return models.join(", ") || "Not specified";
   };
 
-  const getManagementPreferenceString = (managementPreferences: any) => {
-    if (!managementPreferences) return "Not specified";
-    const prefs = [];
-    if (managementPreferences.retiringDivesting)
-      prefs.push("Retiring/Divesting");
-    if (managementPreferences.staffStay) prefs.push("Staff willing to stay");
-    return prefs.join(", ") || "Not specified";
-  };
-
   // Update deal status via API
   const updateDealStatus = async (
     dealId: string,
@@ -247,7 +249,7 @@ export default function DealsPage() {
       setApiError(null);
       const token = localStorage.getItem("token");
       const currentBuyerId = localStorage.getItem("userId");
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
       console.log("Token exists:", !!token);
       console.log("Buyer ID:", currentBuyerId);
@@ -478,7 +480,7 @@ export default function DealsPage() {
         return;
       }
 
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
       const response = await fetch(`${apiUrl}/company-profiles/my-profile`, {
         method: "GET",
@@ -514,7 +516,7 @@ export default function DealsPage() {
         return;
       }
 
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
       const response = await fetch(`${apiUrl}/buyers/profile`, {
         headers: {
@@ -562,7 +564,7 @@ export default function DealsPage() {
       const token = localStorage.getItem("token");
       if (!token) return;
 
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
       // Option 2: Use deal ID to get seller info (recommended)
       const response = await fetch(
@@ -590,7 +592,6 @@ export default function DealsPage() {
     }
   };
 
-  // Show deal details and fetch seller contact if active
   const handleViewDealDetails = (deal: Deal) => {
     if (deal.status === "active") {
       setSelectedDeal(deal);
@@ -601,11 +602,14 @@ export default function DealsPage() {
       } else {
         setSellerInfoMap({});
       }
-    } else {
-      setphoneNumber(null);
-      handleGoToCIM(deal.id);
+    } else if (deal.status === "pending") {
+      handleGoToCIM(deal.id); // ✅ Only auto-approve if status is pending
+    } else if (deal.status === "passed") {
+      setSelectedDealId(deal.id); // ✅ Just show terms dialog for passed deals
+      setTermsModalOpen(true);
     }
   };
+  
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
@@ -633,9 +637,18 @@ export default function DealsPage() {
     return true;
   });
 
-  const handleGoToCIM = (dealId: string) => {
-    setSelectedDealId(dealId);
-    setTermsModalOpen(true);
+  const handleGoToCIM = async (dealId: string) => {
+    console.log("Go to CIM clicked for deal:", dealId);
+
+    const success = await updateDealStatus(dealId, "activate");
+
+    if (success) {
+      console.log("✅ Deal activated via Go to CIM");
+
+      // Move to active tab
+      setActiveTab("active");
+      setActiveTitle("Active Deals");
+    }
   };
 
   const handleApproveTerms = async () => {
@@ -643,16 +656,16 @@ export default function DealsPage() {
 
     if (selectedDealId) {
       console.log("Handling approve terms for deal:", selectedDealId);
+
       const success = await updateDealStatus(selectedDealId, "activate");
 
       if (success) {
-        console.log(
-          "Deal Approved: The deal has been moved to the active section."
-        );
-
-        // Switch to active tab to show the deal
+        console.log("✅ Deal Approved via Go to CIM — Moved to Active Tab");
+        // Refresh tab view
         setActiveTab("active");
         setActiveTitle("Active Deals");
+      } else {
+        console.error("❌ Failed to approve deal via Go to CIM");
       }
     }
   };
@@ -667,7 +680,7 @@ export default function DealsPage() {
   const getProfilePictureUrl = (path: string | null) => {
     if (!path) return null;
 
-    const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
     if (path.startsWith("http://") || path.startsWith("https://")) {
       return path;
@@ -713,10 +726,8 @@ export default function DealsPage() {
 
   const fetchSellerInfo = async (sellerId: string) => {
     try {
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
-      const response = await fetch(
-        `${apiUrl}/sellers/public/${sellerId}`
-      );
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
+      const response = await fetch(`${apiUrl}/sellers/public/${sellerId}`);
       if (!response.ok) throw new Error("Failed to fetch seller info");
       const data = await response.json();
       console.log("Seller info for", sellerId, ":", data);
@@ -726,12 +737,12 @@ export default function DealsPage() {
           name: data.fullName || "N/A",
           email: data.email || "N/A",
           phoneNumber: data.phoneNumber || "N/A",
-        }
+        },
       }));
     } catch {
       setSellerInfoMap((prev: typeof sellerInfoMap) => ({
         ...prev,
-        [sellerId]: { name: "N/A", email: "N/A", phoneNumber: "N/A" }
+        [sellerId]: { name: "N/A", email: "N/A", phoneNumber: "N/A" },
       }));
     }
   };
@@ -751,16 +762,13 @@ export default function DealsPage() {
       if (uniqueSellerIds.length === 0) return;
 
       const token = localStorage.getItem("token");
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
       for (const sellerId of uniqueSellerIds) {
         try {
-          const response = await fetch(
-            `${apiUrl}/sellers/public/${sellerId}`,
-            {
-              headers: { Authorization: `Bearer ${token}` },
-            }
-          );
+          const response = await fetch(`${apiUrl}/sellers/public/${sellerId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
 
           if (response.ok) {
             const data = await response.json();
@@ -787,7 +795,6 @@ export default function DealsPage() {
     fetchSellerInfos();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filteredDeals, activeTab]); // only rerun when deals or tab change
-
 
   // Show loading if not initialized
   if (!isInitialized) {
@@ -1023,10 +1030,12 @@ export default function DealsPage() {
           ) : (
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               {filteredDeals.map((deal) => {
-                const sellerIdStr = typeof deal.sellerId === 'string' ? deal.sellerId : undefined;
-                const sellerInfo = sellerIdStr && sellerInfoMap[sellerIdStr]
-                  ? sellerInfoMap[sellerIdStr]
-                  : { name: "N/A", email: "N/A", phoneNumber: "N/A" };
+                const sellerIdStr =
+                  typeof deal.sellerId === "string" ? deal.sellerId : undefined;
+                const sellerInfo =
+                  sellerIdStr && sellerInfoMap[sellerIdStr]
+                    ? sellerInfoMap[sellerIdStr]
+                    : { name: "N/A", email: "N/A", phoneNumber: "N/A" };
                 return (
                   <div
                     key={deal.id}
@@ -1043,14 +1052,14 @@ export default function DealsPage() {
 
                     <div className="p-4">
                       {/* Overview */}
-                      <h4 className="mb-2 font-medium text-gray-800">Overview</h4>
+                      <h4 className="mb-2 font-medium text-gray-800">
+                        Overview
+                      </h4>
                       <div className="mb-4 space-y-1 text-sm text-gray-600">
                         <p>Industry: {deal.industry}</p>
                         <p>Geography: {deal.geography}</p>
-                        <p>Number of Years in Business: {deal.yearsInBusiness}</p>
                         <p>
-                          Management Future Preferences:{" "}
-                          {deal.managementPreference}
+                          Number of Years in Business: {deal.yearsInBusiness}
                         </p>
                         <p>Business Model: {deal.businessModel}</p>
                         <p>Company Description: {deal.companyDescription}</p>
@@ -1062,30 +1071,39 @@ export default function DealsPage() {
                       </h4>
                       <div className="mb-4 grid grid-cols-2 gap-2 text-sm text-gray-600">
                         <p>
-                          Trailing 12-Month Revenue: $
-                          {deal.trailingRevenue.toLocaleString()}
+                          Trailing 12-Month Revenue:{" "}
+                          {deal.trailingRevenueCurrency}{deal.trailingRevenue.toLocaleString()}
                         </p>
                         <p>
-                          Trailing 12-Month EBITDA: $
-                          {deal.trailingEbitda.toLocaleString()}
+                          Trailing 12-Month EBITDA:{" "}
+                          {deal.trailingEbitdaCurrency}{deal.trailingEbitda.toLocaleString()}
                         </p>
                         <p>
-                          T12 Free Cash Flow: $
-                          {deal.t12FreeCashFlow?.toLocaleString() ?? "N/A"}
+                          T12 Free Cash Flow:{" "}
+                          {deal.trailingRevenueCurrency}{deal.t12FreeCashFlow?.toLocaleString() ?? "N/A"}
                         </p>
                         <p>
-                          T12 Net Income: $
-                          {deal.t12NetIncome?.toLocaleString() ?? "N/A"}
+                          T12 Net Income:{" "}
+                          {deal.trailingRevenueCurrency}{deal.t12NetIncome?.toLocaleString() ?? "N/A"}
                         </p>
                         <p>
-                          Average 3-Year Revenue Growth in $: %
-                          {deal.averageGrowth.toLocaleString()}
+                          Average 3-Year Revenue Growth:{" "}
+                          {deal.averageGrowth.toLocaleString()}  %
                         </p>
-                        <p>Net Income: ${deal.netIncome.toLocaleString()}</p>
-                        <p>Asking Price: ${deal.askingPrice.toLocaleString()}</p>
+                        <p>
+                          Net Income:{" "}
+                          {deal.trailingRevenueCurrency}{deal.netIncome?.toLocaleString() ?? "N/A"}
+                        </p>
+                        <p>
+                          Asking Price:{" "}
+                          {deal.trailingRevenueCurrency}{deal.askingPrice?.toLocaleString() ?? "N/A"}
+                        </p>
                       </div>
+
                       {/* Seller Information */}
-                      <h4 className="mb-2 font-medium text-gray-800">Seller Information</h4>
+                      <h4 className="mb-2 font-medium text-gray-800">
+                        Seller Information
+                      </h4>
                       {activeTab === "active" ? (
                         <div className="mb-4 text-sm text-gray-600 space-y-1">
                           <p>Name: {sellerInfo.name}</p>
@@ -1102,55 +1120,74 @@ export default function DealsPage() {
                       <h4 className="mb-2 font-medium text-gray-800">
                         Documents
                       </h4>
-                      <div className="mb-4 text-sm text-gray-600">
-                        {deal.documents && deal.documents.length > 0 ? (
-                          <ul className="space-y-1">
-                            {deal.documents.map((doc, index) => (
-                              <li
-                                key={doc.filename}
-                                className="flex items-center justify-between border border-gray-200 p-2 rounded-md"
-                              >
-                                <div className="flex flex-col">
-                                  <span className="font-medium">
-                                    {doc.originalName || doc.filename}
-                                  </span>
-                                  <span className="text-xs text-gray-500">
-                                    (
-                                    {typeof doc.size === "number"
-                                      ? (doc.size / (1024 * 1024)).toFixed(2)
-                                      : "?"}{" "}
-                                    MB)
-                                  </span>
-                                </div>
-                                <Button
-                                  variant="link"
-                                  className="text-teal-500 hover:underline"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    // ✅ Correct
-                                    const apiUrl =
-                                      localStorage.getItem("apiUrl") ||
-                                      "https://api.cimamplify.com";
-                                    window.open(
-                                      `${apiUrl}/${doc.path}`,
-                                      "_blank"
-                                    );
-                                  }}
+
+                      {activeTab === "active" ? (
+                        <div className="mb-4 text-sm text-gray-600">
+                          {deal.documents && deal.documents.length > 0 ? (
+                            <ul className="space-y-1">
+                              {deal.documents.map((doc, index) => (
+                                <li
+                                  key={doc.filename || index}
+                                  className="flex items-center justify-between border border-gray-200 p-2 rounded-md"
                                 >
-                                  Download
-                                </Button>
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className="italic text-gray-500">
-                            No documents uploaded yet.
-                          </p>
-                        )}
-                      </div>
+                                  <div className="flex flex-col">
+                                    <span className="font-medium">
+                                      {doc.originalName || doc.filename}
+                                    </span>
+                                    <span className="text-xs text-gray-500">
+                                      (
+                                      {typeof doc.size === "number"
+                                        ? (doc.size / (1024 * 1024)).toFixed(2)
+                                        : "?"}{" "}
+                                      MB)
+                                    </span>
+                                  </div>
+                                  <Button
+                                    variant="link"
+                                    className="text-teal-500 hover:underline"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      const apiUrl =
+                                        localStorage.getItem("apiUrl") ||
+                                        "http://localhost:3001";
+                                      const fullPath = `${apiUrl}/${doc.path}`;
+                                      window.open(fullPath, "_blank");
+                                    }}
+                                  >
+                                    Download
+                                  </Button>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="italic text-gray-500">
+                              No documents uploaded yet.
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="mb-4 italic text-gray-500">
+                          Hidden Until Active
+                        </p>
+                      )}
+
 
                       {/* Actions */}
                       <div className="flex justify-end space-x-2">
+                        {/* Go to CIM button */}
+                        {activeTab === "pending" && (
+                          <Button
+                            variant="outline"
+                            className="border-blue-200 bg-[#3AAFA922] text-[#3AAFA9] hover:bg-[#3AAFA933]"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleGoToCIM(deal.id);
+                            }}
+                          >
+                            Go to CIM
+                          </Button>
+                        )}
+                        {/* Pass button */}
                         {deal.status !== "passed" && (
                           <Button
                             variant="outline"
@@ -1161,6 +1198,18 @@ export default function DealsPage() {
                             }}
                           >
                             Pass
+                          </Button>
+                        )}
+                                                {activeTab === "passed" && (
+                          <Button
+                            variant="outline"
+                            className="border-blue-200 bg-[#3AAFA922] text-[#3AAFA9] hover:bg-[#3AAFA933]"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleGoToCIM(deal.id);
+                            }}
+                          >
+                            Go to CIM
                           </Button>
                         )}
                       </div>
@@ -1206,4 +1255,3 @@ export default function DealsPage() {
     </div>
   );
 }
-

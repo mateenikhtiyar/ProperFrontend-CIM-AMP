@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+
 import {
   Select,
   SelectContent,
@@ -46,6 +47,8 @@ import {
   type IndustryGroup,
   type Industry,
 } from "@/lib/industry-data";
+import GeographySelector from "@/components/GeographySelector";
+import { Country, State, City } from "country-state-city";
 
 const COMPANY_TYPES = [
   "Buy Side Mandate",
@@ -58,13 +61,6 @@ const COMPANY_TYPES = [
   "Strategic Operating Company",
 ];
 
-const CAPITAL_ENTITIES = [
-  "Fund",
-  "Holding Company",
-  "SPV",
-  "Direct Investment",
-];
-
 const BUSINESS_MODELS = [
   "Recurring Revenue",
   "Project-Based",
@@ -72,14 +68,8 @@ const BUSINESS_MODELS = [
   "Asset Heavy",
 ];
 
-const MANAGEMENT_PREFERENCES = [
-  "Owner(s) Departing",
-  "Owner(s) Staying",
-  "Management Team Staying",
-];
-
 // Default API URL
-const DEFAULT_API_URL = "https://api.cimamplify.com";
+const DEFAULT_API_URL = "http://localhost:3001";
 
 // Type for hierarchical selection
 interface HierarchicalSelection {
@@ -92,11 +82,6 @@ interface IndustrySelection {
   sectors: Record<string, boolean>;
   industryGroups: Record<string, boolean>;
   industries: Record<string, boolean>;
-}
-
-// Store selected management preferences separately from the form data
-interface ExtendedFormState {
-  selectedManagementPreferences: string[];
 }
 
 // Add BuyerProfile interface
@@ -167,13 +152,6 @@ export default function CompanyProfilePage() {
 
   // Available currencies
   const CURRENCIES = ["USD", "EUR", "GBP", "CAD", "AUD"];
-
-  // Extended form state for fields not in the CompanyProfile type
-  const [extendedFormState, setExtendedFormState] = useState<ExtendedFormState>(
-    {
-      selectedManagementPreferences: [],
-    }
-  );
 
   // Add a state variable to store the company profile ID
   const [profileId, setProfileId] = useState<string | null>(null);
@@ -302,8 +280,7 @@ export default function CompanyProfilePage() {
     averageDealSize: undefined,
     preferences: {
       stopSendingDeals: false,
-      dontShowMyDeals: false,
-      dontSendDealsToMyCompetitors: false,
+      doNotSendMarketedDeals: false,
       allowBuyerLikeDeals: false,
     },
     targetCriteria: {
@@ -319,7 +296,6 @@ export default function CompanyProfilePage() {
       minStakePercent: undefined,
       minYearsInBusiness: undefined,
       preferredBusinessModels: [],
-      managementTeamPreference: [],
       description: "",
     },
     agreements: {
@@ -462,20 +438,6 @@ export default function CompanyProfilePage() {
 
           setIndustrySelection(newIndustrySelection);
         }
-
-        // Update management preferences
-        if (profileData.targetCriteria?.managementTeamPreference) {
-          const preferences = Array.isArray(
-            profileData.targetCriteria.managementTeamPreference
-          )
-            ? profileData.targetCriteria.managementTeamPreference
-            : [profileData.targetCriteria.managementTeamPreference];
-
-          setExtendedFormState({
-            ...extendedFormState,
-            selectedManagementPreferences: preferences,
-          });
-        }
       }
     } catch (error) {
       console.error("Error fetching profile:", error);
@@ -495,7 +457,7 @@ export default function CompanyProfilePage() {
         return;
       }
 
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
       const response = await fetch(`${apiUrl}/buyers/profile`, {
         headers: {
@@ -655,31 +617,6 @@ export default function CompanyProfilePage() {
         model,
       ]);
     }
-  };
-
-  // Toggle management preference selection
-  const toggleManagementPreference = (preference: string) => {
-    const currentPreferences = [
-      ...extendedFormState.selectedManagementPreferences,
-    ];
-    const preferenceIndex = currentPreferences.indexOf(preference);
-
-    if (preferenceIndex >= 0) {
-      currentPreferences.splice(preferenceIndex, 1);
-    } else {
-      currentPreferences.push(preference);
-    }
-
-    setExtendedFormState({
-      ...extendedFormState,
-      selectedManagementPreferences: currentPreferences,
-    });
-
-    handleNestedChange(
-      "targetCriteria",
-      "managementTeamPreference",
-      currentPreferences
-    );
   };
 
   // Geography selection handlers
@@ -948,7 +885,6 @@ export default function CompanyProfilePage() {
     updateIndustriesInFormData(newIndustrySelection);
   };
 
-  // Update the industries array in formData based on the hierarchical selection
   const updateIndustriesInFormData = (selection: IndustrySelection) => {
     if (!industryData) return;
 
@@ -957,42 +893,27 @@ export default function CompanyProfilePage() {
     industryData.sectors.forEach((sector) => {
       const sectorSelected = selection.sectors[sector.id];
 
-      // Check if all industry groups in this sector are selected
-      const allGroupsSelected = sector.industryGroups.every((group) => {
-        return group.industries.every(
-          (industry) => selection.industries[industry.id]
-        );
-      });
+      if (sectorSelected) {
+        selectedIndustries.push(sector.name); // ✅ include sector name
+      }
 
-      if (sectorSelected && allGroupsSelected) {
-        // If sector is selected and all its groups/industries are selected, send only the sector
-        selectedIndustries.push(sector.name);
-      } else {
-        // Otherwise, check individual groups and industries
-        sector.industryGroups.forEach((group) => {
-          const groupSelected = selection.industryGroups[group.id];
+      sector.industryGroups.forEach((group) => {
+        const groupSelected = selection.industryGroups[group.id];
 
-          // Check if all industries in this group are selected
-          const allIndustriesSelected = group.industries.every(
-            (industry) => selection.industries[industry.id]
-          );
+        if (groupSelected) {
+          selectedIndustries.push(group.name); // ✅ include group name
+        }
 
-          if (groupSelected && allIndustriesSelected) {
-            // If group is selected and all its industries are selected, send only the group
-            selectedIndustries.push(group.name);
-          } else {
-            // Otherwise, send only the selected industries
-            group.industries.forEach((industry) => {
-              if (selection.industries[industry.id]) {
-                selectedIndustries.push(industry.name);
-              }
-            });
+        group.industries.forEach((industry) => {
+          if (selection.industries[industry.id]) {
+            selectedIndustries.push(industry.name); // ✅ include each selected sub-industry
           }
         });
-      }
+      });
     });
 
-    handleNestedChange("targetCriteria", "industrySectors", selectedIndustries);
+    const uniqueIndustries = [...new Set(selectedIndustries)]; // remove duplicates
+    handleNestedChange("targetCriteria", "industrySectors", uniqueIndustries);
   };
 
   const removeIndustry = (industryToRemove: string) => {
@@ -1354,13 +1275,6 @@ export default function CompanyProfilePage() {
     setErrorMessage("");
 
     try {
-      if (!Array.isArray(formData.targetCriteria.managementTeamPreference)) {
-        formData.targetCriteria.managementTeamPreference = formData
-          .targetCriteria.managementTeamPreference
-          ? [formData.targetCriteria.managementTeamPreference]
-          : [];
-      }
-
       const profileData = {
         ...formData,
       };
@@ -1427,14 +1341,10 @@ export default function CompanyProfilePage() {
       console.log("Company Profile - Update successful:", result);
 
       setSubmitStatus("success");
-      // toast({
-      //   title: "Profile Updated",
-      //   description: "Your company profile has been successfully updated.",
-      //   variant: "default",
-      // })
 
+      // ✅ Redirect to /buyer/deals directly
       setTimeout(() => {
-        router.push("/buyer/company-profile?profileSubmitted=true");
+        router.push("/buyer/deals");
       }, 2000);
     } catch (error: any) {
       console.error("Update error:", error);
@@ -1442,111 +1352,109 @@ export default function CompanyProfilePage() {
       setErrorMessage(
         error.message || "An error occurred while updating your profile."
       );
-
-      // toast({
-      //   title: "Update Failed",
-      //   description: error.message || "An error occurred while updating your profile.",
-      //   variant: "destructive",
-      // })
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Render the hierarchical geography selection
-  const renderGeographySelection = () => {
-    const filteredData = filterGeographyData();
-    if (!filteredData) return <div>Loading geography data...</div>;
+  // Helper to load states and cities for a country
+  const getStatesAndCities = (countryCode: string) => {
+    const states = State.getStatesOfCountry(countryCode);
+    return states.map((state) => ({
+      ...state,
+      cities: City.getCitiesOfState(countryCode, state.isoCode),
+    }));
+  };
 
+  // Render hierarchical geography selection
+  const renderGeographySelection = () => {
+    const allCountries = Country.getAllCountries();
     return (
       <div className="space-y-2 font-poppins">
-        {filteredData.continents.map((continent) => (
-          <div key={continent.id} className="border-b border-gray-100 pb-1">
+        {allCountries.map((country) => (
+          <div key={country.isoCode} className="border-b border-gray-100 pb-1">
             <div className="flex items-center">
-              <Checkbox
-                id={`continent-${continent.id}`}
-                checked={!!geoSelection.continents[continent.id]}
-                onCheckedChange={(checked) => {
-                  toggleContinent(continent);
+              <input
+                type="radio"
+                id={`geo-${country.isoCode}`}
+                name="geography"
+                checked={formData.targetCriteria.countries.includes(country.name)}
+                onChange={() => {
+                  setFormData((prev) => ({
+                    ...prev,
+                    targetCriteria: { ...prev.targetCriteria, countries: [country.name] },
+                  }));
                 }}
-                className="mr-2 border-[#d0d5dd]"
+                className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9]"
               />
               <div
                 className="flex items-center cursor-pointer flex-1"
-                onClick={() => toggleContinentExpansion(continent.id)}
+                onClick={() => setExpandedCountries((prev) => ({ ...prev, [country.isoCode]: !prev[country.isoCode] }))}
               >
-                {expandedContinents[continent.id] ? (
+                {expandedCountries[country.isoCode] ? (
                   <ChevronDown className="h-4 w-4 mr-1 text-gray-500" />
                 ) : (
                   <ChevronRight className="h-4 w-4 mr-1 text-gray-500" />
                 )}
-                <Label
-                  htmlFor={`continent-${continent.id}`}
-                  className="text-[#344054] cursor-pointer font-medium"
-                >
-                  {continent.name}
+                <Label htmlFor={`geo-${country.isoCode}`} className="text-[#344054] cursor-pointer font-medium">
+                  {country.name}
                 </Label>
               </div>
             </div>
-
-            {expandedContinents[continent.id] && (
+            {expandedCountries[country.isoCode] && (
               <div className="ml-6 mt-1 space-y-1">
-                {continent.regions.map((region) => (
-                  <div key={region.id} className="pl-2">
+                {getStatesAndCities(country.isoCode).map((state) => (
+                  <div key={state.isoCode} className="pl-2">
                     <div className="flex items-center">
-                      <Checkbox
-                        id={`region-${region.id}`}
-                        checked={!!geoSelection.regions[region.id]}
-                        onCheckedChange={(checked) => {
-                          toggleRegion(region, continent);
+                      <input
+                        type="radio"
+                        id={`geo-${country.isoCode}-${state.isoCode}`}
+                        name="geography"
+                        checked={formData.targetCriteria.countries.includes(`${country.name} > ${state.name}`)}
+                        onChange={() => {
+                          setFormData((prev) => ({
+                            ...prev,
+                            targetCriteria: { ...prev.targetCriteria, countries: [`${country.name} > ${state.name}`] },
+                          }));
                         }}
-                        className="mr-2 border-[#d0d5dd]"
+                        className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9]"
                       />
-                      {region.subRegions && region.subRegions.length > 0 ? (
-                        <div
-                          className="flex items-center cursor-pointer flex-1"
-                          onClick={() => toggleRegionExpansion(region.id)}
-                        >
-                          {expandedRegions[region.id] ? (
-                            <ChevronDown className="h-3 w-3 mr-1 text-gray-400" />
-                          ) : (
-                            <ChevronRight className="h-3 w-3 mr-1 text-gray-400" />
-                          )}
-                          <Label
-                            htmlFor={`region-${region.id}`}
-                            className="text-[#344054] cursor-pointer"
-                          >
-                            {region.name}
-                          </Label>
-                        </div>
-                      ) : (
-                        <Label
-                          htmlFor={`region-${region.id}`}
-                          className="text-[#344054] cursor-pointer"
-                        >
-                          {region.name}
+                      <div
+                        className="flex items-center cursor-pointer flex-1"
+                        onClick={() => setExpandedStates((prev) => ({ ...prev, [`${country.isoCode}-${state.isoCode}`]: !prev[`${country.isoCode}-${state.isoCode}`] }))}
+                      >
+                        {expandedStates[`${country.isoCode}-${state.isoCode}`] ? (
+                          <ChevronDown className="h-4 w-4 mr-1 text-gray-500" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4 mr-1 text-gray-500" />
+                        )}
+                        <Label htmlFor={`geo-${country.isoCode}-${state.isoCode}`} className="text-[#344054] cursor-pointer">
+                          {state.name}
                         </Label>
-                      )}
+                      </div>
                     </div>
-
-                    {region.subRegions && expandedRegions[region.id] && (
+                    {expandedStates[`${country.isoCode}-${state.isoCode}`] && state.cities.length > 0 && (
                       <div className="ml-6 mt-1 space-y-1">
-                        {region.subRegions.map((subRegion) => (
-                          <div key={subRegion.id} className="flex items-center">
-                            <Checkbox
-                              id={`subregion-${subRegion.id}`}
-                              checked={!!geoSelection.subRegions[subRegion.id]}
-                              onCheckedChange={(checked) => {
-                                toggleSubRegion(subRegion, region, continent);
-                              }}
-                              className="mr-2 border-[#d0d5dd]"
-                            />
-                            <Label
-                              htmlFor={`subregion-${subRegion.id}`}
-                              className="text-[#344054] cursor-pointer text-sm"
-                            >
-                              {subRegion.name}
-                            </Label>
+                        {state.cities.slice(0, 10).map((city, cityIndex) => (
+                          <div key={`city-${city.name}-${cityIndex}`} className="pl-4">
+                            <div className="flex items-center">
+                              <input
+                                type="radio"
+                                id={`geo-${country.isoCode}-${state.isoCode}-${city.name}`}
+                                name="geography"
+                                checked={formData.targetCriteria.countries.includes(`${country.name} > ${state.name} > ${city.name}`)}
+                                onChange={() => {
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    targetCriteria: { ...prev.targetCriteria, countries: [`${country.name} > ${state.name} > ${city.name}`] },
+                                  }));
+                                }}
+                                className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9]"
+                              />
+                              <Label htmlFor={`geo-${country.isoCode}-${state.isoCode}-${city.name}`} className="text-[#344054] cursor-pointer">
+                                {city.name}
+                              </Label>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -1668,7 +1576,7 @@ export default function CompanyProfilePage() {
   const getProfilePictureUrl = (path: string | null) => {
     if (!path) return null;
 
-    const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
     if (path.startsWith("http://") || path.startsWith("https://")) {
       return path;
@@ -1690,6 +1598,10 @@ export default function CompanyProfilePage() {
     localStorage.removeItem("userId");
     router.push("/buyer/login");
   };
+
+  // Add expansion state for countries and states for the geography selector UI
+  const [expandedCountries, setExpandedCountries] = useState<Record<string, boolean>>({});
+  const [expandedStates, setExpandedStates] = useState<Record<string, boolean>>({});
 
   if (!isClient) {
     return <div>Loading...</div>;
@@ -2187,80 +2099,57 @@ export default function CompanyProfilePage() {
                     <Label className="text-[#667085] text-sm mb-1.5 block">
                       Geographies
                     </Label>
-                    <div className="border border-[#d0d5dd] rounded-md p-4 h-80 flex flex-col">
-                      <div className="relative mb-4">
-                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-[#667085]" />
-                        <div className="flex">
-                          <Input
-                            placeholder="Search countries..."
-                            className="pl-8 border-[#d0d5dd] rounded-r-none"
-                            value={countrySearchTerm}
-                            onChange={(e) =>
-                              setCountrySearchTerm(e.target.value)
-                            }
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter" && countrySearchTerm) {
-                                e.preventDefault();
-                                selectSearchedCountry(countrySearchTerm);
-                              }
-                            }}
-                          />
-                          <Button
-                            type="button"
-                            className="rounded-l-none"
-                            onClick={() =>
-                              countrySearchTerm &&
-                              selectSearchedCountry(countrySearchTerm)
-                            }
-                            disabled={!countrySearchTerm}
-                          >
-                            Select
-                          </Button>
-                        </div>
-                      </div>
-
-                      {formData.targetCriteria.countries.length > 0 && (
-                        <div className="mb-4">
-                          <div className="text-sm text-[#667085] mb-1">
-                            Selected Countries
-                          </div>
-                          <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
-                            {formData.targetCriteria.countries.map(
-                              (country, index) => (
-                                <span
-                                  key={`selected-country-${index}`}
-                                  className="bg-gray-100 text-[#344054] text-xs rounded-full px-2 py-0.5 flex items-center group"
+                    
+                    {/* Geography Selector Section */}
+                    {formData.targetCriteria.countries.length > 0 && (
+                      <div className="mb-4">
+                        <div className="text-sm text-[#667085] mb-1">Selected</div>
+                        <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
+                          {formData.targetCriteria.countries.map((country, index) => (
+                            <span
+                              key={`selected-country-${index}`}
+                              className="bg-gray-100 text-[#344054] text-xs rounded-full px-2 py-0.5 flex items-center group"
+                            >
+                              {country}
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    targetCriteria: {
+                                      ...prev.targetCriteria,
+                                      countries: [],
+                                    },
+                                  }))
+                                }
+                                className="ml-1 text-gray-400 hover:text-gray-600 focus:outline-none"
+                              >
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  className="h-3 w-3"
+                                  viewBox="0 0 20 20"
+                                  fill="currentColor"
                                 >
-                                  {country}
-                                  <button
-                                    type="button"
-                                    onClick={() => removeCountry(country)}
-                                    className="ml-1 text-gray-400 hover:text-gray-600 focus:outline-none"
-                                  >
-                                    <svg
-                                      xmlns="http://www.w3.org/2000/svg"
-                                      className="h-3 w-3"
-                                      viewBox="0 0 20 20"
-                                      fill="currentColor"
-                                    >
-                                      <path
-                                        fillRule="evenodd"
-                                        d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                                        clipRule="evenodd"
-                                      />
-                                    </svg>
-                                  </button>
-                                </span>
-                              )
-                            )}
-                          </div>
+                                  <path
+                                    fillRule="evenodd"
+                                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                    clipRule="evenodd"
+                                  />
+                                </svg>
+                              </button>
+                            </span>
+                          ))}
                         </div>
-                      )}
-
-                      <div className="flex-1 overflow-y-auto">
-                        {renderGeographySelection()}
                       </div>
-                    </div>
+                    )}
+                    <GeographySelector
+                      selectedCountries={formData.targetCriteria.countries}
+                      onChange={countries => setFormData(prev => ({
+                        ...prev,
+                        targetCriteria: { ...prev.targetCriteria, countries },
+                      }))}
+                    />
+                    
                   </div>
 
                   <div>
@@ -2734,38 +2623,6 @@ export default function CompanyProfilePage() {
                 </div>
               </div>
 
-              {/* Management Team Preference */}
-              <div className="bg-white rounded-lg p-6 shadow-sm mb-6">
-                <h2 className="text-[#2f2b43] text-lg font-medium mb-4">
-                  Management Future Preferences
-                </h2>
-                <div className="flex flex-wrap gap-6">
-                  {MANAGEMENT_PREFERENCES.map((preference) => (
-                    <div
-                      key={preference}
-                      className="flex items-center space-x-2"
-                    >
-                      <Checkbox
-                        id={`preference-${preference}`}
-                        className="border-[#d0d5dd]"
-                        checked={extendedFormState.selectedManagementPreferences.includes(
-                          preference
-                        )}
-                        onCheckedChange={() =>
-                          toggleManagementPreference(preference)
-                        }
-                      />
-                      <Label
-                        htmlFor={`preference-${preference}`}
-                        className="text-[#344054]"
-                      >
-                        {preference}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
               {/* Description of Ideal Target(s) */}
               <div className="bg-white rounded-lg p-6 shadow-sm mb-6">
                 <h2 className="text-[#2f2b43] text-lg font-medium mb-4">
@@ -2814,40 +2671,19 @@ export default function CompanyProfilePage() {
 
                   <div className="flex items-end space-x-2">
                     <Checkbox
-                      id="dontShowMyDeals"
+                      id="doNotSendMarketedDeals"
                       className="mt-1 border-[#d0d5dd]"
-                      checked={formData.preferences.dontShowMyDeals}
+                      checked={formData.preferences.doNotSendMarketedDeals}
                       onCheckedChange={(checked) =>
                         handleNestedChange(
                           "preferences",
-                          "dontShowMyDeals",
-                          checked === true
-                        )
-                      }
-                    />
-                    <Label htmlFor="dontShowMyDeals" className="text-[#344054]">
-                      Don't show sellers your company details until you engage.
-                      You will show as "Anonymous Buyer"
-                    </Label>
-                  </div>
-
-                  <div className="flex items-end space-x-2">
-                    <Checkbox
-                      id="dontSendDealsToMyCompetitors"
-                      className="mt-1 border-[#d0d5dd]"
-                      checked={
-                        formData.preferences.dontSendDealsToMyCompetitors
-                      }
-                      onCheckedChange={(checked) =>
-                        handleNestedChange(
-                          "preferences",
-                          "dontSendDealsToMyCompetitors",
+                          "doNotSendMarketedDeals",
                           checked === true
                         )
                       }
                     />
                     <Label
-                      htmlFor="dontSendDealsToMyCompetitors"
+                      htmlFor="doNotSendMarketedDeals"
                       className="text-[#344054]"
                     >
                       Do not send deals that are currently marketed on other
