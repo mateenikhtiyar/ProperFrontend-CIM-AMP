@@ -18,6 +18,9 @@ interface RegisterFormData {
   password: string
   confirmPassword: string
   companyName: string
+  targetCriteria: {
+    countries: string[]
+  }
 }
 
 export default function BuyerRegisterPage() {
@@ -30,11 +33,15 @@ export default function BuyerRegisterPage() {
     password: "",
     confirmPassword: "",
     companyName: "",
+    targetCriteria: {
+      countries: [],
+    },
   })
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [errors, setErrors] = useState<Partial<RegisterFormData & { general: string }>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [countrySearchTerm, setCountrySearchTerm] = useState("");
 
   // Check for token and userId in URL parameters
   useEffect(() => {
@@ -104,10 +111,6 @@ export default function BuyerRegisterPage() {
       newErrors.confirmPassword = "Passwords do not match"
     }
 
-    if (formData.phone && !/^03\d{9}$/.test(formData.phone)) {
-      newErrors.phone = "Phone number must be valid (e.g. 03XXXXXXXXX)"
-    }
-
     if (!formData.companyName.trim()) {
       newErrors.companyName = "Company name is required"
     }
@@ -133,7 +136,7 @@ export default function BuyerRegisterPage() {
 
     try {
       // Get API URL from localStorage or use default
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
 
       console.log("Register page - Submitting registration to:", apiUrl)
       console.log("POST to:", `${apiUrl}/buyers/register`)
@@ -256,7 +259,7 @@ export default function BuyerRegisterPage() {
   // Handle Google OAuth login
   const handleGoogleLogin = () => {
     // Get API URL from localStorage or use default
-    const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
     console.log("Register page - Redirecting to Google OAuth:", `${apiUrl}/buyers/google`)
 
     // Redirect to Google OAuth endpoint
@@ -384,7 +387,7 @@ export default function BuyerRegisterPage() {
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
-                  placeholder="03XXXXXXXXX"
+                  placeholder="+44 7123 123456"
                   className={`${errors.phone ? "border-red-300" : ""} py-5`}
                 />
                 {errors.phone && <p className="mt-1 text-sm text-red-600">{errors.phone}</p>}
@@ -441,6 +444,8 @@ export default function BuyerRegisterPage() {
                 </div>
                 {errors.confirmPassword && <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>}
               </div>
+
+
 
               <Button
                 type="submit"

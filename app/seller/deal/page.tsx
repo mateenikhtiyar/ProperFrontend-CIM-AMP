@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/auth-context"
 import SellerProtectedRoute from "@/components/seller/protected-route"
 import { Checkbox } from "@/components/ui/checkbox"
 import { toast } from "@/components/ui/use-toast"
+import { Country, State, City } from "country-state-city"
 
 // Updated interfaces to match API structure
 interface SellerProfile {
@@ -192,6 +193,217 @@ interface MatchedBuyer {
   }
 }
 
+interface GeographySelectorProps {
+  selectedCountries: string[];
+  onChange: (countries: string[]) => void;
+}
+
+const GeographySelector: React.FC<GeographySelectorProps> = ({
+  selectedCountries,
+  onChange,
+}) => {
+  const [expandedCountries, setExpandedCountries] = useState<Record<string, boolean>>({});
+  const [expandedStates, setExpandedStates] = useState<Record<string, boolean>>({});
+
+  // Helper to get all state and city names for a country
+  const getAllStateAndCityNames = (country: any) => {
+    const states = State.getStatesOfCountry(country.isoCode);
+    let allNames: string[] = [];
+    states.forEach((state) => {
+      allNames.push(`${country.name} > ${state.name}`);
+      const cities = City.getCitiesOfState(country.isoCode, state.isoCode);
+      cities.forEach((city) => {
+        allNames.push(`${country.name} > ${state.name} > ${city.name}`);
+      });
+    });
+    return allNames;
+  };
+
+  // Handler for country checkbox
+  const handleCountryToggle = (country: any) => {
+    const countryName = country.name;
+    const allChildren = getAllStateAndCityNames(country);
+    const isSelected = selectedCountries.includes(countryName);
+
+    let newSelected: string[];
+    if (isSelected) {
+      // Deselect country and all children
+      newSelected = selectedCountries.filter(
+        (item) =>
+          item !== countryName &&
+          !allChildren.includes(item)
+      );
+    } else {
+      // Select country and all children
+      newSelected = [
+        ...selectedCountries.filter(
+          (item) =>
+            item !== countryName &&
+            !allChildren.includes(item)
+        ),
+        countryName,
+        ...allChildren,
+      ];
+    }
+    onChange([...new Set(newSelected)]);
+  };
+
+  // Handler for state checkbox
+  const handleStateToggle = (country: any, state: any) => {
+    const stateName = `${country.name} > ${state.name}`;
+    const cities = City.getCitiesOfState(country.isoCode, state.isoCode);
+    const allChildren = cities.map((city) => `${country.name} > ${state.name} > ${city.name}`);
+    const isSelected = selectedCountries.includes(stateName);
+
+    let newSelected: string[];
+    if (isSelected) {
+      // Deselect state and all its cities
+      newSelected = selectedCountries.filter(
+        (item) =>
+          item !== stateName &&
+          !allChildren.includes(item)
+      );
+    } else {
+      // Select state and all its cities
+      newSelected = [
+        ...selectedCountries.filter(
+          (item) =>
+            item !== stateName &&
+            !allChildren.includes(item)
+        ),
+        stateName,
+        ...allChildren,
+      ];
+    }
+    onChange([...new Set(newSelected)]);
+  };
+
+  // Handler for city checkbox
+  const handleCityToggle = (country: any, state: any, city: any) => {
+    const cityName = `${country.name} > ${state.name} > ${city.name}`;
+    const isSelected = selectedCountries.includes(cityName);
+    let newSelected: string[];
+    if (isSelected) {
+      newSelected = selectedCountries.filter((item) => item !== cityName);
+    } else {
+      newSelected = [...selectedCountries, cityName];
+    }
+    onChange([...new Set(newSelected)]);
+  };
+
+  const allCountries = Country.getAllCountries();
+
+  return (
+    <div className="space-y-2 font-poppins">
+      {allCountries.map((country) => (
+        <div key={country.isoCode} className="border-b border-gray-100 pb-1">
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id={`geo-${country.isoCode}`}
+              checked={selectedCountries.includes(country.name)}
+              onChange={() => handleCountryToggle(country)}
+              className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9]"
+            />
+            <div
+              className="flex items-center cursor-pointer flex-1"
+              onClick={() =>
+                setExpandedCountries((prev) => ({
+                  ...prev,
+                  [country.isoCode]: !prev[country.isoCode],
+                }))
+              }
+            >
+              {expandedCountries[country.isoCode] ? (
+                <span>▼</span>
+              ) : (
+                <span>▶</span>
+              )}
+              <label
+                htmlFor={`geo-${country.isoCode}`}
+                className="text-[#344054] cursor-pointer font-medium ml-1"
+              >
+                {country.name}
+              </label>
+            </div>
+          </div>
+          {expandedCountries[country.isoCode] && (
+            <div className="ml-6 mt-1 space-y-1">
+              {State.getStatesOfCountry(country.isoCode).map((state) => (
+                <div key={state.isoCode} className="pl-2">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id={`geo-${country.isoCode}-${state.isoCode}`}
+                      checked={selectedCountries.includes(
+                        `${country.name} > ${state.name}`
+                      )}
+                      onChange={() => handleStateToggle(country, state)}
+                      className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9]"
+                    />
+                    <div
+                      className="flex items-center cursor-pointer flex-1"
+                      onClick={() =>
+                        setExpandedStates((prev) => ({
+                          ...prev,
+                          [`${country.isoCode}-${state.isoCode}`]:
+                            !prev[`${country.isoCode}-${state.isoCode}`],
+                        }))
+                      }
+                    >
+                      {expandedStates[`${country.isoCode}-${state.isoCode}`] ? (
+                        <span>▼</span>
+                      ) : (
+                        <span>▶</span>
+                      )}
+                      <label
+                        htmlFor={`geo-${country.isoCode}-${state.isoCode}`}
+                        className="text-[#344054] cursor-pointer ml-1"
+                      >
+                        {state.name}
+                      </label>
+                    </div>
+                  </div>
+                  {expandedStates[`${country.isoCode}-${state.isoCode}`] && (
+                    <div className="ml-6 mt-1 space-y-1">
+                      {City.getCitiesOfState(
+                        country.isoCode,
+                        state.isoCode
+                      ).map((city, cityIndex) => (
+                        <div key={`city-${city.name}-${cityIndex}`} className="pl-4">
+                          <div className="flex items-center">
+                            <input
+                              type="checkbox"
+                              id={`geo-${country.isoCode}-${state.isoCode}-${city.name}`}
+                              checked={selectedCountries.includes(
+                                `${country.name} > ${state.name} > ${city.name}`
+                              )}
+                              onChange={() =>
+                                handleCityToggle(country, state, city)
+                              }
+                              className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9]"
+                            />
+                            <label
+                              htmlFor={`geo-${country.isoCode}-${state.isoCode}-${city.name}`}
+                              className="text-[#344054] cursor-pointer"
+                            >
+                              {city.name}
+                            </label>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+};
+
 export default function DealDetailsPage() {
   const [deal, setDeal] = useState<Deal | null>(null)
   const [loading, setLoading] = useState(true)
@@ -220,7 +432,7 @@ export default function DealDetailsPage() {
     const fetchSellerProfile = async () => {
       try {
         const token = localStorage.getItem("token")
-        const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+        const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
         const response = await fetch(`${apiUrl}/sellers/profile`, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -254,7 +466,7 @@ export default function DealDetailsPage() {
       try {
         setLoading(true)
         const token = localStorage.getItem("token")
-        const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+        const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
         if (!token) {
           router.push("/seller/login?error=no_token")
           return
@@ -288,7 +500,7 @@ export default function DealDetailsPage() {
   const fetchCompanyProfile = async (companyProfileId: string) => {
     try {
       setLoadingCompanyProfile(true)
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
       const response = await fetch(`${apiUrl}/company-profiles/public/${companyProfileId}`)
 
       if (response.ok) {
@@ -311,7 +523,7 @@ export default function DealDetailsPage() {
     try {
       setLoadingBuyers(true)
       const token = localStorage.getItem("token")
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
       const response = await fetch(`${apiUrl}/deals/${dealId}/status-summary`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -400,7 +612,7 @@ export default function DealDetailsPage() {
         try {
           setLoadingBuyers(true)
           const token = localStorage.getItem("token")
-          const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+          const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
           const response = await fetch(`${apiUrl}/deals/${dealId}/matching-buyers`, {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -448,7 +660,7 @@ export default function DealDetailsPage() {
 
   const getProfilePictureUrl = (path: string | null) => {
     if (!path) return null
-    const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
     const formattedPath = path.replace(/\\/g, "/")
     return `${apiUrl}/${formattedPath.startsWith("/") ? formattedPath.slice(1) : formattedPath}`
   }
@@ -531,7 +743,7 @@ export default function DealDetailsPage() {
     }
     try {
       setSending(true)
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
       const token = localStorage.getItem("token")
       if (!token) {
         toast({
@@ -604,7 +816,7 @@ export default function DealDetailsPage() {
       try {
         setLoadingBuyers(true)
         const token = localStorage.getItem("token")
-        const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+        const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
         const response = await fetch(`${apiUrl}/deals/${dealId}/matching-buyers`, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -974,7 +1186,7 @@ export default function DealDetailsPage() {
                                 </thead>
                                 <tbody>
                                   {statusSummary.buyersByStatus.active.map((buyer) => (
-                                    <tr key={buyer._id} className="border-b border-gray-100">
+                                    <tr key={buyer._id} className="border-b cursor-pointer  border-gray-100"     onClick={() => handleBuyerClick(buyer)}>
                                       <td className="py-4">
                                         <div className="flex items-center">
                                           <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 mr-3">
@@ -1036,7 +1248,7 @@ export default function DealDetailsPage() {
                                   {statusSummary.buyersByStatus.pending.map((buyer) => (
                                     <tr
                                       key={buyer._id}
-                                      className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
+                                      className="border-b cursor-pointer border-gray-100 hover:bg-gray-50 transition-colors"
                                       onClick={() => handleBuyerClick(buyer)}
                                     >
                                       <td className="py-4">
@@ -1342,7 +1554,7 @@ export default function DealDetailsPage() {
                                 </thead>
                                 <tbody>
                                   {statusSummary.buyersByStatus.rejected.map((buyer) => (
-                                    <tr key={buyer._id} className="border-b border-gray-100">
+                                    <tr key={buyer._id} className="border-b cursor-pointer border-gray-100"  onClick={() => handleBuyerClick(buyer)}>
                                       <td className="py-4">
                                         <div className="flex items-center">
                                           <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 mr-3">
