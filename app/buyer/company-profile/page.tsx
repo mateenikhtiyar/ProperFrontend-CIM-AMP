@@ -69,7 +69,7 @@ const BUSINESS_MODELS = [
 ];
 
 // Default API URL
-const DEFAULT_API_URL = "https://api.cimamplify.com";
+const DEFAULT_API_URL = "http://localhost:3001";
 
 // Type for hierarchical selection
 interface HierarchicalSelection {
@@ -457,7 +457,7 @@ export default function CompanyProfilePage() {
         return;
       }
 
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
       const response = await fetch(`${apiUrl}/buyers/profile`, {
         headers: {
@@ -1576,7 +1576,7 @@ export default function CompanyProfilePage() {
   const getProfilePictureUrl = (path: string | null) => {
     if (!path) return null;
 
-    const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
     if (path.startsWith("http://") || path.startsWith("https://")) {
       return path;
@@ -2099,57 +2099,69 @@ export default function CompanyProfilePage() {
                     <Label className="text-[#667085] text-sm mb-1.5 block">
                       Geographies
                     </Label>
-                    
-                    {/* Geography Selector Section */}
-                    {formData.targetCriteria.countries.length > 0 && (
-                      <div className="mb-4">
-                        <div className="text-sm text-[#667085] mb-1">Selected</div>
-                        <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
-                          {formData.targetCriteria.countries.map((country, index) => (
-                            <span
-                              key={`selected-country-${index}`}
-                              className="bg-gray-100 text-[#344054] text-xs rounded-full px-2 py-0.5 flex items-center group"
-                            >
-                              {country}
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setFormData((prev) => ({
-                                    ...prev,
-                                    targetCriteria: {
-                                      ...prev.targetCriteria,
-                                      countries: [],
-                                    },
-                                  }))
-                                }
-                                className="ml-1 text-gray-400 hover:text-gray-600 focus:outline-none"
-                              >
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  className="h-3 w-3"
-                                  viewBox="0 0 20 20"
-                                  fill="currentColor"
-                                >
-                                  <path
-                                    fillRule="evenodd"
-                                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                                    clipRule="evenodd"
-                                  />
-                                </svg>
-                              </button>
-                            </span>
-                          ))}
-                        </div>
+                    <div className="border border-[#d0d5dd] rounded-md p-4 h-80 flex flex-col">
+                      {/* Search bar for geographies */}
+                      <div className="relative mb-4">
+                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-[#667085]" />
+                        <Input
+                          placeholder="Search country, state, or city"
+                          className="pl-8 border-[#d0d5dd]"
+                          value={countrySearchTerm}
+                          onChange={e => setCountrySearchTerm(e.target.value)}
+                        />
                       </div>
-                    )}
-                    <GeographySelector
-                      selectedCountries={formData.targetCriteria.countries}
-                      onChange={countries => setFormData(prev => ({
-                        ...prev,
-                        targetCriteria: { ...prev.targetCriteria, countries },
-                      }))}
-                    />
-                    
+                      {/* Pills block below search bar */}
+                      {formData.targetCriteria.countries.length > 0 && (
+                        <div className="mb-4">
+                          <div className="text-sm text-[#667085] mb-1">Selected</div>
+                          <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
+                            {formData.targetCriteria.countries.map((country, index) => (
+                              <span
+                                key={`selected-country-${index}`}
+                                className="bg-gray-100 text-[#344054] text-xs rounded-full px-2 py-0.5 flex items-center group"
+                              >
+                                {country}
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      targetCriteria: {
+                                        ...prev.targetCriteria,
+                                        countries: prev.targetCriteria.countries.filter((c, i) => i !== index),
+                                      },
+                                    }))
+                                  }
+                                  className="ml-1 text-gray-400 hover:text-gray-600 focus:outline-none"
+                                >
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="h-3 w-3"
+                                    viewBox="0 0 20 20"
+                                    fill="currentColor"
+                                  >
+                                    <path
+                                      fillRule="evenodd"
+                                      d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                      clipRule="evenodd"
+                                    />
+                                  </svg>
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {/* Dropdown (GeographySelector) */}
+                      <GeographySelector
+                        selectedCountries={formData.targetCriteria.countries}
+                        onChange={countries => setFormData(prev => ({
+                          ...prev,
+                          targetCriteria: { ...prev.targetCriteria, countries },
+                        }))}
+                        searchTerm={countrySearchTerm}
+                      />
+                    </div>
                   </div>
 
                   <div>
@@ -2744,8 +2756,11 @@ export default function CompanyProfilePage() {
                       were agreed to by{" "}
                       {buyerProfile?.fullName || "(insert buyer's name)"} on{" "}
                       {profileId && formData.updatedAt
-                        ? new Date(formData.updatedAt).toLocaleString("en-US", {
-                            timeZone: "UTC",
+                        ? new Date(formData.updatedAt).toLocaleString("en-GB", {
+                            timeZone: "Europe/London",
+                            dateStyle: "medium",
+                            timeStyle: "short",
+                            hour12: true,
                           })
                         : "(insert date and time of submission)"}
                       .
