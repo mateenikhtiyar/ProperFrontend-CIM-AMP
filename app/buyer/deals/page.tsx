@@ -603,7 +603,8 @@ export default function DealsPage() {
         setSellerInfoMap({});
       }
     } else if (deal.status === "pending") {
-      handleGoToCIM(deal.id); // ✅ Only auto-approve if status is pending
+      setSelectedDealId(deal.id); // ✅ Just show terms dialog for passed deals
+      setTermsModalOpen(true);// ✅ Only auto-approve if status is pending
     } else if (deal.status === "passed") {
       setSelectedDealId(deal.id); // ✅ Just show terms dialog for passed deals
       setTermsModalOpen(true);
