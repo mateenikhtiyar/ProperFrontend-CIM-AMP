@@ -46,7 +46,7 @@ import {
   type Industry,
 } from "@/lib/industry-data";
 import GeographySelector from "@/components/GeographySelector";
-import { Country, State, City } from "country-state-city";
+import { Country, State } from "country-state-city";
 
 // Add a direct import for the API service at the top of the file
 // Remove: `import { submitCompanyProfile } from "@/services/api"`
@@ -1499,7 +1499,7 @@ export default function AcquireProfilePage() {
                 onCheckedChange={(checked) => {
                   toggleSector(sector);
                 }}
-                className="mr-2 border-[#d0d5dd]"
+                className="mr-2 border-[#d0d5dd] data-[state=checked]:bg-[#3aafa9] data-[state=checked]:border-[#3aafa9] focus:ring-[#3aafa9]"
               />
               <div
                 className="flex items-center cursor-pointer flex-1"
@@ -1530,7 +1530,7 @@ export default function AcquireProfilePage() {
                         onCheckedChange={(checked) => {
                           toggleIndustryGroup(group, sector);
                         }}
-                        className="mr-2 border-[#d0d5dd]"
+                        className="mr-2 border-[#d0d5dd] data-[state=checked]:bg-[#3aafa9] data-[state=checked]:border-[#3aafa9] focus:ring-[#3aafa9]"
                       />
                       <div
                         className="flex items-center cursor-pointer flex-1"
@@ -1578,12 +1578,8 @@ export default function AcquireProfilePage() {
   const [expandedStates, setExpandedStates] = useState<Record<string, boolean>>({});
 
   // Helper to load states and cities for a country
-  const getStatesAndCities = (countryCode: string) => {
-    const states = State.getStatesOfCountry(countryCode);
-    return states.map((state) => ({
-      ...state,
-      cities: City.getCitiesOfState(countryCode, state.isoCode),
-    }));
+  const getStates = (countryCode: string) => {
+    return State.getStatesOfCountry(countryCode);
   };
 
   // Render hierarchical geography selection
@@ -1605,7 +1601,7 @@ export default function AcquireProfilePage() {
                     targetCriteria: { ...prev.targetCriteria, countries: [country.name] },
                   }));
                 }}
-                className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9]"
+                className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9] checked:bg-[#3aafa9] checked:border-[#3aafa9]"
               />
               <div
                 className="flex items-center cursor-pointer flex-1"
@@ -1623,7 +1619,7 @@ export default function AcquireProfilePage() {
             </div>
             {expandedCountries[country.isoCode] && (
               <div className="ml-6 mt-1 space-y-1">
-                {getStatesAndCities(country.isoCode).map((state) => (
+                {getStates(country.isoCode).map((state) => (
                   <div key={state.isoCode} className="pl-2">
                     <div className="flex items-center">
                       <input
@@ -1637,7 +1633,7 @@ export default function AcquireProfilePage() {
                             targetCriteria: { ...prev.targetCriteria, countries: [`${country.name} > ${state.name}`] },
                           }));
                         }}
-                        className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9]"
+                        className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9] checked:bg-[#3aafa9] checked:border-[#3aafa9]"
                       />
                       <div
                         className="flex items-center cursor-pointer flex-1"
@@ -1653,32 +1649,7 @@ export default function AcquireProfilePage() {
                         </Label>
                       </div>
                     </div>
-                    {expandedStates[`${country.isoCode}-${state.isoCode}`] && state.cities.length > 0 && (
-                      <div className="ml-6 mt-1 space-y-1">
-                        {state.cities.slice(0, 10).map((city, cityIndex) => (
-                          <div key={`city-${city.name}-${cityIndex}`} className="pl-4">
-                            <div className="flex items-center">
-                              <input
-                                type="radio"
-                                id={`geo-${country.isoCode}-${state.isoCode}-${city.name}`}
-                                name="geography"
-                                checked={formData.targetCriteria.countries.includes(`${country.name} > ${state.name} > ${city.name}`)}
-                                onChange={() => {
-                                  setFormData((prev) => ({
-                                    ...prev,
-                                    targetCriteria: { ...prev.targetCriteria, countries: [`${country.name} > ${state.name} > ${city.name}`] },
-                                  }));
-                                }}
-                                className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9]"
-                              />
-                              <Label htmlFor={`geo-${country.isoCode}-${state.isoCode}-${city.name}`} className="text-[#344054] cursor-pointer">
-                                {city.name}
-                              </Label>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+
                   </div>
                 ))}
               </div>
@@ -2145,7 +2116,7 @@ export default function AcquireProfilePage() {
     <div className="relative mb-4">
       <Search className="absolute left-2 top-2.5 h-4 w-4 text-[#667085]" />
       <Input
-        placeholder="Search country, state, or city"
+        placeholder="Search country or state/province"
         className="pl-8 border-[#d0d5dd]"
         value={countrySearchTerm}
         onChange={e => setCountrySearchTerm(e.target.value)}

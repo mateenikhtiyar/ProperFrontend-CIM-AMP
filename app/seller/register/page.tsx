@@ -1,130 +1,160 @@
-"use client"
+"use client";
 
-import type React from "react"
-import Image from "next/image"
-import { useState, useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import Link from "next/link"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { EyeIcon, EyeOffIcon } from "lucide-react"
-import { toast } from "@/components/ui/use-toast"
-import { Toaster } from "@/components/ui/toaster"
-import { sellerRegister } from "@/services/api"
+import type React from "react";
+import Image from "next/image";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { EyeIcon, EyeOffIcon } from "lucide-react";
+import { toast } from "@/components/ui/use-toast";
+import { Toaster } from "@/components/ui/toaster";
+import { sellerRegister } from "@/services/api";
 
 interface RegisterFormData {
-  fullName: string
-  email: string
-  password: string
-  confirmPassword: string
-  companyName: string
+  fullName: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  companyName: string;
+  title: string;
+  phoneNumber: string;
+  website: string;
 }
 
 export default function SellerRegisterPage() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [formData, setFormData] = useState<RegisterFormData>({
     fullName: "",
     email: "",
     password: "",
     confirmPassword: "",
     companyName: "",
-  })
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [errors, setErrors] = useState<Partial<RegisterFormData & { general: string }>>({})
-  const [isSubmitting, setIsSubmitting] = useState(false)
+    title: "",
+    phoneNumber: "",
+    website: "",
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [errors, setErrors] = useState<
+    Partial<RegisterFormData & { general: string }>
+  >({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Check for token and userId in URL parameters
   useEffect(() => {
-    const urlToken = searchParams?.get("token")
-    const urlUserId = searchParams?.get("userId") || searchParams?.get("userid") || searchParams?.get("id")
+    const urlToken = searchParams?.get("token");
+    const urlUserId =
+      searchParams?.get("userId") ||
+      searchParams?.get("userid") ||
+      searchParams?.get("id");
 
     if (urlToken) {
-      const cleanToken = urlToken.trim()
-      localStorage.setItem("token", cleanToken)
-      localStorage.setItem("userRole", "seller")
-      console.log("Register page - Token set from URL:", cleanToken.substring(0, 10) + "...")
+      const cleanToken = urlToken.trim();
+      localStorage.setItem("token", cleanToken);
+      localStorage.setItem("userRole", "seller");
+      console.log(
+        "Register page - Token set from URL:",
+        cleanToken.substring(0, 10) + "..."
+      );
     }
 
     if (urlUserId) {
-      const cleanUserId = urlUserId.trim()
-      localStorage.setItem("userId", cleanUserId)
-      console.log("Register page - User ID set from URL:", cleanUserId)
+      const cleanUserId = urlUserId.trim();
+      localStorage.setItem("userId", cleanUserId);
+      console.log("Register page - User ID set from URL:", cleanUserId);
     }
 
     // If token is provided, redirect to dashboard
     if (urlToken) {
-      console.log("Register page - Redirecting to dashboard with token from URL")
-      localStorage.setItem("userRole", "seller")
-      router.push("/seller/dashboard")
-      return
+      console.log(
+        "Register page - Redirecting to dashboard with token from URL"
+      );
+      localStorage.setItem("userRole", "seller");
+      router.push("/seller/dashboard");
+      return;
     }
 
     // Check if already logged in
-    const storedToken = localStorage.getItem("token")
+    const storedToken = localStorage.getItem("token");
     if (storedToken) {
-      console.log("Register page - Token found in localStorage, redirecting to dashboard")
-      router.push("/seller/dashboard")
+      console.log(
+        "Register page - Token found in localStorage, redirecting to dashboard"
+      );
+      router.push("/seller/dashboard");
     }
-  }, [searchParams, router])
+  }, [searchParams, router]);
 
   // Handle form input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
 
     // Clear error when user types
     if (errors[name as keyof typeof errors]) {
-      setErrors((prev) => ({ ...prev, [name]: undefined }))
+      setErrors((prev) => ({ ...prev, [name]: undefined }));
     }
-  }
+  };
 
   // Validate form data
   const validateForm = () => {
-    const newErrors: Partial<RegisterFormData & { general: string }> = {}
+    const newErrors: Partial<RegisterFormData & { general: string }> = {};
 
     if (!formData.fullName.trim()) {
-      newErrors.fullName = "Full name is required"
+      newErrors.fullName = "Full name is required";
     }
 
     if (!formData.email.trim()) {
-      newErrors.email = "Email is required"
+      newErrors.email = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "Email is invalid"
+      newErrors.email = "Email is invalid";
     }
 
     if (!formData.password) {
-      newErrors.password = "Password is required"
+      newErrors.password = "Password is required";
     } else if (formData.password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters"
+      newErrors.password = "Password must be at least 6 characters";
     }
 
     if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = "Passwords do not match"
+      newErrors.confirmPassword = "Passwords do not match";
     }
 
     if (!formData.companyName.trim()) {
-      newErrors.companyName = "Company name is required"
+      newErrors.companyName = "Company name is required";
     }
 
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
+    if (!formData.title.trim()) {
+      newErrors.title = "Title is required";
+    }
+
+    if (!formData.phoneNumber.trim()) {
+      newErrors.phoneNumber = "Phone number is required";
+    }
+
+    if (!formData.website.trim()) {
+      newErrors.website = "Website is required";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   // Handle traditional registration
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setErrors({})
+    e.preventDefault();
+    setErrors({});
 
     if (!validateForm()) {
-      return
+      return;
     }
 
-    setIsSubmitting(true)
+    setIsSubmitting(true);
 
     try {
-      console.log("Register page - Submitting registration")
+      console.log("Register page - Submitting registration");
 
       // Use the API service
       const data = await sellerRegister({
@@ -132,32 +162,37 @@ export default function SellerRegisterPage() {
         email: formData.email,
         password: formData.password,
         companyName: formData.companyName,
-      })
+        title: formData.title,
+        phoneNumber: formData.phoneNumber,
+        website: formData.website,
+      });
 
       // Set user role
-      localStorage.setItem("userRole", "seller")
+      localStorage.setItem("userRole", "seller");
 
       toast({
         title: "Registration Successful",
         description: "Your account has been created successfully.",
-      })
+      });
 
       // Redirect to dashboard page
       setTimeout(() => {
-        router.push("/seller/dashboard")
-      }, 1500)
+        router.push("/seller/dashboard");
+      }, 1500);
     } catch (error: any) {
-      console.error("Registration error:", error)
-      setErrors({ general: error.message || "Registration failed. Please try again." })
+      console.error("Registration error:", error);
+      setErrors({
+        general: error.message || "Registration failed. Please try again.",
+      });
       toast({
         title: "Registration Failed",
         description: error.message || "Registration failed. Please try again.",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   // Handle Google OAuth login
   const handleGoogleLogin = () => {
@@ -167,9 +202,9 @@ export default function SellerRegisterPage() {
 
   return (
     <div className="">
-      <div className="flex h-screen bg-gradient-to-b from-[#C3C6BE] to-[#828673] overflow-hidden">
+      <div className="flex min-h-screen bg-gradient-to-b from-[#C3C6BE] to-[#828673] overflow-hidden">
         {/* Left side with illustration */}
-        <div className="hidden md:flex md:w-1/2 items-center justify-center relative">
+        <div className="hidden lg:flex lg:w-1/2 items-center justify-center relative">
           <Image
             src="/sellerbg.svg"
             alt="Financial illustration with handshake and growth chart"
@@ -181,9 +216,11 @@ export default function SellerRegisterPage() {
         </div>
 
         {/* Right side - Registration form */}
-        <div className="w-full md:w-2/3 bg-white rounded-l-[30px] flex items-center justify-center p-8">
-          <div className="w-full max-w-md space-y-3">
-            <h1 className="text-3xl font-bold mb-8 text-center">Seller Registration</h1>
+        <div className="w-full lg:w-2/3 bg-white lg:rounded-l-[30px] flex items-center justify-center p-4 sm:p-6 lg:p-8 overflow-y-auto">
+          <div className="w-full max-w-md space-y-3 my-4">
+            <h1 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-center">
+              Seller Registration
+            </h1>
 
             {errors.general && (
               <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">
@@ -194,7 +231,7 @@ export default function SellerRegisterPage() {
             {/* Google signup button */}
             <button
               onClick={handleGoogleLogin}
-              className="w-full flex items-center justify-center gap-2 border border-gray-300 rounded-md p-3 mb-6 hover:bg-gray-50 transition-colors"
+              className="w-full flex items-center justify-center gap-2 border border-gray-300 rounded-md p-3 mb-4 sm:mb-6 hover:bg-gray-50 transition-colors"
             >
               <svg className="h-5 w-5" viewBox="0 0 24 24">
                 <path
@@ -218,7 +255,7 @@ export default function SellerRegisterPage() {
             </button>
 
             {/* Divider */}
-            <div className="relative my-6">
+            <div className="relative my-4 sm:my-6">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-300"></div>
               </div>
@@ -227,9 +264,12 @@ export default function SellerRegisterPage() {
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Email Address
                 </label>
                 <Input
@@ -240,11 +280,15 @@ export default function SellerRegisterPage() {
                   onChange={handleChange}
                   placeholder=""
                 />
-                {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
+                {errors.email && (
+                  <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+                )}
               </div>
-
               <div>
-                <label htmlFor="companyName" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="companyName"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Company Name
                 </label>
                 <Input
@@ -255,11 +299,17 @@ export default function SellerRegisterPage() {
                   onChange={handleChange}
                   placeholder=""
                 />
-                {errors.companyName && <p className="mt-1 text-sm text-red-600">{errors.companyName}</p>}
+                {errors.companyName && (
+                  <p className="mt-1 text-sm text-red-600">
+                    {errors.companyName}
+                  </p>
+                )}
               </div>
-
               <div>
-                <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="fullName"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Full Name
                 </label>
                 <Input
@@ -270,11 +320,78 @@ export default function SellerRegisterPage() {
                   onChange={handleChange}
                   placeholder=""
                 />
-                {errors.fullName && <p className="mt-1 text-sm text-red-600">{errors.fullName}</p>}
+                {errors.fullName && (
+                  <p className="mt-1 text-sm text-red-600">{errors.fullName}</p>
+                )}
               </div>
-
+              {/* title */}
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="title"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Title
+                </label>
+                <Input
+                  id="title"
+                  name="title"
+                  type="text"
+                  value={formData.title}
+                  onChange={handleChange}
+                  placeholder=""
+                />
+                {errors.title && (
+                  <p className="mt-1 text-sm text-red-600">{errors.title}</p>
+                )}
+              </div>
+              {/* phone */}
+              <div>
+                <label
+                  htmlFor="phoneNumber"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Phone Number
+                </label>
+                <Input
+                  id="phoneNumber"
+                  name="phoneNumber"
+                  type="text"
+                  value={formData.phoneNumber}
+                  onChange={handleChange}
+                  placeholder=""
+                />
+                {errors.phoneNumber && (
+                  <p className="mt-1 text-sm text-red-600">{errors.phoneNumber}</p>
+                )}
+              </div>
+              {/* website */}
+              <div>
+                <label
+                  htmlFor="website"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Website
+                </label>
+                <Input
+                  id="website"
+                  name="website"
+                  type="text"
+                  value={formData.website}
+                  onChange={handleChange}
+                  placeholder=""
+                />
+                {errors.website && (
+                  <p className="mt-1 text-sm text-red-600">
+                    {errors.website}
+                  </p>
+                )}
+              </div>
+              {/* password */}
+              <div>
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Password
                 </label>
                 <div className="relative">
@@ -298,11 +415,15 @@ export default function SellerRegisterPage() {
                     )}
                   </button>
                 </div>
-                {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password}</p>}
+                {errors.password && (
+                  <p className="mt-1 text-sm text-red-600">{errors.password}</p>
+                )}
               </div>
-
               <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="confirmPassword"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Confirm Password
                 </label>
                 <div className="relative">
@@ -326,16 +447,22 @@ export default function SellerRegisterPage() {
                     )}
                   </button>
                 </div>
-                {errors.confirmPassword && <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>}
+                {errors.confirmPassword && (
+                  <p className="mt-1 text-sm text-red-600">
+                    {errors.confirmPassword}
+                  </p>
+                )}
               </div>
-
               <Button type="submit" className="w-full" disabled={isSubmitting}>
                 {isSubmitting ? "Creating Account..." : "Create Account"}
               </Button>
             </form>
 
             <div className="text-center mt-4">
-              <Link href="/seller/login" className="text-sm text-gray-600 hover:underline">
+              <Link
+                href="/seller/login"
+                className="text-sm text-gray-600 hover:underline"
+              >
                 Already have an account? Log in
               </Link>
             </div>
@@ -344,5 +471,5 @@ export default function SellerRegisterPage() {
       </div>
       <Toaster />
     </div>
-  )
+  );
 }
