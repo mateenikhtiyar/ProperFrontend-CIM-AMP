@@ -54,7 +54,7 @@ interface SellerFormData {
   netIncome: number
   askingPrice: number
   businessModels: string[]
-  managementPreferences: string[]
+  managementPreferences: string
   capitalAvailability: CapitalAvailabilityType[] // ✅ Use the exact type
   companyType: string[]
   minPriorAcquisitions: number
@@ -153,10 +153,7 @@ interface Deal {
     assetLight?: boolean
     assetHeavy?: boolean
   }
-  managementPreferences: {
-    retiringDivesting?: boolean
-    staffStay?: boolean
-  }
+  managementPreferences: string
   buyerFit: {
     capitalAvailability?: CapitalAvailabilityType[]
     minPriorAcquisitions?: number
@@ -238,7 +235,7 @@ export default function EditDealPageFixed() {
     netIncome: 0,
     askingPrice: 0,
     businessModels: [],
-    managementPreferences: [],
+    managementPreferences: "",
     capitalAvailability: [], // ✅ Initialize as empty array with correct type
     companyType: [],
     minPriorAcquisitions: 0,
@@ -365,10 +362,7 @@ export default function EditDealPageFixed() {
           ...(dealData.businessModel?.assetLight ? ["asset-light"] : []),
           ...(dealData.businessModel?.assetHeavy ? ["asset-heavy"] : []),
         ],
-        managementPreferences: [
-          ...(dealData.managementPreferences?.retiringDivesting ? ["retiring-divesting"] : []),
-          ...(dealData.managementPreferences?.staffStay ? ["key-staff-stay"] : []),
-        ],
+        managementPreferences: dealData.managementPreferences || "",
         capitalAvailability: capitalAvailabilityArray,
         companyType: [...new Set(companyTypeArray)],
         minPriorAcquisitions: dealData.buyerFit?.minPriorAcquisitions || 0,
@@ -1228,11 +1222,8 @@ const handleCheckboxChange = (
         assetHeavy: formData.businessModels.includes("asset-heavy"),
       }
 
-      // Map management preferences to booleans
-      const managementPreferences = {
-        retiringDivesting: formData.managementPreferences.includes("retiring-divesting"),
-        staffStay: formData.managementPreferences.includes("key-staff-stay"),
-      }
+      // Use managementPreferences as a string
+      const managementPreferences = formData.managementPreferences;
 
       // ✅ Ensure capitalAvailability is never empty and uses exact enum values
       const validCapitalAvailability =
@@ -1810,36 +1801,17 @@ const handleCheckboxChange = (
               </div>
 
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-3">Management Preferences</label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="flex items-center">
-                    <Checkbox
-                      id="retiring-divesting"
-                      checked={formData.managementPreferences.includes("retiring-divesting")}
-                      onCheckedChange={(checked) =>
-                        handleCheckboxChange(Boolean(checked), "retiring-divesting", "managementPreferences")
-                      }
-                      className="mr-2 border-[#d0d5dd]"
-                    />
-                    <Label htmlFor="retiring-divesting" className="cursor-pointer">
-                      Retiring / Divesting
-                    </Label>
-                  </div>
-
-                  <div className="flex items-center">
-                    <Checkbox
-                      id="key-staff-stay"
-                      checked={formData.managementPreferences.includes("key-staff-stay")}
-                      onCheckedChange={(checked) =>
-                        handleCheckboxChange(Boolean(checked), "key-staff-stay", "managementPreferences")
-                      }
-                      className="mr-2 border-[#d0d5dd]"
-                    />
-                    <Label htmlFor="key-staff-stay" className="cursor-pointer">
-                      Key Staff Stay
-                    </Label>
-                  </div>
-                </div>
+                <label htmlFor="managementPreferences" className="block text-sm font-medium text-gray-700 mb-3">Management Preferences</label>
+                <textarea
+                  id="managementPreferences"
+                  name="managementPreferences"
+                  value={formData.managementPreferences}
+                  onChange={handleInputChange}
+                  rows={4}
+                  className="block w-full rounded-md border border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2"
+                  placeholder="Enter management preferences"
+                  required
+                />
               </div>
             </div>
           </section>
