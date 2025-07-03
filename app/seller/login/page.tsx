@@ -27,14 +27,7 @@ export default function SellerLoginPage() {
   useEffect(() => {
     if (typeof window === "undefined") return;
   
-    const sessionExpired = searchParams?.get("session") === "expired";
-    if (sessionExpired) {
-      toast({
-        title: "Session Expired",
-        description: "Your session has expired. Please log in again.",
-        variant: "destructive",
-      });
-    }
+    
   
     const urlToken = searchParams?.get("token");
     const urlUserId =
@@ -119,11 +112,22 @@ export default function SellerLoginPage() {
       }, 1000);
     } catch (err: any) {
       console.error("Login error:", err);
-      setError(err.message || "Login failed. Please check your credentials.");
+
+      // Add validation for wrong credentials
+      let errorMessage = "Login failed. Wrong credentials.";
+      if (
+        err?.response?.status === 401 ||
+        err?.message?.toLowerCase().includes("unauthorized")
+      ) {
+        errorMessage = "Invalid email or password. Please try again.";
+      } else if (err?.message) {
+        errorMessage = err.message;
+      }
+
+      setError(errorMessage);
       toast({
         title: "Login Failed",
-        description:
-          err.message || "Login failed. Please check your credentials.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -135,7 +139,7 @@ export default function SellerLoginPage() {
   const handleGoogleLogin = () => {
     try {
       // Get API URL from localStorage or use default
-      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
+      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
       console.log(
         "Login page - Redirecting to Google OAuth:",
         `${apiUrl}/sellers/google`

@@ -6,7 +6,7 @@ const getApiUrl = () => {
 
   if (!apiUrl) {
     console.warn("NEXT_PUBLIC_API_URL not set, using default backend URL")
-    return "http://localhost:3001" // Default backend URL
+    return "https://api.cimamplify.com" // Default backend URL
   }
 
   console.log("Using API URL:", apiUrl)
@@ -42,7 +42,7 @@ api.interceptors.response.use(
       localStorage.removeItem("token")
       localStorage.removeItem("userId")
       localStorage.removeItem("userRole")
-    
+
     }
     return Promise.reject(error)
   },
