@@ -97,6 +97,9 @@ export default function DealsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  // Store the dealId to approve after modal
+  const [pendingCIMDealId, setPendingCIMDealId] = useState<string | null>(null);
+
   // API functions
   const fetchDealsByStatus = async (
     status: "pending" | "active" | "passed"
@@ -638,36 +641,17 @@ export default function DealsPage() {
     return true;
   });
 
-  const handleGoToCIM = async (dealId: string) => {
-    console.log("Go to CIM clicked for deal:", dealId);
-
-    const success = await updateDealStatus(dealId, "activate");
-
-    if (success) {
-      console.log("✅ Deal activated via Go to CIM");
-
-      // Move to active tab
-      setActiveTab("active");
-      setActiveTitle("Active Deals");
-    }
+  // Store the dealId to approve after modal
+  const handleGoToCIMClick = (dealId: string) => {
+    setPendingCIMDealId(dealId);
+    setTermsModalOpen(true);
   };
 
   const handleApproveTerms = async () => {
-    setTermsModalOpen(false);
-
-    if (selectedDealId) {
-      console.log("Handling approve terms for deal:", selectedDealId);
-
-      const success = await updateDealStatus(selectedDealId, "activate");
-
-      if (success) {
-        console.log("✅ Deal Approved via Go to CIM — Moved to Active Tab");
-        // Refresh tab view
-        setActiveTab("active");
-        setActiveTitle("Active Deals");
-      } else {
-        console.error("❌ Failed to approve deal via Go to CIM");
-      }
+    if (pendingCIMDealId) {
+      await handleGoToCIM(pendingCIMDealId);
+      setTermsModalOpen(false);
+      setPendingCIMDealId(null);
     }
   };
 
@@ -796,6 +780,17 @@ export default function DealsPage() {
     fetchSellerInfos();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filteredDeals, activeTab]); // only rerun when deals or tab change
+
+  // Restore handleGoToCIM for modal approval
+  const handleGoToCIM = async (dealId: string) => {
+    console.log("Go to CIM clicked for deal:", dealId);
+    const success = await updateDealStatus(dealId, "activate");
+    if (success) {
+      console.log("✅ Deal activated via Go to CIM");
+      setActiveTab("active");
+      setActiveTitle("Active Deals");
+    }
+  };
 
   // Show loading if not initialized
   if (!isInitialized) {
@@ -1182,7 +1177,7 @@ export default function DealsPage() {
                             className="border-blue-200 bg-[#3AAFA922] text-[#3AAFA9] hover:bg-[#3AAFA933]"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleGoToCIM(deal.id);
+                              handleGoToCIMClick(deal.id);
                             }}
                           >
                             Go to CIM
@@ -1207,7 +1202,7 @@ export default function DealsPage() {
                             className="border-blue-200 bg-[#3AAFA922] text-[#3AAFA9] hover:bg-[#3AAFA933]"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleGoToCIM(deal.id);
+                              handleGoToCIMClick(deal.id);
                             }}
                           >
                             Go to CIM

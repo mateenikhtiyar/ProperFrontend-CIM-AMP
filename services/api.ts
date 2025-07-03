@@ -79,10 +79,13 @@ export const sellerLogin = async (credentials: { email: string; password: string
 }
 
 export const sellerRegister = async (userData: {
-  fullName: string
-  email: string
-  password: string
-  companyName: string
+  fullName: string;
+  email: string;
+  password: string;
+  companyName: string;
+  title: string;
+  phoneNumber: string;
+  website: string;
 }) => {
   try {
     const response = await api.post("/sellers/register", userData)
