@@ -1,158 +1,176 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
+import Image from "next/image";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { EyeIcon, EyeOffIcon } from "lucide-react";
+import { toast } from "@/components/ui/use-toast";
+import { Toaster } from "@/components/ui/toaster";
+import Link from "next/link";
+import { useAuth } from "@/contexts/auth-context";
+import { sellerLogin } from "@/services/api";
+import { adminLogin } from "@/services/api";
 
-import { useState } from "react"
-import Image from "next/image"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
-import { toast } from "@/components/ui/use-toast"
-import { Toaster } from "@/components/ui/toaster"
-
-export default function AdminLogin() {
+export default function SellerLoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [rememberMe, setRememberMe] = useState(false)
+  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false);
   const router = useRouter()
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
 
-    try {
-      // This is a simplified admin login for demonstration
-      // In a real app, you would validate credentials against your backend
-      console.log("Admin login attempt:", { email, password, rememberMe })
+// ...inside your component:
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setIsLoading(true);
 
-      // For demo purposes, we'll simulate a successful login
-      // In production, replace with actual API call
-      if (email && password) {
-        // Store authentication data
-        localStorage.setItem("token", "admin-demo-token")
-        localStorage.setItem("userId", "admin-user-id")
-        localStorage.setItem("userRole", "admin")
+  // Debug: log credentials before sending
+  console.log("Attempting admin login with:", { email, password });
 
-        // Show success message
-        toast({
-          title: "Login Successful",
-          description: "You have been successfully logged in as an admin.",
-        })
+  try {
+    const response = await adminLogin({ email, password });
 
-        // Redirect to admin dashboard
-        setTimeout(() => {
-          router.push("/admin/dashboard")
-        }, 1000)
-      } else {
-        throw new Error("Please enter both email and password")
-      }
-    } catch (error: any) {
-      console.error("Login failed:", error)
+    // Debug: log response from backend
+    console.log("Admin login response:", response);
+
+    if (response && response.token) {
       toast({
-        title: "Login Failed",
-        description: error.message || "Failed to log in. Please check your credentials.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoading(false)
-    }
-  }
+        title: "Login Successful",
+        description: "You have been successfully logged in as an admin.",
+      });
 
+      setTimeout(() => {
+        router.push("/admin/dashboard");
+      }, 1000);
+    } else {
+      throw new Error("Invalid login credentials or missing token.");
+    }
+  } catch (error: any) {
+    // Debug: log error object
+    console.error("Admin login error:", error);
+    toast({
+      title: "Login Failed",
+      description: error.message || "Failed to log in. Please check your credentials.",
+      variant: "destructive",
+    });
+  } finally {
+    setIsLoading(false);
+  }
+};
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-r from-blue-600 to-blue-800 items-center justify-center">
-        <div className="max-w-md text-center">
-          <Image
-            src="/images/cim-amplify-logo.png"
-            alt="CIM Amplify Logo"
-            width={200}
-            height={80}
-            className="mx-auto mb-8"
-          />
-          <h1 className="text-4xl font-bold text-white mb-6">Admin Portal</h1>
-          <p className="text-white/80 text-lg mb-8">
-            Manage your platform, users, and transactions from a centralized dashboard.
-          </p>
-          <Image
-            src="/placeholder.svg?height=400&width=400"
-            alt="Admin Illustration"
-            width={400}
-            height={400}
-            className="mx-auto"
-          />
-        </div>
+    <div className="flex h-screen bg-gradient-to-b from-[#C3C6BE] to-[#828673] overflow-hidden">
+      {/* Left side - Illustration */}
+      <div className="hidden md:flex md:w-1/2 items-center justify-center relative">
+        <Image
+          src="/sellerbg.svg"
+          alt="Financial illustration with handshake and growth chart"
+          width={500}
+          height={500}
+          priority
+          className="z-10 bg-cover bg-center w-full h-full object-cover"
+        />
       </div>
 
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
-        <Card className="w-full max-w-md">
-          <CardHeader className="space-y-1">
-            <div className="flex justify-center mb-4 lg:hidden">
-              <Image src="/images/cim-amplify-logo.png" alt="CIM Amplify Logo" width={150} height={60} />
+      {/* Right side - Login form */}
+      <div className="w-full md:w-2/3 bg-white rounded-l-[30px] flex items-center justify-center p-8">
+        <div className="w-full max-w-md space-y-8">
+          <h1 className="text-3xl font-bold mb-8 text-center">Login</h1>
+
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">
+              {error}
             </div>
-            <CardTitle className="text-2xl font-bold text-center">Admin Login</CardTitle>
-            <CardDescription className="text-center">
-              Enter your credentials to access the admin dashboard
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="admin@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Password</Label>
-                  <Link href="/admin/forgot-password" className="text-sm text-blue-600 hover:text-blue-800">
-                    Forgot password?
-                  </Link>
-                </div>
+          )}
+
+          {/* Google login button */}
+    
+          {/* Divider */}
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">Or</span>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Email Address
+              </label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder=""
+                required
+                className="w-full py-6"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Password
+              </label>
+              <div className="relative">
                 <Input
                   id="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  placeholder=""
                   required
+                  className="w-full pr-10 py-6"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 "
+                >
+                  {showPassword ? (
+                    <EyeOffIcon className="h-5 w-5" />
+                  ) : (
+                    <EyeIcon className="h-5 w-5" />
+                  )}
+                </button>
               </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="remember"
-                  checked={rememberMe}
-                  onCheckedChange={(checked) => setRememberMe(checked as boolean)}
-                />
-                <Label htmlFor="remember" className="text-sm font-normal">
-                  Remember me
-                </Label>
-              </div>
-              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
-                {isLoading ? "Logging in..." : "Login"}
-              </Button>
-            </form>
-          </CardContent>
-          <CardFooter className="flex flex-col space-y-4">
-            <div className="text-sm text-center text-gray-500">
-              Need help? Contact{" "}
-              <a href="mailto:support@cimamplify.com" className="text-blue-600 hover:text-blue-800">
-                support@cimamplify.com
-              </a>
+              {/* Forgot Password Link */}
+              {/* <div className="text-right mt-2">
+                <Link
+                  href="/seller/forgot-password"
+                  className="text-sm text-[#3aafa9] hover:text-[#2a9d8f] underline"
+                >
+                  Forgot password?
+                </Link>
+              </div> */}
             </div>
-          </CardFooter>
-        </Card>
+
+            <Button
+              type="submit"
+              className="w-full bg-[#3aafa9] hover:bg-[#2a9d8f] text-white py-6 rounded-3xl"
+              disabled={isLoading}
+            >
+              {isLoading ? "Logging in..." : "Login my account"}
+            </Button>
+          </form>
+
+         
+        </div>
       </div>
       <Toaster />
     </div>
-  )
+  );
 }

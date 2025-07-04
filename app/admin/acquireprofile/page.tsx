@@ -46,7 +46,7 @@ import {
   type Industry,
 } from "@/lib/industry-data";
 import GeographySelector from "@/components/GeographySelector";
-import { Country, State } from "country-state-city";
+import { Country, State, City } from "country-state-city";
 
 // Add a direct import for the API service at the top of the file
 // Remove: `import { submitCompanyProfile } from "@/services/api"`
@@ -95,6 +95,8 @@ interface IndustrySelection {
 export default function AcquireProfilePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+ const [isAdminEdit, setIsAdminEdit] = useState(false);
+const [profileId, setProfileId] = useState<string | null>(null);;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<
     "idle" | "success" | "error"
@@ -160,70 +162,27 @@ export default function AcquireProfilePage() {
   };
 
   // Check for token on mount and from URL parameters
-  useEffect(() => {
-    // Get token and userId from URL parameters
-    const urlToken = searchParams?.get("token");
-    const urlUserId = searchParams?.get("userId");
-
-    // Set token from URL or localStorage
-    if (urlToken) {
-      // Make sure to trim any whitespace
-      const cleanToken = urlToken.trim();
-      localStorage.setItem("token", cleanToken);
-      setAuthToken(cleanToken);
-      console.log(
-        "Acquire Profile - Token set from URL:",
-        cleanToken.substring(0, 10) + "..."
-      );
+useEffect(() => {
+  // Get token and userId from URL parameters
+  const urlToken = searchParams?.get("token");
+  const urlUserId = searchParams?.get("userId");
+const urlProfileId = searchParams?.get("id");
+if (urlProfileId) {
+  setProfileId(urlProfileId);
+  setIsAdminEdit(true);
+} else {
+  setIsAdminEdit(false);
+}
+  // Set token from URL or localStorage
+  if (urlToken) {
+    const cleanToken = urlToken.trim();
+    localStorage.setItem("token", cleanToken);
+    setAuthToken(cleanToken);
+  } else {
+    const storedToken = localStorage.getItem("token");
+    if (storedToken) {
+      setAuthToken(storedToken.trim());
     } else {
-      const storedToken = localStorage.getItem("token");
-      if (storedToken) {
-        const cleanToken = storedToken.trim();
-        setAuthToken(cleanToken);
-        console.log(
-          "Acquire Profile - Token set from localStorage:",
-          cleanToken.substring(0, 10) + "..."
-        );
-      } else {
-        console.warn("Acquire Profile - No token found, redirecting to login");
-        toast({
-          title: "Authentication Required",
-          description: "Please log in to access this page.",
-          variant: "destructive",
-        });
-        router.push("/buyer/login");
-        return;
-      }
-    }
-
-    // Set userId from URL or localStorage
-    if (urlUserId) {
-      const cleanUserId = urlUserId.trim();
-      localStorage.setItem("userId", cleanUserId);
-      setBuyerId(cleanUserId);
-      console.log("Acquire Profile - Buyer ID set from URL:", cleanUserId);
-    } else {
-      const storedUserId = localStorage.getItem("userId");
-      if (storedUserId) {
-        const cleanUserId = storedUserId.trim();
-        setBuyerId(cleanUserId);
-        console.log(
-          "Acquire Profile - Buyer ID set from localStorage:",
-          cleanUserId
-        );
-      }
-    }
-
-    // Set API URL from localStorage or use default
-    const storedApiUrl = localStorage.getItem("apiUrl");
-    if (storedApiUrl) {
-      setApiUrl(storedApiUrl);
-    }
-
-    // Simple token check - no API call needed
-    const token = localStorage.getItem("token");
-    if (!token) {
-      console.warn("Acquire Profile - No token found, redirecting to login");
       toast({
         title: "Authentication Required",
         description: "Please log in to access this page.",
@@ -232,36 +191,93 @@ export default function AcquireProfilePage() {
       router.push("/buyer/login");
       return;
     }
-  }, [searchParams, router]);
+  }
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Fetch geography data
-        const geo = await getGeoData();
-        setGeoData(geo);
+  // Set userId from URL or localStorage
+  if (urlUserId) {
+    localStorage.setItem("userId", urlUserId.trim());
+    setBuyerId(urlUserId.trim());
+  } else {
+    const storedUserId = localStorage.getItem("userId");
+    if (storedUserId) setBuyerId(storedUserId.trim());
+  }
 
-        // Fetch industry data
-        const industry = await getIndustryData();
-        setIndustryData(industry);
+  // Set API URL from localStorage or use default
+  const storedApiUrl = localStorage.getItem("apiUrl");
+  if (storedApiUrl) setApiUrl(storedApiUrl);
 
-        // After loading the reference data, fetch the user's profile
-        if (authToken) {
-          await fetchUserProfile();
-        }
-      } catch (error) {
-        console.error("Error fetching data:", error);
-        toast({
-          title: "Data Loading Error",
-          description: "Failed to load geography and industry data.",
-          variant: "destructive",
-        });
+  // --- ADMIN MODE: If id param is present, fetch admin profile ---
+  if (urlProfileId) {
+    setProfileId(urlProfileId);
+    setIsAdminEdit(true);
+  
+  } else {
+    setIsAdminEdit(false);
+    // fallback: fetchUserProfile(); // (optional, for buyer)
+  }
+}, [searchParams, router]);
+ useEffect(() => {
+  const fetchData = async () => {
+    try {
+      // Fetch geography data
+      const geo = await getGeoData();
+      setGeoData(geo);
+
+      // Fetch industry data
+      const industry = await getIndustryData();
+      setIndustryData(industry);
+
+      // Only fetch user profile if NOT in admin edit mode
+      if (authToken && !isAdminEdit) {
+        await fetchUserProfile();
       }
-    };
+    } catch (error) {
+      // ...
+    }
+  };
 
-    fetchData();
-  }, [authToken]);
-
+  fetchData();
+}, [authToken, isAdminEdit]);
+  useEffect(() => {
+  if (isAdminEdit && profileId && authToken && apiUrl) {
+    fetchAdminProfile(profileId);
+  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [isAdminEdit, profileId, authToken, apiUrl]);
+useEffect(() => {
+  if (isAdminEdit && profileId && authToken && apiUrl) {
+    fetchAdminProfile(profileId);
+  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [isAdminEdit, profileId, authToken, apiUrl]);
+const fetchAdminProfile = async (id: string) => {
+  try {
+    const res = await fetch(`${apiUrl}/admin/company-profiles/${id}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${authToken}`,
+        "Content-Type": "application/json",
+      },
+    });
+    if (!res.ok) throw new Error("Failed to fetch company profile");
+    const data = await res.json();
+    setFormData({
+      ...formData,
+      ...data,
+      selectedCurrency: data.selectedCurrency || "USD",
+      contacts: data.contacts && data.contacts.length > 0 ? data.contacts : [{ name: "", email: "", phone: "" }],
+      preferences: { ...formData.preferences, ...(data.preferences || {}) },
+      targetCriteria: { ...formData.targetCriteria, ...(data.targetCriteria || {}) },
+      agreements: { ...formData.agreements, ...(data.agreements || {}) },
+    });
+  } catch (err) {
+    toast({
+      title: "Error",
+      description: "Could not load company profile for editing.",
+      variant: "destructive",
+    });
+  }
+};
   // Fetch user's existing profile data
   const fetchUserProfile = async () => {
     if (!authToken) return;
@@ -1382,60 +1398,61 @@ export default function AcquireProfilePage() {
     setSubmitStatus("idle");
     setErrorMessage("");
 
-    try {
-      // Prepare profile data according to API schema - only include expected fields
-      const profileData = {
-        companyName: formData.companyName,
-        website: formData.website,
-        selectedCurrency: formData.selectedCurrency,
-        contacts: formData.contacts,
-        companyType: formData.companyType,
-        capitalEntity: formData.capitalEntity,
-        dealsCompletedLast5Years: formData.dealsCompletedLast5Years,
-        averageDealSize: formData.averageDealSize,
-        preferences: {
-          stopSendingDeals: formData.preferences.stopSendingDeals,
-          doNotSendMarketedDeals: formData.preferences.doNotSendMarketedDeals,
-          allowBuyerLikeDeals: formData.preferences.allowBuyerLikeDeals,
-        },
-        targetCriteria: {
-          countries: formData.targetCriteria.countries,
-          industrySectors: formData.targetCriteria.industrySectors,
-          revenueMin: formData.targetCriteria.revenueMin,
-          revenueMax: formData.targetCriteria.revenueMax,
-          ebitdaMin: formData.targetCriteria.ebitdaMin,
-          ebitdaMax: formData.targetCriteria.ebitdaMax,
-          transactionSizeMin: formData.targetCriteria.transactionSizeMin,
-          transactionSizeMax: formData.targetCriteria.transactionSizeMax,
-          revenueGrowth: formData.targetCriteria.revenueGrowth,
-          minStakePercent: formData.targetCriteria.minStakePercent,
-          minYearsInBusiness: formData.targetCriteria.minYearsInBusiness,
-          preferredBusinessModels:
-            formData.targetCriteria.preferredBusinessModels,
-          description: formData.targetCriteria.description,
-        },
-        agreements: {
-          termsAndConditionsAccepted:
-            formData.agreements.termsAndConditionsAccepted,
-          ndaAccepted: formData.agreements.ndaAccepted,
-          feeAgreementAccepted: formData.agreements.feeAgreementAccepted,
-        },
-      };
+  try {
+    const profileData = {
+      companyName: formData.companyName,
+      website: formData.website,
+      selectedCurrency: formData.selectedCurrency,
+      contacts: formData.contacts,
+      companyType: formData.companyType,
+      capitalEntity: formData.capitalEntity,
+      dealsCompletedLast5Years: formData.dealsCompletedLast5Years,
+      averageDealSize: formData.averageDealSize,
+      preferences: {
+        stopSendingDeals: formData.preferences.stopSendingDeals,
+        doNotSendMarketedDeals: formData.preferences.doNotSendMarketedDeals,
+        allowBuyerLikeDeals: formData.preferences.allowBuyerLikeDeals,
+      },
+      targetCriteria: {
+        countries: formData.targetCriteria.countries,
+        industrySectors: formData.targetCriteria.industrySectors,
+        revenueMin: formData.targetCriteria.revenueMin,
+        revenueMax: formData.targetCriteria.revenueMax,
+        ebitdaMin: formData.targetCriteria.ebitdaMin,
+        ebitdaMax: formData.targetCriteria.ebitdaMax,
+        transactionSizeMin: formData.targetCriteria.transactionSizeMin,
+        transactionSizeMax: formData.targetCriteria.transactionSizeMax,
+        revenueGrowth: formData.targetCriteria.revenueGrowth,
+        minStakePercent: formData.targetCriteria.minStakePercent,
+        minYearsInBusiness: formData.targetCriteria.minYearsInBusiness,
+        preferredBusinessModels: formData.targetCriteria.preferredBusinessModels,
+        description: formData.targetCriteria.description,
+      },
+      agreements: {
+        termsAndConditionsAccepted: formData.agreements.termsAndConditionsAccepted,
+        ndaAccepted: formData.agreements.ndaAccepted,
+        feeAgreementAccepted: formData.agreements.feeAgreementAccepted,
+      },
+    };
 
-      // Remove any undefined fields to avoid validation errors
-      const cleanProfileData = JSON.parse(
-        JSON.stringify(profileData, (key, value) => {
-          return value === undefined ? null : value;
-        })
-      );
+    const cleanProfileData = JSON.parse(
+      JSON.stringify(profileData, (key, value) => (value === undefined ? null : value))
+    );
 
-      // Replace:
-      // Use the API service to submit the profile
-      // await submitCompanyProfile(profileData)
-
-      // With:
-      // Submit the profile data directly
-      const response = await fetch(`${apiUrl}/company-profiles`, {
+    let response;
+    if (isAdminEdit && profileId) {
+      // PATCH for admin
+      response = await fetch(`${apiUrl}/admin/company-profiles/${profileId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
+        },
+        body: JSON.stringify(cleanProfileData),
+      });
+    } else {
+      // POST for buyer
+      response = await fetch(`${apiUrl}/company-profiles`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1443,45 +1460,46 @@ export default function AcquireProfilePage() {
         },
         body: JSON.stringify(cleanProfileData),
       });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.message || `HTTP error! status: ${response.status}`
-        );
-      }
-
-      const result = await response.json();
-      console.log("Profile submitted successfully:", result);
-
-      setSubmitStatus("success");
-      toast({
-        title: "Profile Submitted",
-        description: "Your company profile has been successfully submitted.",
-        variant: "default",
-      });
-
-      // Redirect after successful submission
-      setTimeout(() => {
-        router.push("/buyer/deals?profileSubmitted=true");
-      }, 1000); // Reduced timeout for faster redirect
-    } catch (error: any) {
-      console.error("Submission error:", error);
-      setSubmitStatus("error");
-      setErrorMessage(
-        error.message || "An error occurred while submitting your profile."
-      );
-
-      toast({
-        title: "Submission Failed",
-        description:
-          error.message || "An error occurred while submitting your profile.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
     }
-  };
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        errorData.message || `HTTP error! status: ${response.status}`
+      );
+    }
+
+    const result = await response.json();
+    setSubmitStatus("success");
+    toast({
+      title: isAdminEdit ? "Profile Updated" : "Profile Submitted",
+      description: isAdminEdit
+        ? "Company profile has been updated successfully."
+        : "Your company profile has been successfully submitted.",
+      variant: "default",
+    });
+
+    setTimeout(() => {
+      if (isAdminEdit) {
+        router.push("/admin/buyers");
+      } else {
+        router.push("/buyer/deals?profileSubmitted=true");
+      }
+    }, 1000);
+  } catch (error: any) {
+    setSubmitStatus("error");
+    setErrorMessage(
+      error.message || "An error occurred while updating the profile."
+    );
+    toast({
+      title: "Update Failed",
+      description: error.message || "An error occurred while updating the profile.",
+      variant: "destructive",
+    });
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   // Render the hierarchical industry selection
   const renderIndustrySelection = () => {
@@ -1499,7 +1517,7 @@ export default function AcquireProfilePage() {
                 onCheckedChange={(checked) => {
                   toggleSector(sector);
                 }}
-                className="mr-2 border-[#d0d5dd] data-[state=checked]:bg-[#3aafa9] data-[state=checked]:border-[#3aafa9] focus:ring-[#3aafa9]"
+                className="mr-2 border-[#d0d5dd]"
               />
               <div
                 className="flex items-center cursor-pointer flex-1"
@@ -1530,7 +1548,7 @@ export default function AcquireProfilePage() {
                         onCheckedChange={(checked) => {
                           toggleIndustryGroup(group, sector);
                         }}
-                        className="mr-2 border-[#d0d5dd] data-[state=checked]:bg-[#3aafa9] data-[state=checked]:border-[#3aafa9] focus:ring-[#3aafa9]"
+                        className="mr-2 border-[#d0d5dd]"
                       />
                       <div
                         className="flex items-center cursor-pointer flex-1"
@@ -1578,8 +1596,12 @@ export default function AcquireProfilePage() {
   const [expandedStates, setExpandedStates] = useState<Record<string, boolean>>({});
 
   // Helper to load states and cities for a country
-  const getStates = (countryCode: string) => {
-    return State.getStatesOfCountry(countryCode);
+  const getStatesAndCities = (countryCode: string) => {
+    const states = State.getStatesOfCountry(countryCode);
+    return states.map((state) => ({
+      ...state,
+      cities: City.getCitiesOfState(countryCode, state.isoCode),
+    }));
   };
 
   // Render hierarchical geography selection
@@ -1601,7 +1623,7 @@ export default function AcquireProfilePage() {
                     targetCriteria: { ...prev.targetCriteria, countries: [country.name] },
                   }));
                 }}
-                className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9] checked:bg-[#3aafa9] checked:border-[#3aafa9]"
+                className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9]"
               />
               <div
                 className="flex items-center cursor-pointer flex-1"
@@ -1619,7 +1641,7 @@ export default function AcquireProfilePage() {
             </div>
             {expandedCountries[country.isoCode] && (
               <div className="ml-6 mt-1 space-y-1">
-                {getStates(country.isoCode).map((state) => (
+                {getStatesAndCities(country.isoCode).map((state) => (
                   <div key={state.isoCode} className="pl-2">
                     <div className="flex items-center">
                       <input
@@ -1633,7 +1655,7 @@ export default function AcquireProfilePage() {
                             targetCriteria: { ...prev.targetCriteria, countries: [`${country.name} > ${state.name}`] },
                           }));
                         }}
-                        className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9] checked:bg-[#3aafa9] checked:border-[#3aafa9]"
+                        className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9]"
                       />
                       <div
                         className="flex items-center cursor-pointer flex-1"
@@ -1649,7 +1671,32 @@ export default function AcquireProfilePage() {
                         </Label>
                       </div>
                     </div>
-
+                    {expandedStates[`${country.isoCode}-${state.isoCode}`] && state.cities.length > 0 && (
+                      <div className="ml-6 mt-1 space-y-1">
+                        {state.cities.slice(0, 10).map((city, cityIndex) => (
+                          <div key={`city-${city.name}-${cityIndex}`} className="pl-4">
+                            <div className="flex items-center">
+                              <input
+                                type="radio"
+                                id={`geo-${country.isoCode}-${state.isoCode}-${city.name}`}
+                                name="geography"
+                                checked={formData.targetCriteria.countries.includes(`${country.name} > ${state.name} > ${city.name}`)}
+                                onChange={() => {
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    targetCriteria: { ...prev.targetCriteria, countries: [`${country.name} > ${state.name} > ${city.name}`] },
+                                  }));
+                                }}
+                                className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9]"
+                              />
+                              <Label htmlFor={`geo-${country.isoCode}-${state.isoCode}-${city.name}`} className="text-[#344054] cursor-pointer">
+                                {city.name}
+                              </Label>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -2116,7 +2163,7 @@ export default function AcquireProfilePage() {
     <div className="relative mb-4">
       <Search className="absolute left-2 top-2.5 h-4 w-4 text-[#667085]" />
       <Input
-        placeholder="Search country or state/province"
+        placeholder="Search country, state, or city"
         className="pl-8 border-[#d0d5dd]"
         value={countrySearchTerm}
         onChange={e => setCountrySearchTerm(e.target.value)}
