@@ -650,7 +650,7 @@ export default function DealsPage() {
   const handleApproveTerms = async () => {
     if (pendingCIMDealId) {
       await handleGoToCIM(pendingCIMDealId);
-      setTermsModalOpen(false);
+    setTermsModalOpen(false);
       setPendingCIMDealId(null);
     }
   };

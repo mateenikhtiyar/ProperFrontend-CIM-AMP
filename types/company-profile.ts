@@ -44,5 +44,6 @@ export interface CompanyProfile {
   targetCriteria: TargetCriteria
   agreements: Agreements
   buyer?: string
-  updatedAt?: string; 
+  updatedAt?: string;
+  agreementsAcceptedAt?: string;
 }
