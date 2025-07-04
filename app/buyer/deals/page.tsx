@@ -114,7 +114,9 @@ export default function DealsPage() {
         return [];
       }
 
-      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
+
+      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+
 
       // Map status to API endpoint
       let endpoint = "";
@@ -180,12 +182,17 @@ export default function DealsPage() {
           t12FreeCashFlow: deal.financialDetails?.t12FreeCashFlow || 0,
           t12NetIncome: deal.financialDetails?.t12NetIncome || 0,
           documents: deal.documents || [],
-          trailingRevenueCurrency: deal.financialDetails?.trailingRevenueCurrency || "$",
-          trailingEbitdaCurrency: deal.financialDetails?.trailingEBITDACurrency || "$",
-          t12FreeCashFlowCurrency: deal.financialDetails?.t12FreeCashFlowCurrency || "$",
-          t12NetIncomeCurrency: deal.financialDetails?.t12NetIncomeCurrency || "$",
+          trailingRevenueCurrency:
+            deal.financialDetails?.trailingRevenueCurrency || "$",
+          trailingEbitdaCurrency:
+            deal.financialDetails?.trailingEBITDACurrency || "$",
+          t12FreeCashFlowCurrency:
+            deal.financialDetails?.t12FreeCashFlowCurrency || "$",
+          t12NetIncomeCurrency:
+            deal.financialDetails?.t12NetIncomeCurrency || "$",
           netIncomeCurrency: deal.financialDetails?.netIncomeCurrency || "$",
-          askingPriceCurrency: deal.financialDetails?.askingPriceCurrency || "$",
+          askingPriceCurrency:
+            deal.financialDetails?.askingPriceCurrency || "$",
         };
         console.log("Mapped deal:", mappedDeal);
         return mappedDeal;
@@ -252,7 +259,9 @@ export default function DealsPage() {
       setApiError(null);
       const token = localStorage.getItem("token");
       const currentBuyerId = localStorage.getItem("userId");
-      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
+
+      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+
 
       console.log("Token exists:", !!token);
       console.log("Buyer ID:", currentBuyerId);
@@ -483,7 +492,8 @@ export default function DealsPage() {
         return;
       }
 
-      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
+      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+
 
       const response = await fetch(`${apiUrl}/company-profiles/my-profile`, {
         method: "GET",
@@ -519,7 +529,9 @@ export default function DealsPage() {
         return;
       }
 
-      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
+
+      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+
 
       const response = await fetch(`${apiUrl}/buyers/profile`, {
         headers: {
@@ -567,7 +579,9 @@ export default function DealsPage() {
       const token = localStorage.getItem("token");
       if (!token) return;
 
-      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
+
+      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+
 
       // Option 2: Use deal ID to get seller info (recommended)
       const response = await fetch(
@@ -607,13 +621,12 @@ export default function DealsPage() {
       }
     } else if (deal.status === "pending") {
       setSelectedDealId(deal.id); // ✅ Just show terms dialog for passed deals
-      setTermsModalOpen(true);// ✅ Only auto-approve if status is pending
+      setTermsModalOpen(true); // ✅ Only auto-approve if status is pending
     } else if (deal.status === "passed") {
       setSelectedDealId(deal.id); // ✅ Just show terms dialog for passed deals
       setTermsModalOpen(true);
     }
   };
-  
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
@@ -650,7 +663,7 @@ export default function DealsPage() {
   const handleApproveTerms = async () => {
     if (pendingCIMDealId) {
       await handleGoToCIM(pendingCIMDealId);
-    setTermsModalOpen(false);
+      setTermsModalOpen(false);
       setPendingCIMDealId(null);
     }
   };
@@ -665,7 +678,8 @@ export default function DealsPage() {
   const getProfilePictureUrl = (path: string | null) => {
     if (!path) return null;
 
-    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
+    const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+
 
     if (path.startsWith("http://") || path.startsWith("https://")) {
       return path;
@@ -711,7 +725,8 @@ export default function DealsPage() {
 
   const fetchSellerInfo = async (sellerId: string) => {
     try {
-      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
+      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+
       const response = await fetch(`${apiUrl}/sellers/public/${sellerId}`);
       if (!response.ok) throw new Error("Failed to fetch seller info");
       const data = await response.json();
@@ -747,7 +762,9 @@ export default function DealsPage() {
       if (uniqueSellerIds.length === 0) return;
 
       const token = localStorage.getItem("token");
-      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
+
+      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+
 
       for (const sellerId of uniqueSellerIds) {
         try {
@@ -1068,31 +1085,33 @@ export default function DealsPage() {
                       <div className="mb-4 grid grid-cols-2 gap-2 text-sm text-gray-600">
                         <p>
                           Trailing 12-Month Revenue:{" "}
-                          {deal.trailingRevenueCurrency}{deal.trailingRevenue.toLocaleString()}
+                          {deal.trailingRevenueCurrency}
+                          {deal.trailingRevenue.toLocaleString()}
                         </p>
                         <p>
                           Trailing 12-Month EBITDA:{" "}
-                          {deal.trailingEbitdaCurrency}{deal.trailingEbitda.toLocaleString()}
+                          {deal.trailingEbitdaCurrency}
+                          {deal.trailingEbitda.toLocaleString()}
                         </p>
                         <p>
-                          T12 Free Cash Flow:{" "}
-                          {deal.trailingRevenueCurrency}{deal.t12FreeCashFlow?.toLocaleString() ?? "N/A"}
+                          T12 Free Cash Flow: {deal.trailingRevenueCurrency}
+                          {deal.t12FreeCashFlow?.toLocaleString() ?? "N/A"}
                         </p>
                         <p>
-                          T12 Net Income:{" "}
-                          {deal.trailingRevenueCurrency}{deal.t12NetIncome?.toLocaleString() ?? "N/A"}
+                          T12 Net Income: {deal.trailingRevenueCurrency}
+                          {deal.t12NetIncome?.toLocaleString() ?? "N/A"}
                         </p>
                         <p>
                           Average 3-Year Revenue Growth:{" "}
-                          {deal.averageGrowth.toLocaleString()}  %
+                          {deal.averageGrowth.toLocaleString()} %
                         </p>
                         <p>
-                          Net Income:{" "}
-                          {deal.trailingRevenueCurrency}{deal.netIncome?.toLocaleString() ?? "N/A"}
+                          Net Income: {deal.trailingRevenueCurrency}
+                          {deal.netIncome?.toLocaleString() ?? "N/A"}
                         </p>
                         <p>
-                          Asking Price:{" "}
-                          {deal.trailingRevenueCurrency}{deal.askingPrice?.toLocaleString() ?? "N/A"}
+                          Asking Price: {deal.trailingRevenueCurrency}
+                          {deal.askingPrice?.toLocaleString() ?? "N/A"}
                         </p>
                       </div>
 
@@ -1116,7 +1135,7 @@ export default function DealsPage() {
                       <h4 className="mb-2 font-medium text-gray-800">
                         Documents
                       </h4>
-
+                      {/*active tab*/}
                       {activeTab === "active" ? (
                         <div className="mb-4 text-sm text-gray-600">
                           {deal.documents && deal.documents.length > 0 ? (
@@ -1145,7 +1164,7 @@ export default function DealsPage() {
                                       e.stopPropagation();
                                       const apiUrl =
                                         localStorage.getItem("apiUrl") ||
-                                        "http://localhost:3001";
+                                        "https://api.cimamplify.com";
                                       const fullPath = `${apiUrl}/${doc.path}`;
                                       window.open(fullPath, "_blank");
                                     }}
@@ -1166,7 +1185,6 @@ export default function DealsPage() {
                           Hidden Until Active
                         </p>
                       )}
-
 
                       {/* Actions */}
                       <div className="flex justify-end space-x-2">
@@ -1196,7 +1214,7 @@ export default function DealsPage() {
                             Pass
                           </Button>
                         )}
-                                                {activeTab === "passed" && (
+                        {activeTab === "passed" && (
                           <Button
                             variant="outline"
                             className="border-blue-200 bg-[#3AAFA922] text-[#3AAFA9] hover:bg-[#3AAFA933]"

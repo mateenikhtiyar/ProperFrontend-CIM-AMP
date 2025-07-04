@@ -256,6 +256,8 @@ export default function EditDealPageFixed() {
   // Add new UI state for expanded sub-industries:
   const [expandedSubIndustries, setExpandedSubIndustries] = useState<Record<string, boolean>>({})
 
+  const [geoRefresh, setGeoRefresh] = useState(0);
+
   // Flatten industry data for searchable dropdown
   const flattenIndustryData = (
     items: Sector[] | IndustryGroup[] | Industry[] | SubIndustry[],
@@ -304,7 +306,7 @@ export default function EditDealPageFixed() {
     try {
       setIsLoading(true)
       const token = localStorage.getItem("token")
-      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
 
       const response = await fetch(`${apiUrl}/deals/${dealId}`, {
         headers: {
@@ -811,18 +813,21 @@ const handleCheckboxChange = (
 
   // Replace the existing toggleContinentExpansion function
   const toggleContinentExpansion = async (continentId: string) => {
-    const isCurrentlyExpanded = expandedContinents[continentId]
-
-    setExpandedContinents((prev) => ({
-      ...prev,
-      [continentId]: !prev[continentId],
-    }))
-
-    // Load states and cities when expanding (not when already expanded)
+    const isCurrentlyExpanded = expandedContinents[continentId];
     if (!isCurrentlyExpanded) {
-      await loadStatesAndCities(continentId)
+      await loadStatesAndCities(continentId);
+      setExpandedContinents((prev) => ({
+        ...prev,
+        [continentId]: true,
+      }));
+      setGeoRefresh((v) => v + 1); // Force re-render so new states/cities are included
+    } else {
+      setExpandedContinents((prev) => ({
+        ...prev,
+        [continentId]: false,
+      }));
     }
-  }
+  };
 
   const toggleRegionExpansion = (regionId: string) => {
     setExpandedRegions((prev) => {
@@ -967,14 +972,6 @@ const handleCheckboxChange = (
         {filteredData.sectors.map((sector) => (
           <div key={sector.id} className="border-b border-gray-100 pb-1">
             <div className="flex items-center">
-              <input
-                type="radio"
-                id={`sector-${sector.id}`}
-                name="industry"
-                checked={formData.selectedIndustryDisplay === sector.name}
-                onChange={() => handleIndustryRadioChange(sector.name)}
-                className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9]"
-              />
               <div className="flex items-center cursor-pointer flex-1" onClick={() => toggleSectorExpansion(sector.id)}>
                 {expandedSectors[sector.id] ? (
                   <ChevronDown className="h-4 w-4 mr-1 text-gray-500" />
@@ -1027,46 +1024,46 @@ const handleCheckboxChange = (
           !debouncedGeoSearch ||
           item.name.toLowerCase().includes(debouncedGeoSearch.toLowerCase()) ||
           item.path.toLowerCase().includes(debouncedGeoSearch.toLowerCase()),
-      )
-      .slice(0, 200) // Increased limit for better search results
+      );
+      // Remove .slice(0, 200) to show all countries
 
     const groupedData = filteredGeoData.reduce(
       (acc, item) => {
-        const countryCode = item.countryCode || item.id
+        const countryCode = item.countryCode || item.id;
         if (!acc[countryCode]) {
           acc[countryCode] = {
             country: null,
             states: [],
             cities: [],
-          }
+          };
         }
 
         if (item.type === "country") {
-          acc[countryCode].country = item
+          acc[countryCode].country = item;
         } else if (item.type === "state") {
-          acc[countryCode].states.push(item)
+          acc[countryCode].states.push(item);
         } else if (item.type === "city") {
-          acc[countryCode].cities.push(item)
+          acc[countryCode].cities.push(item);
         }
 
-        return acc
+        return acc;
       },
       {} as Record<string, { country: GeoItem | null; states: GeoItem[]; cities: GeoItem[] }>,
-    )
+    );
 
-    const countryLimit = debouncedGeoSearch ? 50 : 20
+    // Remove countryLimit and related message
 
     return (
       <div className="space-y-2 font-poppins">
         {Object.values(groupedData)
           .filter((group) => group.country || group.states.length > 0 || group.cities.length > 0)
-          .slice(0, countryLimit)
+          // No .slice(0, countryLimit)
           .map((group, groupIndex) => {
-            if (!group.country) return null
-            const country = group.country
+            if (!group.country) return null;
+            const country = group.country;
 
-            const filteredStates = group.states.slice(0, 10)
-            const filteredCities = group.cities.slice(0, 10)
+            const filteredStates = group.states.slice(0, 10);
+            const filteredCities = group.cities.slice(0, 10);
 
             return (
               <div key={`country-${country.id}-${groupIndex}`} className="border-b border-gray-100 pb-1">
@@ -1138,17 +1135,11 @@ const handleCheckboxChange = (
                   </div>
                 )}
               </div>
-            )
+            );
           })}
-        {Object.values(groupedData).length > countryLimit && (
-          <div className="text-center py-2 text-sm text-gray-500">
-            {debouncedGeoSearch
-              ? `Showing first ${countryLimit} matching countries. Refine your search for better results.`
-              : `Showing first ${countryLimit} countries. Use search to find more.`}
-          </div>
-        )}
+        {/* Removed country limit message */}
       </div>
-    )
+    );
   }
 
   // Handle file selection
@@ -1210,7 +1201,7 @@ const handleCheckboxChange = (
 
       const token = localStorage.getItem("token")
       const sellerId = localStorage.getItem("userId")
-      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
 
       if (!token || !sellerId) throw new Error("Authentication required")
 
@@ -1323,7 +1314,7 @@ const handleCheckboxChange = (
 
     try {
       const token = localStorage.getItem("token")
-      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
 
       const docIndex = existingDocuments.findIndex((d) => d.filename === doc.filename)
       const response = await fetch(`${apiUrl}/deals/${dealId}/documents/${docIndex}`, {
@@ -1356,7 +1347,7 @@ const handleCheckboxChange = (
 
   // Handle document download
   const handleDocumentDownload = (doc: DealDocument) => {
-    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+    const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
     const link = document.createElement("a")
     link.href = `${apiUrl}/uploads/deal-documents/${doc.filename}`
     link.download = doc.originalName
