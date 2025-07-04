@@ -69,7 +69,7 @@ const BUSINESS_MODELS = [
 ];
 
 // Default API URL
-const DEFAULT_API_URL = "https://api.cimamplify.com";
+const DEFAULT_API_URL = "http://localhost:3001";
 
 // Type for hierarchical selection
 interface HierarchicalSelection {
@@ -457,7 +457,7 @@ export default function CompanyProfilePage() {
         return;
       }
 
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
       const response = await fetch(`${apiUrl}/buyers/profile`, {
         headers: {
@@ -1545,7 +1545,7 @@ export default function CompanyProfilePage() {
   const getProfilePictureUrl = (path: string | null) => {
     if (!path) return null;
 
-    const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
     if (path.startsWith("http://") || path.startsWith("https://")) {
       return path;
@@ -1571,6 +1571,28 @@ export default function CompanyProfilePage() {
   // Add expansion state for countries and states for the geography selector UI
   const [expandedCountries, setExpandedCountries] = useState<Record<string, boolean>>({});
   const [expandedStates, setExpandedStates] = useState<Record<string, boolean>>({});
+
+  // Add after industryData and formData are defined
+  useEffect(() => {
+    if (!industryData || !formData.targetCriteria.industrySectors) return;
+    const newIndustrySelection: IndustrySelection = { sectors: {}, industryGroups: {}, industries: {} };
+    industryData.sectors.forEach((sector) => {
+      if (formData.targetCriteria.industrySectors.includes(sector.name)) {
+        newIndustrySelection.sectors[sector.id] = true;
+      }
+      sector.industryGroups.forEach((group) => {
+        if (formData.targetCriteria.industrySectors.includes(group.name)) {
+          newIndustrySelection.industryGroups[group.id] = true;
+        }
+        group.industries.forEach((industry) => {
+          if (formData.targetCriteria.industrySectors.includes(industry.name)) {
+            newIndustrySelection.industries[industry.id] = true;
+          }
+        });
+      });
+    });
+    setIndustrySelection(newIndustrySelection);
+  }, [industryData, formData.targetCriteria.industrySectors]);
 
   if (!isClient) {
     return <div>Loading...</div>;
