@@ -1295,6 +1295,7 @@ export default function CompanyProfilePage() {
       delete (updateData as any).updatedAt;
       delete (updateData as any).__v;
       delete (updateData as any).buyer;
+      delete (updateData as any).agreementsAcceptedAt; // <-- Prevent sending this field
 
       console.log(
         "Company Profile - Update data:",
@@ -2723,9 +2724,16 @@ export default function CompanyProfilePage() {
                       </Link>{" "}
                       were agreed to by{" "}
                       {buyerProfile?.fullName || "(insert buyer's name)"} on{" "}
-                      {profileId && formData.updatedAt
-                        ? new Date(formData.updatedAt).toLocaleString("en-GB", {
-                            timeZone: "Europe/London",
+                      {formData.agreementsAcceptedAt && !isNaN(Date.parse(formData.agreementsAcceptedAt))
+                        ? new Date(formData.agreementsAcceptedAt ?? '').toLocaleString("en-US", {
+                            timeZone: "America/New_York",
+                            dateStyle: "medium",
+                            timeStyle: "short",
+                            hour12: true,
+                          })
+                        : profileId && formData.updatedAt && !isNaN(Date.parse(formData.updatedAt))
+                        ? new Date(formData.updatedAt ?? '').toLocaleString("en-US", {
+                            timeZone: "America/New_York",
                             dateStyle: "medium",
                             timeStyle: "short",
                             hour12: true,
