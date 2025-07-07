@@ -1,5 +1,3 @@
-
-
 "use client"
 import React, { useState, useEffect } from 'react';
 import Image from "next/image"
@@ -21,13 +19,27 @@ import {
   Trash2
 } from "lucide-react";
 
+// Add Seller interface at the top
+interface Seller {
+  _id?: string;
+  id?: string;
+  companyName?: string;
+  fullName?: string;
+  email?: string;
+  phoneNumber?: string;
+  website?: string;
+  title?: string;
+  role?: string;
+  password?: string;
+}
+
 export default function SellersManagementDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [sellers, setSellers] = useState([]);
+  const [sellers, setSellers] = useState<Seller[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editSeller, setEditSeller] = useState(null);
-  const [editForm, setEditForm] = useState({
+  const [editSeller, setEditSeller] = useState<Seller | null>(null);
+  const [editForm, setEditForm] = useState<(Seller & { password: string })>({
     fullName: "",
     email: "",
     companyName: "",
@@ -70,17 +82,16 @@ export default function SellersManagementDashboard() {
     router.push("/seller/login")
   }
 
-  const handleSearch = (e) => {
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
-    setCurrentPage(1); // Reset to first page when searching
+    setCurrentPage(1);
   };
 
-  const handleView = (sellerId) => {
+  const handleView = (sellerId: string) => {
     console.log(`Viewing seller ${sellerId}`);
   };
 
-  // Edit button handler
-  const handleEdit = (sellerId) => {
+  const handleEdit = (sellerId: string) => {
     const seller = sellers.find(s => s._id === sellerId || s.id === sellerId);
     if (seller) {
       setEditSeller(seller);
@@ -91,26 +102,35 @@ export default function SellersManagementDashboard() {
         phoneNumber: seller.phoneNumber || "",
         website: seller.website || "",
         title: seller.title || "",
-        password: "", // Leave blank for security, only send if changed
+        password: "",
+        _id: seller._id,
+        id: seller.id,
+        role: seller.role,
       });
     }
   };
 
-  // Edit form change handler
-  const handleEditFormChange = (e) => {
+  const handleEditFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEditForm({ ...editForm, [e.target.name]: e.target.value });
   };
 
-
-  // Edit form submit handler
-  const handleEditSubmit = async (e) => {
+  const handleEditSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setEditLoading(true);
+    // Prevent submission if title is empty or only whitespace
+    if (!editForm.title || editForm.title.trim() === "") {
+      alert("Title is required.");
+      setEditLoading(false);
+      return;
+    }
     try {
       const token = localStorage.getItem("token");
-      // Only include password if it's not empty
-      const body = { ...editForm };
-      if (!body.password) delete body.password;
+      const body: Partial<Seller> & { password?: string } = { ...editForm };
+      if (Object.prototype.hasOwnProperty.call(body, "password") && !body.password) delete (body as any).password;
+      delete (body as any)._id;
+      delete (body as any).id;
+      delete (body as any).role;
+      if (!editSeller) throw new Error("No seller selected");
       const res = await fetch(`http://localhost:3001/sellers/${editSeller._id || editSeller.id}`, {
         method: "PATCH",
         headers: {
@@ -132,8 +152,8 @@ export default function SellersManagementDashboard() {
       setEditLoading(false);
     }
   };
-  // Delete button handler
-  const handleDelete = async (sellerId) => {
+
+  const handleDelete = async (sellerId: string) => {
     if (!window.confirm("Are you sure you want to delete this seller?")) return;
     try {
       const token = localStorage.getItem("token");
@@ -150,6 +170,10 @@ export default function SellersManagementDashboard() {
     }
   };
 
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
   // Filter sellers based on search term
   const filteredSellers = sellers.filter(seller =>
     (seller.companyName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -163,10 +187,6 @@ export default function SellersManagementDashboard() {
   const startIndex = (currentPage - 1) * sellersPerPage;
   const endIndex = startIndex + sellersPerPage;
   const currentSellers = filteredSellers.slice(startIndex, endIndex);
-
-  const handlePageChange = (page) => {
-    setCurrentPage(page);
-  };
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -246,7 +266,7 @@ export default function SellersManagementDashboard() {
                      placeholder="Search here..."
                      className="pl-10 w-80 bg-gray-100 border-0"
                      value={searchTerm}
-                     onChange={(e) => setSearchTerm(e.target.value)}
+                     onChange={handleSearch}
                    />
                  </div>
      
@@ -341,7 +361,7 @@ export default function SellersManagementDashboard() {
                               variant="ghost"
                               size="sm"
                               className="p-1.5 h-7 w-7 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
-                              onClick={() => handleView(seller._id || seller.id)}
+                              onClick={() => handleView((seller._id || seller.id || "") as string)}
                               title="View"
                             >
                           
@@ -350,7 +370,7 @@ export default function SellersManagementDashboard() {
                               variant="ghost"
                               size="sm"
                               className="p-1.5 h-7 w-7 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-md transition-colors"
-                              onClick={() => handleEdit(seller._id || seller.id)}
+                              onClick={() => handleEdit((seller._id || seller.id || "") as string)}
                               title="Edit"
                             >
                               <Edit className="h-3.5 w-3.5" />
@@ -359,7 +379,7 @@ export default function SellersManagementDashboard() {
                               variant="ghost"
                               size="sm"
                               className="p-1.5 h-7 w-7 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                              onClick={() => handleDelete(seller._id || seller.id)}
+                              onClick={() => handleDelete((seller._id || seller.id || "") as string)}
                               title="Delete"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
@@ -467,7 +487,7 @@ export default function SellersManagementDashboard() {
         </div>
         <div className="mb-2">
           <label className="block text-sm mb-1">Title</label>
-          <Input name="title" value={editForm.title} onChange={handleEditFormChange} />
+          <Input name="title" value={editForm.title} onChange={handleEditFormChange} required />
         </div>
         <div className="mb-2">
           <label className="block text-sm mb-1">Password (leave blank to keep unchanged)</label>
