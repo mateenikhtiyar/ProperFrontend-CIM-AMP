@@ -98,7 +98,7 @@ useEffect(() => {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:3001/auth/admin/profile", {
+      const res = await fetch("https://api.cimamplify.com/auth/admin/profile", {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
