@@ -58,7 +58,7 @@ export default function SellersManagementDashboard() {
       setLoading(true);
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch("http://localhost:3001/sellers", {
+        const res = await fetch("https://api.cimamplify.com/sellers", {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -131,7 +131,7 @@ export default function SellersManagementDashboard() {
       delete (body as any).id;
       delete (body as any).role;
       if (!editSeller) throw new Error("No seller selected");
-      const res = await fetch(`http://localhost:3001/sellers/${editSeller._id || editSeller.id}`, {
+      const res = await fetch(`https://api.cimamplify.com/sellers/${editSeller._id || editSeller.id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -157,7 +157,7 @@ export default function SellersManagementDashboard() {
     if (!window.confirm("Are you sure you want to delete this seller?")) return;
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:3001/sellers/${sellerId}`, {
+      const res = await fetch(`https://api.cimamplify.com/sellers/${sellerId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
