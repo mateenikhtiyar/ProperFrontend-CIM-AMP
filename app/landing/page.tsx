@@ -1,3 +1,4 @@
+
 "use client"
 
 import { Button } from "@/components/ui/button"
@@ -5,7 +6,8 @@ import { CheckCircle, Users, Building, Target, Briefcase, FileText, Handshake, S
 import Image from "next/image"
 import Link from "next/link"
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+
+import { useRouter } from 'next/navigation';
 
 import { Linkedin } from "lucide-react"
 
@@ -1095,8 +1097,8 @@ useEffect(() => {
                     Guidelines
                   </a>
                 </li>
-                <li>
-                  <a href="#about" className="text-gray-600 hover:text-teal-600 transition-colors duration-300 block py-1">
+                <li onClick={()=>{router.push("/about")}}>
+                  <a  className="text-gray-600 hover:text-teal-600 cursor-pointer transition-colors duration-300 block py-1">
                     About
                   </a>
                 </li>

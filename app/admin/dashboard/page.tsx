@@ -20,6 +20,15 @@ interface DocumentInfo {
   mimetype: string;
   uploadedAt: string;
 }
+interface SellerProfile {
+  _id: string;
+  fullName: string;
+  email: string;
+  companyName: string;
+  role: string;
+  profilePicture: string | null;
+}
+
 
 interface FinancialDetails {
   trailingRevenueCurrency?: string;
@@ -37,6 +46,7 @@ interface FinancialDetails {
 interface Deal {
   _id: string;
   title: string;
+  sellerProfile?: SellerProfile;
   companyDescription: string;
   companyType?: string[];
   dealType: string;
@@ -49,6 +59,7 @@ interface Deal {
   seller: string;
   financialDetails?: FinancialDetails;
   documents?: DocumentInfo[];
+  rewardLevel?: string;
 }
 
 interface Buyer {
@@ -217,6 +228,10 @@ const BuyersActivityPopup = ({
 };
 
 export default function DealManagementDashboard() {
+  const [editDeal, setEditDeal] = useState<Deal | null>(null);
+const [editForm, setEditForm] = useState<any>(null);
+const [editLoading, setEditLoading] = useState(false);
+const [editError, setEditError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
   const [activeTab, setActiveTab] = useState('active');
@@ -240,54 +255,83 @@ export default function DealManagementDashboard() {
   const router = useRouter();
   const { logout } = useAuth();
 
-  useEffect(() => {
-    const fetchDeals = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        console.log('Fetching active deals with token:', token);
+ // Replace your setActiveDeals and setOffMarketDeals with this logic:
+useEffect(() => {
+  const fetchDeals = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
-        const activeResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/deals/active-accepted`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
+      // Fetch active deals
+      const activeResponse = await fetch(`${apiUrl}/deals/active-accepted`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      if (!activeResponse.ok) throw new Error('Failed to fetch active deals');
+      const activeData = await activeResponse.json();
+      const activeDealsArray = Array.isArray(activeData) ? activeData : [activeData];
 
-        if (!activeResponse.ok) {
-          const errorData = await activeResponse.json();
-          console.error('Active deals fetch error:', activeResponse.status, errorData);
-          throw new Error(`Failed to fetch active deals: ${errorData.message || activeResponse.statusText}`);
-        }
+      // Fetch seller profiles for active deals
+      const activeDealsWithSellers = await Promise.all(
+        activeDealsArray.map(async (deal) => {
+          try {
+           const sellerRes = await fetch(`${apiUrl}/sellers/public/${deal.seller}`);
+if (sellerRes.ok) {
+  const sellerProfile = await sellerRes.json();
+  console.log('Seller profile for deal', deal._id, sellerProfile); // <-- Add this
+  return { ...deal, sellerProfile };
+}
+            return deal;
+          } catch {
+            return deal;
+          }
+        })
+      );
+      setActiveDeals(activeDealsWithSellers);
 
-        const activeData = await activeResponse.json();
-        const activeDealsArray = Array.isArray(activeData) ? activeData : [activeData];
-        console.log('Active deals:', activeDealsArray);
-        setActiveDeals(activeDealsArray);
+      // Fetch off-market deals
+      const offMarketResponse = await fetch(`${apiUrl}/deals/admin/completed/all`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      if (!offMarketResponse.ok) throw new Error('Failed to fetch off-market deals');
+      const offMarketData = await offMarketResponse.json();
+      const offMarketDealsArray = Array.isArray(offMarketData) ? offMarketData : [offMarketData];
 
-        const offMarketResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/deals/admin/completed/all`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-        if (!offMarketResponse.ok) throw new Error('Failed to fetch off-market deals');
-        const offMarketData = await offMarketResponse.json();
-        const offMarketDealsArray = Array.isArray(offMarketData) ? offMarketData : [offMarketData];
-        setOffMarketDeals(offMarketDealsArray);
+      // Fetch seller profiles for off-market deals
+      const offMarketDealsWithSellers = await Promise.all(
+        offMarketDealsArray.map(async (deal) => {
+          try {
+            const sellerRes = await fetch(`${apiUrl}/sellers/public/${deal.seller}`);
+            if (sellerRes.ok) {
+              const sellerProfile = await sellerRes.json();
+              return { ...deal, sellerProfile };
+            }
+            return deal;
+          } catch {
+            return deal;
+          }
+        })
+      );
+      setOffMarketDeals(offMarketDealsWithSellers);
 
-        setError(null);
-      } catch (error: any) {
-        setActiveDeals([]);
-        setOffMarketDeals([]);
-        setError(error.message);
-        console.error('Error fetching deals:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+      setError(null);
+    } catch (error: any) {
+      setActiveDeals([]);
+      setOffMarketDeals([]);
+      setError(error.message);
+      console.error('Error fetching deals:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchDeals();
-  }, []);
+  fetchDeals();
+}, []);
 
   useEffect(() => {
     if (activeTab === 'active') {
@@ -307,7 +351,14 @@ export default function DealManagementDashboard() {
     logout();
     router.push('/admin/login');
   };
-
+const handleEditDeal = (deal: Deal) => {
+  setEditDeal(deal);
+  setEditForm({
+    ...deal,
+    ...(deal.financialDetails || {}),
+  });
+  setEditError(null);
+};
   const handleViewDealDetails = (deal: Deal) => {
     setSelectedDeal(deal);
     router.push(`/admin/deals/${deal._id}`);
@@ -444,7 +495,7 @@ export default function DealManagementDashboard() {
                   strokeLinejoin="round"
                 />
               </svg>
-              <span>My Deals</span>
+              <span>Deals</span>
             </Button>
             <Link href="/admin/buyers">
               <Button variant="ghost" className="w-full justify-start gap-3 font-normal">
@@ -509,7 +560,7 @@ export default function DealManagementDashboard() {
                   strokeLinejoin="round"
                 />
               </svg>
-              <span>My Deals</span>
+              <span>Deals</span>
             </Button>
             <Link href="/admin/buyers">
               <Button variant="ghost" className="w-full justify-start gap-3 font-normal">
@@ -575,7 +626,7 @@ export default function DealManagementDashboard() {
                 strokeLinejoin="round"
               />
             </svg>
-            <span>My Deals</span>
+            <span>Deals</span>
           </Button>
           <Link href="/admin/buyers">
             <Button variant="ghost" className="w-full justify-start gap-3 font-normal">
@@ -652,18 +703,45 @@ export default function DealManagementDashboard() {
                   >
                     <div className="flex items-center justify-between border-b border-gray-200 p-4">
                       <h3 className="text-lg font-medium text-teal-500">{deal.title}</h3>
+                      {deal.rewardLevel && (
+                        <span className={`ml-2 px-3 py-1 rounded-full text-xs font-semibold bg-[#e0f7fa] text-[#00796b]`}>
+                          {deal.rewardLevel}
+                        </span>
+                      )}
                     </div>
                     <div className="p-4">
+                      <h4>Seller Information</h4>
+                      {deal.sellerProfile ? (
+                        <div className="flex items-center gap-3 mb-2">
+                          <div>
+                            <div className="text-gray-500 text-xs mr-1">
+                              <span className="">Seller Name:</span> &nbsp;
+                              {deal.sellerProfile.fullName}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              <span className="mr-1">Seller Email:</span>
+                              {deal.sellerProfile.email}
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="mb-2 text-sm text-gray-500 italic">Seller information is not available.</div>
+                      )}
                       <h4 className="mb-2 font-medium text-gray-800">Overview</h4>
                       <div className="mb-4 space-y-1 text-sm text-gray-600">
                         <p>Industry: {deal.industrySector}</p>
-                        <p>Geography: {deal.geographySelection}</p>
-                        <p>Number of Years in Business: {deal.yearsInBusiness}</p>
-                        <p>Business Model: {Array.isArray(deal.companyType) ? deal.companyType.join(', ') : deal.companyType || 'N/A'}</p>
+                        <p>Location: {deal.geographySelection}</p>
+                        {/* <p>Number of Years in Business: {deal.yearsInBusiness}</p> */}
+                        {/* <p>Business Model: {Array.isArray(deal.companyType) ? deal.companyType.join(', ') : deal.companyType || 'N/A'}</p> */}
                         <p>Company Description: {deal.companyDescription}</p>
                       </div>
+                      
                       <h4 className="mb-2 font-medium text-gray-800">Financial</h4>
                       <div className="mb-4 grid grid-cols-2 gap-2 text-sm text-gray-600">
+                         <p>
+                          Currency:{' '}
+                          {deal.financialDetails?.trailingRevenueCurrency}
+                        </p>
                         <p>
                           Trailing 12-Month Revenue:{' '}
                           {deal.financialDetails?.trailingRevenueCurrency?.replace('USD($)', '$') || '$'}
@@ -674,17 +752,18 @@ export default function DealManagementDashboard() {
                           {deal.financialDetails?.trailingEBITDACurrency?.replace('USD($)', '$') || '$'}
                           {deal.financialDetails?.trailingEBITDAAmount?.toLocaleString() || 'N/A'}
                         </p>
-                        <p>T12 Free Cash Flow: ${deal.financialDetails?.t12FreeCashFlow?.toLocaleString() || 'N/A'}</p>
+                        {/* <p>T12 Free Cash Flow: ${deal.financialDetails?.t12FreeCashFlow?.toLocaleString() || 'N/A'}</p> */}
                         <p>T12 Net Income: ${deal.financialDetails?.t12NetIncome?.toLocaleString() || 'N/A'}</p>
-                        <p>
+                        {/* <p>
                           Average 3-Year Revenue Growth: {deal.financialDetails?.avgRevenueGrowth || 'N/A'}%
-                        </p>
-                        <p>Net Income: ${deal.financialDetails?.netIncome?.toLocaleString() || 'N/A'}</p>
-                        <p>Asking Price: ${deal.financialDetails?.askingPrice?.toLocaleString() || 'N/A'}</p>
+                        </p> */}
+                        {/* <p>Net Income: ${deal.financialDetails?.netIncome?.toLocaleString() || 'N/A'}</p> */}
+                        {/* <p>Asking Price: ${deal.financialDetails?.askingPrice?.toLocaleString() || 'N/A'}</p> */}
                         {deal.financialDetails?.finalSalePrice && (
                           <p>Final Sale Price: ${deal.financialDetails?.finalSalePrice?.toLocaleString()}</p>
                         )}
                       </div>
+
                       <h4 className="mb-2 font-medium text-gray-800">Documents</h4>
                       <div className="mb-4 text-sm text-gray-600">
                         {deal.documents && deal.documents.length > 0 ? (
@@ -725,6 +804,12 @@ export default function DealManagementDashboard() {
                         >
                           Activity
                         </Button>
+                               <Button
+  className="bg-primary hover:primary px-4 py-2 mr-2 ml-3"
+  onClick={() => handleEditDeal(deal)}
+>
+  Edit
+</Button>
                       </div>
                     </div>
                   </div>
@@ -781,18 +866,45 @@ export default function DealManagementDashboard() {
                   >
                     <div className="flex items-center justify-between border-b border-gray-200 p-4">
                       <h3 className="text-lg font-medium text-teal-500">{deal.title}</h3>
+                      {deal.rewardLevel && (
+                        <span className={`ml-2 px-3 py-1 rounded-full text-xs font-semibold bg-[#e0f7fa] text-[#00796b]`}>
+                          {deal.rewardLevel}
+                        </span>
+                      )}
                     </div>
                     <div className="p-4">
+                      <h4>Seller Information</h4>
+                      {deal.sellerProfile ? (
+                        <div className="flex items-center gap-3 mb-2">
+                          <div>
+                            <div className="text-gray-500 text-xs mr-1">
+                              <span className="">Seller Name:</span> &nbsp;
+                              {deal.sellerProfile.fullName}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              <span className="mr-1">Seller Email:</span>
+                              {deal.sellerProfile.email}
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="mb-2 text-sm text-gray-500 italic">Seller information is not available.</div>
+                      )}
+
                       <h4 className="mb-2 font-medium text-gray-800">Overview</h4>
                       <div className="mb-4 space-y-1 text-sm text-gray-600">
                         <p>Industry: {deal.industrySector}</p>
-                        <p>Geography: {deal.geographySelection}</p>
-                        <p>Number of Years in Business: {deal.yearsInBusiness}</p>
-                        <p>Business Model: {Array.isArray(deal.companyType) ? deal.companyType.join(', ') : deal.companyType || 'N/A'}</p>
+                        <p>Location: {deal.geographySelection}</p>
+                     
+                       
                         <p>Company Description: {deal.companyDescription}</p>
                       </div>
                       <h4 className="mb-2 font-medium text-gray-800">Financial</h4>
                       <div className="mb-4 grid grid-cols-2 gap-2 text-sm text-gray-600">
+                         <p>
+                          Currency:{' '}
+                          {deal.financialDetails?.trailingRevenueCurrency}
+                        </p>
                         <p>
                           Trailing 12-Month Revenue:{' '}
                           {deal.financialDetails?.trailingRevenueCurrency?.replace('USD($)', '$') || '$'}
@@ -803,16 +915,11 @@ export default function DealManagementDashboard() {
                           {deal.financialDetails?.trailingEBITDACurrency?.replace('USD($)', '$') || '$'}
                           {deal.financialDetails?.trailingEBITDAAmount?.toLocaleString() || 'N/A'}
                         </p>
-                        <p>T12 Free Cash Flow: ${deal.financialDetails?.t12FreeCashFlow?.toLocaleString() || 'N/A'}</p>
+                     
                         <p>T12 Net Income: ${deal.financialDetails?.t12NetIncome?.toLocaleString() || 'N/A'}</p>
-                        <p>
-                          Average 3-Year Revenue Growth: {deal.financialDetails?.avgRevenueGrowth || 'N/A'}%
-                        </p>
-                        <p>Net Income: ${deal.financialDetails?.netIncome?.toLocaleString() || 'N/A'}</p>
-                        <p>Asking Price: ${deal.financialDetails?.askingPrice?.toLocaleString() || 'N/A'}</p>
-                        {deal.financialDetails?.finalSalePrice && (
-                          <p>Final Sale Price: ${deal.financialDetails?.finalSalePrice?.toLocaleString()}</p>
-                        )}
+                    
+                       
+                       
                       </div>
                       <h4 className="mb-2 font-medium text-gray-800">Documents</h4>
                       <div className="mb-4 text-sm text-gray-600">
@@ -854,6 +961,12 @@ export default function DealManagementDashboard() {
                         >
                           Activity
                         </Button>
+                        <Button
+  className="bg-primary hover:primary px-4 py-2 mr-2 ml-3"
+  onClick={() => handleEditDeal(deal)}
+>
+  Edit
+</Button>
                       </div>
                     </div>
                   </div>
@@ -911,6 +1024,130 @@ export default function DealManagementDashboard() {
           dealTitle={selectedDealForActivity?.title || ''}
         />
       </div>
+      {editDeal && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="bg-white rounded-lg w-full max-w-2xl p-8 overflow-y-auto max-h-[90vh]">
+      <h2 className="text-xl font-semibold mb-4">Edit Deal</h2>
+      <form
+        onSubmit={async (e) => {
+          e.preventDefault();
+          setEditLoading(true);
+          setEditError(null);
+          try {
+            const token = localStorage.getItem('token');
+            // Sanitize payload
+            const {
+              _id, rewardLevel, seller, interestedBuyers, invitationStatus, priority,
+              createdAt, updatedAt, timeline, __v, sellerProfile, ...rest
+            } = editForm;
+            // Re-nest financialDetails
+            const financialDetails = {
+              trailingRevenueCurrency: rest.trailingRevenueCurrency,
+              trailingRevenueAmount: rest.trailingRevenueAmount,
+              trailingEBITDACurrency: rest.trailingEBITDACurrency,
+              trailingEBITDAAmount: rest.trailingEBITDAAmount,
+              t12FreeCashFlow: rest.t12FreeCashFlow,
+              t12NetIncome: rest.t12NetIncome,
+              avgRevenueGrowth: rest.avgRevenueGrowth,
+              netIncome: rest.netIncome,
+              askingPrice: rest.askingPrice,
+            };
+            [
+              'trailingRevenueCurrency', 'trailingRevenueAmount', 'trailingEBITDACurrency', 'trailingEBITDAAmount',
+              't12FreeCashFlow', 't12NetIncome', 'avgRevenueGrowth', 'netIncome', 'askingPrice'
+            ].forEach(key => delete rest[key]);
+            // Ensure companyType is a string
+            if (Array.isArray(rest.companyType)) {
+              rest.companyType = rest.companyType.join(', ');
+            }
+            // Ensure documents is an array of strings
+            rest.documents = Array.isArray(rest.documents)
+              ? rest.documents.map((doc: any) => typeof doc === 'string' ? doc : doc.filename)
+              : [];
+            const updatePayload = {
+              ...rest,
+              financialDetails,
+            };
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/deals/${editDeal._id}`, {
+              method: 'PATCH',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify(updatePayload),
+            });
+            if (!res.ok) {
+              const errorData = await res.json();
+              throw new Error(errorData.message || 'Failed to update deal');
+            }
+            setEditDeal(null);
+            setEditForm(null);
+            setEditLoading(false);
+            window.location.reload();
+          } catch (error: any) {
+            setEditError(error.message);
+            setEditLoading(false);
+          }
+        }}
+      >
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-medium mb-1">Title</label>
+            <Input
+              value={editForm.title || ''}
+              onChange={e => setEditForm({ ...editForm, title: e.target.value })}
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium mb-1">Company Description</label>
+            <Input
+              value={editForm.companyDescription || ''}
+              onChange={e => setEditForm({ ...editForm, companyDescription: e.target.value })}
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium mb-1">Industry Sector</label>
+            <Input
+              value={editForm.industrySector || ''}
+              onChange={e => setEditForm({ ...editForm, industrySector: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium mb-1">Geography</label>
+            <Input
+              value={editForm.geographySelection || ''}
+              onChange={e => setEditForm({ ...editForm, geographySelection: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium mb-1">Years in Business</label>
+            <Input
+              type="number"
+              value={editForm.yearsInBusiness || ''}
+              onChange={e => setEditForm({ ...editForm, yearsInBusiness: Number(e.target.value) })}
+            />
+          </div>
+          <div>
+          
+           
+          </div>
+          {/* Add more fields as needed */}
+        </div>
+        {editError && <div className="text-red-500 mt-2">{editError}</div>}
+        <div className="flex justify-end gap-2 mt-6">
+          <Button type="button" variant="outline" onClick={() => setEditDeal(null)}>
+            Cancel
+          </Button>
+          <Button type="submit" className="bg-teal-500 text-white" disabled={editLoading}>
+            {editLoading ? 'Saving...' : 'Save'}
+          </Button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
     </div>
   );
 }

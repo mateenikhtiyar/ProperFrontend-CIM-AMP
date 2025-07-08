@@ -115,6 +115,10 @@ export default function BuyerRegisterPage() {
       newErrors.companyName = "Company name is required"
     }
 
+    if (!formData.phone.trim()) {
+      newErrors.phone = "Phone is required"
+    }
+
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -381,7 +385,7 @@ export default function BuyerRegisterPage() {
 
                   <div>
                     <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                      Phone <span className="text-gray-400 text-sm">(optional)</span>
+                      Phone <span className="text-red-500">*</span>
                     </label>
                     <Input
                       id="phone"
@@ -390,6 +394,7 @@ export default function BuyerRegisterPage() {
                       onChange={handleChange}
                       placeholder="+44 7123 123456"
                       className={`${errors.phone ? "border-red-300" : ""} py-3 sm:py-4`}
+                      required
                     />
                     {errors.phone && <p className="mt-1 text-sm text-red-600">{errors.phone}</p>}
                   </div>
