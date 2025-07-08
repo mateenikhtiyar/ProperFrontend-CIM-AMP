@@ -267,7 +267,7 @@ useEffect(() => {
                 strokeLinejoin="round"
               />
             </svg>
-            <span>My Deals</span>
+            <span>Deals</span>
           </Button>
           </Link>
 

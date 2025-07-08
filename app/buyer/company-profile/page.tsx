@@ -2746,21 +2746,27 @@ export default function CompanyProfilePage() {
                       </Link>{" "}
                       were agreed to by{" "}
                       {buyerProfile?.fullName || "(insert buyer's name)"} on{" "}
-                      {formData.agreementsAcceptedAt && !isNaN(Date.parse(formData.agreementsAcceptedAt))
-                        ? new Date(formData.agreementsAcceptedAt ?? '').toLocaleString("en-US", {
+                      {(() => {
+                        let dateStr = formData.agreementsAcceptedAt ?? formData.updatedAt;
+                        if (dateStr && !isNaN(Date.parse(dateStr))) {
+                          const date = new Date(dateStr);
+                          const time = date.toLocaleTimeString("en-US", {
                             timeZone: "America/New_York",
-                            dateStyle: "medium",
-                            timeStyle: "short",
+                            hour: "numeric",
+                            minute: "2-digit",
                             hour12: true,
-                          })
-                        : profileId && formData.updatedAt && !isNaN(Date.parse(formData.updatedAt))
-                        ? new Date(formData.updatedAt ?? '').toLocaleString("en-US", {
+                          });
+                          const day = date.toLocaleDateString("en-US", {
                             timeZone: "America/New_York",
-                            dateStyle: "medium",
-                            timeStyle: "short",
-                            hour12: true,
-                          })
-                        : "(insert date and time of submission)"}
+                            weekday: "long",
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric",
+                          });
+                          return `${time}\n${day}\nEastern Time (ET)`;
+                        }
+                        return "(insert date and time of submission)";
+                      })()}
                       .
                     </p>
                   </div>
