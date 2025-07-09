@@ -77,7 +77,7 @@ const BUSINESS_MODELS = [
 ];
 
 // Default API URL
-const DEFAULT_API_URL = "https://api.cimamplify.com";
+const DEFAULT_API_URL = "http://localhost:3001";
 
 // Type for hierarchical selection
 interface HierarchicalSelection {
@@ -1856,8 +1856,8 @@ export default function AcquireProfilePage() {
                       type="radio"
                       id="capital_fund"
                       name="capitalEntity"
-                      value="ready_to_deploy"
-                      checked={formData.capitalEntity === "ready_to_deploy"}
+                      value="ready to deploy"
+                      checked={formData.capitalEntity === "ready to deploy"}
                       onChange={(e) =>
                         handleChange("capitalEntity", e.target.value)
                       }
@@ -1875,8 +1875,8 @@ export default function AcquireProfilePage() {
                       type="radio"
                       id="capital_holding"
                       name="capitalEntity"
-                      value="need_to_raise"
-                      checked={formData.capitalEntity === "need_to_raise"}
+                      value="need to raise"
+                      checked={formData.capitalEntity === "need to raise"}
                       onChange={(e) =>
                         handleChange("capitalEntity", e.target.value)
                       }

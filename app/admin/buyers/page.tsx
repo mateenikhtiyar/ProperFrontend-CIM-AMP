@@ -19,10 +19,30 @@ import {
   Trash2
 } from "lucide-react";
 
+// Add Buyer interface
+interface CompanyProfile {
+  companyName?: string;
+  _id?: string;
+  id?: string;
+}
+
+interface Buyer {
+  _id?: string;
+  id?: string;
+  companyName?: string;
+  fullName?: string;
+  email?: string;
+  phone?: string;
+  role?: string;
+  companyProfileId?: string | { $oid: string };
+  companyProfile?: CompanyProfile;
+  profileId?: string;
+}
+
 export default function BuyersManagementDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [buyers, setBuyers] = useState([]);
+  const [buyers, setBuyers] = useState<Buyer[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter()
   const { logout } = useAuth()
@@ -32,7 +52,7 @@ export default function BuyersManagementDashboard() {
       setLoading(true);
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch("https://api.cimamplify.com/buyers/all", {
+        const res = await fetch("http://localhost:3001/buyers/all", {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -56,49 +76,30 @@ export default function BuyersManagementDashboard() {
     router.push("/admin/login")
   }
 
-  const handleSearch = (e) => {
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
     setCurrentPage(1); // Reset to first page when searching
   };
 
-  const handleView = (buyerId) => {
+  const handleView = (buyerId: string) => {
+    if (!buyerId) return;
     console.log(`Viewing buyer ${buyerId}`);
   };
-const handleEdit = (buyer) => {
-  // Debug: See what the buyer object looks like
-  console.log("Edit buyer:", buyer);
 
-  let companyProfileId = null;
-
-  // Handle MongoDB ObjectId format
-  if (buyer.companyProfileId) {
-    if (typeof buyer.companyProfileId === "object" && buyer.companyProfileId.$oid) {
-      companyProfileId = buyer.companyProfileId.$oid;
-    } else if (typeof buyer.companyProfileId === "string") {
-      companyProfileId = buyer.companyProfileId;
+  const handleEdit = (buyer: Buyer) => {
+    let companyProfileId = buyer.companyProfile?._id || buyer.companyProfile?.id || '';
+    if (companyProfileId) {
+      router.push(`/admin/acquireprofile?id=${companyProfileId}`);
+    } else {
+      alert("No company profile found for this buyer.");
     }
-  }
+  };
 
-  // Fallbacks (if you ever change your backend)
-  if (!companyProfileId && buyer.profileId) companyProfileId = buyer.profileId;
-  if (!companyProfileId && buyer.companyProfile && (buyer.companyProfile._id || buyer.companyProfile.id)) {
-    companyProfileId = buyer.companyProfile._id || buyer.companyProfile.id;
-  }
-
-  // Debug: See what ID we found
-  console.log("Resolved companyProfileId:", companyProfileId);
-
-  if (companyProfileId) {
-    router.push(`/admin/acquireprofile?id=${companyProfileId}`);
-  } else {
-    alert("No company profile found for this buyer.");
-  }
-};
-   const handleDelete = async (buyerId) => {
+  const handleDelete = async (buyerId: string) => {
     if (!window.confirm("Are you sure you want to delete this Buyer?")) return;
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`https://api.cimamplify.com/admin/buyers/${buyerId}`, {
+      const res = await fetch(`http://localhost:3001/admin/buyers/${buyerId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -111,10 +112,9 @@ const handleEdit = (buyer) => {
     }
   };
 
-
   // Filter buyers based on search term
-  const filteredBuyers = buyers.filter(buyer =>
-    (buyer.companyName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+  const filteredBuyers = buyers.filter((buyer: Buyer) =>
+    (buyer.companyProfile?.companyName || buyer.companyName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
     (buyer.email || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
     (buyer.fullName || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -126,7 +126,7 @@ const handleEdit = (buyer) => {
   const endIndex = startIndex + buyersPerPage;
   const currentBuyers = filteredBuyers.slice(startIndex, endIndex);
 
-  const handlePageChange = (page) => {
+  const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
 
@@ -155,7 +155,7 @@ const handleEdit = (buyer) => {
                 strokeLinejoin="round"
               />
             </svg>
-            <span>My Deals</span>
+            <span>Deals</span>
           </Button>
 
           <Link href="/admin/buyers">
@@ -201,7 +201,7 @@ const handleEdit = (buyer) => {
       <div className="flex-1 flex flex-col">
         {/* Header */}
          <header className="bg-white border-b border-gray-200 p-3 px-6 flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-gray-800">Active Deals</h1>
+                <h1 className="text-2xl font-bold text-gray-800">All Buyers</h1>
       
                 <div className="flex items-center justify-start gap-60">
                   <div className="relative">
@@ -211,7 +211,7 @@ const handleEdit = (buyer) => {
                       placeholder="Search here..."
                       className="pl-10 w-80 bg-gray-100 border-0"
                       value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
+                      onChange={handleSearch}
                     />
                   </div>
       
@@ -231,7 +231,7 @@ const handleEdit = (buyer) => {
         <div className="flex-1 p-6">
           {/* Page Title */}
           <div className="mb-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-2">All Buyers</h2>
+        
             <div className="flex items-center gap-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -270,7 +270,7 @@ const handleEdit = (buyer) => {
                       <tr key={buyer._id} className="hover:bg-gray-50 transition-colors">
                         <td className="py-3 px-4">
                           <div className="font-medium text-gray-900 text-sm truncate max-w-[150px]">
-                            {buyer.companyName}
+                            {buyer.companyProfile?.companyName || buyer.companyName}
                           </div>
                         </td>
                         <td className="py-3 px-4">
@@ -299,7 +299,7 @@ const handleEdit = (buyer) => {
                               variant="ghost"
                               size="sm"
                               className="p-1.5 h-7 w-7 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
-                              onClick={() => handleView(buyer._id)}
+                              onClick={() => handleView((buyer._id || buyer.id) ?? "")}
                               title="View"
                             >
                               <Eye className="h-3.5 w-3.5" />
@@ -311,11 +311,7 @@ const handleEdit = (buyer) => {
   onClick={() => handleEdit(buyer)}
   title="Edit"
   disabled={
-    !(
-      buyer.companyProfileId &&
-      ((typeof buyer.companyProfileId === "object" && buyer.companyProfileId.$oid) ||
-        typeof buyer.companyProfileId === "string")
-    )
+    !(buyer.companyProfile && (buyer.companyProfile._id || buyer.companyProfile.id))
   }
 >
   <Edit className="h-3.5 w-3.5" />
@@ -324,7 +320,7 @@ const handleEdit = (buyer) => {
                                                          variant="ghost"
                                                          size="sm"
                                                          className="p-1.5 h-7 w-7 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                                                         onClick={() => handleDelete(buyer._id || buyer.id)}
+                                                         onClick={() => handleDelete(buyer._id || buyer.id || '')}
                                                          title="Delete"
                                                        >
                                                          <Trash2 className="h-3.5 w-3.5" />

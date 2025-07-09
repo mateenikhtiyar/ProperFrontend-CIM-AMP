@@ -197,7 +197,7 @@ export default function SellerRegisterPage() {
   // Handle Google OAuth login
   const handleGoogleLogin = () => {
     console.log("Register page - Redirecting to Google OAuth")
-    window.location.href = "https://api.cimamplify.com/sellers/google/callback"
+    window.location.href = "http://localhost:3001/sellers/google/callback"
   }
 
   return (
@@ -270,7 +270,7 @@ export default function SellerRegisterPage() {
                   htmlFor="email"
                   className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Email Address
+                  Email Address <span className="text-red-500">*</span>
                 </label>
                 <Input
                   id="email"
@@ -279,6 +279,7 @@ export default function SellerRegisterPage() {
                   value={formData.email}
                   onChange={handleChange}
                   placeholder=""
+                  required
                 />
                 {errors.email && (
                   <p className="mt-1 text-sm text-red-600">{errors.email}</p>
@@ -289,7 +290,7 @@ export default function SellerRegisterPage() {
                   htmlFor="companyName"
                   className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Company Name
+                  Company Name <span className="text-red-500">*</span>
                 </label>
                 <Input
                   id="companyName"
@@ -298,6 +299,7 @@ export default function SellerRegisterPage() {
                   value={formData.companyName}
                   onChange={handleChange}
                   placeholder=""
+                  required
                 />
                 {errors.companyName && (
                   <p className="mt-1 text-sm text-red-600">
@@ -310,7 +312,7 @@ export default function SellerRegisterPage() {
                   htmlFor="fullName"
                   className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Full Name
+                  Full Name <span className="text-red-500">*</span>
                 </label>
                 <Input
                   id="fullName"
@@ -319,6 +321,7 @@ export default function SellerRegisterPage() {
                   value={formData.fullName}
                   onChange={handleChange}
                   placeholder=""
+                  required
                 />
                 {errors.fullName && (
                   <p className="mt-1 text-sm text-red-600">{errors.fullName}</p>
@@ -330,7 +333,7 @@ export default function SellerRegisterPage() {
                   htmlFor="title"
                   className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Title
+                  Title <span className="text-red-500">*</span>
                 </label>
                 <Input
                   id="title"
@@ -339,6 +342,7 @@ export default function SellerRegisterPage() {
                   value={formData.title}
                   onChange={handleChange}
                   placeholder=""
+                  required
                 />
                 {errors.title && (
                   <p className="mt-1 text-sm text-red-600">{errors.title}</p>
@@ -350,7 +354,7 @@ export default function SellerRegisterPage() {
                   htmlFor="phoneNumber"
                   className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Phone Number
+                  Phone Number <span className="text-red-500">*</span>
                 </label>
                 <Input
                   id="phoneNumber"
@@ -359,6 +363,7 @@ export default function SellerRegisterPage() {
                   value={formData.phoneNumber}
                   onChange={handleChange}
                   placeholder=""
+                  required
                 />
                 {errors.phoneNumber && (
                   <p className="mt-1 text-sm text-red-600">{errors.phoneNumber}</p>
@@ -370,7 +375,7 @@ export default function SellerRegisterPage() {
                   htmlFor="website"
                   className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Website
+                  Website <span className="text-red-500">*</span>
                 </label>
                 <Input
                   id="website"
@@ -379,6 +384,7 @@ export default function SellerRegisterPage() {
                   value={formData.website}
                   onChange={handleChange}
                   placeholder=""
+                  required
                 />
                 {errors.website && (
                   <p className="mt-1 text-sm text-red-600">
@@ -392,7 +398,7 @@ export default function SellerRegisterPage() {
                   htmlFor="password"
                   className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Password
+                  Password <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <Input
@@ -402,6 +408,7 @@ export default function SellerRegisterPage() {
                     value={formData.password}
                     onChange={handleChange}
                     placeholder=""
+                    required
                   />
                   <button
                     type="button"
@@ -424,7 +431,7 @@ export default function SellerRegisterPage() {
                   htmlFor="confirmPassword"
                   className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Confirm Password
+                  Confirm Password <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <Input
@@ -434,6 +441,7 @@ export default function SellerRegisterPage() {
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     placeholder=""
+                    required
                   />
                   <button
                     type="button"
