@@ -1,8 +1,8 @@
 "use client"
-import { useEffect } from "react";
+ import { useEffect } from "react";
 import React, { useState, useRef } from "react";
 import {
-  Users,
+     Users,
   Pencil,
   Handshake,
   History,
@@ -97,7 +97,7 @@ interface ValidationErrors {
 export default function ViewProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [editValues, setEditValues] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
+const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [passwordData, setPasswordData] = useState({
@@ -252,7 +252,7 @@ useEffect(() => {
     fileInputRef.current?.click();
   };
 
-  const handleLogout = () => {
+   const handleLogout = () => {
     logout();
     router.push("/admin/login");
   };
@@ -321,21 +321,21 @@ useEffect(() => {
 
           <Button
             variant="ghost"
-            className="w-full justify-start gap-3 font-normal bg-teal-100 text-teal-700 hover:bg-teal-200"
+       className="w-full justify-start gap-3 font-normal bg-teal-100 text-teal-700 hover:bg-teal-200"
             onClick={() => router.push("/admin/ViewProfile")}
           >
             <Clock className="h-5 w-5" />
             <span>ViewProfile</span>
           </Button>
 
-          <Button
-            variant="ghost"
-            className="w-full justify-start gap-3 font-normal text-red-600 hover:text-red-700 hover:bg-red-50"
-            onClick={handleLogout}
-          >
-            <LogOut className="h-5 w-5" />
-            <span>Sign Out</span>
-          </Button>
+       <Button
+                  variant="ghost"
+                  className="w-full justify-start gap-3 font-normal text-red-600 hover:text-red-700 hover:bg-red-50"
+                  onClick={handleLogout}
+                >
+                  <LogOut className="h-5 w-5" />
+                  <span>Sign Out</span>
+                </Button>
         </nav>
       </div>
 
@@ -433,20 +433,20 @@ useEffect(() => {
               </div>
 
               {/* Profile Info */}
-              <div className="flex-1 flex flex-col justify-center space-y-3 text-gray-800 text-sm">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium w-24">Company</span>
-                  <span>CIM Amplify</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="font-medium w-24">Email:</span>
-                  <span>{profile?.email}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="font-medium w-24">Role:</span>
-                  <span>{profile?.role}</span>
-                </div>
-              </div>
+           <div className="flex-1 flex flex-col justify-center space-y-3 text-gray-800 text-sm">
+  <div className="flex items-center gap-2">
+    <span className="font-medium w-24">Company</span>
+    <span>CIM Amplify</span>
+  </div>
+  <div className="flex items-center gap-2">
+    <span className="font-medium w-24">Email:</span>
+    <span>{profile?.email}</span>
+  </div>
+  <div className="flex items-center gap-2">
+    <span className="font-medium w-24">Role:</span>
+    <span>{profile?.role}</span>
+  </div>
+</div>
             </div>
           </div>
         </div>
