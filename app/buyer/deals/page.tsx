@@ -42,6 +42,7 @@ interface Deal {
   t12NetIncomeCurrency?: string;
   netIncomeCurrency?: string;
   askingPriceCurrency?: string;
+  managementPreferences?: string; // <-- Add this line
 }
 
 interface Document {
@@ -61,10 +62,13 @@ interface BuyerProfile {
   role: string;
   profilePicture: string | null;
 }
+// Update SellerInfo type to include companyName and website
 type SellerInfo = {
   name: string;
   email: string;
   phoneNumber: string;
+  companyName?: string;
+  website?: string;
 };
 type SellerInfoMap = {
   [sellerId: string]: SellerInfo;
@@ -93,6 +97,7 @@ export default function DealsPage() {
   const [sellerInfoMap, setSellerInfoMap] = useState<{
     [sellerId: string]: { name: string; email: string; phoneNumber: string };
   }>({});
+  const [sellerInfoLoading, setSellerInfoLoading] = useState(false);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -160,7 +165,7 @@ export default function DealsPage() {
 
       // Map API response to component structure
       const mappedDeals = data.map((deal: any) => {
-        console.log("Raw deal from API:", deal);
+        console.log("Raw deal from API:", deal); // Debug: log the raw deal
         const mappedDeal = {
           id: deal._id,
           sellerId:
@@ -193,6 +198,7 @@ export default function DealsPage() {
           netIncomeCurrency: deal.financialDetails?.netIncomeCurrency || "$",
           askingPriceCurrency:
             deal.financialDetails?.askingPriceCurrency || "$",
+          managementPreferences: deal.managementPreferences || deal.managementFuturePreferences || '',
         };
         console.log("Mapped deal:", mappedDeal);
         return mappedDeal;
@@ -723,6 +729,7 @@ export default function DealsPage() {
     return deals.filter((deal) => deal.status === status).length;
   };
 
+  // Update fetchSellerInfo to store companyName and website
   const fetchSellerInfo = async (sellerId: string) => {
     try {
       const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
@@ -737,12 +744,14 @@ export default function DealsPage() {
           name: data.fullName || "N/A",
           email: data.email || "N/A",
           phoneNumber: data.phoneNumber || "N/A",
+          companyName: data.companyName || "N/A",
+          website: data.website || "N/A",
         },
       }));
     } catch {
       setSellerInfoMap((prev: typeof sellerInfoMap) => ({
         ...prev,
-        [sellerId]: { name: "N/A", email: "N/A", phoneNumber: "N/A" },
+        [sellerId]: { name: "N/A", email: "N/A", phoneNumber: "N/A", companyName: "N/A", website: "N/A" },
       }));
     }
   };
@@ -759,12 +768,14 @@ export default function DealsPage() {
         )
       ).filter((sellerId) => !sellerInfoMap[sellerId]); // Fetch only missing seller infos
 
-      if (uniqueSellerIds.length === 0) return;
+      if (uniqueSellerIds.length === 0) {
+        setSellerInfoLoading(false);
+        return;
+      }
 
+      setSellerInfoLoading(true);
       const token = localStorage.getItem("token");
-
       const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
-
 
       for (const sellerId of uniqueSellerIds) {
         try {
@@ -780,18 +791,24 @@ export default function DealsPage() {
                 name: data.fullName || "N/A",
                 email: data.email || "N/A",
                 phoneNumber: data.phoneNumber || "N/A",
+                companyName: data.companyName || "N/A",
+                website: data.website || "N/A",
               },
             }));
           } else {
-            console.error(
-              `Failed to fetch seller info for ${sellerId}:`,
-              response.status
-            );
+            setSellerInfoMap((prev: typeof sellerInfoMap) => ({
+              ...prev,
+              [sellerId]: { name: "N/A", email: "N/A", phoneNumber: "N/A", companyName: "N/A", website: "N/A" },
+            }));
           }
         } catch (error) {
-          console.error(`Error fetching seller info for ${sellerId}:`, error);
+          setSellerInfoMap((prev: typeof sellerInfoMap) => ({
+            ...prev,
+            [sellerId]: { name: "N/A", email: "N/A", phoneNumber: "N/A", companyName: "N/A", website: "N/A" },
+          }));
         }
       }
+      setSellerInfoLoading(false);
     };
 
     fetchSellerInfos();
@@ -1030,14 +1047,18 @@ export default function DealsPage() {
             </TabsList>
           </Tabs>
 
-          {loading ? (
+          {loading || sellerInfoLoading ? (
             <div className="flex justify-center items-center h-64">
               <div className="text-gray-500">Loading deals...</div>
             </div>
           ) : filteredDeals.length === 0 ? (
             <div className="flex justify-center items-center h-64">
               <div className="text-gray-500">
-                We will send you an email when new deals match your criteria.
+                {activeTab === "passed"
+                  ? "Only Passed Deals that are still on the market will show here."
+                  : activeTab === "active"
+                  ? "You have no Active Deals."
+                  : "No pending deals found."}
               </div>
             </div>
           ) : (
@@ -1048,7 +1069,7 @@ export default function DealsPage() {
                 const sellerInfo =
                   sellerIdStr && sellerInfoMap[sellerIdStr]
                     ? sellerInfoMap[sellerIdStr]
-                    : { name: "N/A", email: "N/A", phoneNumber: "N/A" };
+                    : { name: "N/A", email: "N/A", phoneNumber: "N/A", companyName: "N/A", website: "N/A" };
                 return (
                   <div
                     key={deal.id}
@@ -1076,6 +1097,7 @@ export default function DealsPage() {
                         </p>
                         <p>Business Model: {deal.businessModel}</p>
                         <p>Company Description: {deal.companyDescription}</p>
+                        <p>Management Future Preferences: {deal.managementPreferences || 'Not specified'}</p>
                       </div>
 
                       {/* Financial */}
@@ -1095,11 +1117,15 @@ export default function DealsPage() {
                         </p>
                         <p>
                           T12 Free Cash Flow: {deal.trailingRevenueCurrency}
-                          {deal.t12FreeCashFlow?.toLocaleString() ?? "N/A"}
+                          {deal.t12FreeCashFlow && deal.t12FreeCashFlow >= 0
+                            ? deal.t12FreeCashFlow.toLocaleString()
+                            : "Not provided"}
                         </p>
                         <p>
                           T12 Net Income: {deal.trailingRevenueCurrency}
-                          {deal.t12NetIncome?.toLocaleString() ?? "N/A"}
+                          {deal.t12NetIncome && deal.t12NetIncome >= 0
+                            ? deal.t12NetIncome.toLocaleString()
+                            : "Not provided"}
                         </p>
                         <p>
                           Average 3-Year Revenue Growth:{" "}
@@ -1107,11 +1133,15 @@ export default function DealsPage() {
                         </p>
                         <p>
                           Net Income: {deal.trailingRevenueCurrency}
-                          {deal.netIncome?.toLocaleString() ?? "N/A"}
+                          {deal.netIncome && deal.netIncome >= 0
+                            ? deal.netIncome.toLocaleString()
+                            : "Not provided"}
                         </p>
                         <p>
                           Asking Price: {deal.trailingRevenueCurrency}
-                          {deal.askingPrice?.toLocaleString() ?? "N/A"}
+                          {deal.askingPrice && deal.askingPrice >= 0
+                            ? deal.askingPrice.toLocaleString()
+                            : "Not provided"}
                         </p>
                       </div>
 
@@ -1120,11 +1150,17 @@ export default function DealsPage() {
                         Seller Information
                       </h4>
                       {activeTab === "active" ? (
-                        <div className="mb-4 text-sm text-gray-600 space-y-1">
-                          <p>Name: {sellerInfo.name}</p>
-                          <p>Email: {sellerInfo.email}</p>
-                          <p>Phone: {sellerInfo.phoneNumber}</p>
-                        </div>
+                        !sellerIdStr || !sellerInfoMap[sellerIdStr] ? (
+                          <div className="mb-4 text-sm text-gray-500 italic">Loading seller info...</div>
+                        ) : (
+                          <div className="mb-4 text-sm text-gray-600 space-y-1">
+                            <p>Name: {sellerInfo.name}</p>
+                            <p>Email: {sellerInfo.email}</p>
+                            <p>Phone: {sellerInfo.phoneNumber}</p>
+                            <p>Company Name: {(sellerInfo as { companyName: string }).companyName || 'N/A'}</p>
+                            <p>Website: {(sellerInfo as { website: string }).website || 'N/A'}</p>
+                          </div>
+                        )
                       ) : (
                         <div className="mb-4 text-sm text-gray-500 italic">
                           Hidden Until Active

@@ -110,48 +110,84 @@ export default function Component() {
     {
       id: 0,
       question: "Explain the 0.5% Buyer Fee?",
-      answer: "Over the past decade a lot of frustration has been built up over an age-old practice of referral fees. Ambiguity and unreasonable fees for representing buyers have put a wrench into what should be a wonderful process - getting a deal done. High fees are often added to deal modeling and can change or eliminate offers which is against our mission. Dozens of interviews with all types of buyers resulted in an agreement that 0.5% is a more than fair fee that will not change deal structure at all.",
+      answer: "Over the past decade a lot of frustration has been built up over an age-old practice of referral fees. Ambiguity and unreasonable fees for represented deals have put a wrench into what should be a wonderful process - getting a deal done. High fees are often added to deal modeling and can change or eliminate offers which is against our mission. Dozens of interviews with all types of buyers resulted in an agreement that 0.5% is a more than fair fee that will not change deal structure at all.",
       isExpanded: true
     },
-    {
-      id: 1,
-      question: "What does \"Exclusive Deals\" mean?",
-      answer: "Exclusive deals are opportunities that are only available through our platform and network of M&A advisors. These deals are not marketed through other channels."
-    },
+   {
+    id: 1,
+    question: "What does \"Exclusive Deals\" mean?",
+    answer: (
+      <div className="space-y-6">
+        <p>When an Advisor adds a deal to CIM Amplify they choose one of 3 reward levels:</p>
+        
+        {/* Image container */}
+        <div className="flex justify-center my-6">
+          <div className="bg-white rounded-lg shadow-lg p-4 max-w-4xl">
+            <Image 
+              src="/image7.png" 
+              alt="CIM Amplify Deal Tiers - Seed, Bloom, and Fruit levels with different rewards" 
+              width={800} 
+              height={300} 
+              className="w-full h-auto rounded-lg"
+            />
+          </div>
+        </div>
+        
+        <p className="text-gray-700 leading-relaxed">
+          Buyers can choose to never see deals from the Seed level which will save them from seeing a deal multiple times in multiple places.
+        </p>
+      </div>
+    )
+  },
     {
       id: 2,
       question: "What is the Universal NDA?",
-      answer: "The Universal NDA is a standardized non-disclosure agreement that covers all deals on our platform, eliminating the need to sign individual NDAs for each opportunity."
+      answer: "NDAs are a (very) last resort hammer for extremely bad behavior. In interviews with dozens of seasoned Advisors, not one has ever gone to court over an NDA. Our Universal NDA is strong enough for any action and it eliminates one of the biggest speedbumps in the deal process. Getting straight to the CIM saves so much valuable time for both sides."
     },
     {
       id: 3,
       question: "No Tire Kickers - Really?",
-      answer: "Yes, we thoroughly vet all buyers on our platform to ensure they have the financial capability and genuine intent to complete transactions. This protects both advisors and sellers from time-wasting inquiries."
+      answer: (
+        <div className="space-y-4">
+          <p>Over the past few years, mergers and acquisitions professionals have witnessed an unprecedented influx of search funds and entrepreneurship-through-acquisition (ETA) buyers entering the market. These are often first-time acquirers – MBA graduates, young professionals, or even social media-inspired entrepreneurs – seeking to buy and run a business. Many of these newcomers are underqualified "tire kickers" who struggle to close deals, especially those chasing the popularized idea of buying a business with "no money down." Deals get bogged down because of the need to qualify and quantify.</p>
+          <p>We hear you and do not want to add to the problem. Our solutions include:</p>
+          <ul className="list-disc list-inside space-y-2 pl-4">
+            <li>Larger deals of at least $500k EBITDA or, failing that, $5 Million in revenue</li>
+            <li>"Ability to close" filters for every deal</li>
+            <li>"Report buyer" button that allow Advisors to make us aware of potentially fake buyers</li>
+          </ul>
+        </div>
+      )
     },
     {
       id: 4,
       question: "Aren't you just another Deal Platform?",
-      answer: "While we are a deal platform, we differentiate ourselves through our exclusive network of M&A advisors, intelligent buyer matching, and focus on qualified participants only."
+      answer: "The original CIM Amplify platform, launched in October 2024, quickly gained amazing traction with over $3 Billion in deals (none scraped), all with more than $1 Million in EBITDA. The original platform was a general posting site. We learned quickly that buyers don't have time to scroll deals and hate that a deal on our site may be on other sites. We also learned that most top Advisors have client requirements where they need to get buyers approved before approaching them - and open listings have the Tire-Kicker problem. We solved those issues and many more with this version launched in June 2025. TL:DR - No"
     },
     {
       id: 5,
       question: "What types of deals come through CIM Amplify?",
-      answer: "We focus exclusively on M&A deals with minimum $1M EBITDA or $5M revenue. All deals must be posted by qualified M&A advisors and include proper documentation."
+      answer: "Our average deal top line revenue per company is about $22 Million right now. Even though we have a fairly low minimum we strive to have deals of all sizes on the platform as we have buyers looking for deals from $5 Million in revenue to over $1 Billion. We are industry and geography agnostic."
     },
     {
       id: 6,
       question: "I added a deal but CIM Amplify did not find any matching buyers?",
-      answer: "This can happen if your deal criteria don't match our current buyer pool. We continuously work to expand our network and will notify you when suitable buyers join our platform."
+      answer: "Sorry! We are registering new buyers every day but the nature of the platform is that buyers choose what they want to see based on their investment criteria. As long as you leave the deal \"On Market\" we will notify you if a buyer registers that fits the deal and you can decide to send it to them, or not. And you get to keep the gift card - no matter what."
     },
     {
       id: 7,
-      question: "I registered as a buyer but have never received a deal?",
-      answer: "Deal flow depends on your specified criteria and current market availability. We recommend reviewing and potentially expanding your criteria to increase deal flow opportunities."
+      question: "I registered as a buyer but have never received a deal.",
+      answer: "Sorry! Our promise to you is to not fill your inbox with irrelevant deals. When you do receive an email from us - open it because it is a match. Or… check your spam filter."
     },
     {
       id: 8,
       question: "Do you publish my information?",
-      answer: "We maintain strict confidentiality of all user information. Your details are only shared with relevant parties under signed NDAs and with your explicit permission."
+      answer: "No! Many of the places you give your information to use that data for SEO purposes and essentially post your profiles and deals to the wide internet. We happily sacrifice Google Ranking for your security. As an added step, we allow buyers to remain anonymous (Investment Criteria aside) to sellers until you choose to engage on a deal."
+    },
+    {
+      id: 9,
+      question: "How do you handle Buy Side Mandates?",
+      answer: "Fill out a buyer profile and deals that match your mandate will be sent to you."
     }
   ]
 
@@ -625,74 +661,104 @@ useEffect(() => {
 </header>
 
       {/* Hero Section */}
-      <section className="py-16 bg-gray-50">
-        <div className="container mx-auto px-6 text-center">
-          <h1 
-            data-animate
-            id="hero-title"
-            className={`text-4xl md:text-5xl font-bold text-gray-900 mb-6 ${
-              isVisible['hero-title'] ? 'animate-fadeInUp animate-in' : ''
-            }`}
-          >
-            Exclusive M&A Advisor deal flow meets intelligent buyer targeting
-          </h1>
-          <p 
-            data-animate
-            id="hero-subtitle"
-            className={`text-xl text-gray-600 mb-8 max-w-4xl mx-auto ${
-              isVisible['hero-subtitle'] ? 'animate-fadeInUp animate-delay-200 animate-in' : ''
-            }`}
-          >
-            Get quality deal flow from our network of advisors by sharing buyer criteria and connect with opportunities
-            and giving M&A advisors a strategic platform to engage qualified buyers
-          </p>
-        </div>
-      </section>
+     <section className="py-16 bg-gray-50">
+  <div className="container mx-auto px-6 text-center">
+    <h1 
+      data-animate
+      id="hero-title"
+      className={`text-4xl md:text-5xl font-bold text-gray-900 mb-6 ${
+        isVisible['hero-title'] ? 'animate-fadeInUp animate-in' : ''
+      }`}
+    >
+      Exclusive M&A Advisor deal flow meets intelligent buyer targeting
+    </h1>
+    <p 
+      data-animate
+      id="hero-subtitle"
+      className={`text-xl text-gray-600 mb-8 max-w-4xl mx-auto ${
+        isVisible['hero-subtitle'] ? 'animate-fadeInUp animate-delay-200 animate-in' : ''
+      }`}
+    >
+      CIM Amplify elevates the dealmaking experience by offering buyers exclusive access to vetted opportunities and giving M&A advisors a strategic platform to engage qualified buyers
+    </p>
+  </div>
+</section>
+
 
       {/* Benefits Section */}
-      <section id="benefits" className="py-16">
-        <div className="container mx-auto px-6">
-          <div className="grid md:grid-cols-2 gap-12">
-            {/* Buyer Benefits */}
-            <div 
-              data-animate
-              id="buyer-benefits"
-              className={`${isVisible['buyer-benefits'] ? 'animate-slideInLeft animate-in' : ''}`}
-            >
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Buyer Benefits</h2>
-              <p className="text-gray-600 mb-6">High-quality Vetted Targeted opportunity flow</p>
-              <ul className="space-y-4">
-                {buyerBenefits.map((benefit, index) => (
-                  <li key={index} className="flex items-start gap-3">
-                    <CheckCircle className="w-5 h-5 text-teal-500 mt-0.5 flex-shrink-0" />
-                    <span className="text-gray-700">{benefit}</span>
-                  </li>
-                ))}
-              </ul>
-              <Button onClick={()=>{router.push("/buyer/login")}} className="mt-6 bg-teal-500 hover:bg-teal-600 transition-colors">Become a Pre-Qualified Buyer</Button>
-            </div>
+   <section id="benefits" className="py-16">
+  <div className="container mx-auto px-6">
+    <div className="grid md:grid-cols-2 gap-12">
 
-            {/* Advisor Benefits */}
-            <div 
-              data-animate
-              id="advisor-benefits"
-              className={`${isVisible['advisor-benefits'] ? 'animate-slideInRight animate-in' : ''}`}
-            >
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Advisor Benefits</h2>
-              <p className="text-gray-600 mb-6">Pre-deal buyers in need of strategic, qualified buyers</p>
-              <ul className="space-y-4">
-                {advisorBenefits.map((benefit, index) => (
-                  <li key={index} className="flex items-start gap-3">
-                    <CheckCircle className="w-5 h-5 text-teal-500 mt-0.5 flex-shrink-0" />
-                    <span className="text-gray-700">{benefit}</span>
-                  </li>
-                ))}
-              </ul>
-              <Button className="mt-6 bg-teal-500 hover:bg-teal-600 transition-colors"   onClick={() => router.push("/seller/login")}>Add A Deal</Button>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Buyer Benefits */}
+      <div 
+        data-animate
+        id="buyer-benefits"
+        className={`${isVisible['buyer-benefits'] ? 'animate-slideInLeft animate-in' : ''}`}
+      >
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Buyer Benefits</h2>
+        <p className="text-gray-600 mb-6">
+          Forget sifting through irrelevant opportunities — we send you what fits.
+        </p>
+        <ul className="space-y-4">
+          {[
+            "Exclusive deals — we reward Advisors who post exclusively with us",
+            "0.5% (50 basis points) fee. By far the lowest in the industry",
+            "We only send you deals that match your criteria",
+            "Straight to CIM – The most hated step is eliminated with a Master NDA",
+            "We get out of the way – no requirement to communicate through the platform",
+            "Deal management platform – see all your deals in one place"
+          ].map((benefit, index) => (
+            <li key={index} className="flex items-start gap-3">
+              <CheckCircle className="w-5 h-5 text-teal-500 mt-0.5 flex-shrink-0" />
+              <span className="text-gray-700">{benefit}</span>
+            </li>
+          ))}
+        </ul>
+        <Button
+          onClick={() => { router.push("/buyer/login") }}
+          className="mt-6 bg-teal-500 hover:bg-teal-600 transition-colors"
+        >
+          Create a Free Buyer Profile
+        </Button>
+      </div>
+
+      {/* Advisor Benefits */}
+      <div 
+        data-animate
+        id="advisor-benefits"
+        className={`${isVisible['advisor-benefits'] ? 'animate-slideInRight animate-in' : ''}`}
+      >
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Advisor Benefits</h2>
+        <p className="text-gray-600 mb-6">
+          Put your deals in front of serious, qualified buyers
+        </p>
+        <ul className="space-y-4">
+          {[
+            "Seller Rewards – You are our oxygen and we appreciate you. Every deal is worth at least an Amazon gift card. Much more if your buyer comes from CIM Amplify and you use us exclusively",
+            "No tire kickers! Set \"Ability to Close\" filters for every deal",
+            "Straight to CIM – The most hated step is eliminated with a Master NDA",
+            "We get out of the way – no requirement to communicate through the platform",
+            "Deal management platform to see buyer matches and activity in one place"
+          ].map((benefit, index) => (
+            <li key={index} className="flex items-start gap-3">
+              <CheckCircle className="w-5 h-5 text-teal-500 mt-0.5 flex-shrink-0" />
+              <span className="text-gray-700">{benefit}</span>
+            </li>
+          ))}
+        </ul>
+        <Button
+          onClick={() => router.push("/seller/login")}
+          className="mt-6 bg-teal-500 hover:bg-teal-600 transition-colors"
+        >
+          Add A Deal
+        </Button>
+      </div>
+
+    </div>
+  </div>
+</section>
+
 
       {/* Marketplace Stats */}
       <section id="marketplace" className="py-16 bg-gray-50">
@@ -747,7 +813,7 @@ useEffect(() => {
               >
                 <h3 className="text-2xl font-bold text-gray-900 mb-4">Add A Deal</h3>
                 <p className="text-gray-600 mb-6">
-                  M&A Advisors choose a secure deal board for marketing with CIM Amplify and add deal overview
+                  M&A Advisors choose a reward level based on exclusivity with CIM Amlify and add deal metrics.
                 </p>
                 <Button className="bg-teal-500 hover:bg-teal-600 transition-colors"   onClick={() => router.push("/seller/login")}>Add a Deal</Button>
               </div>
@@ -781,7 +847,7 @@ useEffect(() => {
               >
                 <h3 className="text-2xl font-bold text-gray-900 mb-4">Intelligent Buyer Matching</h3>
                 <p className="text-gray-600 mb-6">
-                  CIM Amplify provides a list of strategic, qualified buyers who buyers to engage.
+                  CIM Amplify provides a list of buyers. Advisors select which buyers to engage.
                 </p>
                 <Button className="bg-teal-500 hover:bg-teal-600 transition-colors"   onClick={() => router.push("/seller/login")}>View Marketplace</Button>
               </div>
@@ -814,7 +880,7 @@ useEffect(() => {
                 className={`${isVisible['step-3-text'] ? 'animate-slideInLeft animate-in' : ''}`}
               >
                 <h3 className="text-2xl font-bold text-gray-900 mb-4">Deal Management</h3>
-                <p className="text-gray-600 mb-6">Buyers and Advisors interact deals via an intuitive platform</p>
+                <p className="text-gray-600 mb-6">Buyers and Advisors monitor deals via an intuitive platform.</p>
                 <div className="flex gap-4">
                   <Button className="bg-teal-500 hover:bg-teal-600 transition-colors"   onClick={() => router.push("/seller/login")}>Add Listing</Button>
                   <Button variant="outline" className="hover:bg-gray-50 transition-colors"   onClick={() => router.push("/seller/login")}>Deal Management</Button>

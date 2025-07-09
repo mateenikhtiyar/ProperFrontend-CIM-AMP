@@ -304,7 +304,7 @@ export default function CompanyProfilePage() {
       feeAgreementAccepted: false,
     },
     selectedCurrency: "USD",
-    capitalAvailability: "need_to_raise",
+    capitalAvailability: "need to raise",
   });
 
   // Fetch user's existing profile data
@@ -362,11 +362,11 @@ export default function CompanyProfilePage() {
           capitalEntity:
             profileData.capitalEntity ||
             profileData.capitalAvailability ||
-            "need_to_raise",
+            "need to raise",
           capitalAvailability:
             profileData.capitalAvailability ||
             profileData.capitalEntity ||
-            "need_to_raise",
+            "need to raise",
           updatedAt: profileData.updatedAt,
         };
 
@@ -1820,10 +1820,10 @@ export default function CompanyProfilePage() {
                           type="radio"
                           id="capital_ready"
                           name="capitalAvailability"
-                          value="ready_to_deploy"
+                          value="ready to deploy"
                           checked={
-                            formData.capitalEntity === "ready_to_deploy" ||
-                            formData.capitalAvailability === "ready_to_deploy"
+                            formData.capitalEntity === "ready to deploy" ||
+                            formData.capitalAvailability === "ready to deploy"
                           }
                           onChange={(e) => {
                             handleChange("capitalEntity", e.target.value);
@@ -1843,10 +1843,10 @@ export default function CompanyProfilePage() {
                           type="radio"
                           id="capital_need"
                           name="capitalAvailability"
-                          value="need_to_raise"
+                          value="need to raise"
                           checked={
-                            formData.capitalEntity === "need_to_raise" ||
-                            formData.capitalAvailability === "need_to_raise"
+                            formData.capitalEntity === "need to raise" ||
+                            formData.capitalAvailability === "need to raise"
                           }
                           onChange={(e) => {
                             handleChange("capitalEntity", e.target.value);
