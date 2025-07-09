@@ -306,7 +306,7 @@ export default function EditDealPageFixed() {
     try {
       setIsLoading(true)
       const token = localStorage.getItem("token")
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
 
       const response = await fetch(`${apiUrl}/deals/${dealId}`, {
         headers: {
@@ -1201,7 +1201,7 @@ const handleCheckboxChange = (
 
       const token = localStorage.getItem("token")
       const sellerId = localStorage.getItem("userId")
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
 
       if (!token || !sellerId) throw new Error("Authentication required")
 
@@ -1314,7 +1314,7 @@ const handleCheckboxChange = (
 
     try {
       const token = localStorage.getItem("token")
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
 
       const docIndex = existingDocuments.findIndex((d) => d.filename === doc.filename)
       const response = await fetch(`${apiUrl}/deals/${dealId}/documents/${docIndex}`, {
@@ -1347,7 +1347,7 @@ const handleCheckboxChange = (
 
   // Handle document download
   const handleDocumentDownload = (doc: DealDocument) => {
-    const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
     const link = document.createElement("a")
     link.href = `${apiUrl}/uploads/deal-documents/${doc.filename}`
     link.download = doc.originalName
