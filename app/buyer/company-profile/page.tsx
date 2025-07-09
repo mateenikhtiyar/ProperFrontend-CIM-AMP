@@ -69,7 +69,7 @@ const BUSINESS_MODELS = [
 ];
 
 // Default API URL
-const DEFAULT_API_URL = "https://api.cimamplify.com";
+const DEFAULT_API_URL = "http://localhost:3001";
 
 // Type for hierarchical selection
 interface HierarchicalSelection {
@@ -304,7 +304,7 @@ export default function CompanyProfilePage() {
       feeAgreementAccepted: false,
     },
     selectedCurrency: "USD",
-    capitalAvailability: "need_to_raise",
+    capitalAvailability: "need to raise",
   });
 
   // Fetch user's existing profile data
@@ -362,11 +362,11 @@ export default function CompanyProfilePage() {
           capitalEntity:
             profileData.capitalEntity ||
             profileData.capitalAvailability ||
-            "need_to_raise",
+            "need to raise",
           capitalAvailability:
             profileData.capitalAvailability ||
             profileData.capitalEntity ||
-            "need_to_raise",
+            "need to raise",
           updatedAt: profileData.updatedAt,
         };
 
@@ -457,7 +457,7 @@ export default function CompanyProfilePage() {
         return;
       }
 
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
       const response = await fetch(`${apiUrl}/buyers/profile`, {
         headers: {
@@ -1545,7 +1545,7 @@ export default function CompanyProfilePage() {
   const getProfilePictureUrl = (path: string | null) => {
     if (!path) return null;
 
-    const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
     if (path.startsWith("http://") || path.startsWith("https://")) {
       return path;
@@ -1820,10 +1820,10 @@ export default function CompanyProfilePage() {
                           type="radio"
                           id="capital_ready"
                           name="capitalAvailability"
-                          value="ready_to_deploy"
+                          value="ready to deploy"
                           checked={
-                            formData.capitalEntity === "ready_to_deploy" ||
-                            formData.capitalAvailability === "ready_to_deploy"
+                            formData.capitalEntity === "ready to deploy" ||
+                            formData.capitalAvailability === "ready to deploy"
                           }
                           onChange={(e) => {
                             handleChange("capitalEntity", e.target.value);
@@ -1843,10 +1843,10 @@ export default function CompanyProfilePage() {
                           type="radio"
                           id="capital_need"
                           name="capitalAvailability"
-                          value="need_to_raise"
+                          value="need to raise"
                           checked={
-                            formData.capitalEntity === "need_to_raise" ||
-                            formData.capitalAvailability === "need_to_raise"
+                            formData.capitalEntity === "need to raise" ||
+                            formData.capitalAvailability === "need to raise"
                           }
                           onChange={(e) => {
                             handleChange("capitalEntity", e.target.value);
@@ -2746,21 +2746,27 @@ export default function CompanyProfilePage() {
                       </Link>{" "}
                       were agreed to by{" "}
                       {buyerProfile?.fullName || "(insert buyer's name)"} on{" "}
-                      {formData.agreementsAcceptedAt && !isNaN(Date.parse(formData.agreementsAcceptedAt))
-                        ? new Date(formData.agreementsAcceptedAt ?? '').toLocaleString("en-US", {
+                      {(() => {
+                        let dateStr = formData.agreementsAcceptedAt ?? formData.updatedAt;
+                        if (dateStr && !isNaN(Date.parse(dateStr))) {
+                          const date = new Date(dateStr);
+                          const time = date.toLocaleTimeString("en-US", {
                             timeZone: "America/New_York",
-                            dateStyle: "medium",
-                            timeStyle: "short",
+                            hour: "numeric",
+                            minute: "2-digit",
                             hour12: true,
-                          })
-                        : profileId && formData.updatedAt && !isNaN(Date.parse(formData.updatedAt))
-                        ? new Date(formData.updatedAt ?? '').toLocaleString("en-US", {
+                          });
+                          const day = date.toLocaleDateString("en-US", {
                             timeZone: "America/New_York",
-                            dateStyle: "medium",
-                            timeStyle: "short",
-                            hour12: true,
-                          })
-                        : "(insert date and time of submission)"}
+                            weekday: "long",
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric",
+                          });
+                          return `${time}\n${day}\nEastern Time (ET)`;
+                        }
+                        return "(insert date and time of submission)";
+                      })()}
                       .
                     </p>
                   </div>

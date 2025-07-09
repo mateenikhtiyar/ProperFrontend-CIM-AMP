@@ -16,10 +16,11 @@ import {
   Settings,
   Bell,
   Edit,
-  Trash2
+  Trash2,
+  AlertTriangle
 } from "lucide-react";
 
-// Add Seller interface at the top
+// Seller interface
 interface Seller {
   _id?: string;
   id?: string;
@@ -31,6 +32,8 @@ interface Seller {
   title?: string;
   role?: string;
   password?: string;
+  activeDealsCount: number;
+  offMarketDealsCount: number;
 }
 
 export default function SellersManagementDashboard() {
@@ -47,29 +50,68 @@ export default function SellersManagementDashboard() {
     website: "",
     title: "",
     password: "",
+    activeDealsCount: 0,
+    offMarketDealsCount: 0,
   });
   const [editLoading, setEditLoading] = useState(false);
+  const [dataWarning, setDataWarning] = useState<string | null>(null);
 
-  const router = useRouter()
-  const { logout } = useAuth()
+  const router = useRouter();
+  const { logout } = useAuth();
 
   useEffect(() => {
     const fetchSellers = async () => {
       setLoading(true);
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch("https://api.cimamplify.com/sellers", {
+        if (!token) {
+          throw new Error("No authentication token found");
+        }
+        const res = await fetch("http://localhost:3001/sellers", {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
         });
-        if (!res.ok) throw new Error("Failed to fetch sellers");
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(errorText || "Failed to fetch sellers");
+        }
         const data = await res.json();
-        setSellers(Array.isArray(data) ? data : []);
+        console.log("Raw sellers response:", data);
+        const sellersData = Array.isArray(data) ? data.map((seller: Seller) => ({
+          ...seller,
+          activeDealsCount: seller.activeDealsCount ?? 0,
+          offMarketDealsCount: seller.offMarketDealsCount ?? 0,
+        })) : [];
+        setSellers(sellersData);
+
+        // Fetch total deals from /deals endpoint for validation
+        const dealsRes = await fetch("http://localhost:3001/deals", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+        if (dealsRes.ok) {
+          const deals = await dealsRes.json();
+          const totalActiveDeals = (deals as any[]).filter((deal: any) =>
+            Object.values(deal.invitationStatus || {}).some((status: any) => status.response === "accepted")
+          ).length;
+          const totalOffMarketDeals = (deals as any[]).filter((deal: any) => deal.status === "completed").length;
+          const sellersActiveDeals = sellersData.reduce((sum, s) => sum + s.activeDealsCount, 0);
+          const sellersOffMarketDeals = sellersData.reduce((sum, s) => sum + s.offMarketDealsCount, 0);
+          if (sellersActiveDeals !== totalActiveDeals || sellersOffMarketDeals !== totalOffMarketDeals) {
+            setDataWarning(
+              `Data mismatch: Sellers page shows ${sellersActiveDeals} active and ${sellersOffMarketDeals} off-market deals, ` +
+              `but deals endpoint reports ${totalActiveDeals} active and ${totalOffMarketDeals} off-market deals.`
+            );
+          }
+        }
       } catch (error) {
-        setSellers([]);
         console.error("Error fetching sellers:", error);
+        setSellers([]);
+        alert(`Failed to load sellers: ${(error && typeof error === 'object' && 'message' in error) ? (error as any).message : String(error)}`);
       } finally {
         setLoading(false);
       }
@@ -78,9 +120,9 @@ export default function SellersManagementDashboard() {
   }, []);
 
   const handleLogout = () => {
-    logout()
-    router.push("/seller/login")
-  }
+    logout();
+    router.push("/seller/login");
+  };
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
@@ -88,7 +130,15 @@ export default function SellersManagementDashboard() {
   };
 
   const handleView = (sellerId: string) => {
-    console.log(`Viewing seller ${sellerId}`);
+    router.push(`/admin/sellers/${sellerId}`);
+  };
+
+  const handleViewActiveDeals = (sellerId: string) => {
+    router.push(`/admin/dashboard?sellerId=${sellerId}&status=accepted`);
+  };
+
+  const handleViewOffMarketDeals = (sellerId: string) => {
+    router.push(`/admin/dashboard?sellerId=${sellerId}&status=completed`);
   };
 
   const handleEdit = (sellerId: string) => {
@@ -106,6 +156,8 @@ export default function SellersManagementDashboard() {
         _id: seller._id,
         id: seller.id,
         role: seller.role,
+        activeDealsCount: seller.activeDealsCount,
+        offMarketDealsCount: seller.offMarketDealsCount,
       });
     }
   };
@@ -117,7 +169,6 @@ export default function SellersManagementDashboard() {
   const handleEditSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setEditLoading(true);
-    // Prevent submission if title is empty or only whitespace
     if (!editForm.title || editForm.title.trim() === "") {
       alert("Title is required.");
       setEditLoading(false);
@@ -125,13 +176,18 @@ export default function SellersManagementDashboard() {
     }
     try {
       const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
       const body: Partial<Seller> & { password?: string } = { ...editForm };
       if (Object.prototype.hasOwnProperty.call(body, "password") && !body.password) delete (body as any).password;
       delete (body as any)._id;
       delete (body as any).id;
       delete (body as any).role;
+      delete (body as any).activeDealsCount;
+      delete (body as any).offMarketDealsCount;
       if (!editSeller) throw new Error("No seller selected");
-      const res = await fetch(`https://api.cimamplify.com/sellers/${editSeller._id || editSeller.id}`, {
+      const res = await fetch(`http://localhost:3001/sellers/${editSeller._id || editSeller.id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -144,10 +200,15 @@ export default function SellersManagementDashboard() {
         throw new Error(err || "Failed to update seller");
       }
       const updated = await res.json();
-      setSellers(sellers.map(s => (s._id === updated._id || s.id === updated.id ? updated : s)));
+      setSellers(sellers.map(s => (s._id === updated._id || s.id === updated.id ? {
+        ...updated,
+        activeDealsCount: s.activeDealsCount,
+        offMarketDealsCount: s.offMarketDealsCount,
+      } : s)));
       setEditSeller(null);
     } catch (error) {
-      alert("Failed to update seller");
+      const msg = (error && typeof error === 'object' && 'message' in error) ? (error as any).message : String(error);
+      alert(`Failed to update seller: ${msg}`);
     } finally {
       setEditLoading(false);
     }
@@ -157,16 +218,23 @@ export default function SellersManagementDashboard() {
     if (!window.confirm("Are you sure you want to delete this seller?")) return;
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`https://api.cimamplify.com/sellers/${sellerId}`, {
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
+      const res = await fetch(`http://localhost:3001/sellers/${sellerId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
-      if (!res.ok) throw new Error("Failed to delete seller");
+      if (!res.ok) {
+        const err = await res.text();
+        throw new Error(err || "Failed to delete seller");
+      }
       setSellers(sellers.filter(s => (s._id || s.id) !== sellerId));
     } catch (error) {
-      alert("Failed to delete seller");
+      const msg = (error && typeof error === 'object' && 'message' in error) ? (error as any).message : String(error);
+      alert(`Failed to delete seller: ${msg}`);
     }
   };
 
@@ -174,14 +242,12 @@ export default function SellersManagementDashboard() {
     setCurrentPage(page);
   };
 
-  // Filter sellers based on search term
   const filteredSellers = sellers.filter(seller =>
     (seller.companyName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
     (seller.email || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
     (seller.fullName || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Pagination
   const sellersPerPage = 10;
   const totalPages = Math.ceil(filteredSellers.length / sellersPerPage);
   const startIndex = (currentPage - 1) * sellersPerPage;
@@ -197,7 +263,6 @@ export default function SellersManagementDashboard() {
             <Image src="/logo.svg" alt="CIM Amplify Logo" width={150} height={50} className="h-auto" />
           </Link>
         </div>
-
         <nav className="flex-1 flex flex-col gap-4">
           <Button
             variant="ghost"
@@ -213,16 +278,14 @@ export default function SellersManagementDashboard() {
                 strokeLinejoin="round"
               />
             </svg>
-            <span>My Deals</span>
+            <span>Deals</span>
           </Button>
-
           <Link href="/admin/buyers">
             <Button variant="ghost" className="w-full justify-start gap-3 font-normal">
               <Users className="h-5 w-5" />
               <span>Buyers</span>
             </Button>
           </Link>
-
           <Button
             variant="secondary"
             className="w-full justify-start gap-3 font-normal bg-teal-100 text-teal-700 hover:bg-teal-200"
@@ -231,16 +294,14 @@ export default function SellersManagementDashboard() {
             <Clock className="h-5 w-5" />
             <span>Sellers</span>
           </Button>
-
-         <Button
-                    variant="ghost"
-                    className="w-full justify-start gap-3 font-normal"
-                    onClick={() => router.push("/admin/viewprofile")}
-                  >
-                    <Clock className="h-5 w-5" />
-                    <span>ViewProfile</span>
-                  </Button>
-
+          <Button
+            variant="ghost"
+            className="w-full justify-start gap-3 font-normal"
+            onClick={() => router.push("/admin/viewprofile")}
+          >
+            <Clock className="h-5 w-5" />
+            <span>View Profile</span>
+          </Button>
           <Button
             variant="ghost"
             className="w-full justify-start gap-3 font-normal text-red-600 hover:text-red-700 hover:bg-red-50"
@@ -256,38 +317,43 @@ export default function SellersManagementDashboard() {
       <div className="flex-1 flex flex-col">
         {/* Header */}
         <header className="bg-white border-b border-gray-200 p-3 px-6 flex justify-between items-center">
-               <h1 className="text-2xl font-bold text-gray-800">Active Deals</h1>
-     
-               <div className="flex items-center justify-start gap-60">
-                 <div className="relative">
-                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                   <Input
-                     type="search"
-                     placeholder="Search here..."
-                     className="pl-10 w-80 bg-gray-100 border-0"
-                     value={searchTerm}
-                     onChange={handleSearch}
-                   />
-                 </div>
-     
-                 <div className="flex items-center gap-3">
-                   <div className="text-right">
-                     <div className="font-medium flex items-center">
-                       Admin
-                     </div>
-                   </div>
-                   <div className="relative h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center text-white font-medium overflow-hidden">
-                     <img className="h-full w-full object-cover" />
-                   </div>
-                 </div>
-               </div>
-             </header>
+          <h1 className="text-2xl font-bold text-gray-800">All Sellers</h1>
+          <div className="flex items-center justify-start gap-60">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+              <Input
+                type="search"
+                placeholder="Search here..."
+                className="pl-10 w-80 bg-gray-100 border-0"
+                value={searchTerm}
+                onChange={handleSearch}
+              />
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="text-right">
+                <div className="font-medium flex items-center">
+                  Admin
+                </div>
+              </div>
+              <div className="relative h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center text-white font-medium overflow-hidden">
+                <img className="h-full w-full object-cover" alt="Admin profile" />
+              </div>
+            </div>
+          </div>
+        </header>
 
         {/* Content Area */}
         <div className="flex-1 p-6">
-          {/* Page Title */}
+          {/* Warning Message */}
+          {dataWarning && (
+            <div className="mb-4 p-4 bg-yellow-100 border border-yellow-300 rounded-lg flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-yellow-700" />
+              <span className="text-yellow-700">{dataWarning}</span>
+            </div>
+          )}
+
+          {/* Page Title and Search */}
           <div className="mb-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-2">All Sellers</h2>
             <div className="flex items-center gap-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -318,6 +384,8 @@ export default function SellersManagementDashboard() {
                       <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">Email</th>
                       <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm hidden sm:table-cell">Phone</th>
                       <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm hidden md:table-cell">Website</th>
+                      <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm hidden lg:table-cell">Active Deals</th>
+                      <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm hidden lg:table-cell">Off-Market Deals</th>
                       <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm hidden lg:table-cell">Role</th>
                       <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">Actions</th>
                     </tr>
@@ -327,17 +395,17 @@ export default function SellersManagementDashboard() {
                       <tr key={seller._id || seller.id} className="hover:bg-gray-50 transition-colors">
                         <td className="py-3 px-4">
                           <div className="font-medium text-gray-900 text-sm truncate max-w-[150px]">
-                            {seller.companyName}
+                            {seller.companyName || "-"}
                           </div>
                         </td>
                         <td className="py-3 px-4">
                           <div className="text-gray-700 text-sm truncate max-w-[120px]">
-                            {seller.fullName}
+                            {seller.fullName || "-"}
                           </div>
                         </td>
                         <td className="py-3 px-4">
                           <div className="text-gray-600 text-sm truncate max-w-[180px]">
-                            {seller.email}
+                            {seller.email || "-"}
                           </div>
                         </td>
                         <td className="py-3 px-4 hidden sm:table-cell">
@@ -347,12 +415,32 @@ export default function SellersManagementDashboard() {
                         </td>
                         <td className="py-3 px-4 hidden md:table-cell">
                           <div className="text-blue-600 text-sm truncate max-w-[140px] hover:underline cursor-pointer">
-                            {seller.website || "-"}
+                            {seller.website ? (
+                              <a href={seller.website} target="_blank" rel="noopener noreferrer">
+                                {seller.website}
+                              </a>
+                            ) : "-"}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 hidden lg:table-cell">
+                          <div
+                            className="text-gray-600 text-sm cursor-pointer hover:text-blue-600 hover:underline"
+                            onClick={() => handleViewActiveDeals((seller._id || seller.id || "") as string)}
+                          >
+                            {seller.activeDealsCount}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 hidden lg:table-cell">
+                          <div
+                            className="text-gray-600 text-sm cursor-pointer hover:text-blue-600 hover:underline"
+                            onClick={() => handleViewOffMarketDeals((seller._id || seller.id || "") as string)}
+                          >
+                            {seller.offMarketDealsCount}
                           </div>
                         </td>
                         <td className="py-3 px-4 hidden lg:table-cell">
                           <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
-                            {seller.role}
+                            {seller.role || "-"}
                           </span>
                         </td>
                         <td className="py-3 px-4">
@@ -364,7 +452,7 @@ export default function SellersManagementDashboard() {
                               onClick={() => handleView((seller._id || seller.id || "") as string)}
                               title="View"
                             >
-                          
+                              <Eye className="h-3.5 w-3.5" />
                             </Button>
                             <Button
                               variant="ghost"
@@ -391,8 +479,6 @@ export default function SellersManagementDashboard() {
                   </tbody>
                 </table>
               </div>
-
-              {/* Pagination */}
               <div className="flex flex-col sm:flex-row items-center justify-between px-4 py-3 border-t border-gray-200 bg-gray-50">
                 <div className="text-sm text-gray-600 mb-2 sm:mb-0">
                   Showing {startIndex + 1} to {Math.min(endIndex, filteredSellers.length)} of {filteredSellers.length} entries
@@ -407,8 +493,6 @@ export default function SellersManagementDashboard() {
                   >
                     ‹
                   </Button>
-
-                  {/* Show up to 5 page buttons, then ... and last page if needed */}
                   {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map((page) => (
                     <Button
                       key={page}
@@ -424,7 +508,6 @@ export default function SellersManagementDashboard() {
                       {page}
                     </Button>
                   ))}
-
                   {totalPages > 6 && currentPage < totalPages - 2 && (
                     <>
                       <span className="px-2 text-sm text-gray-400">...</span>
@@ -442,7 +525,6 @@ export default function SellersManagementDashboard() {
                       </Button>
                     </>
                   )}
-
                   <Button
                     variant="outline"
                     size="sm"
@@ -458,52 +540,52 @@ export default function SellersManagementDashboard() {
           )}
 
           {/* Edit Modal */}
-           {editSeller && (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
-      <form
-        className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md"
-        onSubmit={handleEditSubmit}
-      >
-        <h3 className="text-lg font-semibold mb-4">Edit Seller</h3>
-        <div className="mb-2">
-          <label className="block text-sm mb-1">Full Name</label>
-          <Input name="fullName" value={editForm.fullName} onChange={handleEditFormChange} />
-        </div>
-        <div className="mb-2">
-          <label className="block text-sm mb-1">Email</label>
-          <Input name="email" value={editForm.email} onChange={handleEditFormChange} />
-        </div>
-        <div className="mb-2">
-          <label className="block text-sm mb-1">Company Name</label>
-          <Input name="companyName" value={editForm.companyName} onChange={handleEditFormChange} />
-        </div>
-        <div className="mb-2">
-          <label className="block text-sm mb-1">Phone Number</label>
-          <Input name="phoneNumber" value={editForm.phoneNumber} onChange={handleEditFormChange} />
-        </div>
-        <div className="mb-2">
-          <label className="block text-sm mb-1">Website</label>
-          <Input name="website" value={editForm.website} onChange={handleEditFormChange} />
-        </div>
-        <div className="mb-2">
-          <label className="block text-sm mb-1">Title</label>
-          <Input name="title" value={editForm.title} onChange={handleEditFormChange} required />
-        </div>
-        <div className="mb-2">
-          <label className="block text-sm mb-1">Password (leave blank to keep unchanged)</label>
-          <Input name="password" type="password" value={editForm.password} onChange={handleEditFormChange} autoComplete="new-password" />
-        </div>
-        <div className="flex gap-2 mt-4">
-          <Button type="submit" disabled={editLoading}>
-            {editLoading ? "Saving..." : "Save"}
-          </Button>
-          <Button type="button" variant="outline" onClick={() => setEditSeller(null)}>
-            Cancel
-          </Button>
-        </div>
-      </form>
-    </div>
-  )}
+          {editSeller && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
+              <form
+                className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md"
+                onSubmit={handleEditSubmit}
+              >
+                <h3 className="text-lg font-semibold mb-4">Edit Seller</h3>
+                <div className="mb-2">
+                  <label className="block text-sm mb-1">Full Name</label>
+                  <Input name="fullName" value={editForm.fullName} onChange={handleEditFormChange} />
+                </div>
+                <div className="mb-2">
+                  <label className="block text-sm mb-1">Email</label>
+                  <Input name="email" value={editForm.email} onChange={handleEditFormChange} />
+                </div>
+                <div className="mb-2">
+                  <label className="block text-sm mb-1">Company Name</label>
+                  <Input name="companyName" value={editForm.companyName} onChange={handleEditFormChange} />
+                </div>
+                <div className="mb-2">
+                  <label className="block text-sm mb-1">Phone Number</label>
+                  <Input name="phoneNumber" value={editForm.phoneNumber} onChange={handleEditFormChange} />
+                </div>
+                <div className="mb-2">
+                  <label className="block text-sm mb-1">Website</label>
+                  <Input name="website" value={editForm.website} onChange={handleEditFormChange} />
+                </div>
+                <div className="mb-2">
+                  <label className="block text-sm mb-1">Title</label>
+                  <Input name="title" value={editForm.title} onChange={handleEditFormChange} required />
+                </div>
+                <div className="mb-2">
+                  <label className="block text-sm mb-1">Password (leave blank to keep unchanged)</label>
+                  <Input name="password" type="password" value={editForm.password} onChange={handleEditFormChange} autoComplete="new-password" />
+                </div>
+                <div className="flex gap-2 mt-4">
+                  <Button type="submit" disabled={editLoading}>
+                    {editLoading ? "Saving..." : "Save"}
+                  </Button>
+                  <Button type="button" variant="outline" onClick={() => setEditSeller(null)}>
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            </div>
+          )}
         </div>
       </div>
     </div>
