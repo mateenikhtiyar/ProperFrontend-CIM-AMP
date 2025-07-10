@@ -6,8 +6,8 @@ import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
 import Link from "next/link"
+import { ShoppingCart, Eye, Tag, Handshake } from "lucide-react";
 import {
-  Eye,
   Clock,
   LogOut,
   Search,
@@ -36,6 +36,27 @@ interface Seller {
   offMarketDealsCount: number;
 }
 
+// Add AdminProfile type
+interface AdminProfile {
+  id?: string;
+  fullName?: string;
+  email?: string;
+  phoneNumber?: string;
+  title?: string;
+  companyName?: string;
+  website?: string;
+  location?: string;
+  profilePicture?: string | null;
+  role?: string;
+}
+
+// Helper to get image src with cache busting only for real URLs
+function getProfileImageSrc(src?: string | null) {
+  if (!src) return undefined;
+  if (src.startsWith('data:')) return src;
+  return src + `?cb=${Date.now()}`;
+}
+
 export default function SellersManagementDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -55,6 +76,9 @@ export default function SellersManagementDashboard() {
   });
   const [editLoading, setEditLoading] = useState(false);
   const [dataWarning, setDataWarning] = useState<string | null>(null);
+
+  // Add admin profile state
+  const [adminProfile, setAdminProfile] = useState<AdminProfile | null>(null);
 
   const router = useRouter();
   const { logout } = useAuth();
@@ -117,6 +141,20 @@ export default function SellersManagementDashboard() {
       }
     };
     fetchSellers();
+  }, []);
+
+  useEffect(() => {
+    const fetchAdminProfile = async () => {
+      const token = localStorage.getItem("token");
+      const res = await fetch("http://localhost:3001/admin/profile", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAdminProfile(data);
+      }
+    };
+    fetchAdminProfile();
   }, []);
 
   const handleLogout = () => {
@@ -264,42 +302,30 @@ export default function SellersManagementDashboard() {
           </Link>
         </div>
         <nav className="flex-1 flex flex-col gap-4">
-          <Button
-            variant="ghost"
-            className="w-full justify-start gap-3 font-normal"
-            onClick={() => router.push("/admin/dashboard")}
-          >
-            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path
-                d="M16.5 6L12 1.5L7.5 6M3.75 8.25H20.25M5.25 8.25V19.5C5.25 19.9142 5.58579 20.25 6 20.25H18C18.4142 20.25 18.75 19.9142 18.75 19.5V8.25"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            <span>Deals</span>
-          </Button>
+           <Link href="/admin/dashboard">
+            <Button variant="ghost" className="w-full justify-start gap-3 font-normal">
+              <Handshake className="h-5 w-5" />
+              <span>  Deals</span>
+            </Button>
+          </Link>
           <Link href="/admin/buyers">
             <Button variant="ghost" className="w-full justify-start gap-3 font-normal">
-              <Users className="h-5 w-5" />
+              <Tag className="h-5 w-5" />
               <span>Buyers</span>
             </Button>
           </Link>
-          <Button
-            variant="secondary"
-            className="w-full justify-start gap-3 font-normal bg-teal-100 text-teal-700 hover:bg-teal-200"
-            onClick={() => router.push("/admin/sellers")}
-          >
-            <Clock className="h-5 w-5" />
-            <span>Sellers</span>
-          </Button>
+          <Link href="/admin/sellers">
+            <Button onClick={() => router.push("/admin/dashboard")} variant="ghost" className="w-full justify-start gap-3 font-normal bg-teal-100 text-teal-700 hover:bg-teal-200">
+              <ShoppingCart className="h-5 w-5" />
+              <span>Sellers</span>
+            </Button>
+          </Link>
           <Button
             variant="ghost"
             className="w-full justify-start gap-3 font-normal"
-            onClick={() => router.push("/admin/viewprofile")}
+            onClick={() => router.push('/admin/viewprofile')}
           >
-            <Clock className="h-5 w-5" />
+            <Eye className="h-5 w-5" />
             <span>View Profile</span>
           </Button>
           <Button
@@ -331,12 +357,19 @@ export default function SellersManagementDashboard() {
             </div>
             <div className="flex items-center gap-3">
               <div className="text-right">
-                <div className="font-medium flex items-center">
-                  Admin
-                </div>
+                <div className="font-medium flex items-center">{adminProfile?.fullName || "Admin"}</div>
               </div>
               <div className="relative h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center text-white font-medium overflow-hidden">
-                <img className="h-full w-full object-cover" alt="Admin profile" />
+                {adminProfile?.profilePicture ? (
+                  <img
+                    src={getProfileImageSrc(adminProfile.profilePicture)}
+                    alt={adminProfile.fullName || "User"}
+                    className="h-full w-full object-cover"
+                    key={adminProfile.profilePicture}
+                  />
+                ) : (
+                  <span>{adminProfile?.fullName ? adminProfile.fullName.charAt(0) : "A"}</span>
+                )}
               </div>
             </div>
           </div>
@@ -445,15 +478,7 @@ export default function SellersManagementDashboard() {
                         </td>
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="p-1.5 h-7 w-7 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
-                              onClick={() => handleView((seller._id || seller.id || "") as string)}
-                              title="View"
-                            >
-                              <Eye className="h-3.5 w-3.5" />
-                            </Button>
+
                             <Button
                               variant="ghost"
                               size="sm"

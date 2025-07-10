@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
+import {Tag , ShoppingCart, Eye, Handshake} from "lucide-react";
 import {
   Card,
   CardContent,
@@ -323,9 +324,29 @@ export default function DealManagementDashboard() {
   const [deleteDealId, setDeleteDealId] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  // Add state for Off Market dialog
+  const [offMarketDeal, setOffMarketDeal] = useState<Deal | null>(null);
+  const [offMarketLoading, setOffMarketLoading] = useState(false);
+  const [offMarketError, setOffMarketError] = useState<string | null>(null);
 
   const router = useRouter();
   const { logout } = useAuth();
+
+  // Add admin profile state
+  const [adminProfile, setAdminProfile] = useState<AdminProfile | null>(null);
+  useEffect(() => {
+    const fetchAdminProfile = async () => {
+      const token = localStorage.getItem("token");
+      const res = await fetch("http://localhost:3001/admin/profile", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAdminProfile(data);
+      }
+    };
+    fetchAdminProfile();
+  }, []);
 
   // Replace your setActiveDeals and setOffMarketDeals with this logic:
   useEffect(() => {
@@ -595,6 +616,44 @@ export default function DealManagementDashboard() {
     }
   };
 
+  // Handler to open Off Market dialog
+  const handleOffMarketClick = (deal: Deal) => {
+    setOffMarketDeal(deal);
+    setOffMarketError(null);
+  };
+
+  // Handler to confirm Off Market
+  const handleConfirmOffMarket = async () => {
+    if (!offMarketDeal) return;
+    setOffMarketLoading(true);
+    setOffMarketError(null);
+    try {
+      const token = localStorage.getItem("token");
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const res = await fetch(`${apiUrl}/deals/${offMarketDeal._id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status: "completed" }),
+      });
+      if (!res.ok) {
+        let errorData;
+        try { errorData = await res.json(); } catch { errorData = {}; }
+        throw new Error(errorData.message || "Failed to mark deal as off market");
+      }
+      // Move deal to Off Market tab
+      setActiveDeals((prev) => prev.filter((d) => d._id !== offMarketDeal._id));
+      setOffMarketDeals((prev) => [offMarketDeal, ...prev]);
+      setOffMarketDeal(null);
+    } catch (error: any) {
+      setOffMarketError(error.message);
+    } finally {
+      setOffMarketLoading(false);
+    }
+  };
+
   // Filter out completed deals from activeDeals before using in Active tab
   const filteredActiveDeals = activeDeals.filter(
     (deal) => deal.status !== "completed"
@@ -657,229 +716,140 @@ export default function DealManagementDashboard() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen bg-gray-50">
-        <div className="w-64 bg-white border-r border-gray-200 p-6 flex flex-col">
-          <div className="mb-8">
-            <Link href="/seller/dashboard">
-              <Image
-                src="/logo.svg"
-                alt="CIM Amplify Logo"
-                width={150}
-                height={50}
-                className="h-auto"
-              />
-            </Link>
-          </div>
-          <nav className="flex-1 flex flex-col gap-4">
-            <Button
-              variant="secondary"
-              className="w-full justify-start gap-3 font-normal bg-teal-100 text-teal-700 hover:bg-teal-200"
-            >
-              <svg
-                className="h-5 w-5"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M16.5 6L12 1.5L7.5 6M3.75 8.25H20.25M5.25 8.25V19.5C5.25 19.9142 5.58579 20.25 6 20.25H18C18.4142 20.25 18.75 19.9142 18.75 19.5V8.25"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              <span>Deals</span>
-            </Button>
-            <Link href="/admin/buyers">
-              <Button
-                variant="ghost"
-                className="w-full justify-start gap-3 font-normal"
-              >
-                <Users className="h-5 w-5" />
-                <span>Buyers</span>
-              </Button>
-            </Link>
-            <Link href="/admin/sellers">
-              <Button
-                variant="ghost"
-                className="w-full justify-start gap-3 font-normal"
-              >
-                <Clock className="h-5 w-5" />
-                <span>Sellers</span>
-              </Button>
-            </Link>
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-3 font-normal"
-              onClick={() => router.push("/admin/viewprofile")}
-            >
-              <Clock className="h-5 w-5" />
-              <span>View Profile</span>
-            </Button>
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-3 font-normal text-red-600 hover:text-red-700 hover:bg-red-50"
-              onClick={handleLogout}
-            >
-              <LogOut className="h-5 w-5" />
-              <span>Sign Out</span>
-            </Button>
-          </nav>
-        </div>
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading deals...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex min-h-screen bg-gray-50">
-        <div className="w-64 bg-white border-r border-gray-200 p-6 flex flex-col">
-          <div className="mb-8">
-            <Link href="/seller/dashboard">
-              <Image
-                src="/logo.svg"
-                alt="CIM Amplify Logo"
-                width={150}
-                height={50}
-                className="h-auto"
-              />
-            </Link>
-          </div>
-          <nav className="flex-1 flex flex-col gap-4">
-            <Button
-              variant="secondary"
-              className="w-full justify-start gap-3 font-normal bg-teal-100 text-teal-700 hover:bg-teal-200"
-            >
-              <svg
-                className="h-5 w-5"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M16.5 6L12 1.5L7.5 6M3.75 8.25H20.25M5.25 8.25V19.5C5.25 19.9142 5.58579 20.25 6 20.25H18C18.4142 20.25 18.75 19.9142 18.75 19.5V8.25"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              <span>Deals</span>
-            </Button>
-            <Link href="/admin/buyers">
-              <Button
-                variant="ghost"
-                className="w-full justify-start gap-3 font-normal"
-              >
-                <Users className="h-5 w-5" />
-                <span>Buyers</span>
-              </Button>
-            </Link>
-            <Link href="/admin/sellers">
-              <Button
-                variant="ghost"
-                className="w-full justify-start gap-3 font-normal"
-              >
-                <Clock className="h-5 w-5" />
-                <span>Sellers</span>
-              </Button>
-            </Link>
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-3 font-normal"
-              onClick={() => router.push("/admin/viewprofile")}
-            >
-              <Clock className="h-5 w-5" />
-              <span>View Profile</span>
-            </Button>
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-3 font-normal text-red-600 hover:text-red-700 hover:bg-red-50"
-              onClick={handleLogout}
-            >
-              <LogOut className="h-5 w-5" />
-              <span>Sign Out</span>
-            </Button>
-          </nav>
-        </div>
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-              <h3 className="font-bold mb-2">Error Loading Deals</h3>
-              <p>{error}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex min-h-screen bg-gray-50">
-      <div className="w-64 bg-white border-r border-gray-200 p-6 flex flex-col">
+<div className="w-64 bg-white border-r border-gray-200 p-6 flex flex-col">
         <div className="mb-8">
           <Link href="/seller/dashboard">
-            <Image
-              src="/logo.svg"
-              alt="CIM Amplify Logo"
-              width={150}
-              height={50}
-              className="h-auto"
-            />
+            <Image src="/logo.svg" alt="CIM Amplify Logo" width={150} height={50} className="h-auto" />
           </Link>
         </div>
         <nav className="flex-1 flex flex-col gap-4">
-          <Button
-            variant="secondary"
-            className="w-full justify-start gap-3 font-normal bg-teal-100 text-teal-700 hover:bg-teal-200"
-          >
-            <svg
-              className="h-5 w-5"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M16.5 6L12 1.5L7.5 6M3.75 8.25H20.25M5.25 8.25V19.5C5.25 19.9142 5.58579 20.25 6 20.25H18C18.4142 20.25 18.75 19.9142 18.75 19.5V8.25"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            <span>Deals</span>
-          </Button>
+      <Link href="/admin/dashboard">
+            <Button variant="ghost" className="w-full justify-start gap-3 font-normal bg-teal-100 text-teal-700 hover:bg-teal-200">
+              <Handshake className="h-5 w-5" />
+              <span>  Deals</span>
+            </Button>
+          </Link>
           <Link href="/admin/buyers">
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-3 font-normal"
-            >
-              <Users className="h-5 w-5" />
+            <Button variant="ghost" className="w-full justify-start gap-3 font-normal">
+              <Tag className="h-5 w-5" />
               <span>Buyers</span>
             </Button>
           </Link>
           <Link href="/admin/sellers">
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-3 font-normal"
-            >
-              <Clock className="h-5 w-5" />
+            <Button variant="ghost" className="w-full justify-start gap-3 font-normal">
+              <ShoppingCart className="h-5 w-5" />
               <span>Sellers</span>
             </Button>
           </Link>
           <Button
             variant="ghost"
             className="w-full justify-start gap-3 font-normal"
-            onClick={() => router.push("/admin/viewprofile")}
+            onClick={() => router.push('/admin/viewprofile')}
           >
-            <Clock className="h-5 w-5" />
+            <Eye className="h-5 w-5" />
+            <span>View Profile</span>
+          </Button>
+          <Button
+            variant="ghost"
+            className="w-full justify-start gap-3 font-normal text-red-600 hover:text-red-700 hover:bg-red-50"
+            onClick={handleLogout}
+          >
+            <LogOut className="h-5 w-5" />
+            <span>Sign Out</span>
+          </Button>
+        </nav>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+<div className="w-64 bg-white border-r border-gray-200 p-6 flex flex-col">
+        <div className="mb-8">
+          <Link href="/seller/dashboard">
+            <Image src="/logo.svg" alt="CIM Amplify Logo" width={150} height={50} className="h-auto" />
+          </Link>
+        </div>
+        <nav className="flex-1 flex flex-col gap-4">
+      <Link href="/admin/dashboard">
+            <Button variant="ghost" className="w-full justify-start gap-3 font-normal bg-teal-100 text-teal-700 hover:bg-teal-200">
+              <Handshake className="h-5 w-5" />
+              <span>  Deals</span>
+            </Button>
+          </Link>
+          <Link href="/admin/buyers">
+            <Button variant="ghost" className="w-full justify-start gap-3 font-normal">
+              <Tag className="h-5 w-5" />
+              <span>Buyers</span>
+            </Button>
+          </Link>
+          <Link href="/admin/sellers">
+            <Button variant="ghost" className="w-full justify-start gap-3 font-normal">
+              <ShoppingCart className="h-5 w-5" />
+              <span>Sellers</span>
+            </Button>
+          </Link>
+          <Button
+            variant="ghost"
+            className="w-full justify-start gap-3 font-normal"
+            onClick={() => router.push('/admin/viewprofile')}
+          >
+            <Eye className="h-5 w-5" />
+            <span>View Profile</span>
+          </Button>
+          <Button
+            variant="ghost"
+            className="w-full justify-start gap-3 font-normal text-red-600 hover:text-red-700 hover:bg-red-50"
+            onClick={handleLogout}
+          >
+            <LogOut className="h-5 w-5" />
+            <span>Sign Out</span>
+          </Button>
+        </nav>
+      </div>
+    );
+  }
+
+  // Helper to get image src with cache busting only for real URLs
+  function getProfileImageSrc(src?: string | null) {
+    if (!src) return undefined;
+    if (src.startsWith('data:')) return src;
+    return src + `?cb=${Date.now()}`;
+  }
+
+  return (
+    <div className="flex min-h-screen bg-gray-50">
+<div className="w-64 bg-white border-r border-gray-200 p-6 flex flex-col">
+        <div className="mb-8">
+          <Link href="/seller/dashboard">
+            <Image src="/logo.svg" alt="CIM Amplify Logo" width={150} height={50} className="h-auto" />
+          </Link>
+        </div>
+        <nav className="flex-1 flex flex-col gap-4">
+      <Link href="/admin/dashboard">
+            <Button variant="ghost" className="w-full justify-start gap-3 font-normal bg-teal-100 text-teal-700 hover:bg-teal-200">
+              <Handshake className="h-5 w-5" />
+              <span>  Deals</span>
+            </Button>
+          </Link>
+          <Link href="/admin/buyers">
+            <Button variant="ghost" className="w-full justify-start gap-3 font-normal">
+              <Tag className="h-5 w-5" />
+              <span>Buyers</span>
+            </Button>
+          </Link>
+          <Link href="/admin/sellers">
+            <Button variant="ghost" className="w-full justify-start gap-3 font-normal">
+              <ShoppingCart className="h-5 w-5" />
+              <span>Sellers</span>
+            </Button>
+          </Link>
+          <Button
+            variant="ghost"
+            className="w-full justify-start gap-3 font-normal"
+            onClick={() => router.push('/admin/viewprofile')}
+          >
+            <Eye className="h-5 w-5" />
             <span>View Profile</span>
           </Button>
           <Button
@@ -909,10 +879,19 @@ export default function DealManagementDashboard() {
             </div>
             <div className="flex items-center gap-3">
               <div className="text-right">
-                <div className="font-medium flex items-center">Admin</div>
+                <div className="font-medium flex items-center">{adminProfile?.fullName || "Admin"}</div>
               </div>
               <div className="relative h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center text-white font-medium overflow-hidden">
-                <span>AD</span>
+                {adminProfile?.profilePicture ? (
+                  <img
+                    src={getProfileImageSrc(adminProfile.profilePicture)}
+                    alt={adminProfile.fullName || "User"}
+                    className="h-full w-full object-cover"
+                    key={adminProfile.profilePicture}
+                  />
+                ) : (
+                  <span>{adminProfile?.fullName ? adminProfile.fullName.charAt(0) : "A"}</span>
+                )}
               </div>
             </div>
           </div>
@@ -1084,7 +1063,19 @@ export default function DealManagementDashboard() {
                           Activity
                         </Button>
                         <Button
-                          className="bg-primary hover:primary px-4 py-2 mr-2 ml-3"
+                          className="bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 hover:text-black px-4 py-2 ml-3"
+                          style={{ minWidth: 110 }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOffMarketClick(deal);
+                          }}
+                          disabled={offMarketLoading && offMarketDeal?._id === deal._id}
+                        >
+                          Off Market
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="px-4 py-2 mr-2 ml-3"
                           onClick={() => handleEditDeal(deal)}
                         >
                           Edit
@@ -1299,7 +1290,8 @@ export default function DealManagementDashboard() {
                           Activity
                         </Button>
                         <Button
-                          className="bg-primary hover:primary px-4 py-2 mr-2 ml-3"
+                          variant="outline"
+                          className="px-4 py-2 mr-2 ml-3"
                           onClick={() => handleEditDeal(deal)}
                         >
                           Edit
@@ -1601,6 +1593,31 @@ export default function DealManagementDashboard() {
           disabled={deleteLoading}
         >
           {deleteLoading ? 'Deleting...' : 'Delete'}
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
+)}
+{offMarketDeal && (
+  <Dialog open={!!offMarketDeal} onOpenChange={() => setOffMarketDeal(null)}>
+    <DialogContent>
+      <DialogHeader>
+        <DialogTitle>Mark Deal as Off Market</DialogTitle>
+      </DialogHeader>
+      <div className="py-4 text-gray-700">
+        Are you sure you want to mark <span className="font-semibold">{offMarketDeal.title}</span> as Off Market? This will move the deal to Off Market tab and mark it as completed.
+      </div>
+      {offMarketError && <div className="text-red-500 mb-2">{offMarketError}</div>}
+      <DialogFooter>
+        <Button variant="outline" onClick={() => setOffMarketDeal(null)} disabled={offMarketLoading}>
+          Cancel
+        </Button>
+        <Button
+          className="bg-teal-500 hover:bg-teal-600 text-white"
+          onClick={handleConfirmOffMarket}
+          disabled={offMarketLoading}
+        >
+          {offMarketLoading ? 'Processing...' : 'Confirm Off Market'}
         </Button>
       </DialogFooter>
     </DialogContent>

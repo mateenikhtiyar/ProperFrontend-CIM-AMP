@@ -1272,7 +1272,7 @@ export default function SellerFormPage() {
       const dealData: any = {
         title: formData.dealTitle,
         companyDescription: formData.companyDescription,
-        companyType: formData.companyType.length > 0 ? formData.companyType.join(", ") : "Other",
+        companyType: formData.companyType.length > 0 ? formData.companyType : ["Other"],
         dealType: "acquisition",
         status: "draft",
         visibility: selectedReward || "seed",

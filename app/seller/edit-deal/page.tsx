@@ -1227,7 +1227,7 @@ const handleCheckboxChange = (
         industrySector: formData.industrySelections[0] || "",
         geographySelection: formData.geographySelections[0] || "",
         yearsInBusiness: formData.yearsInBusiness,
-        companyType: Array.isArray(formData.companyType) ? formData.companyType.join(", ") : "",
+        companyType: Array.isArray(formData.companyType) ? formData.companyType : [],
         financialDetails: {
           trailingRevenueCurrency: formData.currency,
           trailingRevenueAmount: formData.trailingRevenue,

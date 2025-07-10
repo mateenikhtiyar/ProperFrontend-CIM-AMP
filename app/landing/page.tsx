@@ -1164,6 +1164,7 @@ useEffect(() => {
                   </a>
                 </li>
                 <li onClick={()=>{router.push("/about")}}>
+              
                   <a  className="text-gray-600 hover:text-teal-600 cursor-pointer transition-colors duration-300 block py-1">
                     About
                   </a>

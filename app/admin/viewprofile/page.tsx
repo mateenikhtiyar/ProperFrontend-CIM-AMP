@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 import {
+  
   Building2,
   BarChart3,
   FileText,
@@ -23,47 +24,28 @@ import {
   TrendingUp,
   TrendingDown,
   DollarSign,
+  
   Clock,
+ 
   Plus,
   UserPlus,
   Shield,
   Database,
-  Activity,
+  Activity
 } from "lucide-react";
 
-import Image from "next/image";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+import Image from "next/image"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { useSearchParams, useRouter } from "next/navigation";
-import { useAuth } from "@/contexts/auth-context";
-import Link from "next/link";
+import { useSearchParams, useRouter } from "next/navigation"
+import { useAuth } from "@/contexts/auth-context"
+import Link from "next/link"
+import { Tag, ShoppingCart, Eye as EyeIcon } from "lucide-react";
 
-// Dummy data
-const dummyProfile = {
-  id: "1",
-  fullName: "Admin",
-  email: "admin@gmail.com",
-  phoneNumber: "+1 (555) 123-4567",
-  title: "Senior Administrator",
-  companyName: "Tech Solutions Inc.",
-  website: "https://techsolutions.com",
-  location: "New York, NY",
-  profilePicture: null,
-};
+
 
 const EDITABLE_FIELDS = [
   "fullName",
@@ -74,11 +56,11 @@ const EDITABLE_FIELDS = [
   "title",
 ];
 
-// Define types for profile and editValues
-interface Profile {
-  id: string;
-  fullName: string;
-  email: string;
+// Types for profile and editValues
+interface AdminProfile {
+  id?: string;
+  fullName?: string;
+  email?: string;
   phoneNumber?: string;
   title?: string;
   companyName?: string;
@@ -88,17 +70,11 @@ interface Profile {
   role?: string;
 }
 
-interface ValidationErrors {
-  email?: string;
-  website?: string;
-  [key: string]: string | undefined;
-}
-
 export default function ViewProfilePage() {
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [editValues, setEditValues] = useState<Profile | null>(null);
+const [profile, setProfile] = useState<AdminProfile | null>(null);
+const [editValues, setEditValues] = useState<AdminProfile | null>(null);
 const [loading, setLoading] = useState(true);
-  const [editMode, setEditMode] = useState(false);
+
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [passwordData, setPasswordData] = useState({
     currentPassword: "",
@@ -112,37 +88,41 @@ const [loading, setLoading] = useState(true);
   });
   const [updating, setUpdating] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
-  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
+  const [validationErrors, setValidationErrors] = useState({});
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState("");
 
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const router = useRouter();
-  const { logout } = useAuth();
+  const fileInputRef = useRef(null);
+    const router = useRouter()
+    const { logout } = useAuth()
+   
 
+// Utility to fetch admin profile
+const fetchAdminProfile = async () => {
+  setLoading(true);
+  try {
+    const token = localStorage.getItem("token");
+    const res = await fetch("http://localhost:3001/admin/profile", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+    if (!res.ok) throw new Error("Failed to fetch profile");
+    const data = await res.json();
+    setProfile(data);
+    setEditValues(data);
+  } catch (error) {
+    setProfile(null);
+    setEditValues(null);
+  } finally {
+    setLoading(false);
+  }
+};
+
+// useEffect to fetch profile on mount
 useEffect(() => {
-  const fetchProfile = async () => {
-    setLoading(true);
-    try {
-      const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:3001/auth/admin/profile", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-      if (!res.ok) throw new Error("Failed to fetch profile");
-      const data = await res.json();
-      setProfile(data);
-      setEditValues(data);
-    } catch (error) {
-      setProfile(null);
-      setEditValues(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-  fetchProfile();
+  fetchAdminProfile();
 }, []);
 
   const showToast = (message: string, type: string = "success") => {
@@ -165,109 +145,100 @@ useEffect(() => {
   };
 
   const validateFields = () => {
-    const errors: ValidationErrors = {};
-    if (
-      editValues?.email &&
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editValues.email.trim())
-    ) {
+    const errors: Record<string, string> = {};
+    if (editValues && editValues.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editValues.email.trim())) {
       errors.email = "Please enter a valid email address";
     }
-    if (editValues?.website && !validateWebsite(editValues.website)) {
+    if (editValues && editValues.website && !validateWebsite(editValues.website)) {
       errors.website = "Website must be a valid URL (e.g., https://example.com)";
     }
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
-  const handleEditToggle = () => {
-    if (editMode) {
-      setEditValues(profile);
-      setValidationErrors({});
-    }
-    setEditMode(!editMode);
-  };
+  // Removed unused handleEditToggle and editMode
 
-  const handleSaveAll = async () => {
-    if (!validateFields()) {
-      showToast("Please fix the errors before saving", "error");
-      return;
-    }
-    setUpdating(true);
-    // Simulate API call
-    setTimeout(() => {
-      if (!editValues) return;
-      const updatePayload = {
-        fullName: editValues.fullName?.trim() || "",
-        email: editValues.email?.trim() || "",
-        companyName: editValues.companyName?.trim() || "",
-        phoneNumber: editValues.phoneNumber?.trim() || "",
-        website: editValues.website?.trim() || "",
-        title: editValues.title?.trim() || "",
-      };
-      setProfile({
-        ...(profile || {}),
-        ...updatePayload,
-        id: profile?.id || "",
-      });
-      setEditValues({
-        ...(profile || {}),
-        ...updatePayload,
-        id: profile?.id || "",
-      });
-      setEditMode(false);
-      setValidationErrors({});
-      setUpdating(false);
-      showToast("Profile updated successfully");
-    }, 1000);
-  };
+  // Removed unused handleSaveAll
 
-  const handleProfilePictureUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  
+
+  const handleProfilePictureUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
     if (!file.type.match(/image\/(jpeg|jpg|png|gif)/i)) {
       showToast("Only image files (JPG, JPEG, PNG, GIF) are allowed.", "error");
       return;
     }
+
     if (file.size > 5 * 1024 * 1024) {
       showToast("File size should not exceed 5MB.", "error");
       return;
     }
+
     setUploadingImage(true);
-    // Simulate upload
-    setTimeout(() => {
+
+    try {
+      // Convert image to base64
       const reader = new FileReader();
-      reader.onload = (e) => {
-        const result = (e.target && e.target.result) || null;
-        const newProfile = { ...(profile || {}), profilePicture: result };
-        setProfile(newProfile as Profile);
-        setEditValues(newProfile as Profile);
+      reader.onload = async (e) => {
+        const base64Image = e.target?.result;
+        // Prevent uploading the same image
+        if (profile?.profilePicture && profile.profilePicture === base64Image) {
+          showToast("This image is already set as your profile picture.", "error");
+          setUploadingImage(false);
+          return;
+        }
+        // Send to backend
+        const token = localStorage.getItem("token");
+        const res = await fetch("http://localhost:3001/admin/profile", {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ profilePicture: base64Image }),
+        });
+        if (!res.ok) {
+          showToast("Failed to update profile picture", "error");
+          setUploadingImage(false);
+          return;
+        }
+        // Always re-fetch profile after upload to get the latest image
+        await fetchAdminProfile();
         setUploadingImage(false);
         showToast("Profile picture uploaded successfully");
       };
       reader.readAsDataURL(file);
-    }, 1000);
+    } catch (error) {
+      setUploadingImage(false);
+      showToast("Failed to upload image", "error");
+    }
   };
 
   const triggerFileInput = () => {
-    fileInputRef.current?.click();
+    (fileInputRef.current as HTMLInputElement | null)?.click();
   };
 
    const handleLogout = () => {
-    logout();
-    router.push("/admin/login");
-  };
+    logout()
+    router.push("/admin/login")
+  }
+
+// Helper to get image src with cache busting only for real URLs
+function getProfileImageSrc(src?: string | null) {
+  if (!src) return undefined;
+  if (src.startsWith('data:')) return src;
+  return src + `?cb=${Date.now()}`;
+}
 
   return (
     <div className="flex min-h-screen bg-gray-50">
       {/* Toast Notification */}
       {toastMessage && (
-        <div
-          className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg ${
-            toastType === "error"
-              ? "bg-red-500 text-white"
-              : "bg-green-500 text-white"
-          }`}
-        >
+        <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg ${
+          toastType === "error" ? "bg-red-500 text-white" : "bg-green-500 text-white"
+        }`}>
           {toastMessage}
         </div>
       )}
@@ -275,67 +246,45 @@ useEffect(() => {
       {/* Sidebar */}
       <div className="w-64 bg-white border-r border-gray-200 p-6 flex flex-col">
         <div className="mb-8">
-          <Link href="/admin/dashboard">
-            <Image
-              src="/logo.svg"
-              alt="CIM Amplify Logo"
-              width={150}
-              height={50}
-              className="h-auto"
-            />
+          <Link href="/seller/dashboard">
+            <Image src="/logo.svg" alt="CIM Amplify Logo" width={150} height={50} className="h-auto" />
           </Link>
         </div>
-
         <nav className="flex-1 flex flex-col gap-4">
-              <Link href="/admin/dashboard">
-          <Button
-            variant="secondary"
-         className="w-full justify-start gap-3 font-normal"
-          >
-            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path
-                d="M16.5 6L12 1.5L7.5 6M3.75 8.25H20.25M5.25 8.25V19.5C5.25 19.9142 5.58579 20.25 6 20.25H18C18.4142 20.25 18.75 19.9142 18.75 19.5V8.25"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            <span>Deals</span>
-          </Button>
+            <Link href="/admin/dashboard">
+            <Button variant="ghost" className="w-full justify-start gap-3 font-normal">
+              <Handshake className="h-5 w-5" />
+              <span>  Deals</span>
+            </Button>
           </Link>
-
           <Link href="/admin/buyers">
             <Button variant="ghost" className="w-full justify-start gap-3 font-normal">
-              <Users className="h-5 w-5" />
+              <Tag className="h-5 w-5" />
               <span>Buyers</span>
             </Button>
           </Link>
-
           <Link href="/admin/sellers">
             <Button variant="ghost" className="w-full justify-start gap-3 font-normal">
-              <Clock className="h-5 w-5" />
+              <ShoppingCart className="h-5 w-5" />
               <span>Sellers</span>
             </Button>
           </Link>
-
           <Button
             variant="ghost"
-       className="w-full justify-start gap-3 font-normal bg-teal-100 text-teal-700 hover:bg-teal-200"
-            onClick={() => router.push("/admin/ViewProfile")}
+            className="w-full justify-start gap-3 font-normal bg-teal-100 text-teal-700 hover:bg-teal-200"
+            onClick={() => router.push('/admin/viewprofile')}
           >
-            <Clock className="h-5 w-5" />
-            <span>ViewProfile</span>
+            <Eye className="h-5 w-5" />
+            <span>View Profile</span>
           </Button>
-
-       <Button
-                  variant="ghost"
-                  className="w-full justify-start gap-3 font-normal text-red-600 hover:text-red-700 hover:bg-red-50"
-                  onClick={handleLogout}
-                >
-                  <LogOut className="h-5 w-5" />
-                  <span>Sign Out</span>
-                </Button>
+          <Button
+            variant="ghost"
+            className="w-full justify-start gap-3 font-normal text-red-600 hover:text-red-700 hover:bg-red-50"
+            onClick={handleLogout}
+          >
+            <LogOut className="h-5 w-5" />
+            <span>Sign Out</span>
+          </Button>
         </nav>
       </div>
 
@@ -347,8 +296,7 @@ useEffect(() => {
 
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-3">
-              {/* Uncomment below for edit mode functionality
-              {!editMode ? (
+              {/* {!editMode ? (
                 <button
                   onClick={handleEditToggle}
                   className="flex items-center gap-2 bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition-colors"
@@ -373,17 +321,18 @@ useEffect(() => {
                     Cancel
                   </button>
                 </div>
-              )}
-              */}
+              )} */}
+
               <div className="text-right">
                 <div className="font-medium">{profile?.fullName || "User"}</div>
               </div>
               <div className="relative h-10 w-10 rounded-full bg-gray-300 overflow-hidden flex items-center justify-center text-white font-medium">
                 {profile?.profilePicture ? (
                   <img
-                    src={profile.profilePicture}
+                    src={getProfileImageSrc(profile.profilePicture)}
                     alt={profile.fullName || "User"}
                     className="h-full w-full object-cover"
+                    key={profile.profilePicture}
                   />
                 ) : (
                   <span>
@@ -403,9 +352,10 @@ useEffect(() => {
               <div className="relative h-40 w-40 rounded-lg bg-gray-200 overflow-hidden shrink-0">
                 {profile?.profilePicture ? (
                   <img
-                    src={profile.profilePicture}
+                    src={getProfileImageSrc(profile.profilePicture)}
                     alt={profile?.fullName || "Profile"}
                     className="h-40 w-40 rounded-lg object-cover"
+                    key={profile.profilePicture}
                   />
                 ) : (
                   <div className="h-40 w-40 rounded-lg bg-gray-300 flex items-center justify-center text-gray-500 text-4xl font-bold">
@@ -434,10 +384,12 @@ useEffect(() => {
 
               {/* Profile Info */}
            <div className="flex-1 flex flex-col justify-center space-y-3 text-gray-800 text-sm">
-  <div className="flex items-center gap-2">
-    <span className="font-medium w-24">Company</span>
-    <span>CIM Amplify</span>
+             <div className="flex items-center gap-2">
+    <span className="font-medium w-24">Name</span>
+    <span>Admin</span>
   </div>
+  
+  
   <div className="flex items-center gap-2">
     <span className="font-medium w-24">Email:</span>
     <span>{profile?.email}</span>
@@ -451,6 +403,8 @@ useEffect(() => {
           </div>
         </div>
       </div>
+
+     
     </div>
   );
 }
