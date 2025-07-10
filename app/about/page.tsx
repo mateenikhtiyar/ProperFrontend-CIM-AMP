@@ -48,6 +48,32 @@ export default function HomePage() {
         }
     };
 
+    // Enhanced button animation variants
+    const buttonVariants = {
+        initial: { 
+            scale: 1, 
+            boxShadow: "0 4px 14px 0 rgba(0, 118, 255, 0.15)" 
+        },
+        hover: { 
+            scale: 1.05,
+            boxShadow: "0 8px 25px 0 rgba(0, 118, 255, 0.25)",
+            transition: {
+                type: "spring",
+                stiffness: 300,
+                damping: 20,
+                mass: 1
+            }
+        },
+        tap: { 
+            scale: 0.98,
+            transition: {
+                type: "spring",
+                stiffness: 400,
+                damping: 25
+            }
+        }
+    };
+
     return (
         <div className="min-h-screen bg-white" ref={ref}>
        <style jsx>{`
@@ -101,6 +127,45 @@ export default function HomePage() {
 
     .card-reveal.visible {
         opacity: 1;
+        transform: translateY(0);
+    }
+
+    /* Enhanced button styles */
+    .hero-button {
+        position: relative;
+        overflow: hidden;
+        background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+        border: none;
+        border-radius: 12px;
+        padding: 16px 32px;
+        font-size: 18px;
+        font-weight: 600;
+        color: white;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .hero-button::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: left 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .hero-button:hover::before {
+        left: 100%;
+    }
+
+    .hero-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 30px rgba(20, 184, 166, 0.4);
+    }
+
+    .hero-button:active {
         transform: translateY(0);
     }
 `}</style>
@@ -166,7 +231,7 @@ export default function HomePage() {
                     <motion.div
                         initial={{ scale: 1.2, opacity: 0 }}
                         animate={{ scale: 1, opacity: 0.8 }}
-                        transition={{ duration: 2, ease: [0.4, 0, 0.2, 1] }} // Increased duration from 1.5 to 2
+                        transition={{ duration: 2, ease: [0.4, 0, 0.2, 1] }}
                     >
                         <Image
                             src="/map.png"
@@ -181,10 +246,10 @@ export default function HomePage() {
 
                 <div className="container mx-auto px-6 text-center relative z-10">
                     <motion.div 
-                        className="h-[500px] mx-auto relative flex items-center justify-center mt-8"
+                        className="h-[500px] mx-auto relative flex items-center justify-center"
                         initial={{ scale: 0.8, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
-                        transition={{ duration: 1.5, ease: [0.4, 0, 0.2, 1] }} // Increased duration from 1 to 1.5
+                        transition={{ duration: 1.5, ease: [0.4, 0, 0.2, 1] }}
                     >
                         <Image
                             src="/pic6.png"
@@ -216,7 +281,7 @@ export default function HomePage() {
                         variants={containerVariants}
                         initial="hidden"
                         whileInView="visible"
-                        viewport={{ margin: "-100px" }} // Removed once: true
+                        viewport={{ margin: "-100px" }}
                     >
                         <motion.p 
                             variants={itemVariants}

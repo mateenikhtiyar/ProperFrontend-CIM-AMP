@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
+import { Tag, ShoppingCart, Handshake } from "lucide-react";
 import Link from "next/link"
 import {
   Eye,
@@ -39,6 +40,27 @@ interface Buyer {
   profileId?: string;
 }
 
+// Add AdminProfile type
+interface AdminProfile {
+  id?: string;
+  fullName?: string;
+  email?: string;
+  phoneNumber?: string;
+  title?: string;
+  companyName?: string;
+  website?: string;
+  location?: string;
+  profilePicture?: string | null;
+  role?: string;
+}
+
+// Helper to get image src with cache busting only for real URLs
+function getProfileImageSrc(src?: string | null) {
+  if (!src) return undefined;
+  if (src.startsWith('data:')) return src;
+  return src + `?cb=${Date.now()}`;
+}
+
 export default function BuyersManagementDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -46,6 +68,22 @@ export default function BuyersManagementDashboard() {
   const [loading, setLoading] = useState(true);
   const router = useRouter()
   const { logout } = useAuth()
+
+  // Add admin profile state
+  const [adminProfile, setAdminProfile] = useState<AdminProfile | null>(null);
+  useEffect(() => {
+    const fetchAdminProfile = async () => {
+      const token = localStorage.getItem("token");
+      const res = await fetch("http://localhost:3001/admin/profile", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAdminProfile(data);
+      }
+    };
+    fetchAdminProfile();
+  }, []);
 
   useEffect(() => {
     const fetchBuyers = async () => {
@@ -139,53 +177,33 @@ export default function BuyersManagementDashboard() {
             <Image src="/logo.svg" alt="CIM Amplify Logo" width={150} height={50} className="h-auto" />
           </Link>
         </div>
-
         <nav className="flex-1 flex flex-col gap-4">
-          <Button
-            variant="ghost"
-            className="w-full justify-start gap-3 font-normal"
-            onClick={() => router.push("/admin/dashboard")}
-          >
-            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path
-                d="M16.5 6L12 1.5L7.5 6M3.75 8.25H20.25M5.25 8.25V19.5C5.25 19.9142 5.58579 20.25 6 20.25H18C18.4142 20.25 18.75 19.9142 18.75 19.5V8.25"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            <span>Deals</span>
-          </Button>
-
+             <Link href="/admin/dashboard">
+            <Button variant="ghost" className="w-full justify-start gap-3 font-normal">
+              <Handshake className="h-5 w-5" />
+              <span>  Deals</span>
+            </Button>
+          </Link>
           <Link href="/admin/buyers">
-            <Button
-              variant="secondary"
-              className="w-full justify-start gap-3 font-normal bg-teal-100 text-teal-700 hover:bg-teal-200"
-            >
-              <Users className="h-5 w-5" />
+            <Button variant="ghost" className="w-full justify-start gap-3 font-normal bg-teal-100 text-teal-700 hover:bg-teal-200">
+              <Tag className="h-5 w-5" />
               <span>Buyers</span>
             </Button>
           </Link>
-
+          <Link href="/admin/sellers">
+            <Button variant="ghost" className="w-full justify-start gap-3 font-normal">
+              <ShoppingCart className="h-5 w-5" />
+              <span>Sellers</span>
+            </Button>
+          </Link>
           <Button
             variant="ghost"
             className="w-full justify-start gap-3 font-normal"
-            onClick={() => router.push("/admin/sellers")}
+            onClick={() => router.push('/admin/viewprofile')}
           >
-            <Clock className="h-5 w-5" />
-            <span>Sellers</span>
+            <Eye className="h-5 w-5" />
+            <span>View Profile</span>
           </Button>
-
-           <Button
-                      variant="ghost"
-                      className="w-full justify-start gap-3 font-normal"
-                      onClick={() => router.push("/admin/viewprofile")}
-                    >
-                      <Clock className="h-5 w-5" />
-                      <span>ViewProfile</span>
-                    </Button>
-
           <Button
             variant="ghost"
             className="w-full justify-start gap-3 font-normal text-red-600 hover:text-red-700 hover:bg-red-50"
@@ -217,12 +235,19 @@ export default function BuyersManagementDashboard() {
       
                   <div className="flex items-center gap-3">
                     <div className="text-right">
-                      <div className="font-medium flex items-center">
-                        Admin
-                      </div>
+                      <div className="font-medium flex items-center">{adminProfile?.fullName || "Admin"}</div>
                     </div>
                     <div className="relative h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center text-white font-medium overflow-hidden">
-                      <img className="h-full w-full object-cover" />
+                      {adminProfile?.profilePicture ? (
+                        <img
+                          src={getProfileImageSrc(adminProfile.profilePicture)}
+                          alt={adminProfile.fullName || "User"}
+                          className="h-full w-full object-cover"
+                          key={adminProfile.profilePicture}
+                        />
+                      ) : (
+                        <span>{adminProfile?.fullName ? adminProfile.fullName.charAt(0) : "A"}</span>
+                      )}
                     </div>
                   </div>
                 </div>

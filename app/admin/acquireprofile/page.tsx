@@ -1903,8 +1903,8 @@ const fetchAdminProfile = async (id: string) => {
                       type="radio"
                       id="capital_fund"
                       name="capitalEntity"
-                      value="ready to deploy"
-                      checked={formData.capitalEntity === "ready to deploy"}
+                      value="Ready to deploy immediately"
+                      checked={formData.capitalEntity === "Ready to deploy immediately"}
                       onChange={(e) =>
                         handleChange("capitalEntity", e.target.value)
                       }
@@ -1922,8 +1922,8 @@ const fetchAdminProfile = async (id: string) => {
                       type="radio"
                       id="capital_holding"
                       name="capitalEntity"
-                      value="need to raise"
-                      checked={formData.capitalEntity === "need to raise"}
+                      value="Need to raise"
+                      checked={formData.capitalEntity === "Need to raise"}
                       onChange={(e) =>
                         handleChange("capitalEntity", e.target.value)
                       }
