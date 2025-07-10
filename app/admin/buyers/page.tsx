@@ -74,7 +74,7 @@ export default function BuyersManagementDashboard() {
   useEffect(() => {
     const fetchAdminProfile = async () => {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:3001/admin/profile", {
+      const res = await fetch("https://api.cimamplify.com/admin/profile", {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -90,7 +90,7 @@ export default function BuyersManagementDashboard() {
       setLoading(true);
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch("http://localhost:3001/buyers/all", {
+        const res = await fetch("https://api.cimamplify.com/buyers/all", {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -137,7 +137,7 @@ export default function BuyersManagementDashboard() {
     if (!window.confirm("Are you sure you want to delete this Buyer?")) return;
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:3001/admin/buyers/${buyerId}`, {
+      const res = await fetch(`https://api.cimamplify.com/admin/buyers/${buyerId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,

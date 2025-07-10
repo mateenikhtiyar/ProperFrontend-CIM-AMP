@@ -91,7 +91,7 @@ export default function SellersManagementDashboard() {
         if (!token) {
           throw new Error("No authentication token found");
         }
-        const res = await fetch("http://localhost:3001/sellers", {
+        const res = await fetch("https://api.cimamplify.com/sellers", {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -111,7 +111,7 @@ export default function SellersManagementDashboard() {
         setSellers(sellersData);
 
         // Fetch total deals from /deals endpoint for validation
-        const dealsRes = await fetch("http://localhost:3001/deals", {
+        const dealsRes = await fetch("https://api.cimamplify.com/deals", {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -146,7 +146,7 @@ export default function SellersManagementDashboard() {
   useEffect(() => {
     const fetchAdminProfile = async () => {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:3001/admin/profile", {
+      const res = await fetch("https://api.cimamplify.com/admin/profile", {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -225,7 +225,7 @@ export default function SellersManagementDashboard() {
       delete (body as any).activeDealsCount;
       delete (body as any).offMarketDealsCount;
       if (!editSeller) throw new Error("No seller selected");
-      const res = await fetch(`http://localhost:3001/sellers/${editSeller._id || editSeller.id}`, {
+      const res = await fetch(`https://api.cimamplify.com/sellers/${editSeller._id || editSeller.id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -259,7 +259,7 @@ export default function SellersManagementDashboard() {
       if (!token) {
         throw new Error("No authentication token found");
       }
-      const res = await fetch(`http://localhost:3001/sellers/${sellerId}`, {
+      const res = await fetch(`https://api.cimamplify.com/sellers/${sellerId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
