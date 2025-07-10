@@ -506,6 +506,20 @@ export default function AcquireProfilePage() {
         return value === undefined || value === ""
           ? "This field is required"
           : null;
+      case "targetCriteria.revenueMin":
+        return value === undefined || value === "" ? "Minimum revenue is required" : null;
+      case "targetCriteria.revenueMax":
+        return value === undefined || value === "" ? "Maximum revenue is required" : null;
+      case "targetCriteria.ebitdaMin":
+        return value === undefined || value === "" ? "Minimum EBITDA is required" : null;
+      case "targetCriteria.ebitdaMax":
+        return value === undefined || value === "" ? "Maximum EBITDA is required" : null;
+      case "targetCriteria.transactionSizeMin":
+        return value === undefined || value === "" ? "Minimum transaction size is required" : null;
+      case "targetCriteria.transactionSizeMax":
+        return value === undefined || value === "" ? "Maximum transaction size is required" : null;
+      case "targetCriteria.revenueGrowth":
+        return value === undefined || value === "" ? "Minimum 3 Year Average Revenue Growth is required" : null;
       default:
         return null;
     }
@@ -1262,6 +1276,8 @@ export default function AcquireProfilePage() {
         "Maximum transaction size cannot be less than minimum transaction size";
     }
 
+    errors["targetCriteria.revenueGrowth"] = validateField("targetCriteria.revenueGrowth", formData.targetCriteria.revenueGrowth) || "";
+
     // Update the fieldErrors state
     setFieldErrors(errors);
 
@@ -1856,8 +1872,8 @@ export default function AcquireProfilePage() {
                       type="radio"
                       id="capital_fund"
                       name="capitalEntity"
-                      value="ready to deploy"
-                      checked={formData.capitalEntity === "ready to deploy"}
+                      value="Ready to deploy immediately"
+                      checked={formData.capitalEntity === "Ready to deploy immediately"}
                       onChange={(e) =>
                         handleChange("capitalEntity", e.target.value)
                       }
@@ -1875,8 +1891,8 @@ export default function AcquireProfilePage() {
                       type="radio"
                       id="capital_holding"
                       name="capitalEntity"
-                      value="need to raise"
-                      checked={formData.capitalEntity === "need to raise"}
+                      value="Need to raise"
+                      checked={formData.capitalEntity === "Need to raise"}
                       onChange={(e) =>
                         handleChange("capitalEntity", e.target.value)
                       }
@@ -2266,7 +2282,7 @@ export default function AcquireProfilePage() {
                       htmlFor="revenueMin"
                       className="text-[#667085] text-sm w-10"
                     >
-                      Min
+                      Min <span className="text-red-500">*</span>
                     </Label>
                     <div className="relative flex-1">
                       <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500">
@@ -2303,6 +2319,7 @@ export default function AcquireProfilePage() {
                             );
                           }
                         }}
+                        required
                       />
                       {fieldErrors["targetCriteria.revenueMin"] && (
                         <p className="text-red-500 text-sm mt-1">
@@ -2316,7 +2333,7 @@ export default function AcquireProfilePage() {
                       htmlFor="revenueMax"
                       className="text-[#667085] text-sm w-10"
                     >
-                      Max
+                      Max <span className="text-red-500">*</span>
                     </Label>
                     <div className="relative flex-1">
                       <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500">
@@ -2353,6 +2370,7 @@ export default function AcquireProfilePage() {
                             );
                           }
                         }}
+                        required
                       />
                       {fieldErrors["targetCriteria.revenueMax"] && (
                         <p className="text-red-500 text-sm mt-1">
@@ -2382,7 +2400,7 @@ export default function AcquireProfilePage() {
                       htmlFor="ebitdaMin"
                       className="text-[#667085] text-sm w-10"
                     >
-                      Min
+                      Min <span className="text-red-500">*</span>
                     </Label>
                     <div className="relative flex-1">
                       <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500">
@@ -2419,6 +2437,7 @@ export default function AcquireProfilePage() {
                             );
                           }
                         }}
+                        required
                       />
                       {fieldErrors["targetCriteria.ebitdaMin"] && (
                         <p className="text-red-500 text-sm mt-1">
@@ -2432,7 +2451,7 @@ export default function AcquireProfilePage() {
                       htmlFor="ebitdaMax"
                       className="text-[#667085] text-sm w-10"
                     >
-                      Max
+                      Max <span className="text-red-500">*</span>
                     </Label>
                     <div className="relative flex-1">
                       <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500">
@@ -2446,6 +2465,7 @@ export default function AcquireProfilePage() {
                       </div>
                       <Input
                         id="ebitdaMax"
+                        required
                         type="text"
                         className={`border-[#d0d5dd] ${
                           formData.selectedCurrency.length > 2
@@ -2469,6 +2489,7 @@ export default function AcquireProfilePage() {
                             );
                           }
                         }}
+                        required
                       />
                       {fieldErrors["targetCriteria.ebitdaMax"] && (
                         <p className="text-red-500 text-sm mt-1">
@@ -2498,7 +2519,7 @@ export default function AcquireProfilePage() {
                       htmlFor="transactionSizeMin"
                       className="text-[#667085] text-sm w-10"
                     >
-                      Min
+                      Min <span className="text-red-500">*</span>
                     </Label>
                     <div className="relative flex-1">
                       <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500">
@@ -2535,6 +2556,7 @@ export default function AcquireProfilePage() {
                             );
                           }
                         }}
+                        required
                       />
                       {fieldErrors["targetCriteria.transactionSizeMin"] && (
                         <p className="text-red-500 text-sm mt-1">
@@ -2548,7 +2570,7 @@ export default function AcquireProfilePage() {
                       htmlFor="transactionSizeMax"
                       className="text-[#667085] text-sm w-10"
                     >
-                      Max
+                      Max <span className="text-red-500">*</span>
                     </Label>
                     <div className="relative flex-1">
                       <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500">
@@ -2562,6 +2584,7 @@ export default function AcquireProfilePage() {
                       </div>
                       <Input
                         id="transactionSizeMax"
+                        required
                         type="text"
                         className={`border-[#d0d5dd] ${
                           formData.selectedCurrency.length > 2
@@ -2585,6 +2608,7 @@ export default function AcquireProfilePage() {
                             );
                           }
                         }}
+                        required
                       />
                       {fieldErrors["targetCriteria.transactionSizeMax"] && (
                         <p className="text-red-500 text-sm mt-1">
@@ -2607,28 +2631,26 @@ export default function AcquireProfilePage() {
 
               <div>
                 <Label className="text-[#667085] text-sm mb-1.5 block">
-                  Minimum 3 Year Average Revenue Growth (%)
+                  Minimum 3 Year Average Revenue Growth (%) <span className="text-red-500">*</span>
                 </Label>
                 <div className="flex items-center">
                   <Input
                     id="revenueGrowth"
                     type="text"
-                    className="border-[#d0d5dd]"
-                    value={formatNumberWithCommas(
-                      formData.targetCriteria.revenueGrowth
-                    )}
+                    className={`border-[#d0d5dd] ${fieldErrors["targetCriteria.revenueGrowth"] ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                    value={formatNumberWithCommas(formData.targetCriteria.revenueGrowth)}
                     onChange={(e) => {
                       const value = e.target.value.replace(/,/g, "");
                       if (value === "" || /^\d+$/.test(value)) {
-                        handleNestedChange(
-                          "targetCriteria",
-                          "revenueGrowth",
-                          value ? Number(value) : undefined
-                        );
+                        handleNestedChange("targetCriteria", "revenueGrowth", value ? Number(value) : undefined);
                       }
                     }}
+                    required
                   />
                 </div>
+                {fieldErrors["targetCriteria.revenueGrowth"] && (
+                  <p className="text-red-500 text-sm mt-1">{fieldErrors["targetCriteria.revenueGrowth"]}</p>
+                )}
               </div>
 
               <div>
