@@ -367,8 +367,8 @@ export default function EditDealPageFixed() {
         managementPreferences: dealData.managementPreferences || "",
         capitalAvailability: capitalAvailabilityArray,
         companyType: [...new Set(companyTypeArray)],
-        minPriorAcquisitions: dealData.buyerFit?.minPriorAcquisitions || 0,
-        minTransactionSize: dealData.buyerFit?.minTransactionSize || 0,
+        minPriorAcquisitions: dealData.buyerFit?.minPriorAcquisitions ?? undefined,
+        minTransactionSize: dealData.buyerFit?.minTransactionSize ?? undefined,
         documents: [],
         t12FreeCashFlow: dealData.financialDetails?.t12FreeCashFlow || 0,
         t12NetIncome: dealData.financialDetails?.t12NetIncome || 0,
@@ -524,7 +524,7 @@ const handleNumberChange = (
   e: React.ChangeEvent<HTMLInputElement>,
   fieldName: keyof SellerFormData
 ) => {
-  const value = e.target.value === "" ? 0 : Number.parseFloat(e.target.value);
+  const value = e.target.value === "" ? undefined : Number.parseFloat(e.target.value);
   setFormData((prev) => ({ ...prev, [fieldName]: value }));
 };
 
