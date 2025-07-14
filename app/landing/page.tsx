@@ -1103,32 +1103,20 @@ useEffect(() => {
       </section>
       {/* Footer CTA */}
  {/* Footer CTA */}
-  <footer className="footer-background bg-gray-50 py-16 border-t border-gray-200">
+ {/* Footer CTA */}
+      <footer className="footer-background bg-gray-50 py-16 border-t border-gray-200">
         <div className="container mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
             {/* Company Info */}
-            <div 
-              data-animate
-              id="footer-company"
-              className={`footer-section col-span-1 md:col-span-2 ${
-                isVisible['footer-company'] ? 'animate-slideInLeft animate-in' : ''
-              }`}
-            >
+            <div className="footer-section col-span-1 md:col-span-2">
               <div className="mb-6">
-             
                 <p className="text-gray-600 leading-relaxed max-w-md">
                   CIM Amplify's mission is to help Entrepreneurs and Investors get the{' '}
                   <span className="text-teal-600 font-semibold">"Brass Ring"</span> of selling their company. 
                   Our owner group have all sold significant companies which changed our lives forever.
                 </p>
               </div>
-              <div 
-                data-animate
-                id="footer-social"
-                className={`${
-                  isVisible['footer-social'] ? 'animate-scaleIn animate-delay-300 animate-in' : ''
-                }`}
-              >
+              <div>
                 <a 
                   href="#" 
                   className="inline-flex items-center justify-center w-12 h-12 bg-white rounded-full shadow-md text-gray-600 border border-gray-200 hover:bg-teal-50 hover:text-teal-600 hover:border-teal-300 transition-all duration-300"
@@ -1139,13 +1127,7 @@ useEffect(() => {
             </div>
 
             {/* Quick Links */}
-            <div 
-              data-animate
-              id="footer-links"
-              className={`footer-section ${
-                isVisible['footer-links'] ? 'animate-fadeInUp animate-delay-200 animate-in' : ''
-              }`}
-            >
+            <div className="footer-section">
               <h3 className="text-lg font-semibold text-gray-900 mb-6">Quick Links</h3>
               <ul className="space-y-4">
                 <li>
@@ -1164,8 +1146,7 @@ useEffect(() => {
                   </a>
                 </li>
                 <li onClick={()=>{router.push("/about")}}>
-              
-                  <a  className="text-gray-600 hover:text-teal-600 cursor-pointer transition-colors duration-300 block py-1">
+                  <a className="text-gray-600 hover:text-teal-600 cursor-pointer transition-colors duration-300 block py-1">
                     About
                   </a>
                 </li>
@@ -1175,38 +1156,26 @@ useEffect(() => {
             {/* Actions & Support */}
             <div className="space-y-8">
               {/* Actions */}
-              <div 
-                data-animate
-                id="footer-actions"
-                className={`footer-section ${
-                  isVisible['footer-actions'] ? 'animate-slideInRight animate-delay-400 animate-in' : ''
-                }`}
-              >
+              <div className="footer-section">
                 <h3 className="text-lg font-semibold text-gray-900 mb-6 cursor-pointer">Actions</h3>
-               <div className="space-y-4">
-  <div 
-    onClick={() => router.push("/buyer/register")}
-    className="text-teal-600 hover:text-teal-700 hover:bg-teal-50 block py-2 px-3 rounded-lg font-semibold cursor-pointer text-lg transition-all duration-300"
-  >
-    Buyer registration
-  </div>
-  <div 
-    onClick={() => router.push("/seller/login")}
-    className="text-teal-600 hover:text-teal-700 hover:bg-teal-50 block py-2 px-3 rounded-lg font-semibold cursor-pointer text-lg transition-all duration-300"
-  >
-    Add a Deal
-  </div>
-</div>
+                <div className="space-y-4">
+                  <div 
+                    onClick={() => router.push("/buyer/register")}
+                    className="text-teal-600 hover:text-teal-700 hover:bg-teal-50 block py-2 px-3 rounded-lg font-semibold cursor-pointer text-lg transition-all duration-300"
+                  >
+                    Buyer registration
+                  </div>
+                  <div 
+                    onClick={() => router.push("/seller/login")}
+                    className="text-teal-600 hover:text-teal-700 hover:bg-teal-50 block py-2 px-3 rounded-lg font-semibold cursor-pointer text-lg transition-all duration-300"
+                  >
+                    Add a Deal
+                  </div>
+                </div>
               </div>
 
               {/* Support */}
-              <div 
-                data-animate
-                id="footer-support"
-                className={`footer-section ${
-                  isVisible['footer-support'] ? 'animate-slideInRight animate-delay-500 animate-in' : ''
-                }`}
-              >
+              <div className="footer-section">
                 <h3 className="text-lg font-semibold text-gray-900 mb-6">Support</h3>
                 <ul className="space-y-4">
                   <li>
@@ -1220,22 +1189,10 @@ useEffect(() => {
           </div>
 
           {/* Divider */}
-          <div 
-            data-animate
-            id="footer-divider"
-            className={`footer-divider ${
-              isVisible['footer-divider'] ? 'animate-fadeIn animate-delay-600 animate-in' : ''
-            }`}
-          />
+          <div className="footer-divider" />
 
           {/* Copyright */}
-          <div 
-            data-animate
-            id="footer-copyright"
-            className={`text-center ${
-              isVisible['footer-copyright'] ? 'animate-fadeInUp animate-delay-700 animate-in' : ''
-            }`}
-          >
+          <div className="text-center">
             <p className="text-gray-500 text-sm">
               © 2025 CIM Amplify. All rights reserved.
             </p>
