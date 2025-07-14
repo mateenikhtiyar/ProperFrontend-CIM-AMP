@@ -13,6 +13,7 @@ export default function HomePage() {
     const router = useRouter();
     const ref = useRef(null);
     
+    
     // Scroll-based animations
     const { scrollYProgress } = useScroll({
         target: ref,
@@ -73,6 +74,13 @@ export default function HomePage() {
             }
         }
     };
+    const buttonY = useTransform(scrollYProgress, [0, 0.3], [0, -10]);
+const buttonScale = useTransform(scrollYProgress, [0, 0.1, 0.3], [1, 1.05, 1.02]);
+const buttonShadow = useTransform(
+    scrollYProgress,
+    [0, 0.2],
+    ["0 4px 14px rgba(0, 0, 0, 0.1)", "0 8px 25px rgba(20, 184, 166, 0.3)"]
+);
 
     return (
         <div className="min-h-screen bg-white" ref={ref}>
@@ -222,100 +230,129 @@ export default function HomePage() {
     </div>
 </header>
 
-            {/* Hero Section */}
-            <motion.section 
-                className="bg-gradient-to-b from-gray-50/30 to-white relative overflow-hidden"
-                style={{ opacity: heroOpacity, y: heroTranslateY }}
+           
+{/* Hero Section */}
+<motion.section 
+    className="bg-gradient-to-b from-gray-50/30 to-white relative overflow-hidden"
+    style={{ opacity: heroOpacity, y: heroTranslateY }}
+>
+    <div className="absolute inset-0 flex items-center justify-center opacity-80">
+        <motion.div
+            initial={{ scale: 1.2, opacity: 0 }}
+            animate={{ scale: 1, opacity: 0.8 }}
+            transition={{ duration: 2, ease: [0.4, 0, 0.2, 1] }}
+        >
+            <Image
+                src="/map.png"
+                alt="World map background"
+                width={1300}
+                height={600}
+                className="object-contain"
+                priority
+            />
+        </motion.div>
+    </div>
+
+    <div className="container mx-auto px-6 text-center relative z-10">
+        <motion.div 
+            className="h-[500px] mx-auto relative flex items-center justify-center"
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 1.5, ease: [0.4, 0, 0.2, 1] }}
+        >
+            <Image
+                src="/pic6.png"
+                alt="Golden brass ring"
+                width={500}
+                height={400}
+                className="object-contain drop-shadow-2xl image-scale"
+                priority
+            />
+        </motion.div>
+
+        <motion.h1 
+            className="text-5xl lg:text-6xl font-bold text-gray-900 mb-8 leading-tight"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+        >
+            <motion.span variants={itemVariants}>
+                Seriously, John, You're Starting
+            </motion.span>
+            <motion.span variants={itemVariants}>
+                <br />
+                Another Company?!
+            </motion.span>
+        </motion.h1>
+
+        <motion.div 
+            className="max-w-5xl mx-auto mb-10 section-reveal"
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ margin: "-100px" }}
+        >
+            <motion.p 
+                variants={itemVariants}
+                className="text-lg text-gray-600 leading-relaxed mb-8"
             >
-                <div className="absolute inset-0 flex items-center justify-center opacity-80">
-                    <motion.div
-                        initial={{ scale: 1.2, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 0.8 }}
-                        transition={{ duration: 2, ease: [0.4, 0, 0.2, 1] }}
-                    >
-                        <Image
-                            src="/map.png"
-                            alt="World map background"
-                            width={1300}
-                            height={600}
-                            className="object-contain"
-                            priority
-                        />
-                    </motion.div>
-                </div>
+                Greetings, John Martinez, a lifelong entrepreneur. From childhood ventures like lemonade stands to movies
+                and selling books to successfully establishing and selling two major companies, entrepreneurship has
+                always been my driving force. Even though CIM Amplify is my idea, I am supported by an excellent team that
+                is excited to help business owners to sell their companies.
+            </motion.p>
 
-                <div className="container mx-auto px-6 text-center relative z-10">
-                    <motion.div 
-                        className="h-[500px] mx-auto relative flex items-center justify-center"
-                        initial={{ scale: 0.8, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        transition={{ duration: 1.5, ease: [0.4, 0, 0.2, 1] }}
-                    >
-                        <Image
-                            src="/pic6.png"
-                            alt="Golden brass ring"
-                            width={500}
-                            height={400}
-                            className="object-contain drop-shadow-2xl image-scale"
-                            priority
-                        />
-                    </motion.div>
+            <motion.div 
+                variants={itemVariants}
+                className="bg-teal-50 border border-teal-100 rounded-lg p-6 mb-8"
+            >
+                <p className="text-teal-800 font-semibold text-lg">
+                    CIM Amplify was built with the singular mission of helping business owners get the "Brass Ring" of
+                    selling their companies.
+                </p>
+            </motion.div>
 
-                    <motion.h1 
-                        className="text-5xl lg:text-6xl font-bold text-gray-900 mb-8 leading-tight"
-                        variants={containerVariants}
-                        initial="hidden"
-                        animate="visible"
-                    >
-                        <motion.span variants={itemVariants}>
-                            Seriously, John, You're Starting
-                        </motion.span>
-                        <motion.span variants={itemVariants}>
-                            <br />
-                            Another Company?!
-                        </motion.span>
-                    </motion.h1>
-
-                    <motion.div 
-                        className="max-w-5xl mx-auto mb-10 section-reveal"
-                        variants={containerVariants}
-                        initial="hidden"
-                        whileInView="visible"
-                        viewport={{ margin: "-100px" }}
-                    >
-                        <motion.p 
-                            variants={itemVariants}
-                            className="text-lg text-gray-600 leading-relaxed mb-8"
-                        >
-                            Greetings, John Martinez, a lifelong entrepreneur. From childhood ventures like lemonade stands to movies
-                            and selling books to successfully establishing and selling two major companies, entrepreneurship has
-                            always been my driving force. Even though CIM Amplify is my idea, I am supported by an excellent team that
-                            is excited to help business owners to sell their companies.
-                        </motion.p>
-
-                        <motion.div 
-                            variants={itemVariants}
-                            className="bg-teal-50 border border-teal-100 rounded-lg p-6 mb-8"
-                        >
-                            <p className="text-teal-800 font-semibold text-lg">
-                                CIM Amplify was built with the singular mission of helping business owners get the "Brass Ring" of
-                                selling their companies.
-                            </p>
-                        </motion.div>
-
-                        <motion.div variants={itemVariants}>
-                            <motion.button
-                            onClick={()=>router.push("/seller/register")}
-                                className="bg-primary hover:bg-teal-700 text-white px-8 py-4 text-lg font-semibold rounded-md"
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                            >
-                                Let's do some deals!
-                            </motion.button>
-                        </motion.div>
-                    </motion.div>
-                </div>
-            </motion.section>
+            <motion.div variants={itemVariants}>
+                <motion.button
+                    onClick={() => router.push("/seller/register")}
+                    className="bg-primary hover:bg-teal-700 text-white px-8 py-4 text-lg font-semibold rounded-md"
+                    style={{
+                        y: buttonY,
+                        scale: buttonScale,
+                        boxShadow: buttonShadow
+                    }}
+                    whileHover={{ 
+                        scale: 1.08,
+                        y: -5,
+                        boxShadow: "0 12px 30px rgba(20, 184, 166, 0.4)",
+                        transition: { 
+                            duration: 0.3, 
+                            ease: "easeOut",
+                            type: "spring",
+                            stiffness: 300
+                        }
+                    }}
+                    whileTap={{ 
+                        scale: 0.95,
+                        transition: { 
+                            duration: 0.1,
+                            type: "spring",
+                            stiffness: 400
+                        }
+                    }}
+                    transition={{
+                        type: "spring",
+                        stiffness: 100,
+                        damping: 15,
+                        mass: 0.8
+                    }}
+                >
+                    Let's do some deals!
+                </motion.button>
+            </motion.div>
+        </motion.div>
+    </div>
+</motion.section>
 
             {/* Brass Ring Section */}
             <motion.section 
@@ -666,110 +703,92 @@ export default function HomePage() {
             </motion.section>
 
             {/* Footer */}
-            <motion.footer 
-                className="bg-gray-100 py-16 section-reveal"
-                variants={containerVariants}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ margin: "-100px" }} // Removed once: true
-            >
-                <div className="container mx-auto px-6">
-                    <motion.div 
-                        className="grid md:grid-cols-4 gap-8 max-w-6xl mx-auto"
-                        variants={containerVariants}
-                    >
-                        <motion.div 
-                            variants={itemVariants}
-                            className="md:col-span-2"
-                        >
-                            <div className="flex items-center space-x-3 mb-6">
-                                <Image 
-                                    src="/logo.svg" 
-                                    alt="CIM Amplify Logo" 
-                                    width={150} 
-                                    height={50} 
-                                    className="h-auto" 
-                                />
-                            </div>
-                            <p className="text-gray-400 leading-relaxed max-w-md">
-                                CIM Amplify's mission is to help entrepreneurs and advisors get the "Brass Ring" of selling their
-                                company. Our owner group have all sold significant companies which has changed our lives forever.
-                            </p>
-                        </motion.div>
-                        <motion.div variants={itemVariants}>
-                            <h4 className="font-semibold text-lg mb-4 ">Quick Links</h4>
-                          <ul className="space-y-3">
-  <motion.li>
-    <ul className="space-y-4"> {/* Apply spacing between buttons */}
-      <li>
-        <a onClick={(e) => {
-                        e.preventDefault();
-                        router.push("/landing#benefits");
-                    }}  className="text-gray-400 hover:text-primary transition-colors cursor-pointer">
-          Benefits
-        </a>
-      </li>
-      <li>
-        <a onClick={(e) => {
-                        e.preventDefault();
-                        router.push("/landing#how-it-works");
-                    }}  className="text-gray-400 hover:text-primary transition-colors cursor-pointer">
-          How it Works
-        </a>
-      </li>
-      <li>
-        <a onClick={(e) => {
-                        e.preventDefault();
-                        router.push("/landing#guidelines");
-                    }}  className="text-gray-400 hover:text-primary transition-colors cursor-pointer">
-          Guidelines
-        </a>
-      </li>
-      <li>
-        <a onClick={(e) => {
-                        e.preventDefault();
-                        router.push("/about");
-                    }}  className="text-gray-400 hover:text-primary transition-colors cursor-pointer">
-          About
-        </a>
-      </li>
-    </ul>
-  </motion.li>
-</ul>
-
-                        </motion.div>
-                        <motion.div variants={itemVariants}>
-                            <h4 className="font-semibold text-lg mb-4">Actions</h4>
-                            <ul className="space-y-3">
-                                <motion.li 
-                                    variants={itemVariants}
-                                    onClick={() => router.push("/select-role")}
-                                >
-                                    <a href="#" className="text-gray-400 hover:text-primary transition-colors">
-                                        Member Login
-                                    </a>
-                                </motion.li>
-                                <motion.li 
-                                    variants={itemVariants}
-                                    onClick={() => router.push("/seller/login")}
-                                >
-                                    <a href="#" className="text-gray-400 hover:text-primary transition-colors">
-                                        Start Selling
-                                    </a>
-                                </motion.li>
-                            </ul>
-                            <h4 className="font-semibold text-lg mb-4 mt-8">Support</h4>
-                            <ul className="space-y-3">
-                                <motion.li variants={itemVariants}>
-                                    <a href="#" className="text-gray-400 hover:text-primary transition-colors">
-                                        Contact Us
-                                    </a>
-                                </motion.li>
-                            </ul>
-                        </motion.div>
-                    </motion.div>
+          {/* Footer */}
+<footer className="bg-gray-100 py-16">
+    <div className="container mx-auto px-6">
+        <div className="grid md:grid-cols-4 gap-8 max-w-6xl mx-auto">
+            <div className="md:col-span-2">
+                <div className="flex items-center space-x-3 mb-6">
+                    <Image 
+                        src="/logo.svg" 
+                        alt="CIM Amplify Logo" 
+                        width={150} 
+                        height={50} 
+                        className="h-auto" 
+                    />
                 </div>
-            </motion.footer>
+                <p className="text-gray-400 leading-relaxed max-w-md">
+                    CIM Amplify's mission is to help entrepreneurs and advisors get the "Brass Ring" of selling their
+                    company. Our owner group have all sold significant companies which has changed our lives forever.
+                </p>
+            </div>
+            <div>
+                <h4 className="font-semibold text-lg mb-4">Quick Links</h4>
+                <ul className="space-y-3">
+                    <li>
+                        <ul className="space-y-4">
+                            <li>
+                                <a onClick={(e) => {
+                                    e.preventDefault();
+                                    router.push("/landing#benefits");
+                                }} className="text-gray-400 hover:text-primary transition-colors cursor-pointer">
+                                    Benefits
+                                </a>
+                            </li>
+                            <li>
+                                <a onClick={(e) => {
+                                    e.preventDefault();
+                                    router.push("/landing#how-it-works");
+                                }} className="text-gray-400 hover:text-primary transition-colors cursor-pointer">
+                                    How it Works
+                                </a>
+                            </li>
+                            <li>
+                                <a onClick={(e) => {
+                                    e.preventDefault();
+                                    router.push("/landing#guidelines");
+                                }} className="text-gray-400 hover:text-primary transition-colors cursor-pointer">
+                                    Guidelines
+                                </a>
+                            </li>
+                            <li>
+                                <a onClick={(e) => {
+                                    e.preventDefault();
+                                    router.push("/about");
+                                }} className="text-gray-400 hover:text-primary transition-colors cursor-pointer">
+                                    About
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+            <div>
+                <h4 className="font-semibold text-lg mb-4">Actions</h4>
+                <ul className="space-y-3">
+                    <li onClick={() => router.push("/select-role")}>
+                        <a href="#" className="text-gray-400 hover:text-primary transition-colors">
+                            Member Login
+                        </a>
+                    </li>
+                    <li onClick={() => router.push("/seller/login")}>
+                        <a href="#" className="text-gray-400 hover:text-primary transition-colors">
+                            Start Selling
+                        </a>
+                    </li>
+                </ul>
+                <h4 className="font-semibold text-lg mb-4 mt-8">Support</h4>
+                <ul className="space-y-3">
+                    <li>
+                        <a href="#" className="text-gray-400 hover:text-primary transition-colors">
+                            Contact Us
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</footer>
         </div>
     )
 }

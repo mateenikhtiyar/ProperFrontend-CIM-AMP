@@ -14,10 +14,16 @@ interface Deal {
   id: string
   title: string
   description: string
+  industrySector: string
+  geographySelection: string
   buyersActive: number
   buyersPassed: number
-  updatedAt: string // changed from Date to string
+  updatedAt: string
   finalSalePrice: string | null
+  avgRevenueGrowth?: number
+  trailingEBITDAAmount?: number
+  closedWithBuyerCompany?: string
+  closedWithBuyerEmail?: string
 }
 
 function DealCard({ deal }: { deal: Deal }) {
@@ -27,6 +33,28 @@ function DealCard({ deal }: { deal: Deal }) {
       <p className="text-gray-600 text-sm mb-4">{deal.description}</p>
       <div className="space-y-2 text-sm">
         <div>
+          <span className="text-gray-500">Industry Sector: </span>
+          <span className="font-medium text-gray-900">{deal.industrySector || "N/A"}</span>
+        </div>
+        <div>
+          <span className="text-gray-500">Location: </span>
+          <span className="font-medium text-gray-900">{deal.geographySelection || "N/A"}</span>
+        </div>
+        <div>
+          <span className="text-gray-500">Avg Revenue Growth: </span>
+          <span className="font-medium text-gray-900">
+            {deal.avgRevenueGrowth !== undefined ? `${deal.avgRevenueGrowth}%` : "N/A"}
+          </span>
+        </div>
+        <div>
+          <span className="text-gray-500">Trailing EBITDA: </span>
+          <span className="font-medium text-gray-900">
+            {deal.trailingEBITDAAmount !== undefined
+              ? `$${deal.trailingEBITDAAmount.toLocaleString()}`
+              : "N/A"}
+          </span>
+        </div>
+        <div>
           <span className="text-gray-500">Closing Date: </span>
           <span className="font-medium text-gray-900">{deal.updatedAt}</span>
         </div>
@@ -34,6 +62,19 @@ function DealCard({ deal }: { deal: Deal }) {
           <span className="text-gray-500">Final Sale Price: </span>
           <span className="font-medium text-gray-900">{deal.finalSalePrice}</span>
         </div>
+        {/* Show buyer company and email if present */}
+        {deal.closedWithBuyerCompany && (
+          <div>
+            <span className="text-gray-500">Buyer Company: </span>
+            <span className="font-medium text-gray-900">{deal.closedWithBuyerCompany}</span>
+          </div>
+        )}
+        {deal.closedWithBuyerEmail && (
+          <div>
+            <span className="text-gray-500">Buyer Email: </span>
+            <span className="font-medium text-gray-900">{deal.closedWithBuyerEmail}</span>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -68,6 +109,7 @@ export default function DealsHistoryPage() {
 
         if (response.ok) {
           const data = await response.json()
+          console.log("Deals API response:", data);
           setSellerProfile(data)
           setUserProfile({
             fullName: data.fullName,
@@ -102,32 +144,39 @@ export default function DealsHistoryPage() {
 
         if (response.ok) {
           const data = await response.json()
+           console.log("Deals API response:", data); 
           // Map backend fields to frontend Deal interface
-          const mappedDeals: Deal[] = data.map((deal: any, idx: number) => ({
-            id: deal.id || deal._id || `deal-${idx}`,
-            title: deal.title,
-            description: deal.companyDescription,
-            buyersActive: deal.interestedBuyers?.length || 0,
-            buyersPassed:
-              (deal.targetedBuyers?.length || 0) - (deal.interestedBuyers?.length || 0),
-            updatedAt: 
-              deal.timeline?.completedAt
-                ? new Date(deal.timeline.completedAt).toLocaleDateString("en-US", {
-                    year: "numeric",
-                    month: "short",
-                    day: "numeric",
-                  })
-                : deal.updatedAt
-                  ? new Date(deal.updatedAt).toLocaleDateString("en-US", {
-                      year: "numeric",
-                      month: "short",
-                      day: "numeric",
-                    })
-                  : "N/A",
-            finalSalePrice: deal.financialDetails?.finalSalePrice
-              ? deal.financialDetails.finalSalePrice.toLocaleString()
-              : "N/A",
-          }))
+       const mappedDeals: Deal[] = data.map((deal: any, idx: number) => ({
+  id: deal.id || deal._id || `deal-${idx}`,
+  title: deal.title,
+  description: deal.companyDescription,
+  industrySector: deal.industrySector,
+  geographySelection: deal.geographySelection,
+  avgRevenueGrowth: deal.financialDetails?.avgRevenueGrowth,
+  trailingEBITDAAmount: deal.financialDetails?.trailingEBITDAAmount,
+  buyersActive: deal.interestedBuyers?.length || 0,
+  buyersPassed:
+    (deal.targetedBuyers?.length || 0) - (deal.interestedBuyers?.length || 0),
+  updatedAt:
+    deal.timeline?.completedAt
+      ? new Date(deal.timeline.completedAt).toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        })
+      : deal.updatedAt
+      ? new Date(deal.updatedAt).toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        })
+      : "N/A",
+  finalSalePrice: deal.financialDetails?.finalSalePrice
+    ? deal.financialDetails.finalSalePrice.toLocaleString()
+    : "N/A",
+  closedWithBuyerCompany: deal.closedWithBuyerCompany,
+  closedWithBuyerEmail: deal.closedWithBuyerEmail,
+}))
           setDeals(mappedDeals)
         } else {
           setDealsError("Failed to fetch deals")
@@ -256,7 +305,7 @@ export default function DealsHistoryPage() {
                 strokeLinejoin="round"
               />
             </svg>
-            <span>Deals</span>
+            <span>My Deals</span>
           </Button>
 
           <Button

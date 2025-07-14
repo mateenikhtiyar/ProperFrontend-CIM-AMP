@@ -1025,7 +1025,6 @@ const handleCheckboxChange = (
           item.name.toLowerCase().includes(debouncedGeoSearch.toLowerCase()) ||
           item.path.toLowerCase().includes(debouncedGeoSearch.toLowerCase()),
       );
-      // Remove .slice(0, 200) to show all countries
 
     const groupedData = filteredGeoData.reduce(
       (acc, item) => {
@@ -1034,7 +1033,6 @@ const handleCheckboxChange = (
           acc[countryCode] = {
             country: null,
             states: [],
-            cities: [],
           };
         }
 
@@ -1042,40 +1040,26 @@ const handleCheckboxChange = (
           acc[countryCode].country = item;
         } else if (item.type === "state") {
           acc[countryCode].states.push(item);
-        } else if (item.type === "city") {
-          acc[countryCode].cities.push(item);
-        }
+        } // Do not handle cities
 
         return acc;
       },
-      {} as Record<string, { country: GeoItem | null; states: GeoItem[]; cities: GeoItem[] }>,
+      {} as Record<string, { country: GeoItem | null; states: GeoItem[] }>,
     );
-
-    // Remove countryLimit and related message
 
     return (
       <div className="space-y-2 font-poppins">
         {Object.values(groupedData)
-          .filter((group) => group.country || group.states.length > 0 || group.cities.length > 0)
-          // No .slice(0, countryLimit)
+          .filter((group) => group.country || group.states.length > 0)
           .map((group, groupIndex) => {
             if (!group.country) return null;
             const country = group.country;
 
-            const filteredStates = group.states.slice(0, 10);
-            const filteredCities = group.cities.slice(0, 10);
+            const filteredStates = group.states;
 
             return (
               <div key={`country-${country.id}-${groupIndex}`} className="border-b border-gray-100 pb-1">
                 <div className="flex items-center">
-                  <input
-                    type="radio"
-                    id={`geo-${country.id}`}
-                    name="geography"
-                    checked={geoSelection.selectedId === country.id}
-                    onChange={() => selectGeography(country.id, country.name)}
-                    className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9]"
-                  />
                   <div
                     className="flex items-center cursor-pointer flex-1"
                     onClick={() => toggleContinentExpansion(country.id)}
@@ -1085,7 +1069,7 @@ const handleCheckboxChange = (
                     ) : (
                       <ChevronRight className="h-4 w-4 mr-1 text-gray-500" />
                     )}
-                    <Label htmlFor={`geo-${country.id}`} className="text-[#344054] cursor-pointer font-medium">
+                    <Label className="text-[#344054] cursor-pointer font-medium">
                       {country.name}
                     </Label>
                   </div>
@@ -1112,32 +1096,9 @@ const handleCheckboxChange = (
                     ))}
                   </div>
                 )}
-
-                {expandedContinents[country.id] && filteredCities.length > 0 && (
-                  <div className="ml-6 mt-1 space-y-1">
-                    {filteredCities.map((city, cityIndex) => (
-                      <div key={`city-${city.id}-${cityIndex}`} className="pl-4">
-                        <div className="flex items-center">
-                          <input
-                            type="radio"
-                            id={`geo-${city.id}`}
-                            name="geography"
-                            checked={geoSelection.selectedId === city.id}
-                            onChange={() => selectGeography(city.id, city.path)}
-                            className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9]"
-                          />
-                          <Label htmlFor={`geo-${city.id}`} className="text-[#344054] cursor-pointer">
-                            {city.name}
-                          </Label>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
             );
           })}
-        {/* Removed country limit message */}
       </div>
     );
   }

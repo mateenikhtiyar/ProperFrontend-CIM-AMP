@@ -586,12 +586,43 @@ export default function SellerDashboardPage() {
     return numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
   }
 
-  const handleDialogResponse = (key: string, value: boolean) => {
+  const handleDialogResponse = async (key: string, value: boolean) => {
     setOffMarketData((prev) => ({ ...prev, [key]: value }))
     if (key === "dealSold") {
       if (value === false) {
-        // Close dialog if deal didn't sell
-        setOffMarketDialogOpen(false)
+        // Mark deal as off-market
+        if (selectedDealForOffMarket) {
+          try {
+            const token = localStorage.getItem("token")
+            const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+            const response = await fetch(`${apiUrl}/deals/${selectedDealForOffMarket._id}/close-deal`, {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({}),
+            })
+            if (!response.ok) {
+              const errorText = await response.text()
+              throw new Error(errorText || "Failed to close deal")
+            }
+            setDeals((prevDeals) => prevDeals.filter((deal) => deal._id !== selectedDealForOffMarket._id))
+            setOffMarketDialogOpen(false)
+            toast({
+              title: "Deal marked as off-market",
+              description: "The deal has been removed from your active deals.",
+            })
+          } catch (error: any) {
+            toast({
+              title: "Error marking deal off-market",
+              description: error.message || "Failed to mark deal off-market.",
+              variant: "destructive",
+            })
+          }
+        } else {
+          setOffMarketDialogOpen(false)
+        }
       } else {
         // Go to next step if deal sold
         setCurrentDialogStep(2)
@@ -1011,12 +1042,25 @@ export default function SellerDashboardPage() {
                   <DialogTitle className="text-center text-lg font-medium">Did the deal sell?</DialogTitle>
                 </DialogHeader>
                 <div className="flex justify-center gap-4 mt-6">
-                  <Button variant="outline" onClick={() => handleDialogResponse("dealSold", false)} className="px-8">
+                  <Button
+                    variant={offMarketData.dealSold === false ? "default" : "outline"}
+                    onClick={() => handleDialogResponse("dealSold", false)}
+                    className={
+                      offMarketData.dealSold === false
+                        ? "px-8 bg-red-500 text-white hover:bg-red-600 border-red-500"
+                        : "px-8 bg-white text-red-500 border border-red-500 hover:bg-red-50"
+                    }
+                  >
                     No
                   </Button>
                   <Button
+                    variant={offMarketData.dealSold === true ? "default" : "outline"}
                     onClick={() => handleDialogResponse("dealSold", true)}
-                    className="px-8 bg-teal-500 hover:bg-teal-600"
+                    className={
+                      offMarketData.dealSold === true
+                        ? "px-8 bg-teal-500 text-white hover:bg-teal-600 border-teal-500"
+                        : "px-8 bg-white text-teal-500 border border-teal-500 hover:bg-teal-50"
+                    }
                   >
                     Yes
                   </Button>
@@ -1074,7 +1118,11 @@ export default function SellerDashboardPage() {
                           buyerFromCIM: false,
                         }))
                       }
-                      className="flex-1"
+                      className={
+                        offMarketData.buyerFromCIM === false
+                          ? "flex-1 bg-red-500 text-white hover:bg-red-600 border-red-500"
+                          : "flex-1 bg-white text-red-500 border border-red-500 hover:bg-red-50"
+                      }
                     >
                       No
                     </Button>
@@ -1086,7 +1134,11 @@ export default function SellerDashboardPage() {
                           buyerFromCIM: true,
                         }))
                       }
-                      className="flex-1 bg-teal-500 hover:bg-teal-600 text-white hover:text-white"
+                      className={
+                        offMarketData.buyerFromCIM === true
+                          ? "flex-1 bg-teal-500 text-white hover:bg-teal-600 border-teal-500"
+                          : "flex-1 bg-white text-teal-500 border border-teal-500 hover:bg-teal-50"
+                      }
                     >
                       Yes
                     </Button>
