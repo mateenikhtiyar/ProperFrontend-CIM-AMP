@@ -594,7 +594,7 @@ export default function SellerDashboardPage() {
         if (selectedDealForOffMarket) {
           try {
             const token = localStorage.getItem("token")
-            const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+            const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
             const response = await fetch(`${apiUrl}/deals/${selectedDealForOffMarket._id}/close-deal`, {
               method: "POST",
               headers: {
