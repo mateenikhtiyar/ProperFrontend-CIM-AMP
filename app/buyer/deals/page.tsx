@@ -1086,79 +1086,52 @@ export default function DealsPage() {
 
                     <div className="p-4">
                       {/* Overview */}
-                      <h4 className="mb-2 font-medium text-gray-800">
-                        Overview
-                      </h4>
+                      {activeTab === "active" ? (
+                        <h4 className="mb-2 font-medium text-gray-800"><strong>Overview</strong></h4>
+                      ) : (
+                        <h4 className="mb-2 font-medium text-gray-800">Overview</h4>
+                      )}
                       <div className="mb-4 space-y-1 text-sm text-gray-600">
-                        <p>Industry: {deal.industry}</p>
-                        <p>Geography: {deal.geography}</p>
-                        <p>
-                          Number of Years in Business: {deal.yearsInBusiness}
-                        </p>
-                        <p>Business Model: {deal.businessModel}</p>
-                        <p>Company Description: {deal.companyDescription}</p>
-                        <p>Management Future Preferences: {deal.managementPreferences || 'Not specified'}</p>
+                        <p><strong>Industry:</strong> {deal.industry}</p>
+                        <p><strong>Geography:</strong> {deal.geography}</p>
+                        <p><strong>Number of Years in Business:</strong> {deal.yearsInBusiness}</p>
+                        <p><strong>Business Model:</strong> {deal.businessModel}</p>
+                        <p><strong>Company Description:</strong> {deal.companyDescription}</p>
+                        <p><strong>Management Future Preferences:</strong> {deal.managementPreferences || 'Not specified'}</p>
                       </div>
 
                       {/* Financial */}
-                      <h4 className="mb-2 font-medium text-gray-800">
-                        Financial
-                      </h4>
+                      {activeTab === "active" ? (
+                        <h4 className="mb-2 font-medium text-gray-800"><strong>Financial</strong></h4>
+                      ) : (
+                        <h4 className="mb-2 font-medium text-gray-800">Financial</h4>
+                      )}
                       <div className="mb-4 grid grid-cols-2 gap-2 text-sm text-gray-600">
-                        <p>
-                          Trailing 12-Month Revenue:{" "}
-                          {deal.trailingRevenueCurrency}
-                          {deal.trailingRevenue.toLocaleString()}
-                        </p>
-                        <p>
-                          Trailing 12-Month EBITDA:{" "}
-                          {deal.trailingEbitdaCurrency}
-                          {deal.trailingEbitda.toLocaleString()}
-                        </p>
-                        <p>
-                          T12 Free Cash Flow: {deal.trailingRevenueCurrency}
-                          {deal.t12FreeCashFlow && deal.t12FreeCashFlow >= 0
-                            ? deal.t12FreeCashFlow.toLocaleString()
-                            : "Not provided"}
-                        </p>
-                        <p>
-                          T12 Net Income: {deal.trailingRevenueCurrency}
-                          {deal.t12NetIncome && deal.t12NetIncome >= 0
-                            ? deal.t12NetIncome.toLocaleString()
-                            : "Not provided"}
-                        </p>
-                        <p>
-                          Average 3-Year Revenue Growth:{" "}
-                          {deal.averageGrowth.toLocaleString()} %
-                        </p>
-                        <p>
-                          Net Income: {deal.trailingRevenueCurrency}
-                          {deal.netIncome && deal.netIncome >= 0
-                            ? deal.netIncome.toLocaleString()
-                            : "Not provided"}
-                        </p>
-                        <p>
-                          Asking Price: {deal.trailingRevenueCurrency}
-                          {deal.askingPrice && deal.askingPrice >= 0
-                            ? deal.askingPrice.toLocaleString()
-                            : "Not provided"}
-                        </p>
+                        <p><strong>Trailing 12-Month Revenue:</strong> {deal.trailingRevenueCurrency} {deal.trailingRevenue.toLocaleString()}</p>
+                        <p><strong>Trailing 12-Month EBITDA:</strong> {deal.trailingEbitdaCurrency} {deal.trailingEbitda.toLocaleString()}</p>
+                        <p><strong>T12 Free Cash Flow:</strong> {deal.trailingRevenueCurrency} {deal.t12FreeCashFlow && deal.t12FreeCashFlow >= 0 ? deal.t12FreeCashFlow.toLocaleString() : "Not provided"}</p>
+                        <p><strong>T12 Net Income:</strong> {deal.trailingRevenueCurrency} {deal.t12NetIncome && deal.t12NetIncome >= 0 ? deal.t12NetIncome.toLocaleString() : "Not provided"}</p>
+                        <p><strong>Average 3-Year Revenue Growth:</strong> {deal.averageGrowth.toLocaleString()} %</p>
+                        <p><strong>Net Income:</strong> {deal.trailingRevenueCurrency} {deal.netIncome && deal.netIncome >= 0 ? deal.netIncome.toLocaleString() : "Not provided"}</p>
+                        <p><strong>Asking Price:</strong> {deal.trailingRevenueCurrency} {deal.askingPrice && deal.askingPrice >= 0 ? deal.askingPrice.toLocaleString() : "Not provided"}</p>
                       </div>
 
                       {/* Seller Information */}
-                      <h4 className="mb-2 font-medium text-gray-800">
-                        Seller Information
-                      </h4>
+                      {activeTab === "active" ? (
+                        <h4 className="mb-2 font-medium text-gray-800"><strong>Seller Information</strong></h4>
+                      ) : (
+                        <h4 className="mb-2 font-medium text-gray-800">Seller Information</h4>
+                      )}
                       {activeTab === "active" ? (
                         !sellerIdStr || !sellerInfoMap[sellerIdStr] ? (
                           <div className="mb-4 text-sm text-gray-500 italic">Loading seller info...</div>
                         ) : (
                           <div className="mb-4 text-sm text-gray-600 space-y-1">
-                            <p>Name: {sellerInfo.name}</p>
-                            <p>Email: {sellerInfo.email}</p>
-                            <p>Phone: {sellerInfo.phoneNumber}</p>
-                            <p>Company Name: {(sellerInfo as { companyName: string }).companyName || 'N/A'}</p>
-                            <p>Website: {(sellerInfo as { website: string }).website || 'N/A'}</p>
+                            <p><strong>Name:</strong> {sellerInfo.name}</p>
+                            <p><strong>Email:</strong> {sellerInfo.email}</p>
+                            <p><strong>Phone:</strong> {sellerInfo.phoneNumber}</p>
+                            <p><strong>Company Name:</strong> {(sellerInfo as { companyName: string }).companyName || 'N/A'}</p>
+                            <p><strong>Website:</strong> {(sellerInfo as { website: string }).website || 'N/A'}</p>
                           </div>
                         )
                       ) : (
@@ -1168,9 +1141,11 @@ export default function DealsPage() {
                       )}
 
                       {/* 📄 Document Section */}
-                      <h4 className="mb-2 font-medium text-gray-800">
-                        Documents
-                      </h4>
+                      {activeTab === "active" ? (
+                        <h4 className="mb-2 font-medium text-gray-800"><strong>Documents</strong></h4>
+                      ) : (
+                        <h4 className="mb-2 font-medium text-gray-800">Documents</h4>
+                      )}
                       {/*active tab*/}
                       {activeTab === "active" ? (
                         <div className="mb-4 text-sm text-gray-600">
@@ -1182,9 +1157,7 @@ export default function DealsPage() {
                                   className="flex items-center justify-between border border-gray-200 p-2 rounded-md"
                                 >
                                   <div className="flex flex-col">
-                                    <span className="font-medium">
-                                      {doc.originalName || doc.filename}
-                                    </span>
+                                    <span className="font-medium"><strong>{doc.originalName || doc.filename}</strong></span>
                                     <span className="text-xs text-gray-500">
                                       (
                                       {typeof doc.size === "number"
@@ -1272,8 +1245,8 @@ export default function DealsPage() {
         </main>
       </div>
 
-      {/* Terms of Access Modal */}
-      <Dialog open={termsModalOpen} onOpenChange={setTermsModalOpen}>
+{/* Terms of Access Modal */}
+<Dialog open={termsModalOpen} onOpenChange={setTermsModalOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Terms of Access</DialogTitle>
@@ -1283,11 +1256,15 @@ export default function DealsPage() {
               By clicking "Approve" you reaffirm your previous acceptance of the
               STRAIGHT TO CIM MASTER NON-DISCLOSURE AGREEMENT and the CIM
               AMPLIFY MASTER FEE AGREEMENT.
+              <br />
+              <br />
+              Some Advisors require their own NDA.  If this is the case you will find the NDA in documents on the next screen.  Please execute the NDA and return it directly to the Advisor mentioning that your were invited to this deal via CIM Amplify
             </p>
             <p className="text-sm text-gray-600">
               Once you approve, the seller will be notified and can contact you
               directly.
             </p>
+            
           </div>
           <DialogFooter className="sm:justify-between">
             <Button variant="outline" onClick={() => setTermsModalOpen(false)}>

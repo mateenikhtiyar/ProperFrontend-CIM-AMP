@@ -1359,180 +1359,135 @@ const [showAllCountries, setShowAllCountries] = useState(false);
                           </div>
                         </div>
 
-                        {/* Active Buyers */}
-                        {statusSummary.buyersByStatus.active.length > 0 && (
+{/* Active Buyers */}  
+{statusSummary.buyersByStatus.active.length > 0 && (
                           <div className="mb-6">
-                            <h4 className="text-md font-medium mb-3 text-green-700">
-                              Active Buyers
-                            </h4>
+                            <h4 className="text-md font-medium mb-3 text-green-700">Active Buyers</h4>
                             <div className="overflow-x-auto">
-                              <table className="w-full">
+                              <table className="w-full table-fixed">
+                                <colgroup>
+                                  <col className="w-1/4" />
+                                  <col className="w-1/4" />
+                                  <col className="w-1/4" />
+                                  <col className="w-1/4" />
+                                </colgroup>
                                 <thead>
                                   <tr className="text-left border-b border-gray-200">
-                                    <th className="pb-3 font-medium text-gray-600">
-                                      Buyer
-                                    </th>
-                                    <th className="pb-3 font-medium text-gray-600">
-                                      Company
-                                    </th>
-                                    <th className="pb-3 font-medium text-gray-600">
-                                      Status
-                                    </th>
-                                    <th className="pb-3 font-medium text-gray-600">
-                                      Date
-                                    </th>
+                                    <th className="pb-3 font-medium text-gray-600">Buyer</th>
+                                    <th className="pb-3 font-medium text-gray-600">Company</th>
+                                    <th className="pb-3 font-medium text-gray-600">Status</th>
+                                    <th className="pb-3 font-medium text-gray-600">Date</th>
                                   </tr>
                                 </thead>
                                 <tbody>
-                                  {statusSummary.buyersByStatus.active.map(
-                                    (buyer) => (
-                                      <tr
-                                        key={buyer._id}
-                                        className="border-b cursor-pointer  border-gray-100"
-                                        onClick={() => handleBuyerClick(buyer)}
-                                      >
-                                        <td className="py-4">
-                                          <div className="flex items-center">
-                                            <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 mr-3">
-                                              {buyer.buyerName &&
-                                              buyer.buyerName !==
-                                                `Buyer ${buyer.buyerId.slice(
-                                                  -4
-                                                )}` ? (
-                                                buyer.buyerName
-                                                  .charAt(0)
-                                                  .toUpperCase()
-                                              ) : (
-                                                <User className="h-5 w-5" />
-                                              )}
-                                            </div>
-                                            <div>
-                                              <p className="font-medium">
-                                                {buyer.buyerName}
-                                              </p>
-                                              <p className="text-sm text-gray-500">
-                                                {buyer.buyerEmail}
-                                              </p>
-                                            </div>
+                                  {statusSummary.buyersByStatus.active.map((buyer) => (
+                                    <tr key={buyer._id} className="border-b cursor-pointer border-gray-100 hover:bg-gray-50 transition-colors" onClick={() => handleBuyerClick(buyer)}>
+                                      <td className="py-4 pr-4">
+                                        <div className="flex items-center">
+                                          <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 mr-3 flex-shrink-0">
+                                            {buyer.buyerName &&
+                                            buyer.buyerName !== `Buyer ${buyer.buyerId.slice(-4)}` ? (
+                                              buyer.buyerName.charAt(0).toUpperCase()
+                                            ) : (
+                                              <User className="h-5 w-5" />
+                                            )}
                                           </div>
-                                        </td>
-                                        <td className="py-4">
-                                          <span
-                                            className={
-                                              buyer.buyerCompany ===
-                                              "Company not available"
-                                                ? "text-gray-500 text-sm"
-                                                : ""
-                                            }
-                                          >
-                                            {buyer.buyerCompany}
-                                          </span>
-                                        </td>
-                                        <td className="py-4">
-                                          <span
-                                            className={`px-3 py-1 rounded-full text-xs capitalize ${getStatusColor(
-                                              buyer.status
-                                            )}`}
-                                          >
-                                            {buyer.status}
-                                          </span>
-                                        </td>
-                                        <td className="py-4">
-                                          {formatDate(buyer.invitedAt)}
-                                        </td>
-                                      </tr>
-                                    )
-                                  )}
+                                          <div className="min-w-0">
+                                            <p className="font-medium truncate">{buyer.buyerName}</p>
+                                            <p className="text-sm text-gray-500 truncate">{buyer.buyerEmail}</p>
+                                          </div>
+                                        </div>
+                                      </td>
+                                      <td className="py-4 pr-4">
+                                        <span
+                                          className={`truncate block ${
+                                            buyer.companyName === "Company not available" ? "text-gray-500 text-sm" : ""
+                                          }`}
+                                        >
+                                          {buyer.companyName}
+                                        </span>
+                                      </td>
+                                      <td className="py-4 pr-4">
+                                        <span
+                                          className={`px-3 py-1 rounded-full text-xs capitalize whitespace-nowrap ${getStatusColor(
+                                            buyer.status,
+                                          )}`}
+                                        >
+                                          {buyer.status}
+                                        </span>
+                                      </td>
+                                      <td className="py-4 text-sm whitespace-nowrap">{formatDate(buyer.invitedAt)}</td>
+                                    </tr>
+                                  ))}
                                 </tbody>
                               </table>
                             </div>
                           </div>
                         )}
-
                         {/* Pending Buyers */}
                         {statusSummary.buyersByStatus.pending.length > 0 && (
                           <div className="mb-6">
-                            <h4 className="text-md font-medium mb-3 text-blue-700">
-                              Pending Buyers
-                            </h4>
+                            <h4 className="text-md font-medium mb-3 text-blue-700">Pending Buyers</h4>
                             <div className="overflow-x-auto">
-                              <table className="w-full">
+                              <table className="w-full table-fixed">
+                                <colgroup>
+                                  <col className="w-1/4" />
+                                  <col className="w-1/4" />
+                                  <col className="w-1/4" />
+                                  <col className="w-1/4" />
+                                </colgroup>
                                 <thead>
                                   <tr className="text-left border-b border-gray-200">
-                                    <th className="pb-3 font-medium text-gray-600">
-                                      Buyer
-                                    </th>
-                                    <th className="pb-3 font-medium text-gray-600">
-                                      Company
-                                    </th>
-                                    <th className="pb-3 font-medium text-gray-600">
-                                      Status
-                                    </th>
-                                    <th className="pb-3 font-medium text-gray-600">
-                                      Date
-                                    </th>
+                                    <th className="pb-3 font-medium text-gray-600">Buyer</th>
+                                    <th className="pb-3 font-medium text-gray-600">Company</th>
+                                    <th className="pb-3 font-medium text-gray-600">Status</th>
+                                    <th className="pb-3 font-medium text-gray-600">Date</th>
                                   </tr>
                                 </thead>
                                 <tbody>
-                                  {statusSummary.buyersByStatus.pending.map(
-                                    (buyer) => (
-                                      <tr
-                                        key={buyer._id}
-                                        className="border-b cursor-pointer border-gray-100 hover:bg-gray-50 transition-colors"
-                                        onClick={() => handleBuyerClick(buyer)}
-                                      >
-                                        <td className="py-4">
-                                          <div className="flex items-center">
-                                            <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 mr-3">
-                                              {buyer.buyerName &&
-                                              buyer.buyerName !==
-                                                `Buyer ${buyer.buyerId.slice(
-                                                  -4
-                                                )}` ? (
-                                                buyer.buyerName
-                                                  .charAt(0)
-                                                  .toUpperCase()
-                                              ) : (
-                                                <User className="h-5 w-5" />
-                                              )}
-                                            </div>
-                                            <div>
-                                              <p className="font-medium">
-                                                {buyer.buyerName}
-                                              </p>
-                                              <p className="text-sm text-gray-500">
-                                                {buyer.buyerEmail}
-                                              </p>
-                                            </div>
+                                  {statusSummary.buyersByStatus.pending.map((buyer) => (
+                                    <tr
+                                      key={buyer._id}
+                                      className="border-b cursor-pointer border-gray-100 hover:bg-gray-50 transition-colors"
+                                      onClick={() => handleBuyerClick(buyer)}
+                                    >
+                                      <td className="py-4 pr-4">
+                                        <div className="flex items-center">
+                                          <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 mr-3 flex-shrink-0">
+                                            {buyer.buyerName &&
+                                            buyer.buyerName !== `Buyer ${buyer.buyerId.slice(-4)}` ? (
+                                              buyer.buyerName.charAt(0).toUpperCase()
+                                            ) : (
+                                              <User className="h-5 w-5" />
+                                            )}
                                           </div>
-                                        </td>
-                                        <td className="py-4">
-                                          <span
-                                            className={
-                                              buyer.buyerCompany ===
-                                              "Company not available"
-                                                ? "text-gray-500 text-sm"
-                                                : ""
-                                            }
-                                          >
-                                            {buyer.buyerCompany}
-                                          </span>
-                                        </td>
-                                        <td className="py-4">
-                                          <span
-                                            className={`px-3 py-1 rounded-full text-xs capitalize ${getStatusColor(
-                                              buyer.status
-                                            )}`}
-                                          >
-                                            {buyer.status}
-                                          </span>
-                                        </td>
-                                        <td className="py-4">
-                                          {formatDate(buyer.invitedAt)}
-                                        </td>
-                                      </tr>
-                                    )
-                                  )}
+                                          <div className="min-w-0">
+                                            <p className="font-medium truncate">{buyer.buyerName}</p>
+                                            <p className="text-sm text-gray-500 truncate">{buyer.buyerEmail}</p>
+                                          </div>
+                                        </div>
+                                      </td>
+                                      <td className="py-4 pr-4">
+                                        <span
+                                          className={`truncate block ${
+                                            buyer.companyName === "Company not available" ? "text-gray-500 text-sm" : ""
+                                          }`}
+                                        >
+                                          {buyer.companyName}
+                                        </span>
+                                      </td>
+                                      <td className="py-4 pr-4">
+                                        <span
+                                          className={`px-3 py-1 rounded-full text-xs capitalize whitespace-nowrap ${getStatusColor(
+                                            buyer.status,
+                                          )}`}
+                                        >
+                                          {buyer.status}
+                                        </span>
+                                      </td>
+                                      <td className="py-4 text-sm whitespace-nowrap">{formatDate(buyer.invitedAt)}</td>
+                                    </tr>
+                                  ))}
                                 </tbody>
                               </table>
                             </div>
@@ -1740,7 +1695,7 @@ const [showAllCountries, setShowAllCountries] = useState(false);
 </div>
 
 <div>
-  <span className="text-gray-500 font-medium">Target Countries: </span>
+  <span className="text-gray-500 font-medium">Target Geographies: </span>
   <div className="text-gray-900 mt-1">
     {visibleCountries.length > 0 ? (
       <>
@@ -1818,90 +1773,66 @@ const [showAllCountries, setShowAllCountries] = useState(false);
                           </div>
                         )}
 
-                        {/* Rejected Buyers */}
-                        {statusSummary.buyersByStatus.rejected.length > 0 && (
+{/* Rejected Buyers */}
+{statusSummary.buyersByStatus.rejected.length > 0 && (
                           <div>
-                            <h4 className="text-md font-medium mb-3 text-red-700">
-                              Rejected Buyers
-                            </h4>
+                            <h4 className="text-md font-medium mb-3 text-red-700">Rejected Buyers</h4>
                             <div className="overflow-x-auto">
-                              <table className="w-full">
+                              <table className="w-full table-fixed">
+                                <colgroup>
+                                  <col className="w-1/4" />
+                                  <col className="w-1/4" />
+                                  <col className="w-1/4" />
+                                  <col className="w-1/4" />
+                                </colgroup>
                                 <thead>
                                   <tr className="text-left border-b border-gray-200">
-                                    <th className="pb-3 font-medium text-gray-600">
-                                      Buyer
-                                    </th>
-                                    <th className="pb-3 font-medium text-gray-600">
-                                      Company
-                                    </th>
-                                    <th className="pb-3 font-medium text-gray-600">
-                                      Status
-                                    </th>
-                                    <th className="pb-3 font-medium text-gray-600">
-                                      Date
-                                    </th>
+                                    <th className="pb-3 font-medium text-gray-600">Buyer</th>
+                                    <th className="pb-3 font-medium text-gray-600">Company</th>
+                                    <th className="pb-3 font-medium text-gray-600">Status</th>
+                                    <th className="pb-3 font-medium text-gray-600">Date</th>
                                   </tr>
                                 </thead>
                                 <tbody>
-                                  {statusSummary.buyersByStatus.rejected.map(
-                                    (buyer) => (
-                                      <tr
-                                        key={buyer._id}
-                                        className="border-b cursor-pointer border-gray-100"
-                                        onClick={() => handleBuyerClick(buyer)}
-                                      >
-                                        <td className="py-4">
-                                          <div className="flex items-center">
-                                            <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 mr-3">
-                                              {buyer.buyerName &&
-                                              buyer.buyerName !==
-                                                `Buyer ${buyer.buyerId.slice(
-                                                  -4
-                                                )}` ? (
-                                                buyer.buyerName
-                                                  .charAt(0)
-                                                  .toUpperCase()
-                                              ) : (
-                                                <User className="h-5 w-5" />
-                                              )}
-                                            </div>
-                                            <div>
-                                              <p className="font-medium">
-                                                {buyer.buyerName}
-                                              </p>
-                                              <p className="text-sm text-gray-500">
-                                                {buyer.buyerEmail}
-                                              </p>
-                                            </div>
+                                  {statusSummary.buyersByStatus.rejected.map((buyer) => (
+                                    <tr key={buyer._id} className="border-b cursor-pointer border-gray-100 hover:bg-gray-50 transition-colors" onClick={() => handleBuyerClick(buyer)}>
+                                      <td className="py-4 pr-4">
+                                        <div className="flex items-center">
+                                          <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 mr-3 flex-shrink-0">
+                                            {buyer.buyerName &&
+                                            buyer.buyerName !== `Buyer ${buyer.buyerId.slice(-4)}` ? (
+                                              buyer.buyerName.charAt(0).toUpperCase()
+                                            ) : (
+                                              <User className="h-5 w-5" />
+                                            )}
                                           </div>
-                                        </td>
-                                        <td className="py-4">
-                                          <span
-                                            className={
-                                              buyer.buyerCompany ===
-                                              "Company not available"
-                                                ? "text-gray-500 text-sm"
-                                                : ""
-                                            }
-                                          >
-                                            {buyer.buyerCompany}
-                                          </span>
-                                        </td>
-                                        <td className="py-4">
-                                          <span
-                                            className={`px-3 py-1 rounded-full text-xs capitalize ${getStatusColor(
-                                              buyer.status
-                                            )}`}
-                                          >
-                                            {buyer.status}
-                                          </span>
-                                        </td>
-                                        <td className="py-4">
-                                          {formatDate(buyer.invitedAt)}
-                                        </td>
-                                      </tr>
-                                    )
-                                  )}
+                                          <div className="min-w-0">
+                                            <p className="font-medium truncate">{buyer.buyerName}</p>
+                                            <p className="text-sm text-gray-500 truncate">{buyer.buyerEmail}</p>
+                                          </div>
+                                        </div>
+                                      </td>
+                                      <td className="py-4 pr-4">
+                                        <span
+                                          className={`truncate block ${
+                                            buyer.companyName === "Company not available" ? "text-gray-500 text-sm" : ""
+                                          }`}
+                                        >
+                                          {buyer.companyName}
+                                        </span>
+                                      </td>
+                                      <td className="py-4 pr-4">
+                                        <span
+                                          className={`px-3 py-1 rounded-full text-xs capitalize whitespace-nowrap ${getStatusColor(
+                                            buyer.status,
+                                          )}`}
+                                        >
+                                          {buyer.status}
+                                        </span>
+                                      </td>
+                                      <td className="py-4 text-sm whitespace-nowrap">{formatDate(buyer.invitedAt)}</td>
+                                    </tr>
+                                  ))}
                                 </tbody>
                               </table>
                             </div>
