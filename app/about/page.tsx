@@ -232,7 +232,8 @@ const buttonShadow = useTransform(
 
            
 {/* Hero Section */}
-<motion.section 
+{/* Hero Section */}
+{/* <motion.section 
     className="bg-gradient-to-b from-gray-50/30 to-white relative overflow-hidden"
     style={{ opacity: heroOpacity, y: heroTranslateY }}
 >
@@ -281,7 +282,7 @@ const buttonShadow = useTransform(
             </motion.span>
             <motion.span variants={itemVariants}>
                 <br />
-                Another Company?!
+                Another Company?
             </motion.span>
         </motion.h1>
 
@@ -296,10 +297,9 @@ const buttonShadow = useTransform(
                 variants={itemVariants}
                 className="text-lg text-gray-600 leading-relaxed mb-8"
             >
-                Greetings, John Martinez, a lifelong entrepreneur. From childhood ventures like lemonade stands to movies
-                and selling books to successfully establishing and selling two major companies, entrepreneurship has
-                always been my driving force. Even though CIM Amplify is my idea, I am supported by an excellent team that
-                is excited to help business owners to sell their companies.
+             Greetings! I'm John MacInnes, founder of CIM Amplify and a lifelong entrepreneur.
+From childhood ventures like newspaper routes and selling books to successfully establishing and selling two major companies, entrepreneurship has always been my driving force.  I am supported by an excellent team that is excited to help business owners to sell their companies.
+
             </motion.p>
 
             <motion.div 
@@ -352,8 +352,10 @@ const buttonShadow = useTransform(
             </motion.div>
         </motion.div>
     </div>
-</motion.section>
+</motion.section> */}
 
+            {/* Brass Ring Section */}
+           
             {/* Brass Ring Section */}
             <motion.section 
                 className="py-20 bg-white section-reveal mt-8"
@@ -376,17 +378,16 @@ const buttonShadow = useTransform(
                     >
                         <motion.div variants={itemVariants} className="space-y-6">
                             <p className="text-gray-700 text-lg leading-relaxed">
-                                Selling is the <span className="font-bold text-primary">"Brass Ring"</span> of business ownership. We
-                                helped to build great companies that sustain a lot of great people but most of our net worth is tied up
+                                Selling is the <span className="font-bold text-primary">"Brass Ring"</span> of business ownership. Company builders
+                                helped to build great companies that sustain a lot of great people but most of their net worth is tied up
                                 in those companies. It's time to find some liquidity - maybe retire.
                             </p>
                             <p className="text-gray-700 text-lg leading-relaxed">
-                                Since my <span className="font-bold text-primary">"Brass Ring"</span> I have worked extensively with
-                                both company buyers and sellers. Through that work I have become convinced that there are an enormous
+                                Our team have worked extensively with both company buyers and advisors. Through that work we have become convinced that there are an enormous
                                 amount of deals not being seen by potential buyers.
                             </p>
                             <p className="text-gray-700 text-lg leading-relaxed">
-                                So far, CIM Amplify has proven me right. I hear all the time from Advisors
+                                So far, CIM Amplify has proven us right. We hear all the time from Advisors
                                 <span className="font-bold"> "I haven't heard of that buyer before"</span> and from buyers{" "}
                                 <span className="font-bold">"I can't believe I haven't seen that deal before"</span>.
                             </p>
@@ -429,25 +430,25 @@ const buttonShadow = useTransform(
                             variants={itemVariants}
                             className="text-4xl font-bold text-gray-900 mb-4"
                         >
-                            Months 1-10 Successes
+                            Our History - October 2024 to June 2025
                         </motion.h2>
                         <motion.p 
                             variants={itemVariants}
                             className="text-gray-600 text-lg max-w-3xl mx-auto"
                         >
-                            Fantastic launch in October 2024 with the help of many friends in EO and YPO as buyers and M&A Advisors.
+                          In just 9 months, with the help of so many buyers and sellers, we achieved a lot with Version 1.
                         </motion.p>
                     </motion.div>
 
                     <motion.div 
-                        className="grid md:grid-cols-4 gap-8 max-w-5xl mx-auto mb-12"
+                        className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto mb-12"
                         variants={containerVariants}
                     >
                         {[
-                            { value: "$3B", text: "In great deals, not<br />completed deals." },
-                            { value: "$1.1B", text: "Sold M&A deals out<br />in the world." },
-                            { value: "22M", text: "In average<br />company revenue." },
-                            { value: "200+", text: "Buyers<br />onboard." }
+                            { value: "$3B", text: "In great deals, not<br />scraped deals." },
+                            { value: "$1.1B", text: "Sold" },
+                            { value: "22M", text: "Average Revenue per Company" },
+                            
                         ].map((item, index) => (
                             <motion.div 
                                 key={index}
@@ -465,84 +466,102 @@ const buttonShadow = useTransform(
                         className="text-center"
                     >
                         <p className="text-gray-500 text-sm max-w-2xl mx-auto">
-                            Originally, CIM Amplify was a simple deal platform for M&A Advisors to showcase deals over $1 Million in
-                            EBITDA.
+                           Below is a typical deal snippet from CIM Amplify Version 1.
                         </p>
                     </motion.div>
                 </div>
             </motion.section>
 
             {/* Case Study */}
+
+           {/* Case Study */}
+{/* Case Study */}
+ {/* Case Study */}
             <motion.section 
                 className="py-20 bg-white section-reveal"
                 variants={containerVariants}
                 initial="hidden"
                 whileInView="visible"
-                viewport={{ margin: "-100px" }} // Removed once: true
+                viewport={{ margin: "-100px" }}
             >
                 <div className="container mx-auto px-6">
                     <motion.div 
-                        className="max-w-5xl mx-auto card-reveal"
-                        variants={itemVariants}
+                        className="text-center mb-16"
+                        variants={containerVariants}
                     >
-                        <Card className="overflow-hidden shadow-lg">
-                            <CardContent className="p-0">
-                                <div className="grid lg:grid-cols-2">
-                                    <motion.div 
-                                        className="relative h-80 lg:h-full"
-                                        initial={{ opacity: 0, scale: 0.8 }}
-                                        whileInView={{ opacity: 1, scale: 1 }}
-                                        transition={{ duration: 1, ease: [0.4, 0, 0.2, 1] }} // Increased duration from 0.8 to 1
-                                        viewport={{ margin: "-100px" }} // Removed once: true
-                                    >
-                                        <Image src="/pic2.png" alt="Ferris wheel family attraction" fill className="object-cover image-scale" />
-                                    </motion.div>
-                                    <motion.div 
-                                        className="p-8 lg:p-12"
-                                        variants={containerVariants}
-                                    >
-                                        <motion.div 
-                                            variants={itemVariants}
-                                            className="bg-primary text-white px-4 py-2 rounded-md text-sm font-bold mb-6 inline-block"
-                                        >
-                                            ATTRACTION
-                                        </motion.div>
-                                        <motion.h3 
-                                            variants={itemVariants}
-                                            className="text-2xl font-bold text-gray-900 mb-6 leading-tight"
-                                        >
-                                            Opportunity to acquire a premier family attraction park in New England
-                                        </motion.h3>
-                                        <motion.div 
-                                            variants={containerVariants}
-                                            className="space-y-3 text-gray-700"
-                                        >
-                                            <motion.p variants={itemVariants}>
-                                                <span className="font-semibold">Industry:</span> Media and Entertainment
-                                            </motion.p>
-                                            <motion.p variants={itemVariants}>
-                                                <span className="font-semibold">Additional Industry Information:</span>
-                                            </motion.p>
-                                            <motion.p variants={itemVariants}>
-                                                Family attraction park (zoo, amusement rides, etc.) and a fine dining restaurant
-                                            </motion.p>
-                                            <motion.p variants={itemVariants}>
-                                                <span className="font-semibold">Country of Headquarters:</span> United States of America
-                                            </motion.p>
-                                            <motion.p variants={itemVariants}>
-                                                <span className="font-semibold">Revenue:</span> $7.5 Million EBITDA: $1.5-2 Million
-                                            </motion.p>
-                                        </motion.div>
-                                        <motion.div 
-                                            variants={itemVariants}
-                                            className="mt-8 pt-6 border-t border-gray-200"
-                                        >
-                                            <p className="text-xs text-gray-500">Note: An original deal dropped from CIM Amplify v1</p>
-                                        </motion.div>
-                                    </motion.div>
+                        <motion.h2 
+                            variants={itemVariants}
+                            className="text-4xl font-bold text-gray-900 mb-4"
+                        >
+                            Deal Example from Version 1
+                        </motion.h2>
+                        <motion.p 
+                            variants={itemVariants}
+                            className="text-gray-600 text-lg max-w-3xl mx-auto"
+                        >
+                            Below is a typical deal snippet from CIM Amplify Version 1.
+                        </motion.p>
+                    </motion.div>
+
+                    <motion.div 
+                        className="max-w-4xl mx-auto space-y-8"
+                        variants={containerVariants}
+                    >
+                        {/* First Card */}
+                        <motion.div 
+                            variants={itemVariants}
+                            className="bg-white rounded-lg shadow-lg overflow-hidden flex flex-col md:flex-row"
+                        >
+                            {/* Left Image */}
+                            <div className="w-full md:w-64 h-98 relative flex-shrink-0">
+                                <img 
+                                    src="/pic2.png"
+                                    alt="Ferris wheel attraction"
+                                    className="w-full h-full object-cover"
+                                />
+                            </div>
+                            
+                            {/* Right Content */}
+                            <div className="flex-1 p-6 bg-gray-50">
+                                <h3 className="text-2xl font-bold text-gray-900 mb-3">ATTRACTION</h3>
+                                <p className="text-gray-700 mb-4">
+                                    Opportunity to acquire a premier family attraction park in New England
+                                </p>
+                                
+                                <div className="space-y-2 mb-6">
+                                    <div>
+                                        <span className="font-semibold text-gray-900">Industry:</span>
+                                        <span className="text-gray-700 ml-2">Media and Entertainment</span>
+                                    </div>
+                                    
+                                    <div>
+                                        <span className="font-semibold text-gray-900">Additional Industry Information:</span>
+                                        <div className="text-gray-700 mt-1">
+                                            Family attraction park (zoo, amusement rides, etc.) and a fine dining restaurant
+                                        </div>
+                                    </div>
+                                    
+                                    <div>
+                                        <span className="font-semibold text-gray-900">Country of Headquarters:</span>
+                                        <span className="text-gray-700 ml-2">United States of America</span>
+                                    </div>
+                                    
+                                    <div>
+                                        <span className="font-semibold text-gray-900">Revenue:</span>
+                                        <span className="text-gray-700 ml-2">$17.7 Million</span>
+                                        <span className="font-semibold text-gray-900 ml-4">EBITDA:</span>
+                                        <span className="text-gray-700 ml-2">$3.625 Million</span>
+                                    </div>
                                 </div>
-                            </CardContent>
-                        </Card>
+                                
+                                <button onClick={()=>router.push("/seller/login")} className="bg-teal-500 hover:bg-teal-600 text-white font-medium py-2 px-6 rounded-md transition-colors">
+                                    View Deal
+                                </button>
+                            </div>
+                        </motion.div>
+
+                        {/* Second Card - Optional scenic image */}
+                   
                     </motion.div>
                 </div>
             </motion.section>
@@ -591,13 +610,13 @@ const buttonShadow = useTransform(
                             <motion.div variants={itemVariants} className="flex items-start">
                                 <XCircle className="w-5 h-5 text-red-500 mt-1 mr-3 flex-shrink-0" />
                                 <p className="text-gray-700">
-                                    "I can't post many deals here because I classify have to get pre-approval from my client for all
-                                    postings."
+                                    "I can't post many deals here because I usually have to get pre-approval from my client for all
+                                    potential buyers."
                                 </p>
                             </motion.div>
                             <motion.div variants={itemVariants} className="flex items-start">
                                 <XCircle className="w-5 h-5 text-red-500 mt-1 mr-3 flex-shrink-0" />
-                                <p className="text-gray-700">"The brokers are ruining my business."</p>
+                                <p className="text-gray-700">"Tire Kickers are Ruining my business."</p>
                             </motion.div>
                         </motion.div>
                         <motion.div variants={itemVariants}>
@@ -633,7 +652,7 @@ const buttonShadow = useTransform(
                             </motion.div>
                             <motion.div variants={itemVariants} className="flex items-start">
                                 <XCircle className="w-5 h-5 text-red-500 mt-1 mr-3 flex-shrink-0" />
-                                <p className="text-gray-700">"There are great deals—have I seen them before?"</p>
+                                <p className="text-gray-700">"These are great deals—have I seen them before?"</p>
                             </motion.div>
                         </motion.div>
                         <motion.div variants={itemVariants}>
@@ -648,63 +667,187 @@ const buttonShadow = useTransform(
     </div>
 </motion.section>
             {/* We Listened Section */}
-            <motion.section 
-                className="py-20 bg-white section-reveal"
-                variants={containerVariants}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ margin: "-100px" }} // Removed once: true
+          <motion.section 
+  className="py-20 bg-white section-reveal"
+  variants={containerVariants}
+  initial="hidden"
+  whileInView="visible"
+  viewport={{ margin: "-100px" }}
+>
+  <div className="container mx-auto px-6">
+    <motion.div 
+      className="grid lg:grid-cols-2 gap-16 items-center max-w-6xl mx-auto"
+      variants={containerVariants}
+    >
+      <motion.div variants={itemVariants}>
+        <motion.h2 
+          variants={itemVariants}
+          className="text-4xl font-bold text-gray-900 mb-8"
+        >
+          Version 2 - We <span className="text-primary">Listened</span>
+        </motion.h2>
+
+        <motion.div variants={containerVariants} className="space-y-6">
+          <motion.div variants={itemVariants}>
+            <p className="text-gray-900 font-semibold text-lg mb-2">
+              What you can see today - launched July 2025
+            </p>
+          </motion.div>
+
+          {/* Bullet Line 1 */}
+          <motion.div 
+            variants={itemVariants}
+            className="flex items-start gap-3"
+          >
+            <span className="w-2.5 h-2.5 mt-2 rounded-full bg-primary flex-shrink-0" />
+            <p className="text-gray-700 text-lg">
+              Sellers input deal details and then choose matched buyers
+            </p>
+          </motion.div>
+
+          {/* Bullet Line 2 */}
+          <motion.div 
+            variants={itemVariants}
+            className="flex items-start gap-3"
+          >
+            <span className="w-2.5 h-2.5 mt-2 rounded-full bg-primary flex-shrink-0" />
+            <p className="text-gray-700 text-lg">
+              Buyers only get deals matched to their criteria on an exclusive or first look basis
+            </p>
+          </motion.div>
+        </motion.div>
+      </motion.div>
+
+      <motion.div 
+        variants={itemVariants}
+        className="relative"
+        whileHover={{ scale: 1.03 }}
+        transition={{ type: "spring", stiffness: 300, duration: 0.5 }}
+      >
+        <div className="bg-gradient-to-br from-blue-50 to-teal-50 rounded-2xl p-8">
+          <Image
+            src="/pic3.png"
+            alt="Business team collaboration illustration"
+            width={400}
+            height={300}
+            className="w-full h-auto image-scale"
+          />
+        </div>
+      </motion.div>
+    </motion.div>
+  </div>
+</motion.section>
+
+{/* Herosection */}
+{/* Hero Section - Fixed version */}
+<motion.section 
+    className="bg-gradient-to-b from-gray-50/30 to-white relative overflow-hidden py-12"
+    style={{ opacity: heroOpacity, y: heroTranslateY }}
+>
+    <div className="absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center opacity-80 pointer-events-none overflow-hidden">
+        <motion.div
+            initial={{ scale: 1.2, opacity: 0 }}
+            animate={{ scale: 1, opacity: 0.8 }}
+            transition={{ duration: 2, ease: [0.4, 0, 0.2, 1] }}
+            className="w-full h-full flex items-center justify-center"
+        >
+            <Image
+                src="/map.png"
+                alt="World map background"
+                width={1000}
+                height={400}
+                className="object-contain max-w-full max-h-full"
+                priority
+            />
+        </motion.div>
+    </div>
+
+    <div className="container mx-auto px-6 text-center relative z-10">
+        <motion.h1 
+            className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6 leading-tight"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+        >
+            <motion.span variants={itemVariants}>
+                Seriously, John, You're Starting
+            </motion.span>
+            <motion.span variants={itemVariants}>
+                <br />
+                Another Company?
+            </motion.span>
+        </motion.h1>
+
+        <motion.div 
+            className="max-w-5xl mx-auto mb-8 section-reveal"
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ margin: "-100px" }}
+        >
+            <motion.p 
+                variants={itemVariants}
+                className="text-lg text-gray-600 leading-relaxed mb-6"
             >
-                <div className="container mx-auto px-6">
-                    <motion.div 
-                        className="grid lg:grid-cols-2 gap-16 items-center max-w-6xl mx-auto"
-                        variants={containerVariants}
-                    >
-                        <motion.div variants={itemVariants}>
-                            <motion.h2 
-                                variants={itemVariants}
-                                className="text-4xl font-bold text-gray-900 mb-8"
-                            >
-                                We <span className="text-primary">Listened</span>
-                            </motion.h2>
-                            <motion.div 
-                                variants={containerVariants}
-                                className="space-y-6"
-                            >
-                                <motion.div variants={itemVariants}>
-                                    <p className="text-gray-900 font-semibold text-lg mb-2">What you can today - launched July 2025</p>
-                                </motion.div>
-                                <motion.p variants={itemVariants} className="text-gray-700 text-lg">
-                                    Sellers input deal details and then choose matched buyers
-                                </motion.p>
-                                <motion.p variants={itemVariants} className="text-gray-700 text-lg">
-                                    Buyers only get deals matched to their criteria on an exclusive or first look basis
-                                </motion.p>
-                            </motion.div>
-                        </motion.div>
-                        <motion.div 
-                            variants={itemVariants}
-                            className="relative"
-                            whileHover={{ scale: 1.03 }}
-                            transition={{ type: "spring", stiffness: 300, duration: 0.5 }} // Added duration for consistency
-                        >
-                            <div className="bg-gradient-to-br from-blue-50 to-teal-50 rounded-2xl p-8">
-                                <Image
-                                    src="/pic3.png"
-                                    alt="Business team collaboration illustration"
-                                    width={400}
-                                    height={300}
-                                    className="w-full h-auto image-scale"
-                                />
-                            </div>
-                        </motion.div>
-                    </motion.div>
-                </div>
-            </motion.section>
+             Greetings! I'm John MacInnes, founder of CIM Amplify and a lifelong entrepreneur.
+From childhood ventures like newspaper routes and selling books to successfully establishing and selling two major companies, entrepreneurship has always been my driving force.  I am supported by an excellent team that is excited to help business owners to sell their companies.
+            </motion.p>
+
+            <motion.div 
+                variants={itemVariants}
+                className="bg-teal-50 border border-teal-100 rounded-lg p-6 mb-6"
+            >
+                <p className="text-teal-800 font-semibold text-lg">
+                    CIM Amplify was built with the singular mission of helping business owners get the "Brass Ring" of
+                    selling their companies.
+                </p>
+            </motion.div>
+
+            <motion.div variants={itemVariants}>
+                <motion.button
+                    onClick={() => router.push("/seller/register")}
+                    className="bg-primary hover:bg-teal-700 text-white px-8 py-4 text-lg font-semibold rounded-md"
+                    style={{
+                        y: buttonY,
+                        scale: buttonScale,
+                        boxShadow: buttonShadow
+                    }}
+                    whileHover={{ 
+                        scale: 1.08,
+                        y: -5,
+                        boxShadow: "0 12px 30px rgba(20, 184, 166, 0.4)",
+                        transition: { 
+                            duration: 0.3, 
+                            ease: "easeOut",
+                            type: "spring",
+                            stiffness: 300
+                        }
+                    }}
+                    whileTap={{ 
+                        scale: 0.95,
+                        transition: { 
+                            duration: 0.1,
+                            type: "spring",
+                            stiffness: 400
+                        }
+                    }}
+                    transition={{
+                        type: "spring",
+                        stiffness: 100,
+                        damping: 15,
+                        mass: 0.8
+                    }}
+                >
+                    Let's do some deals!
+                </motion.button>
+            </motion.div>
+        </motion.div>
+    </div>
+</motion.section>
 
             {/* Footer */}
           {/* Footer */}
-<footer className="bg-gray-100 py-16">
+<footer className="bg-gray-100 py-10 mt-[100px]">
     <div className="container mx-auto px-6">
         <div className="grid md:grid-cols-4 gap-8 max-w-6xl mx-auto">
             <div className="md:col-span-2">
@@ -731,7 +874,7 @@ const buttonShadow = useTransform(
                                 <a onClick={(e) => {
                                     e.preventDefault();
                                     router.push("/landing#benefits");
-                                }} className="text-gray-400 hover:text-primary transition-colors cursor-pointer">
+                                }} className="text-gray-700 hover:text-primary transition-colors cursor-pointer">
                                     Benefits
                                 </a>
                             </li>
@@ -739,7 +882,7 @@ const buttonShadow = useTransform(
                                 <a onClick={(e) => {
                                     e.preventDefault();
                                     router.push("/landing#how-it-works");
-                                }} className="text-gray-400 hover:text-primary transition-colors cursor-pointer">
+                                }} className="text-gray-700 hover:text-primary transition-colors cursor-pointer">
                                     How it Works
                                 </a>
                             </li>
@@ -747,7 +890,7 @@ const buttonShadow = useTransform(
                                 <a onClick={(e) => {
                                     e.preventDefault();
                                     router.push("/landing#guidelines");
-                                }} className="text-gray-400 hover:text-primary transition-colors cursor-pointer">
+                                }} className="text-gray-700 hover:text-primary transition-colors cursor-pointer">
                                     Guidelines
                                 </a>
                             </li>
@@ -755,7 +898,7 @@ const buttonShadow = useTransform(
                                 <a onClick={(e) => {
                                     e.preventDefault();
                                     router.push("/about");
-                                }} className="text-gray-400 hover:text-primary transition-colors cursor-pointer">
+                                }} className="text-gray-700 hover:text-primary transition-colors cursor-pointer">
                                     About
                                 </a>
                             </li>
@@ -767,12 +910,12 @@ const buttonShadow = useTransform(
                 <h4 className="font-semibold text-lg mb-4">Actions</h4>
                 <ul className="space-y-3">
                     <li onClick={() => router.push("/select-role")}>
-                        <a href="#" className="text-gray-400 hover:text-primary transition-colors">
+                        <a href="#" className="text-primary hover:text-shadow-2xs transition-colors">
                             Member Login
                         </a>
                     </li>
                     <li onClick={() => router.push("/seller/login")}>
-                        <a href="#" className="text-gray-400 hover:text-primary transition-colors">
+                        <a href="#" className="text-primary  hover:text-shadow-2xs transition-colors">
                             Start Selling
                         </a>
                     </li>
@@ -780,7 +923,7 @@ const buttonShadow = useTransform(
                 <h4 className="font-semibold text-lg mb-4 mt-8">Support</h4>
                 <ul className="space-y-3">
                     <li>
-                        <a href="#" className="text-gray-400 hover:text-primary transition-colors">
+                        <a href="#" className="text-gray-700 hover:text-shadow-2xs transition-colors">
                             Contact Us
                         </a>
                     </li>
