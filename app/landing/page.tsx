@@ -40,10 +40,10 @@ export default function Component() {
   ]
 
   const stats = [
-    { value: "$300,000,000", label: "Total Deal Value" },
-    { value: "$2M - $250M", label: "Deal Range" },
-    { value: "50+", label: "Active Advisors" },
-    { value: "200+", label: "Qualified Buyers" },
+    { value: "$300M", label: "Monthly Deal Volume" },
+    { value: "$2M - $250M", label: "Typical Revenue Range" },
+    { value: "85+", label: "Industry Sectors" },
+    { value: "100%", label: "Represented Deals" },
   ]
 
   const platformGuidelines = [
@@ -111,7 +111,7 @@ export default function Component() {
       id: 0,
       question: "Explain the 0.5% Buyer Fee?",
       answer: "Over the past decade a lot of frustration has been built up over an age-old practice of referral fees. Ambiguity and unreasonable fees for represented deals have put a wrench into what should be a wonderful process - getting a deal done. High fees are often added to deal modeling and can change or eliminate offers which is against our mission. Dozens of interviews with all types of buyers resulted in an agreement that 0.5% is a more than fair fee that will not change deal structure at all.",
-      isExpanded: true
+      
     },
    {
     id: 1,
@@ -124,7 +124,7 @@ export default function Component() {
         <div className="flex justify-center my-6">
           <div className="bg-white rounded-lg shadow-lg p-4 max-w-4xl">
             <Image 
-              src="/image7.png" 
+              src="/cim1.png" 
               alt="CIM Amplify Deal Tiers - Seed, Bloom, and Fruit levels with different rewards" 
               width={800} 
               height={300} 
@@ -182,7 +182,7 @@ export default function Component() {
     {
       id: 8,
       question: "Do you publish my information?",
-      answer: "No! Many of the places you give your information to use that data for SEO purposes and essentially post your profiles and deals to the wide internet. We happily sacrifice Google Ranking for your security. As an added step, we allow buyers to remain anonymous (Investment Criteria aside) to sellers until you choose to engage on a deal."
+      answer: "No! Many of the places you give your information to use that data for SEO purposes and essentially post your profiles and deals to the wide internet. We happily sacrifice Google Ranking for your security."
     },
     {
       id: 9,
@@ -235,10 +235,7 @@ useEffect(() => {
 }, [])
 
   // Set first FAQ as expanded by default
-  useEffect(() => {
-    setExpandedFAQ(0)
-  }, [])
-
+  
   const nextTestimonial = () => {
     setCurrentTestimonial((prev) => (prev + 1) % testimonials.length)
   }
@@ -257,6 +254,8 @@ useEffect(() => {
   * {
     scroll-behavior: smooth;
   }
+    body{
+    background-color: #ffffff}
   
   html {
     scroll-behavior: smooth;
@@ -644,13 +643,13 @@ useEffect(() => {
           How it Works
         </a>
         <a href="#marketplace" className="navbar-link text-gray-600">
-          Marketplace
+          Guidelines
         </a>
         <a href="#faqs" className="navbar-link text-gray-600">
           FAQs
         </a>
         <Button 
-          className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl ml-4" 
+          className="bg-gradient-to-r from-teal-500 to-primary hover:from-primary hover:to-teal-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl ml-4" 
           onClick={() => router.push("/select-role")}
         >
           Get Started
@@ -716,8 +715,8 @@ useEffect(() => {
           ))}
         </ul>
         <Button
-          onClick={() => { router.push("/buyer/login") }}
-          className="mt-6 bg-teal-500 hover:bg-teal-600 transition-colors"
+          onClick={() => { router.push("/buyer/register") }}
+          className="mt-6 bg-teal-500 hover:bg-primary transition-colors"
         >
           Create a Free Buyer Profile
         </Button>
@@ -748,8 +747,8 @@ useEffect(() => {
           ))}
         </ul>
         <Button
-          onClick={() => router.push("/seller/login")}
-          className="mt-6 bg-teal-500 hover:bg-teal-600 transition-colors"
+          onClick={() => router.push("/seller/register")}
+          className="mt-6 bg-teal-500 hover:bg-primary transition-colors"
         >
           Add A Deal
         </Button>
@@ -770,7 +769,7 @@ useEffect(() => {
               isVisible['marketplace-title'] ? 'animate-fadeInUp animate-in' : ''
             }`}
           >
-            Our Marketplace at a Glance
+            CIM Amplify at a Glance
           </h2>
      <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
   {stats.map((stat, index) => (
@@ -793,8 +792,11 @@ useEffect(() => {
       </section>
 
       {/* How It Works */}
+  {/* How It Works */}
+      {/* How It Works */}
+    {/* How It Works */}
       <section id="how-it-works" className="py-16 bg-gray-50">
-        <div className="container mx-auto px-6">
+        <div className="container mx-auto px-6 text-center">
           <h2 
             data-animate
             id="how-it-works-title"
@@ -805,105 +807,172 @@ useEffect(() => {
             How It Works
           </h2>
 
-          <div className="space-y-16">
-            <div 
+          <div className="space-y-20">
+            {/* Step 1 */}
+            <div className="relative">
+              <div 
                 data-animate
                 id="step-1-text"
-                className={`${isVisible['step-1-text'] ? 'animate-slideInLeft animate-in' : ''}`}
+                className={`mb-12 ${isVisible['step-1-text'] ? 'animate-slideInLeft animate-in' : ''}`}
               >
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-r from-teal-500 to-primary text-white font-bold text-lg mb-4 shadow-lg">
+                  1
+                </div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-4">Add A Deal</h3>
-                <p className="text-gray-600 mb-6">
-                  M&A Advisors choose a reward level based on exclusivity with CIM Amlify and add deal metrics.
+                <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
+                  M&A Advisors choose a reward level based on exclusivity with CIM Amplify and add deal metrics.
                 </p>
-                <Button className="bg-teal-500 hover:bg-teal-600 transition-colors"   onClick={() => router.push("/seller/login")}>Add a Deal</Button>
+                <Button className="bg-teal-500 hover:bg-primary transition-colors" onClick={() => router.push("/seller/login")}>Add a Deal</Button>
               </div>
-            {/* Step 1 */}
-            <div className="grid md:grid-cols-2 gap-12 items-center">
-              <div 
-                data-animate
-                id="step-1-image"
-                className={`rounded-lg p-8 flex items-center justify-center h-64 ${
-                  isVisible['step-1-image'] ? 'animate-slideInRight animate-in' : ''
-                }`}
-              >
-                <Image src="/whisk1.png" alt="CIM Amplify Logo" width={350} height={250} className="h-auto" />
-              </div>
-              <div 
-                data-animate
-                id="step-1-image-2"
-                className={`rounded-lg p-8 flex items-center justify-center h-94 ${
-                  isVisible['step-1-image-2'] ? 'animate-slideInRight animate-in' : ''
-                }`}
-              >
-                <Image src="/SellerForm2.png" alt="CIM Amplify Logo" width={550} height={450} className="h-auto" />
+
+              <div className="grid md:grid-cols-2 gap-12 items-center">
+                <div 
+                  data-animate
+                  id="step-1-image"
+                  className={`rounded-lg p-8 flex items-center justify-center h-64 ${
+                    isVisible['step-1-image'] ? 'animate-slideInLeft animate-delay-200 animate-in' : ''
+                  }`}
+                >
+                  <div className="relative group">
+                    <div className="absolute inset-0 bg-gradient-to-r from-teal-500/20 to-primary/20 rounded-lg blur-lg group-hover:blur-xl transition-all duration-300"></div>
+                    <Image src="/whisk1.png" alt="CIM Amplify Add Deal" width={350} height={250} className="h-auto relative z-10 transform group-hover:scale-105 transition-all duration-300" />
+                  </div>
+                </div>
+                <div 
+                  data-animate
+                  id="step-1-image-2"
+                  className={`rounded-lg p-8 flex items-center justify-center h-94 ${
+                    isVisible['step-1-image-2'] ? 'animate-slideInRight animate-delay-300 animate-in' : ''
+                  }`}
+                >
+                  <div className="relative group">
+                    <div className="absolute inset-0 bg-gradient-to-r from-teal-500/20 to-primary/20 rounded-lg blur-lg group-hover:blur-xl transition-all duration-300"></div>
+                    <Image src="/cim1.png" alt="CIM Amplify Deal Tiers" width={550} height={450} className="h-auto relative z-10 transform group-hover:scale-105 transition-all duration-300" />
+                  </div>
+                </div>
               </div>
             </div>
 
+            {/* Animated Flow Line 1 */}
+             <div className="flex items-center justify-center py-8">
+        <div className="w-32 h-0.5 bg-gradient-to-r from-transparent"></div>
+        <div className="mx-6">
+          <Image 
+            src="/line.png" 
+            alt="Process Flow" 
+            width={150} 
+            height={150} 
+            className="opacity-80 filter drop-shadow-sm"
+          />
+        </div>
+        <div className="w-32 h-0.5 bg-gradient-to-l from-transparent"></div>
+      </div>
+
             {/* Step 2 */}
+            <div className="relative">
               <div 
                 data-animate
                 id="step-2-text"
-                className={`md:order-2 ${isVisible['step-2-text'] ? 'animate-slideInRight animate-in' : ''}`}
+                className={`mb-12 ${isVisible['step-2-text'] ? 'animate-slideInRight animate-in' : ''}`}
               >
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-r from-teal-500 to-primary text-white font-bold text-lg mb-4 shadow-lg">
+                  2
+                </div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-4">Intelligent Buyer Matching</h3>
-                <p className="text-gray-600 mb-6">
+                <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
                   CIM Amplify provides a list of buyers. Advisors select which buyers to engage.
                 </p>
-                <Button className="bg-teal-500 hover:bg-teal-600 transition-colors"   onClick={() => router.push("/seller/login")}>View Marketplace</Button>
+                <Button className="bg-teal-500 hover:bg-primary transition-colors" onClick={() => router.push("/buyer/register")}>View Marketplace</Button>
               </div>
-            <div className="grid md:grid-cols-2 gap-12 items-center">
-             
-              <div 
-                data-animate
-                id="step-2-image"
-                className={`rounded-lg p-8 flex items-center justify-center h-94 ${
-                  isVisible['step-2-image'] ? 'animate-slideInLeft animate-in' : ''
-                }`}
-              >
-                <Image src="/dashboard2.png" alt="CIM Amplify Logo" width={550} height={450} className="h-auto" />
-              </div>
-               <div 
-                data-animate
-                id="step-2-image-2"
-                className={`rounded-lg p-8 flex items-center justify-center h-64 ${
-                  isVisible['step-2-image-2'] ? 'animate-slideInRight animate-in' : ''
-                }`}
-              >
-                <Image src="/whisk2.png" alt="CIM Amplify Logo" width={350} height={250} className="h-auto" />
+                
+              <div className="grid md:grid-cols-2 gap-12 items-center">
+                <div 
+                  data-animate
+                  id="step-2-image"
+                  className={`rounded-lg p-8 flex items-center justify-center h-94 ${
+                    isVisible['step-2-image'] ? 'animate-slideInLeft animate-delay-200 animate-in' : ''
+                  }`}
+                >
+                  <div className="relative group">
+                    <div className="absolute inset-0 bg-gradient-to-r from-teal-500/20 to-primary/20 rounded-lg blur-lg group-hover:blur-xl transition-all duration-300"></div>
+                    <Image src="/cimcim.png" alt="CIM Amplify Buyer Matching" width={550} height={450} className="h-auto relative z-10 transform group-hover:scale-105 transition-all duration-300" />
+                  </div>
+                </div>
+                <div 
+                  data-animate
+                  id="step-2-image-2"
+                  className={`rounded-lg p-8 flex items-center justify-center h-64 ${
+                    isVisible['step-2-image-2'] ? 'animate-slideInRight animate-delay-300 animate-in' : ''
+                  }`}
+                >
+                  <div className="relative group">
+                    <div className="absolute inset-0 bg-gradient-to-r from-teal-500/20 to-primary/20 rounded-lg blur-lg group-hover:blur-xl transition-all duration-300"></div>
+                    <Image src="/whisk2.png" alt="CIM Amplify Matching Process" width={350} height={250} className="h-auto relative z-10 transform group-hover:scale-105 transition-all duration-300" />
+                  </div>
+                </div>
               </div>
             </div>
 
+            {/* Animated Flow Line 2 */}
+            <div className="flex items-center justify-center py-8">
+        <div className="w-32 h-0.5 bg-gradient-to-r from-transparent 0"></div>
+        <div className="mx-6">
+          <Image 
+            src="/line.png" 
+            alt="Process Flow" 
+            width={150} 
+            height={150} 
+            className="opacity-80 filter drop-shadow-sm"
+          />
+        </div>
+        <div className="w-32 h-0.5 bg-gradient-to-l from-transparent"></div>
+      </div>
+
             {/* Step 3 */}
-             <div 
+            <div className="relative">
+              <div 
                 data-animate
                 id="step-3-text"
-                className={`${isVisible['step-3-text'] ? 'animate-slideInLeft animate-in' : ''}`}
+                className={`mb-12 ${isVisible['step-3-text'] ? 'animate-slideInLeft animate-in' : ''}`}
               >
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-r from-teal-500 to-primary text-white font-bold text-lg mb-4 shadow-lg">
+                  3
+                </div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-4">Deal Management</h3>
-                <p className="text-gray-600 mb-6">Buyers and Advisors monitor deals via an intuitive platform.</p>
-                <div className="flex gap-4">
-                  <Button className="bg-teal-500 hover:bg-teal-600 transition-colors"   onClick={() => router.push("/seller/login")}>Add Listing</Button>
-                  <Button variant="outline" className="hover:bg-gray-50 transition-colors"   onClick={() => router.push("/seller/login")}>Deal Management</Button>
+                <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
+                  Buyers and Advisors monitor deals via an intuitive platform.
+                </p>
+                <div className="flex gap-4 text-center justify-center">
+                  <Button className="bg-teal-500 hover:bg-primary transition-colors" onClick={() => router.push("/seller/login")}>Add Listing</Button>
+                  <Button variant="outline" className="bg-teal-500 hover:bg-primary transition-colors text-white" onClick={() => router.push("/buyer/register")}>Deal Management</Button>
                 </div>
               </div>
-            <div className="grid md:grid-cols-2 gap-12 items-center">
-              <div 
-                data-animate
-                id="step-3-image"
-                className={`rounded-lg p-8 flex items-center justify-center h-64 ${
-                  isVisible['step-3-image'] ? 'animate-slideInRight animate-in' : ''
-                }`}
-              >
-                <Image src="/whisk3.png" alt="CIM Amplify Logo" width={350} height={250} className="h-auto" />
-              </div>
-              <div 
-                data-animate
-                id="step-3-image-2"
-                className={`rounded-lg p-8 flex items-center justify-center h-64 ${
-                  isVisible['step-3-image-2'] ? 'animate-slideInRight animate-in' : ''
-                }`}
-              >
-                <Image src="/dashboard1.png" alt="CIM Amplify Logo" width={550} height={450}  />
+
+              <div className="grid md:grid-cols-2 gap-12 items-center">
+                <div 
+                  data-animate
+                  id="step-3-image"
+                  className={`rounded-lg p-8 flex items-center justify-center h-64 ${
+                    isVisible['step-3-image'] ? 'animate-slideInLeft animate-delay-200 animate-in' : ''
+                  }`}
+                >
+                  <div className="relative group">
+                    <div className="absolute inset-0 bg-gradient-to-r from-teal-500/20 to-primary/20 rounded-lg blur-lg group-hover:blur-xl transition-all duration-300"></div>
+                    <Image src="/whisk3.png" alt="CIM Amplify Deal Management" width={350} height={250} className="h-auto relative z-10 transform group-hover:scale-105 transition-all duration-300" />
+                  </div>
+                </div>
+                <div 
+                  data-animate
+                  id="step-3-image-2"
+                  className={`rounded-lg p-8 flex items-center justify-center h-64 ${
+                    isVisible['step-3-image-2'] ? 'animate-slideInRight animate-delay-300 animate-in' : ''
+                  }`}
+                >
+                  <div className="relative group">
+                    <div className="absolute inset-0 bg-gradient-to-r from-teal-500/20 to-primary/20 rounded-lg blur-lg group-hover:blur-xl transition-all duration-300"></div>
+                    <Image src="/cim2.png" alt="CIM Amplify Management Dashboard" width={550} height={450} className="h-auto relative z-10 transform group-hover:scale-105 transition-all duration-300" />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -920,7 +989,7 @@ useEffect(() => {
               isVisible['guidelines-title'] ? 'animate-fadeInUp animate-in' : ''
             }`}
           >
-            Platform Guidelines
+            CIM Amplify Guidelines
           </h2>
          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
   {platformGuidelines.map((guideline, index) => (
@@ -965,14 +1034,14 @@ useEffect(() => {
         onClick={prevTestimonial}
         className="absolute left-4 top-1/2 -translate-y-1/2 z-10 p-3 rounded-full bg-white border-2 border-gray-200 hover:bg-gray-50 hover:border-teal-500 transition-all duration-300 shadow-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
       >
-        <ChevronLeft className="w-6 h-6 text-gray-600 hover:text-teal-600 transition-colors" />
+        <ChevronLeft className="w-6 h-6 text-gray-600 hover:text-primary transition-colors" />
       </button>
       
       <button 
         onClick={nextTestimonial}
         className="absolute right-4 top-1/2 -translate-y-1/2 z-10 p-3 rounded-full bg-white border-2 border-gray-200 hover:bg-gray-50 hover:border-teal-500 transition-all duration-300 shadow-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
       >
-        <ChevronRight className="w-6 h-6 text-gray-600 hover:text-teal-600 transition-colors" />
+        <ChevronRight className="w-6 h-6 text-gray-600 hover:text-primary transition-colors" />
       </button>
       
       {/* Testimonials Grid - Show 3 at a time */}
@@ -1079,7 +1148,7 @@ useEffect(() => {
         </h3>
         <div className="flex-shrink-0 p-1 rounded-full bg-teal-50 transition-all duration-300">
           {expandedFAQ === faq.id ? (
-            <Minus className="w-5 h-5 text-teal-600" />
+            <Minus className="w-5 h-5 text-primary" />
           ) : (
             <Plus className="w-5 h-5 text-teal-500" />
           )}
@@ -1112,14 +1181,14 @@ useEffect(() => {
               <div className="mb-6">
                 <p className="text-gray-600 leading-relaxed max-w-md">
                   CIM Amplify's mission is to help Entrepreneurs and Investors get the{' '}
-                  <span className="text-teal-600 font-semibold">"Brass Ring"</span> of selling their company. 
+                  <span className="text-primary font-semibold">"Brass Ring"</span> of selling their company. 
                   Our owner group have all sold significant companies which changed our lives forever.
                 </p>
               </div>
               <div>
                 <a 
-                  href="#" 
-                  className="inline-flex items-center justify-center w-12 h-12 bg-white rounded-full shadow-md text-gray-600 border border-gray-200 hover:bg-teal-50 hover:text-teal-600 hover:border-teal-300 transition-all duration-300"
+                  href="https://www.linkedin.com/company/cimamplify/" 
+                  className="inline-flex items-center justify-center w-12 h-12 bg-white rounded-full shadow-md text-gray-600 border border-gray-200 hover:bg-teal-50 hover:text-primary hover:border-teal-300 transition-all duration-300"
                 >
                   <Linkedin className="w-5 h-5" />
                 </a>
@@ -1131,22 +1200,22 @@ useEffect(() => {
               <h3 className="text-lg font-semibold text-gray-900 mb-6">Quick Links</h3>
               <ul className="space-y-4">
                 <li>
-                  <a href="#benefits" className="text-gray-600 hover:text-teal-600 transition-colors duration-300 block py-1">
+                  <a href="#benefits" className="text-gray-600 hover:text-primary transition-colors duration-300 block py-1">
                     Benefits
                   </a>
                 </li>
                 <li>
-                  <a href="#how-it-works" className="text-gray-600 hover:text-teal-600 transition-colors duration-300 block py-1">
+                  <a href="#how-it-works" className="text-gray-600 hover:text-primary transition-colors duration-300 block py-1">
                     How it Works
                   </a>
                 </li>
                 <li>
-                  <a href="#guidelines" className="text-gray-600 hover:text-teal-600 transition-colors duration-300 block py-1">
+                  <a href="#guidelines" className="text-gray-600 hover:text-primary transition-colors duration-300 block py-1">
                     Guidelines
                   </a>
                 </li>
                 <li onClick={()=>{router.push("/about")}}>
-                  <a className="text-gray-600 hover:text-teal-600 cursor-pointer transition-colors duration-300 block py-1">
+                  <a className="text-gray-600 hover:text-primary cursor-pointer transition-colors duration-300 block py-1">
                     About
                   </a>
                 </li>
@@ -1157,19 +1226,31 @@ useEffect(() => {
             <div className="space-y-8">
               {/* Actions */}
               <div className="footer-section">
-                <h3 className="text-lg font-semibold text-gray-900 mb-6 cursor-pointer">Actions</h3>
-                <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 cursor-pointer">Actions</h3>
+                <div className="space-y-2">
                   <div 
                     onClick={() => router.push("/buyer/register")}
-                    className="text-teal-600 hover:text-teal-700 hover:bg-teal-50 block py-2 px-3 rounded-lg font-semibold cursor-pointer text-lg transition-all duration-300"
+                    className="text-primary hover:text-primary hover:bg-teal-50 block py-2 px-3 rounded-lg teal-600 cursor-pointer  transition-all duration-300"
                   >
                     Buyer registration
                   </div>
                   <div 
                     onClick={() => router.push("/seller/login")}
-                    className="text-teal-600 hover:text-teal-700 hover:bg-teal-50 block py-2 px-3 rounded-lg font-semibold cursor-pointer text-lg transition-all duration-300"
+                    className="text-primary hover:text-primary hover:bg-teal-50 block py-2 px-3 rounded-lg teal-600 cursor-pointer  transition-all duration-300"
                   >
                     Add a Deal
+                  </div>
+                     <div 
+                    onClick={() => router.push("/buyer/login")}
+                    className="text-primary hover:text-primary hover:bg-teal-50 block py-2 px-3 rounded-lg teal-600 cursor-pointer  transition-all duration-300"
+                  >
+                    Buyer Login
+                  </div>
+                     <div 
+                    onClick={() => router.push("/seller/login")}
+                    className="text-primary hover:text-primary hover:bg-teal-50 block py-2 px-3 rounded-lg primary cursor-pointer  transition-all duration-300"
+                  >
+                    Seller Login
                   </div>
                 </div>
               </div>
@@ -1179,7 +1260,7 @@ useEffect(() => {
                 <h3 className="text-lg font-semibold text-gray-900 mb-6">Support</h3>
                 <ul className="space-y-4">
                   <li>
-                    <a href="#contact" className="text-gray-600 hover:text-teal-600 transition-colors duration-300 block py-1">
+                    <a href="#contact" className="text-gray-600 hover:text-primary transition-colors duration-300 block py-1">
                       Contact Us
                     </a>
                   </li>

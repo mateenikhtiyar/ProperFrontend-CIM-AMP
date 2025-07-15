@@ -17,7 +17,9 @@ import {
   Bell,
   Edit,
   Trash2,
-  AlertTriangle
+  AlertTriangle,
+  ArrowUp,
+  ArrowDown
 } from "lucide-react";
 
 // Seller interface
@@ -79,6 +81,7 @@ export default function SellersManagementDashboard() {
 
   // Add admin profile state
   const [adminProfile, setAdminProfile] = useState<AdminProfile | null>(null);
+  const [companySort, setCompanySort] = useState<"asc" | "desc" | null>(null);
 
   const router = useRouter();
   const { logout } = useAuth();
@@ -287,10 +290,19 @@ export default function SellersManagementDashboard() {
   );
 
   const sellersPerPage = 10;
-  const totalPages = Math.ceil(filteredSellers.length / sellersPerPage);
   const startIndex = (currentPage - 1) * sellersPerPage;
   const endIndex = startIndex + sellersPerPage;
-  const currentSellers = filteredSellers.slice(startIndex, endIndex);
+  const totalPages = Math.ceil(filteredSellers.length / sellersPerPage);
+
+  // Sorting logic for company name
+  const sortedSellers = [...filteredSellers].sort((a, b) => {
+    const nameA = (a.companyName || "").toLowerCase();
+    const nameB = (b.companyName || "").toLowerCase();
+    if (!companySort) return 0;
+    if (companySort === "asc") return nameA.localeCompare(nameB);
+    return nameB.localeCompare(nameA);
+  });
+  const currentSellers = sortedSellers.slice(startIndex, endIndex);
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -412,14 +424,35 @@ export default function SellersManagementDashboard() {
                 <table className="w-full min-w-full">
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">Company</th>
+                      <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">
+                        <span className="inline-flex items-center gap-1">
+                          Company
+                          <button
+                            type="button"
+                            className="ml-1 p-0.5 hover:bg-gray-200 rounded"
+                            title="Sort ascending"
+                            onClick={() => setCompanySort("asc")}
+                            style={{ lineHeight: 0 }}
+                          >
+                            <ArrowUp className="h-3 w-3 text-gray-500" />
+                          </button>
+                          <button
+                            type="button"
+                            className="ml-0.5 p-0.5 hover:bg-gray-200 rounded"
+                            title="Sort descending"
+                            onClick={() => setCompanySort("desc")}
+                            style={{ lineHeight: 0 }}
+                          >
+                            <ArrowDown className="h-3 w-3 text-gray-500" />
+                          </button>
+                        </span>
+                      </th>
                       <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">Full Name</th>
                       <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">Email</th>
                       <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm hidden sm:table-cell">Phone</th>
                       <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm hidden md:table-cell">Website</th>
                       <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm hidden lg:table-cell">Active Deals</th>
                       <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm hidden lg:table-cell">Off-Market Deals</th>
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm hidden lg:table-cell">Role</th>
                       <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">Actions</th>
                     </tr>
                   </thead>
@@ -470,11 +503,6 @@ export default function SellersManagementDashboard() {
                           >
                             {seller.offMarketDealsCount}
                           </div>
-                        </td>
-                        <td className="py-3 px-4 hidden lg:table-cell">
-                          <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
-                            {seller.role || "-"}
-                          </span>
                         </td>
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-1">
