@@ -17,7 +17,9 @@ import {
   Settings,
   Bell,
   Edit,
-  Trash2
+  Trash2,
+  ArrowUp,
+  ArrowDown
 } from "lucide-react";
 
 // Add Buyer interface
@@ -157,12 +159,22 @@ export default function BuyersManagementDashboard() {
     (buyer.fullName || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Pagination
   const buyersPerPage = 10;
-  const totalPages = Math.ceil(filteredBuyers.length / buyersPerPage);
   const startIndex = (currentPage - 1) * buyersPerPage;
   const endIndex = startIndex + buyersPerPage;
-  const currentBuyers = filteredBuyers.slice(startIndex, endIndex);
+  const [companySort, setCompanySort] = useState<"asc" | "desc" | null>(null);
+  // Sorting logic for company name
+  const sortedBuyers = [...filteredBuyers].sort((a, b) => {
+    const nameA = (a.companyProfile?.companyName || a.companyName || "").toLowerCase();
+    const nameB = (b.companyProfile?.companyName || b.companyName || "").toLowerCase();
+    if (!companySort) return 0;
+    if (companySort === "asc") return nameA.localeCompare(nameB);
+    return nameB.localeCompare(nameA);
+  });
+  const currentBuyers = sortedBuyers.slice(startIndex, endIndex);
+
+  // Pagination
+  const totalPages = Math.ceil(filteredBuyers.length / buyersPerPage);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -282,11 +294,32 @@ export default function BuyersManagementDashboard() {
                 <table className="w-full min-w-full">
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">Company</th>
+                      <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">
+                        <span className="inline-flex items-center gap-1">
+                          Company
+                          <button
+                            type="button"
+                            className="ml-1 p-0.5 hover:bg-gray-200 rounded"
+                            title="Sort ascending"
+                            onClick={() => setCompanySort("asc")}
+                            style={{ lineHeight: 0 }}
+                          >
+                            <ArrowUp className="h-3 w-3 text-gray-500" />
+                          </button>
+                          <button
+                            type="button"
+                            className="ml-0.5 p-0.5 hover:bg-gray-200 rounded"
+                            title="Sort descending"
+                            onClick={() => setCompanySort("desc")}
+                            style={{ lineHeight: 0 }}
+                          >
+                            <ArrowDown className="h-3 w-3 text-gray-500" />
+                          </button>
+                        </span>
+                      </th>
                       <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">Full Name</th>
                       <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">Email</th>
                       <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm hidden sm:table-cell">Phone</th>
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm hidden md:table-cell">Role</th>
                       <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">Actions</th>
                     </tr>
                   </thead>
@@ -312,11 +345,6 @@ export default function BuyersManagementDashboard() {
                           <div className="text-gray-600 text-sm truncate">
                             {buyer.phone || "-"}
                           </div>
-                        </td>
-                        <td className="py-3 px-4 hidden md:table-cell">
-                          <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-                            {buyer.role}
-                          </span>
                         </td>
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-1">
