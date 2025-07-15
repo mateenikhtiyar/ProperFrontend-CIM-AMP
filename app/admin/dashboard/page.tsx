@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { Textarea } from "@/components/ui/textarea";
+import { FileText, Download } from "lucide-react";
 import Image from "next/image";
 import {Tag , ShoppingCart, Eye, Handshake} from "lucide-react";
 import {
@@ -25,6 +27,7 @@ import {
   DialogFooter,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 
 interface DocumentInfo {
   filename: string;
@@ -39,6 +42,8 @@ interface SellerProfile {
   fullName: string;
   email: string;
   companyName: string;
+  phoneNumber: string;
+  website: string;
   role: string;
   profilePicture: string | null;
 }
@@ -73,6 +78,9 @@ interface Deal {
   financialDetails?: FinancialDetails;
   documents?: DocumentInfo[];
   rewardLevel?: string;
+  closedWithBuyer?: string; // New field for buyer ID
+  closedWithBuyerCompany?: string; // New field for buyer company
+  closedWithBuyerEmail?: string; // New field for buyer email
 }
 
 interface Buyer {
@@ -291,6 +299,435 @@ const BuyersActivityPopup = ({
   );
 };
 
+// --- AdminEditDealForm component (adapted from seller/edit-deal/page.tsx) ---
+
+function formatNumberWithCommas(num) {
+  if (num === undefined || num === null) return "";
+  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+const COMPANY_TYPE_OPTIONS = [
+  "Buy Side Mandate",
+  "Entrepreneurship through Acquisition",
+  "Family Office",
+  "Holding Company",
+  "Independent Sponsor",
+  "Private Equity",
+  "Single Acquisition Search",
+  "Strategic Operating Company",
+];
+
+function AdminEditDealForm({ deal, onClose, onSaved }) {
+  const [form, setForm] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [fileError, setFileError] = useState(null);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [existingDocuments, setExistingDocuments] = useState([]);
+  const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    if (!deal) return;
+    setForm({
+      title: deal.title || "",
+      companyDescription: deal.companyDescription || "",
+      industrySector: deal.industrySector || "",
+      geographySelection: deal.geographySelection || "",
+      yearsInBusiness: deal.yearsInBusiness || 0,
+      companyType: Array.isArray(deal.companyType) ? deal.companyType : (deal.companyType ? [deal.companyType] : []),
+      financialDetails: {
+        trailingRevenueCurrency: deal.financialDetails?.trailingRevenueCurrency || "USD($)",
+        trailingRevenueAmount: deal.financialDetails?.trailingRevenueAmount || 0,
+        trailingEBITDACurrency: deal.financialDetails?.trailingEBITDACurrency || "USD($)",
+        trailingEBITDAAmount: deal.financialDetails?.trailingEBITDAAmount || 0,
+        avgRevenueGrowth: deal.financialDetails?.avgRevenueGrowth || 0,
+        netIncome: deal.financialDetails?.netIncome || 0,
+        askingPrice: deal.financialDetails?.askingPrice || 0,
+        t12FreeCashFlow: deal.financialDetails?.t12FreeCashFlow || 0,
+        t12NetIncome: deal.financialDetails?.t12NetIncome || 0,
+      },
+      businessModel: {
+        recurringRevenue: deal.businessModel?.recurringRevenue || false,
+        projectBased: deal.businessModel?.projectBased || false,
+        assetLight: deal.businessModel?.assetLight || false,
+        assetHeavy: deal.businessModel?.assetHeavy || false,
+      },
+      managementPreferences: deal.managementPreferences || "",
+      buyerFit: {
+        capitalAvailability: deal.buyerFit?.capitalAvailability || [],
+        minPriorAcquisitions: deal.buyerFit?.minPriorAcquisitions || 0,
+        minTransactionSize: deal.buyerFit?.minTransactionSize || 0,
+      },
+      documents: [],
+      visibility: deal.visibility || "seed",
+      status: deal.status || "active",
+    });
+    setExistingDocuments(deal.documents || []);
+  }, [deal]);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+  };
+  const handleNumberChange = (e, field, nested) => {
+    const value = e.target.value === "" ? undefined : Number.parseFloat(e.target.value);
+    if (nested) {
+      setForm((prev) => ({ ...prev, [nested]: { ...prev[nested], [field]: value } }));
+    } else {
+      setForm((prev) => ({ ...prev, [field]: value }));
+    }
+  };
+  const handleCheckboxChange = (checked, field, nested) => {
+    if (nested) {
+      setForm((prev) => ({ ...prev, [nested]: { ...prev[nested], [field]: checked } }));
+    } else {
+      setForm((prev) => ({ ...prev, [field]: checked }));
+    }
+  };
+  const handleMultiSelectChange = (option) => {
+    setForm((prev) => {
+      const currentValues = Array.isArray(prev.companyType) ? prev.companyType : [];
+      const isChecked = currentValues.includes(option);
+      const newValues = isChecked ? currentValues.filter((v) => v !== option) : [...currentValues, option];
+      return { ...prev, companyType: newValues };
+    });
+  };
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const newFiles = [];
+      let hasError = false;
+      for (let i = 0; i < e.target.files.length; i++) {
+        const file = e.target.files[i];
+        if (file.size > 10 * 1024 * 1024) {
+          setFileError(`File ${file.name} exceeds 10MB limit`);
+          hasError = true;
+          break;
+        }
+        newFiles.push(file);
+      }
+      if (!hasError) {
+        setSelectedFile(e.target.files[0]);
+        setFileError(null);
+        setForm((prev) => ({ ...prev, documents: [...(prev.documents || []), ...newFiles] }));
+      }
+    }
+  };
+  const handleDocumentDelete = async (doc) => {
+    try {
+      const token = localStorage.getItem("token");
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const docIndex = existingDocuments.findIndex((d) => d.filename === doc.filename);
+      const response = await fetch(`${apiUrl}/deals/${deal._id}/documents/${docIndex}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error("Failed to delete document");
+      setExistingDocuments(existingDocuments.filter((d) => d.filename !== doc.filename));
+    } catch (error) {
+      setError(error.message);
+    }
+  };
+  const handleDocumentDownload = (doc) => {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+    const link = document.createElement("a");
+    link.href = `${apiUrl}/uploads/deal-documents/${doc.filename}`;
+    link.download = doc.originalName;
+    link.target = "_blank";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+  const handleNewDocumentDelete = (indexToRemove) => {
+    setForm((prev) => ({ ...prev, documents: prev.documents.filter((_, index) => index !== indexToRemove) }));
+    if (form.documents.length === 1) setSelectedFile(null);
+  };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    try {
+      const token = localStorage.getItem("token");
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      // Prepare payload
+      const payload = {
+        ...form,
+        companyType: Array.isArray(form.companyType) ? form.companyType : [],
+        financialDetails: { ...form.financialDetails },
+        businessModel: { ...form.businessModel },
+        buyerFit: { ...form.buyerFit },
+      };
+      const res = await fetch(`${apiUrl}/deals/${deal._id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to update deal");
+      }
+      // Upload new documents if any
+      if (form.documents && form.documents.length > 0) {
+        const uploadFormData = new FormData();
+        Array.from(form.documents).forEach((file) => {
+          uploadFormData.append("files", file);
+        });
+        const uploadResponse = await fetch(`${apiUrl}/deals/${deal._id}/upload-documents`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: uploadFormData,
+        });
+        if (!uploadResponse.ok) throw new Error("Failed to upload documents");
+      }
+      if (onSaved) onSaved();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+  if (!form) return <div>Loading...</div>;
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <Label>Title</Label>
+          <Input name="title" value={form.title} onChange={handleInputChange} required />
+        </div>
+        <div>
+          <Label>Company Description</Label>
+          <Textarea name="companyDescription" value={form.companyDescription} onChange={handleInputChange} required />
+        </div>
+        <div>
+          <Label>Industry Sector</Label>
+          <Input name="industrySector" value={form.industrySector} onChange={handleInputChange} required />
+        </div>
+        <div>
+          <Label>Geography</Label>
+          <Input name="geographySelection" value={form.geographySelection} onChange={handleInputChange} required />
+        </div>
+        <div>
+          <Label>Years in Business</Label>
+          <Input type="number" name="yearsInBusiness" value={form.yearsInBusiness} onChange={(e) => handleNumberChange(e, "yearsInBusiness")} required />
+        </div>
+        <div>
+          <Label>Company Type</Label>
+          <div className="flex flex-wrap gap-2">
+            {COMPANY_TYPE_OPTIONS.map((option) => (
+              <label key={option} className="flex items-center gap-1">
+                <input
+                  type="checkbox"
+                  checked={form.companyType.includes(option)}
+                  onChange={() => handleMultiSelectChange(option)}
+                />
+                {option}
+              </label>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <Label>Trailing 12-Month Revenue</Label>
+          <Input
+            type="text"
+            value={form.financialDetails.trailingRevenueAmount ? formatNumberWithCommas(form.financialDetails.trailingRevenueAmount) : ""}
+            onChange={(e) => {
+              const rawValue = e.target.value.replace(/,/g, "");
+              handleNumberChange({ target: { value: rawValue } }, "trailingRevenueAmount", "financialDetails");
+            }}
+          />
+        </div>
+        <div>
+          <Label>Trailing 12-Month EBITDA</Label>
+          <Input
+            type="text"
+            value={form.financialDetails.trailingEBITDAAmount ? formatNumberWithCommas(form.financialDetails.trailingEBITDAAmount) : ""}
+            onChange={(e) => {
+              const rawValue = e.target.value.replace(/,/g, "");
+              handleNumberChange({ target: { value: rawValue } }, "trailingEBITDAAmount", "financialDetails");
+            }}
+          />
+        </div>
+        <div>
+          <Label>Average 3-Year Revenue Growth (%)</Label>
+          <Input
+            type="text"
+            value={form.financialDetails.avgRevenueGrowth ? formatNumberWithCommas(form.financialDetails.avgRevenueGrowth) : ""}
+            onChange={(e) => {
+              const rawValue = e.target.value.replace(/,/g, "");
+              handleNumberChange({ target: { value: rawValue } }, "avgRevenueGrowth", "financialDetails");
+            }}
+          />
+        </div>
+        <div>
+          <Label>Net Income</Label>
+          <Input
+            type="text"
+            value={form.financialDetails.netIncome ? formatNumberWithCommas(form.financialDetails.netIncome) : ""}
+            onChange={(e) => {
+              const rawValue = e.target.value.replace(/,/g, "");
+              handleNumberChange({ target: { value: rawValue } }, "netIncome", "financialDetails");
+            }}
+          />
+        </div>
+        <div>
+          <Label>Asking Price</Label>
+          <Input
+            type="text"
+            value={form.financialDetails.askingPrice ? formatNumberWithCommas(form.financialDetails.askingPrice) : ""}
+            onChange={(e) => {
+              const rawValue = e.target.value.replace(/,/g, "");
+              handleNumberChange({ target: { value: rawValue } }, "askingPrice", "financialDetails");
+            }}
+          />
+        </div>
+        <div>
+          <Label>T12 Free Cash Flow</Label>
+          <Input
+            type="text"
+            value={form.financialDetails.t12FreeCashFlow ? formatNumberWithCommas(form.financialDetails.t12FreeCashFlow) : ""}
+            onChange={(e) => {
+              const rawValue = e.target.value.replace(/,/g, "");
+              handleNumberChange({ target: { value: rawValue } }, "t12FreeCashFlow", "financialDetails");
+            }}
+          />
+        </div>
+        <div>
+          <Label>T12 Net Income</Label>
+          <Input
+            type="text"
+            value={form.financialDetails.t12NetIncome ? formatNumberWithCommas(form.financialDetails.t12NetIncome) : ""}
+            onChange={(e) => {
+              const rawValue = e.target.value.replace(/,/g, "");
+              handleNumberChange({ target: { value: rawValue } }, "t12NetIncome", "financialDetails");
+            }}
+          />
+        </div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <Label>Business Models</Label>
+          <div className="flex flex-wrap gap-2">
+            {[
+              { key: "recurringRevenue", label: "Recurring Revenue" },
+              { key: "projectBased", label: "Project Based" },
+              { key: "assetLight", label: "Asset Light" },
+              { key: "assetHeavy", label: "Asset Heavy" },
+            ].map((bm) => (
+              <label key={bm.key} className="flex items-center gap-1">
+                <input
+                  type="checkbox"
+                  checked={form.businessModel[bm.key]}
+                  onChange={(e) => handleCheckboxChange(e.target.checked, bm.key, "businessModel")}
+                />
+                {bm.label}
+              </label>
+            ))}
+          </div>
+        </div>
+        <div>
+          <Label>Management Preferences</Label>
+          <Textarea name="managementPreferences" value={form.managementPreferences} onChange={handleInputChange} />
+        </div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <Label>Capital Availability</Label>
+          <div className="flex flex-wrap gap-2">
+            {[
+              "Ready to deploy immediately",
+              "Need to raise",
+            ].map((option) => (
+              <label key={option} className="flex items-center gap-1">
+                <input
+                  type="checkbox"
+                  checked={form.buyerFit.capitalAvailability.includes(option)}
+                  onChange={() => {
+                    setForm((prev) => {
+                      const current = prev.buyerFit.capitalAvailability || [];
+                      const isChecked = current.includes(option);
+                      const newValues = isChecked ? current.filter((v) => v !== option) : [...current, option];
+                      return { ...prev, buyerFit: { ...prev.buyerFit, capitalAvailability: newValues } };
+                    });
+                  }}
+                />
+                {option}
+              </label>
+            ))}
+          </div>
+        </div>
+        <div>
+          <Label>Min Prior Acquisitions</Label>
+          <Input
+            type="number"
+            value={form.buyerFit.minPriorAcquisitions}
+            onChange={(e) => handleNumberChange(e, "minPriorAcquisitions", "buyerFit")}
+          />
+        </div>
+        <div>
+          <Label>Min Transaction Size</Label>
+          <Input
+            type="number"
+            value={form.buyerFit.minTransactionSize}
+            onChange={(e) => handleNumberChange(e, "minTransactionSize", "buyerFit")}
+          />
+        </div>
+      </div>
+      {/* Documents Section */}
+      <div>
+        <Label>Documents</Label>
+        {(existingDocuments.length > 0 || (form.documents && form.documents.length > 0)) && (
+          <ul className="space-y-2 mb-2">
+            {existingDocuments.map((doc, idx) => (
+              <li key={doc.filename} className="flex items-center justify-between border rounded-md p-3 bg-blue-50">
+                <div className="flex items-center">
+                  <FileText className="h-5 w-5 mr-2 text-blue-600" />
+                  <span className="text-sm text-gray-700">{doc.originalName}</span>
+                  <span className="text-xs text-blue-600 ml-2">(Existing)</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Button variant="secondary" size="sm" onClick={() => handleDocumentDownload(doc)}>
+                    <Download className="h-4 w-4 mr-1" />Download
+                  </Button>
+                  <Button variant="destructive" size="sm" onClick={() => handleDocumentDelete(doc)}>
+                    <X className="h-4 w-4 mr-1" />Delete
+                  </Button>
+                </div>
+              </li>
+            ))}
+            {form.documents && form.documents.map((file, idx) => (
+              <li key={"new-" + idx} className="flex items-center justify-between border rounded-md p-3 bg-green-50">
+                <div className="flex items-center">
+                  <FileText className="h-5 w-5 mr-2 text-green-600" />
+                  <span className="text-sm text-gray-700">{file.name}</span>
+                  <span className="text-xs text-green-600 ml-2">(New)</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs text-gray-500">{(file.size / 1024 / 1024).toFixed(2)} MB</span>
+                  <Button variant="destructive" size="sm" onClick={() => handleNewDocumentDelete(idx)}>
+                    <X className="h-4 w-4 mr-1" />Remove
+                  </Button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+        <Input type="file" multiple onChange={handleFileChange} ref={fileInputRef} />
+        {fileError && <p className="text-red-500 text-sm mt-1">{fileError}</p>}
+        <p className="text-sm text-gray-500 mt-1">You can upload multiple files. Max size: 10MB per file.</p>
+      </div>
+      {error && <div className="text-red-500 mt-2">{error}</div>}
+      <div className="flex justify-end gap-2 mt-6">
+        <Button type="button" variant="outline" onClick={onClose} disabled={loading}>Cancel</Button>
+        <Button type="submit" className="bg-teal-500 text-white" disabled={loading}>{loading ? "Saving..." : "Save"}</Button>
+      </div>
+    </form>
+  );
+}
+
 export default function DealManagementDashboard() {
   const [editDeal, setEditDeal] = useState<Deal | null>(null);
   const [editForm, setEditForm] = useState<any>(null);
@@ -328,6 +765,178 @@ export default function DealManagementDashboard() {
   const [offMarketDeal, setOffMarketDeal] = useState<Deal | null>(null);
   const [offMarketLoading, setOffMarketLoading] = useState(false);
   const [offMarketError, setOffMarketError] = useState<string | null>(null);
+
+  // --- Off Market Multi-Step Dialog State (copied from seller dashboard) ---
+  const [offMarketDialogOpen, setOffMarketDialogOpen] = useState(false);
+  const [currentDialogStep, setCurrentDialogStep] = useState(1);
+  const [selectedDealForOffMarketDialog, setSelectedDealForOffMarketDialog] = useState<Deal | null>(null);
+  const [offMarketData, setOffMarketData] = useState({
+    dealSold: null as boolean | null,
+    transactionValue: "",
+    buyerFromCIM: null as boolean | null,
+  });
+  const [buyerActivity, setBuyerActivity] = useState<any[]>([]);
+  const [selectedWinningBuyer, setSelectedWinningBuyer] = useState<string>("");
+  const [buyerActivityLoading, setBuyerActivityLoading] = useState(false);
+
+  // --- Utility copied from seller dashboard ---
+  const formatWithCommas = (value: string | number) => {
+    const num = typeof value === "string" ? Number(value.replace(/,/g, "")) : value;
+    if (isNaN(num)) return "";
+    return num.toLocaleString();
+  };
+
+  // --- Fetch buyer activity for CIM Amplify step ---
+  const fetchDealStatusSummary = async (dealId: string) => {
+    try {
+      const token = localStorage.getItem("token");
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const response = await fetch(`${apiUrl}/deals/${dealId}/status-summary`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const allBuyerIds = [...data.deal.targetedBuyers, ...data.deal.interestedBuyers];
+        const uniqueBuyerIds = [...new Set(allBuyerIds)];
+        const buyerDetailsPromises = uniqueBuyerIds.map(async (buyerId) => {
+          try {
+            const buyerResponse = await fetch(`${apiUrl}/buyers/${buyerId}`, {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+            });
+            if (buyerResponse.ok) {
+              const buyerData = await buyerResponse.json();
+              let status = "pending";
+              const invitationStatus = data.deal.invitationStatus[buyerId];
+              if (invitationStatus) {
+                if (invitationStatus.response === "accepted") status = "active";
+                else if (invitationStatus.response === "rejected") status = "rejected";
+              }
+              return {
+                buyerId: buyerId,
+                buyerName: buyerData.fullName || buyerData.name || "Unknown Buyer",
+                companyName: buyerData.companyName || "Unknown Company",
+                buyerEmail: buyerData.email || "",
+                status: status,
+                invitationStatus: invitationStatus,
+              };
+            }
+          } catch (error) {
+            return null;
+          }
+        });
+        const buyerDetails = await Promise.all(buyerDetailsPromises);
+        const validBuyerDetails = buyerDetails.filter((buyer) => buyer !== null);
+        setBuyerActivity(validBuyerDetails);
+        const activeBuyer = validBuyerDetails.find((buyer) => buyer && buyer.status === "active");
+        if (activeBuyer) setSelectedWinningBuyer(activeBuyer.buyerId);
+        return validBuyerDetails;
+      }
+    } catch (error) {}
+    return [];
+  };
+
+  // --- Off Market Dialog Handlers ---
+  const handleAdminOffMarketClick = (deal: Deal) => {
+    setSelectedDealForOffMarketDialog(deal);
+    setCurrentDialogStep(1);
+    setOffMarketDialogOpen(true);
+    setOffMarketData({ dealSold: null, transactionValue: "", buyerFromCIM: null });
+    setBuyerActivity([]);
+    setSelectedWinningBuyer("");
+  };
+
+  const handleAdminDialogResponse = async (key: string, value: boolean) => {
+    setOffMarketData((prev) => ({ ...prev, [key]: value }));
+    if (key === "dealSold") {
+      if (value === false) {
+        // Mark deal as off-market (same as seller dashboard)
+        if (selectedDealForOffMarketDialog) {
+          try {
+            const token = localStorage.getItem("token");
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+            const response = await fetch(`${apiUrl}/deals/${selectedDealForOffMarketDialog._id}/close-deal`, {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({}),
+            });
+            if (!response.ok) {
+              // Optionally show error
+            }
+            setActiveDeals((prev) => prev.filter((d) => d._id !== selectedDealForOffMarketDialog._id));
+            setOffMarketDeals((prev) => [selectedDealForOffMarketDialog, ...prev]);
+            setOffMarketDialogOpen(false);
+          } catch (error) {
+            setOffMarketDialogOpen(false);
+          }
+        } else {
+          setOffMarketDialogOpen(false);
+        }
+      } else {
+        setCurrentDialogStep(2);
+      }
+    }
+  };
+
+  const handleAdminOffMarketSubmit = async () => {
+    if (!selectedDealForOffMarketDialog || !offMarketData.transactionValue) {
+      // Optionally show error
+      return;
+    }
+    // If buyerFromCIM is true, require a selected buyer
+    if (offMarketData.buyerFromCIM === true && !selectedWinningBuyer) {
+      // Optionally show error
+      return;
+    }
+    try {
+      const token = localStorage.getItem("token");
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      // Use POST /deals/:id/close for admin (now allowed)
+      const body = {
+        finalSalePrice: Number.parseFloat(offMarketData.transactionValue),
+        ...(offMarketData.buyerFromCIM === true && selectedWinningBuyer ? { winningBuyerId: selectedWinningBuyer } : {}),
+      };
+      const closeResponse = await fetch(`${apiUrl}/deals/${selectedDealForOffMarketDialog._id}/close`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+      if (!closeResponse.ok) {
+        setOffMarketDialogOpen(false);
+        return;
+      }
+      setActiveDeals((prev) => prev.filter((d) => d._id !== selectedDealForOffMarketDialog._id));
+      setOffMarketDeals((prev) => [selectedDealForOffMarketDialog, ...prev]);
+      setOffMarketDialogOpen(false);
+      setCurrentDialogStep(1);
+      setSelectedDealForOffMarketDialog(null);
+      setOffMarketData({ dealSold: null, transactionValue: "", buyerFromCIM: null });
+      setBuyerActivity([]);
+      setSelectedWinningBuyer("");
+    } catch (error) {
+      setOffMarketDialogOpen(false);
+    }
+  };
+
+  // --- Buyer activity fetch for CIM step ---
+  useEffect(() => {
+    if (offMarketDialogOpen && selectedDealForOffMarketDialog && offMarketData.buyerFromCIM === true) {
+      setBuyerActivity([]);
+      setBuyerActivityLoading(true);
+      fetchDealStatusSummary(selectedDealForOffMarketDialog._id).finally(() => setBuyerActivityLoading(false));
+    }
+  }, [offMarketDialogOpen, selectedDealForOffMarketDialog, offMarketData.buyerFromCIM]);
 
   const router = useRouter();
   const { logout } = useAuth();
@@ -945,6 +1554,18 @@ export default function DealManagementDashboard() {
                               <span className="mr-1">Seller Email:</span>
                               {deal.sellerProfile.email}
                             </div>
+                            <div className="text-xs text-gray-500">
+                              <span className="mr-1">Company Name:</span>
+                              {deal.sellerProfile.companyName}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              <span className="mr-1">Phone Number:</span>
+                              {deal.sellerProfile.phoneNumber}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              <span className="mr-1">Website:</span>
+                              {deal.sellerProfile.website}
+                            </div>
                           </div>
                         </div>
                       ) : (
@@ -1067,7 +1688,7 @@ export default function DealManagementDashboard() {
                           style={{ minWidth: 110 }}
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleOffMarketClick(deal);
+                            handleAdminOffMarketClick(deal);
                           }}
                           disabled={offMarketLoading && offMarketDeal?._id === deal._id}
                         >
@@ -1185,6 +1806,18 @@ export default function DealManagementDashboard() {
                               <span className="mr-1">Seller Email:</span>
                               {deal.sellerProfile.email}
                             </div>
+                            <div className="text-xs text-gray-500">
+                              <span className="mr-1">Company Name:</span>
+                              {deal.sellerProfile.companyName}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              <span className="mr-1">Phone Number:</span>
+                              {deal.sellerProfile.phoneNumber}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              <span className="mr-1">Website:</span>
+                              {deal.sellerProfile.website}
+                            </div>
                           </div>
                         </div>
                       ) : (
@@ -1207,34 +1840,43 @@ export default function DealManagementDashboard() {
                       </h4>
                       <div className="mb-4 grid grid-cols-2 gap-2 text-sm text-gray-600">
                         <p>
-                          Currency:{" "}
-                          {deal.financialDetails?.trailingRevenueCurrency}
+                          Currency: {deal.financialDetails?.trailingRevenueCurrency}
                         </p>
                         <p>
-                          Trailing 12-Month Revenue:{" "}
-                          {deal.financialDetails?.trailingRevenueCurrency?.replace(
-                            "USD($)",
-                            "$"
-                          ) || "$"}
-                          {deal.financialDetails?.trailingRevenueAmount?.toLocaleString() ||
-                            "N/A"}
+                          Trailing 12-Month Revenue: {deal.financialDetails?.trailingRevenueCurrency?.replace("USD($)", "$") || "$"}
+                          {deal.financialDetails?.trailingRevenueAmount?.toLocaleString() || "N/A"}
                         </p>
                         <p>
-                          Trailing 12-Month EBITDA:{" "}
-                          {deal.financialDetails?.trailingEBITDACurrency?.replace(
-                            "USD($)",
-                            "$"
-                          ) || "$"}
-                          {deal.financialDetails?.trailingEBITDAAmount?.toLocaleString() ||
-                            "N/A"}
+                          Trailing 12-Month EBITDA: {deal.financialDetails?.trailingEBITDACurrency?.replace("USD($)", "$") || "$"}
+                          {deal.financialDetails?.trailingEBITDAAmount?.toLocaleString() || "N/A"}
                         </p>
-
                         <p>
                           T12 Net Income: $
-                          {deal.financialDetails?.t12NetIncome?.toLocaleString() ||
-                            "N/A"}
+                          {deal.financialDetails?.t12NetIncome?.toLocaleString() || "N/A"}
                         </p>
+                        {/* Transaction Value (Final Sale Price) */}
+                        {deal.financialDetails?.finalSalePrice && (
+                          <p className="col-span-2">
+                            <span className="font-semibold">Transaction Value:</span> $
+                            {deal.financialDetails.finalSalePrice.toLocaleString()}
+                          </p>
+                        )}
                       </div>
+                      {/* Closed Buyer Info */}
+                      {(deal.closedWithBuyer || deal.closedWithBuyerCompany || deal.closedWithBuyerEmail) && (
+                        <div className="mb-4 text-sm text-gray-700 border border-gray-100 rounded p-2 bg-gray-50">
+                          <div className="font-semibold mb-1">Closed Buyer</div>
+                          {deal.closedWithBuyerCompany && (
+                            <div>Company: {deal.closedWithBuyerCompany}</div>
+                          )}
+                          {deal.closedWithBuyerEmail && (
+                            <div>Email: {deal.closedWithBuyerEmail}</div>
+                          )}
+                          {deal.closedWithBuyer && !deal.closedWithBuyerCompany && !deal.closedWithBuyerEmail && (
+                            <div>Buyer ID: {deal.closedWithBuyer}</div>
+                          )}
+                        </div>
+                      )}
                       <h4 className="mb-2 font-medium text-gray-800">
                         Documents
                       </h4>
@@ -1288,13 +1930,6 @@ export default function DealManagementDashboard() {
                           }}
                         >
                           Activity
-                        </Button>
-                        <Button
-                          variant="outline"
-                          className="px-4 py-2 mr-2 ml-3"
-                          onClick={() => handleEditDeal(deal)}
-                        >
-                          Edit
                         </Button>
                         <Button
                           className="bg-red-500 hover:bg-red-600 px-4 py-2 ml-2 text-white"
@@ -1385,188 +2020,18 @@ export default function DealManagementDashboard() {
       </div>
       {editDeal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg w-full max-w-2xl p-8 overflow-y-auto max-h-[90vh]">
-            <h2 className="text-xl font-semibold mb-4">Edit Deal</h2>
-            <form
-              onSubmit={async (e) => {
-                e.preventDefault();
-                setEditLoading(true);
-                setEditError(null);
-                try {
-                  const token = localStorage.getItem("token");
-                  // Sanitize payload
-                  const {
-                    _id,
-                    rewardLevel,
-                    seller,
-                    interestedBuyers,
-                    invitationStatus,
-                    priority,
-                    createdAt,
-                    updatedAt,
-                    timeline,
-                    __v,
-                    sellerProfile,
-                    ...rest
-                  } = editForm;
-                  // Re-nest financialDetails
-                  const financialDetails = {
-                    trailingRevenueCurrency: rest.trailingRevenueCurrency,
-                    trailingRevenueAmount: rest.trailingRevenueAmount,
-                    trailingEBITDACurrency: rest.trailingEBITDACurrency,
-                    trailingEBITDAAmount: rest.trailingEBITDAAmount,
-                    t12FreeCashFlow: rest.t12FreeCashFlow,
-                    t12NetIncome: rest.t12NetIncome,
-                    avgRevenueGrowth: rest.avgRevenueGrowth,
-                    netIncome: rest.netIncome,
-                    askingPrice: rest.askingPrice,
-                  };
-                  [
-                    "trailingRevenueCurrency",
-                    "trailingRevenueAmount",
-                    "trailingEBITDACurrency",
-                    "trailingEBITDAAmount",
-                    "t12FreeCashFlow",
-                    "t12NetIncome",
-                    "avgRevenueGrowth",
-                    "netIncome",
-                    "askingPrice",
-                  ].forEach((key) => delete rest[key]);
-                  // Ensure companyType is a string
-                  if (Array.isArray(rest.companyType)) {
-                    rest.companyType = rest.companyType.join(", ");
-                  }
-                  // Ensure documents is an array of strings
-                  rest.documents = Array.isArray(rest.documents)
-                    ? rest.documents.map((doc: any) =>
-                        typeof doc === "string" ? doc : doc.filename
-                      )
-                    : [];
-                  const updatePayload = {
-                    ...rest,
-                    financialDetails,
-                  };
-                  const res = await fetch(
-                    `${process.env.NEXT_PUBLIC_API_URL}/deals/${editDeal._id}`,
-                    {
-                      method: "PATCH",
-                      headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
-                      },
-                      body: JSON.stringify(updatePayload),
-                    }
-                  );
-                  if (!res.ok) {
-                    const errorData = await res.json();
-                    throw new Error(
-                      errorData.message || "Failed to update deal"
-                    );
-                  }
-                  setEditDeal(null);
-                  setEditForm(null);
-                  setEditLoading(false);
-                  window.location.reload();
-                } catch (error: any) {
-                  setEditError(error.message);
-                  setEditLoading(false);
-                }
+          <div className="bg-white rounded-lg w-full max-w-5xl p-8 overflow-y-auto max-h-[90vh]">
+            {/* Use the same form structure as seller/edit-deal/page.tsx, but for admin */}
+            {/* --- Admin Deal Edit Form --- */}
+            <h2 className="text-2xl font-bold mb-4">Edit Deal</h2>
+            <AdminEditDealForm
+              deal={editDeal}
+              onClose={() => setEditDeal(null)}
+              onSaved={() => {
+                setEditDeal(null);
+                window.location.reload();
               }}
-            >
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-medium mb-1">
-                    Title
-                  </label>
-                  <Input
-                    value={editForm.title || ""}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, title: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium mb-1">
-                    Company Description
-                  </label>
-                  <Input
-                    value={editForm.companyDescription || ""}
-                    onChange={(e) =>
-                      setEditForm({
-                        ...editForm,
-                        companyDescription: e.target.value,
-                      })
-                    }
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium mb-1">
-                    Industry Sector
-                  </label>
-                  <Input
-                    value={editForm.industrySector || ""}
-                    onChange={(e) =>
-                      setEditForm({
-                        ...editForm,
-                        industrySector: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium mb-1">
-                    Geography
-                  </label>
-                  <Input
-                    value={editForm.geographySelection || ""}
-                    onChange={(e) =>
-                      setEditForm({
-                        ...editForm,
-                        geographySelection: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium mb-1">
-                    Years in Business
-                  </label>
-                  <Input
-                    type="number"
-                    value={editForm.yearsInBusiness || ""}
-                    onChange={(e) =>
-                      setEditForm({
-                        ...editForm,
-                        yearsInBusiness: Number(e.target.value),
-                      })
-                    }
-                  />
-                </div>
-                <div></div>
-                {/* Add more fields as needed */}
-              </div>
-              {editError && (
-                <div className="text-red-500 mt-2">{editError}</div>
-              )}
-              <div className="flex justify-end gap-2 mt-6">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setEditDeal(null)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  className="bg-teal-500 text-white"
-                  disabled={editLoading}
-                >
-                  {editLoading ? "Saving..." : "Save"}
-                </Button>
-              </div>
-            </form>
+            />
           </div>
         </div>
       )}
@@ -1620,6 +2085,141 @@ export default function DealManagementDashboard() {
           {offMarketLoading ? 'Processing...' : 'Confirm Off Market'}
         </Button>
       </DialogFooter>
+    </DialogContent>
+  </Dialog>
+)}
+{offMarketDialogOpen && (
+  <Dialog open={offMarketDialogOpen} onOpenChange={setOffMarketDialogOpen}>
+    <DialogContent className="sm:max-w-md">
+      {currentDialogStep === 1 ? (
+        <>
+          <DialogHeader>
+            <DialogTitle className="text-center text-lg font-medium">Did the deal sell?</DialogTitle>
+          </DialogHeader>
+          <div className="flex justify-center gap-4 mt-6">
+            <Button
+              variant={offMarketData.dealSold === false ? "default" : "outline"}
+              onClick={() => handleAdminDialogResponse("dealSold", false)}
+              className={
+                offMarketData.dealSold === false
+                  ? "px-8 bg-red-500 text-white hover:bg-red-600 border-red-500"
+                  : "px-8 bg-white text-red-500 border border-red-500 hover:bg-red-50"
+              }
+            >
+              No
+            </Button>
+            <Button
+              variant={offMarketData.dealSold === true ? "default" : "outline"}
+              onClick={() => handleAdminDialogResponse("dealSold", true)}
+              className={
+                offMarketData.dealSold === true
+                  ? "px-8 bg-teal-500 text-white hover:bg-teal-600 border-teal-500"
+                  : "px-8 bg-white text-teal-500 border border-teal-500 hover:bg-teal-50"
+              }
+            >
+              Yes
+            </Button>
+          </div>
+        </>
+      ) : currentDialogStep === 2 ? (
+        <>
+          <DialogHeader>
+            <DialogTitle className="text-center text-lg font-medium">What was the transaction value?</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <Input
+              value={offMarketData.transactionValue && offMarketData.transactionValue !== "0" ? formatWithCommas(offMarketData.transactionValue) : ""}
+              onChange={(e) => {
+                const rawValue = e.target.value.replace(/,/g, "");
+                setOffMarketData((prev) => ({ ...prev, transactionValue: rawValue }));
+              }}
+              placeholder="Enter transaction value"
+              className="w-full"
+            />
+            <div className="flex justify-center">
+              <Button
+                onClick={() => setCurrentDialogStep(3)}
+                className="px-8 bg-teal-500 hover:bg-teal-600"
+                disabled={!offMarketData.transactionValue}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        </>
+      ) : (
+        <>
+          <DialogHeader>
+            <DialogTitle className="text-center text-teal-500 text-lg font-medium">Did the buyer come from CIM Amplify?</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6 mt-4">
+            <div className="flex gap-4">
+              <Button
+                variant={offMarketData.buyerFromCIM === false ? "default" : "outline"}
+                onClick={() => setOffMarketData((prev) => ({ ...prev, buyerFromCIM: false }))}
+                className={
+                  offMarketData.buyerFromCIM === false
+                    ? "flex-1 bg-red-500 text-white hover:bg-red-600 border-red-500"
+                    : "flex-1 bg-white text-red-500 border border-red-500 hover:bg-red-50"
+                }
+              >
+                No
+              </Button>
+              <Button
+                variant={offMarketData.buyerFromCIM === true ? "default" : "outline"}
+                onClick={() => setOffMarketData((prev) => ({ ...prev, buyerFromCIM: true }))}
+                className={
+                  offMarketData.buyerFromCIM === true
+                    ? "flex-1 bg-teal-500 text-white hover:bg-teal-600 border-teal-500"
+                    : "flex-1 bg-white text-teal-500 border border-teal-500 hover:bg-teal-50"
+                }
+              >
+                Yes
+              </Button>
+            </div>
+            {offMarketData.buyerFromCIM === true && (
+              <div>
+                <Label className="text-base font-medium mb-3 block">Select the buyer:</Label>
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {buyerActivityLoading ? (
+                    <div className="text-center text-gray-500 py-4">Loading buyer activity...</div>
+                  ) : buyerActivity.length > 0 ? (
+                    buyerActivity.map((buyer) => (
+                      <div
+                        key={buyer.buyerId}
+                        className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer ${selectedWinningBuyer === buyer.buyerId ? "border-teal-500 bg-teal-50" : "border-gray-200"}`}
+                        onClick={() => setSelectedWinningBuyer(buyer.buyerId)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center overflow-hidden">
+                            <img
+                              src="/placeholder.svg?height=40&width=40"
+                              alt={buyer.buyerName || "Buyer"}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <div>
+                            <div className="font-medium text-sm">{buyer.buyerName || "Unknown Buyer"}</div>
+                            <div className="text-xs text-gray-500">{buyer.companyName || "Unknown Company"}</div>
+                          </div>
+                        </div>
+                        <div className={`px-2 py-1 rounded-full text-xs font-medium ${buyer.status === "active" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>{buyer.status || "Unknown"}</div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center text-amber-600 text-sm mt-2">We did not present any buyers.  Please click No</div>
+                  )}
+                </div>
+              </div>
+            )}
+            {offMarketData.buyerFromCIM !== null && (
+              <div className="flex justify-end pt-4">
+                <Button onClick={handleAdminOffMarketSubmit} className="bg-teal-500 hover:bg-teal-600">Submit</Button>
+              </div>
+            )}
+          </div>
+        </>
+      )}
     </DialogContent>
   </Dialog>
 )}
