@@ -21,6 +21,15 @@ import {
   ArrowUp,
   ArrowDown
 } from "lucide-react";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogClose,
+} from "@/components/ui/dialog";
 
 // Seller interface
 interface Seller {
@@ -82,6 +91,12 @@ export default function SellersManagementDashboard() {
   // Add admin profile state
   const [adminProfile, setAdminProfile] = useState<AdminProfile | null>(null);
   const [companySort, setCompanySort] = useState<"asc" | "desc" | null>(null);
+
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalDeals, setModalDeals] = useState<any[]>([]);
+  const [modalStatus, setModalStatus] = useState<"active" | "completed" | null>(null);
+  const [modalSeller, setModalSeller] = useState<Seller | null>(null);
+  const [modalLoading, setModalLoading] = useState(false);
 
   const router = useRouter();
   const { logout } = useAuth();
@@ -159,6 +174,42 @@ export default function SellersManagementDashboard() {
     };
     fetchAdminProfile();
   }, []);
+
+  // Fetch true active and off-market deal counts for each seller from backend
+  useEffect(() => {
+    async function fetchDealCounts() {
+      const token = localStorage.getItem("token");
+      const sellersWithCounts = await Promise.all(
+        sellers.map(async (seller) => {
+          const sellerId = seller._id || seller.id;
+          if (!sellerId) return seller;
+          let activeDealsCount = 0;
+          let offMarketDealsCount = 0;
+          try {
+            // Fetch true active deals
+            const activeRes = await fetch(`http://localhost:3001/deals/admin/seller/${sellerId}/deals?status=active`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            if (activeRes.ok) {
+              const activeDeals = await activeRes.json();
+              activeDealsCount = Array.isArray(activeDeals) ? activeDeals.length : 0;
+            }
+            // Fetch off-market deals
+            const offMarketRes = await fetch(`http://localhost:3001/deals/admin/seller/${sellerId}/deals?status=completed`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            if (offMarketRes.ok) {
+              const offMarketDeals = await offMarketRes.json();
+              offMarketDealsCount = Array.isArray(offMarketDeals) ? offMarketDeals.length : 0;
+            }
+          } catch {}
+          return { ...seller, activeDealsCount, offMarketDealsCount };
+        })
+      );
+      setSellers(sellersWithCounts);
+    }
+    if (sellers.length > 0) fetchDealCounts();
+  }, [sellers.length]);
 
   const handleLogout = () => {
     logout();
@@ -303,6 +354,27 @@ export default function SellersManagementDashboard() {
     return nameB.localeCompare(nameA);
   });
   const currentSellers = sortedSellers.slice(startIndex, endIndex);
+
+  // Update openDealModal to fetch the correct deals for the popup
+  const openDealModal = async (seller: Seller, status: "active" | "completed") => {
+    setModalSeller(seller);
+    setModalStatus(status);
+    setModalLoading(true);
+    setModalOpen(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`http://localhost:3001/deals/admin/seller/${seller._id || seller.id}/deals?status=${status}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to fetch deals");
+      const deals = await res.json();
+      setModalDeals(deals);
+    } catch {
+      setModalDeals([]);
+    } finally {
+      setModalLoading(false);
+    }
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -491,7 +563,7 @@ export default function SellersManagementDashboard() {
                         <td className="py-3 px-4 hidden lg:table-cell">
                           <div
                             className="text-gray-600 text-sm cursor-pointer hover:text-blue-600 hover:underline"
-                            onClick={() => handleViewActiveDeals((seller._id || seller.id || "") as string)}
+                            onClick={() => openDealModal(seller, "active")}
                           >
                             {seller.activeDealsCount}
                           </div>
@@ -499,7 +571,7 @@ export default function SellersManagementDashboard() {
                         <td className="py-3 px-4 hidden lg:table-cell">
                           <div
                             className="text-gray-600 text-sm cursor-pointer hover:text-blue-600 hover:underline"
-                            onClick={() => handleViewOffMarketDeals((seller._id || seller.id || "") as string)}
+                            onClick={() => openDealModal(seller, "completed")}
                           >
                             {seller.offMarketDealsCount}
                           </div>
@@ -641,6 +713,40 @@ export default function SellersManagementDashboard() {
           )}
         </div>
       </div>
+
+      {/* Deal Info Modal */}
+      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {modalStatus && modalSeller ? (
+                <>
+                  {modalStatus === "active" ? "Active" : "Off-Market"} Deals for {modalSeller.fullName}
+                </>
+              ) : "Deals"}
+            </DialogTitle>
+            <DialogDescription>
+              {modalSeller?.companyName}
+            </DialogDescription>
+          </DialogHeader>
+          {modalLoading ? (
+            <div className="py-6 text-center">Loading deals...</div>
+          ) : modalDeals.length === 0 ? (
+            <div className="py-6 text-center text-gray-500">No deals found.</div>
+          ) : (
+            <ul className="divide-y divide-gray-200 max-h-80 overflow-y-auto">
+              {modalDeals.map((deal) => (
+                <li key={deal._id} className="py-2 px-1">
+                  <div className="font-medium text-gray-900">{deal.title}</div>
+                  <div className="text-xs text-gray-500">Status: {deal.status}</div>
+                  <div className="text-xs text-gray-400">Industry: {deal.industrySector}</div>
+                  <div className="text-xs text-gray-400">Last Updated: {deal.timeline?.updatedAt ? new Date(deal.timeline.updatedAt).toLocaleString() : "-"}</div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
