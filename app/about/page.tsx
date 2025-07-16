@@ -358,7 +358,7 @@ From childhood ventures like newspaper routes and selling books to successfully 
            
             {/* Brass Ring Section */}
             <motion.section 
-                className="py-20 bg-white section-reveal mt-8"
+                className="py-20 bg-white section-reveal "
                 variants={containerVariants}
                 initial="hidden"
                 whileInView="visible"
