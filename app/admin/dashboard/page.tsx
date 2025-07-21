@@ -1325,96 +1325,112 @@ export default function DealManagementDashboard() {
 
   if (loading) {
     return (
-<div className="w-64 bg-white border-r border-gray-200 p-6 flex flex-col">
-        <div className="mb-8">
-          <Link href="/seller/dashboard">
-            <Image src="/logo.svg" alt="CIM Amplify Logo" width={150} height={50} className="h-auto" />
-          </Link>
+      <div className="flex min-h-screen bg-gray-50">
+        <div className="w-64 bg-white border-r border-gray-200 p-6 flex flex-col">
+          <div className="mb-8">
+            <Link href="/seller/dashboard">
+              <Image src="/logo.svg" alt="CIM Amplify Logo" width={150} height={50} className="h-auto" />
+            </Link>
+          </div>
+          <nav className="flex-1 flex flex-col gap-4">
+            <Link href="/admin/dashboard">
+              <Button variant="ghost" className="w-full justify-start gap-3 font-normal bg-teal-100 text-teal-700 hover:bg-teal-200">
+                <Handshake className="h-5 w-5" />
+                <span>  Deals</span>
+              </Button>
+            </Link>
+            <Link href="/admin/buyers">
+              <Button variant="ghost" className="w-full justify-start gap-3 font-normal">
+                <Tag className="h-5 w-5" />
+                <span>Buyers</span>
+              </Button>
+            </Link>
+            <Link href="/admin/sellers">
+              <Button variant="ghost" className="w-full justify-start gap-3 font-normal">
+                <ShoppingCart className="h-5 w-5" />
+                <span>Sellers</span>
+              </Button>
+            </Link>
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3 font-normal"
+              onClick={() => router.push('/admin/viewprofile')}
+            >
+              <Eye className="h-5 w-5" />
+              <span>View Profile</span>
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3 font-normal text-red-600 hover:text-red-700 hover:bg-red-50"
+              onClick={handleLogout}
+            >
+              <LogOut className="h-5 w-5" />
+              <span>Sign Out</span>
+            </Button>
+          </nav>
         </div>
-        <nav className="flex-1 flex flex-col gap-4">
-      <Link href="/admin/dashboard">
-            <Button variant="ghost" className="w-full justify-start gap-3 font-normal bg-teal-100 text-teal-700 hover:bg-teal-200">
-              <Handshake className="h-5 w-5" />
-              <span>  Deals</span>
-            </Button>
-          </Link>
-          <Link href="/admin/buyers">
-            <Button variant="ghost" className="w-full justify-start gap-3 font-normal">
-              <Tag className="h-5 w-5" />
-              <span>Buyers</span>
-            </Button>
-          </Link>
-          <Link href="/admin/sellers">
-            <Button variant="ghost" className="w-full justify-start gap-3 font-normal">
-              <ShoppingCart className="h-5 w-5" />
-              <span>Sellers</span>
-            </Button>
-          </Link>
-          <Button
-            variant="ghost"
-            className="w-full justify-start gap-3 font-normal"
-            onClick={() => router.push('/admin/viewprofile')}
-          >
-            <Eye className="h-5 w-5" />
-            <span>View Profile</span>
-          </Button>
-          <Button
-            variant="ghost"
-            className="w-full justify-start gap-3 font-normal text-red-600 hover:text-red-700 hover:bg-red-50"
-            onClick={handleLogout}
-          >
-            <LogOut className="h-5 w-5" />
-            <span>Sign Out</span>
-          </Button>
-        </nav>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="flex flex-col items-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#3aafa9] mb-4"></div>
+            <span className="text-gray-600 text-lg">Loading deals...</span>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-<div className="w-64 bg-white border-r border-gray-200 p-6 flex flex-col">
-        <div className="mb-8">
-          <Link href="/seller/dashboard">
-            <Image src="/logo.svg" alt="CIM Amplify Logo" width={150} height={50} className="h-auto" />
-          </Link>
+      <div className="flex min-h-screen bg-gray-50">
+        <div className="w-64 bg-white border-r border-gray-200 p-6 flex flex-col">
+          <div className="mb-8">
+            <Link href="/seller/dashboard">
+              <Image src="/logo.svg" alt="CIM Amplify Logo" width={150} height={50} className="h-auto" />
+            </Link>
+          </div>
+          <nav className="flex-1 flex flex-col gap-4">
+            <Link href="/admin/dashboard">
+              <Button variant="ghost" className="w-full justify-start gap-3 font-normal bg-teal-100 text-teal-700 hover:bg-teal-200">
+                <Handshake className="h-5 w-5" />
+                <span>  Deals</span>
+              </Button>
+            </Link>
+            <Link href="/admin/buyers">
+              <Button variant="ghost" className="w-full justify-start gap-3 font-normal">
+                <Tag className="h-5 w-5" />
+                <span>Buyers</span>
+              </Button>
+            </Link>
+            <Link href="/admin/sellers">
+              <Button variant="ghost" className="w-full justify-start gap-3 font-normal">
+                <ShoppingCart className="h-5 w-5" />
+                <span>Sellers</span>
+              </Button>
+            </Link>
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3 font-normal"
+              onClick={() => router.push('/admin/viewprofile')}
+            >
+              <Eye className="h-5 w-5" />
+              <span>View Profile</span>
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3 font-normal text-red-600 hover:text-red-700 hover:bg-red-50"
+              onClick={handleLogout}
+            >
+              <LogOut className="h-5 w-5" />
+              <span>Sign Out</span>
+            </Button>
+          </nav>
         </div>
-        <nav className="flex-1 flex flex-col gap-4">
-      <Link href="/admin/dashboard">
-            <Button variant="ghost" className="w-full justify-start gap-3 font-normal bg-teal-100 text-teal-700 hover:bg-teal-200">
-              <Handshake className="h-5 w-5" />
-              <span>  Deals</span>
-            </Button>
-          </Link>
-          <Link href="/admin/buyers">
-            <Button variant="ghost" className="w-full justify-start gap-3 font-normal">
-              <Tag className="h-5 w-5" />
-              <span>Buyers</span>
-            </Button>
-          </Link>
-          <Link href="/admin/sellers">
-            <Button variant="ghost" className="w-full justify-start gap-3 font-normal">
-              <ShoppingCart className="h-5 w-5" />
-              <span>Sellers</span>
-            </Button>
-          </Link>
-          <Button
-            variant="ghost"
-            className="w-full justify-start gap-3 font-normal"
-            onClick={() => router.push('/admin/viewprofile')}
-          >
-            <Eye className="h-5 w-5" />
-            <span>View Profile</span>
-          </Button>
-          <Button
-            variant="ghost"
-            className="w-full justify-start gap-3 font-normal text-red-600 hover:text-red-700 hover:bg-red-50"
-            onClick={handleLogout}
-          >
-            <LogOut className="h-5 w-5" />
-            <span>Sign Out</span>
-          </Button>
-        </nav>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="flex flex-col items-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#3aafa9] mb-4"></div>
+            <span className="text-gray-600 text-lg">Loading deals...</span>
+          </div>
+        </div>
       </div>
     );
   }
@@ -1428,14 +1444,14 @@ export default function DealManagementDashboard() {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-<div className="w-64 bg-white border-r border-gray-200 p-6 flex flex-col">
+      <div className="w-64 bg-white border-r border-gray-200 p-6 flex flex-col">
         <div className="mb-8">
           <Link href="/seller/dashboard">
             <Image src="/logo.svg" alt="CIM Amplify Logo" width={150} height={50} className="h-auto" />
           </Link>
         </div>
         <nav className="flex-1 flex flex-col gap-4">
-      <Link href="/admin/dashboard">
+          <Link href="/admin/dashboard">
             <Button variant="ghost" className="w-full justify-start gap-3 font-normal bg-teal-100 text-teal-700 hover:bg-teal-200">
               <Handshake className="h-5 w-5" />
               <span>  Deals</span>
