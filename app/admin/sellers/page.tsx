@@ -187,7 +187,7 @@ export default function SellersManagementDashboard() {
           let offMarketDealsCount = 0;
           try {
             // Fetch true active deals
-            const activeRes = await fetch(`http://localhost:3001/deals/admin/seller/${sellerId}/deals?status=active`, {
+            const activeRes = await fetch(`https://api.cimamplify.com/deals/admin/seller/${sellerId}/deals?status=active`, {
               headers: { Authorization: `Bearer ${token}` },
             });
             if (activeRes.ok) {
@@ -195,7 +195,7 @@ export default function SellersManagementDashboard() {
               activeDealsCount = Array.isArray(activeDeals) ? activeDeals.length : 0;
             }
             // Fetch off-market deals
-            const offMarketRes = await fetch(`http://localhost:3001/deals/admin/seller/${sellerId}/deals?status=completed`, {
+            const offMarketRes = await fetch(`https://api.cimamplify.com/deals/admin/seller/${sellerId}/deals?status=completed`, {
               headers: { Authorization: `Bearer ${token}` },
             });
             if (offMarketRes.ok) {
@@ -363,7 +363,7 @@ export default function SellersManagementDashboard() {
     setModalOpen(true);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:3001/deals/admin/seller/${seller._id || seller.id}/deals?status=${status}`, {
+      const res = await fetch(`https://api.cimamplify.com/deals/admin/seller/${seller._id || seller.id}/deals?status=${status}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error("Failed to fetch deals");

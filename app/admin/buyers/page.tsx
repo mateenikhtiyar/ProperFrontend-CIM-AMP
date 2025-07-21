@@ -139,7 +139,7 @@ export default function BuyersManagementDashboard() {
           if (!buyerId) return;
           try {
             // Fetch real deal status counts from backend (invitationStatus logic)
-            const res = await fetch(`http://localhost:3001/deals/admin/buyer/${buyerId}/status-counts`, {
+            const res = await fetch(`https://api.cimamplify.com/deals/admin/buyer/${buyerId}/status-counts`, {
               headers: { Authorization: `Bearer ${token}` },
             });
             if (!res.ok) throw new Error("Failed to fetch deal status counts");
@@ -173,7 +173,7 @@ export default function BuyersManagementDashboard() {
     setModalOpen(true);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:3001/deals/admin/buyer/${buyer._id || buyer.id}/deals?status=${status}`, {
+      const res = await fetch(`https://api.cimamplify.com/deals/admin/buyer/${buyer._id || buyer.id}/deals?status=${status}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error("Failed to fetch deals");
