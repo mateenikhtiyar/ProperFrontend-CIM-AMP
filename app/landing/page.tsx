@@ -41,29 +41,60 @@ export default function Component() {
 
   const stats = [
     { value: "$300M", label: "Monthly Deal Volume" },
-    { value: "$2M - $250M", label: "Typical Revenue Range" },
+    { value: "$2M-$250M", label: "Typical Revenue Range" },
     { value: "85+", label: "Industry Sectors" },
     { value: "100%", label: "Represented Deals" },
   ]
 
+
+
   const platformGuidelines = [
     {
-      icon: "💼",
+      icon: (
+        <Image
+          src="/icon2.png"
+          alt="M&A Deal Icon"
+          width={60}
+          height={60}
+        />
+      ),
       title: "M&A Deals must have a minimum of $1 Million in EBITDA or, failing that, $5 Million in revenue"
     },
     {
-      icon: "📋",
+      icon: (
+        <Image
+          src="/icon1.png"
+          alt="Advisor Icon"
+          width={70}
+          height={70}
+        />
+      ),
       title: "Deals must be posted by an M&A Advisor."
     },
     {
-      icon: "🤝",
+      icon: (
+        <Image
+          src="/icon3.png"
+          alt="CIM Icon"
+          width={70}
+          height={70}
+        />
+      ),
       title: "A Confidential Information Memorandum, or similar data, must be available"
     },
-    {
-      icon: "✅",
-      title: "Only M&A deals may be posted. No other deal type will be accepted"
-    }
-  ]
+     {
+      icon: (
+        <Image
+          src="/icon4.png"
+          alt="CIM Icon"
+          width={50}
+          height={50}
+        />
+      ),
+    title: "Only M&A deals may be posted. No other deal type will be accepted"
+    },
+  ];
+
 
  const testimonials = [
   {
@@ -249,13 +280,13 @@ useEffect(() => {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-[#f2f3f4]">
    <style jsx>{`
   * {
     scroll-behavior: smooth;
   }
     body{
-    background-color: #ffffff}
+    background-color: black}
   
   html {
     scroll-behavior: smooth;
@@ -627,12 +658,7 @@ useEffect(() => {
   <div className="container mx-auto px-6 py-4">
     <div className="flex items-center justify-between">
       <div className="logo-container">
-        <Image 
-          src="/logo.svg" 
-          alt="CIM Amplify Logo" 
-          width={150} 
-          height={50} 
-          className="h-auto" 
+        <Image src="/logo.svg" alt="CIM Amplify Logo" width={150} height={50} className="h-auto" 
         />
       </div>
       <nav className="hidden md:flex items-center gap-2">
@@ -642,17 +668,17 @@ useEffect(() => {
         <a href="#how-it-works" className="navbar-link text-gray-600">
           How it Works
         </a>
-        <a href="#marketplace" className="navbar-link text-gray-600">
-          Guidelines
+        <a href="#guidelines" className="navbar-link text-gray-600">
+       Guidelines
         </a>
         <a href="#faqs" className="navbar-link text-gray-600">
           FAQs
         </a>
         <Button 
           className="bg-gradient-to-r from-teal-500 to-primary hover:from-primary hover:to-teal-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl ml-4" 
-          onClick={() => router.push("/select-role")}
+          onClick={() => router.push("/member-login")}
         >
-          Get Started
+          Member Login
         </Button>
       </nav>
     </div>
@@ -685,6 +711,7 @@ useEffect(() => {
 
 
       {/* Benefits Section */}
+ {/* Benefits Section */}
    <section id="benefits" className="py-16">
   <div className="container mx-auto px-6">
     <div className="grid md:grid-cols-2 gap-12">
@@ -693,7 +720,7 @@ useEffect(() => {
       <div 
         data-animate
         id="buyer-benefits"
-        className={`${isVisible['buyer-benefits'] ? 'animate-slideInLeft animate-in' : ''}`}
+        className={`bg-white rounded-lg shadow-lg p-8 border border-gray-200 ${isVisible['buyer-benefits'] ? 'animate-slideInLeft animate-in' : ''}`}
       >
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Buyer Benefits</h2>
         <p className="text-gray-600 mb-6">
@@ -726,7 +753,7 @@ useEffect(() => {
       <div 
         data-animate
         id="advisor-benefits"
-        className={`${isVisible['advisor-benefits'] ? 'animate-slideInRight animate-in' : ''}`}
+        className={`bg-white rounded-lg shadow-lg p-8 border border-gray-200 ${isVisible['advisor-benefits'] ? 'animate-slideInRight animate-in' : ''}`}
       >
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Advisor Benefits</h2>
         <p className="text-gray-600 mb-6">
@@ -758,8 +785,7 @@ useEffect(() => {
   </div>
 </section>
 
-
-      {/* Marketplace Stats */}
+{/* Marketplace Stats */}
       <section id="marketplace" className="py-16 bg-gray-50">
         <div className="container mx-auto px-6 text-center">
           <h2 
@@ -771,31 +797,33 @@ useEffect(() => {
           >
             CIM Amplify at a Glance
           </h2>
-     <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-  {stats.map((stat, index) => (
-    <div 
-      key={index} 
-      data-animate
-      id={`stat-${index}`}
-      className={`text-center gpu-accelerated ${
-        isVisible[`stat-${index}`] ? `animate-scaleIn animate-delay-${index * 100} animate-in` : ''
-      }`}
-    >
-      <div className="stat-number text-3xl md:text-4xl font-bold mb-2 animate-pulse">
-        {stat.value}
-      </div>
-      <div className="text-gray-600 font-medium">{stat.label}</div>
-    </div>
-  ))}
-</div>
+          
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            {stats.map((stat, index) => (
+              <div 
+                key={index}
+                data-animate
+                id={`stat-${index}`}
+                className={`bg-white rounded-lg shadow-lg p-6 border border-gray-200 text-center gpu-accelerated ${
+                  isVisible[`stat-${index}`] ? `animate-scaleIn animate-delay-${index * 100} animate-in` : ''
+                }`}
+              >
+                <div className="text-3xl md:text-4xl font-bold mb-2 text-primary">
+                  {stat.value}
+                </div>
+                <div className="text-gray-600 font-medium">{stat.label}</div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
+
 
       {/* How It Works */}
   {/* How It Works */}
       {/* How It Works */}
     {/* How It Works */}
-      <section id="how-it-works" className="py-16 bg-gray-50">
+      <section id="how-it-works" className="py-16 bg-[#FFFFFF]">
         <div className="container mx-auto px-6 text-center">
           <h2 
             data-animate
@@ -860,8 +888,8 @@ useEffect(() => {
           <Image 
             src="/line.png" 
             alt="Process Flow" 
-            width={150} 
-            height={150} 
+            width={200} 
+            height={200} 
             className="opacity-80 filter drop-shadow-sm"
           />
         </div>
@@ -920,8 +948,8 @@ useEffect(() => {
           <Image 
             src="/line.png" 
             alt="Process Flow" 
-            width={150} 
-            height={150} 
+            width={200} 
+            height={200} 
             className="opacity-80 filter drop-shadow-sm"
           />
         </div>
@@ -944,7 +972,7 @@ useEffect(() => {
                 </p>
                 <div className="flex gap-4 text-center justify-center">
                   <Button className="bg-teal-500 hover:bg-primary transition-colors" onClick={() => router.push("/seller/login")}>Add Listing</Button>
-                  <Button variant="outline" className="bg-teal-500 hover:bg-primary transition-colors text-white" onClick={() => router.push("/buyer/register")}>Deal Management</Button>
+                  <Button variant="outline" className="bg-teal-500 hover:bg-primary transition-colors text-white hover:text-white" onClick={() => router.push("/buyer/register")}>Deal Management</Button>
                 </div>
               </div>
 
@@ -979,43 +1007,46 @@ useEffect(() => {
         </div>
       </section>
 
-      {/* Platform Guidelines */}
-      <section className="py-16 bg-white" id="guidelines">
-        <div className="container mx-auto px-6">
-          <h2 
-            data-animate
-            id="guidelines-title"
-            className={`text-3xl font-bold text-center text-gray-900 mb-16 ${
-              isVisible['guidelines-title'] ? 'animate-fadeInUp animate-in' : ''
-            }`}
-          >
-            CIM Amplify Guidelines
-          </h2>
-         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-  {platformGuidelines.map((guideline, index) => (
-    <div 
-      key={index}
+
+{/* // Updated JSX for the Platform Guidelines section */}
+<section className="py-16 bg-white" id="guidelines">
+  <div className="container mx-auto px-6">
+    <h2 
       data-animate
-      id={`guideline-${index}`}
-      className={`guideline-card gpu-accelerated p-8 text-center ${
-        isVisible[`guideline-${index}`] ? `animate-slideInFromBottom animate-delay-${index * 100} animate-in` : ''
+      id="guidelines-title"
+      className={`text-3xl font-bold text-center text-gray-900 mb-16 ${
+        isVisible['guidelines-title'] ? 'animate-fadeInUp animate-in' : ''
       }`}
     >
-      <div className="flex justify-center mb-6">
-        <div className="icon-container w-20 h-20 rounded-full flex items-center justify-center">
-          <span className="icon-emoji text-3xl">{guideline.icon}</span>
+      Platform Guidelines
+    </h2>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+      {platformGuidelines.map((guideline, index) => (
+        <div 
+          key={index}
+          data-animate
+          id={`guideline-${index}`}
+          className={`bg-[#f9fafb] rounded-lg border border-gray-200 p-8 text-center shadow-sm hover:shadow-md transition-all duration-300 ${
+            isVisible[`guideline-${index}`] ? `animate-slideInFromBottom animate-delay-${index * 100} animate-in` : ''
+          }`}
+        >
+          <div className="flex justify-center mb-6">
+            <div className="w-20 h-20 bg-gray-50 rounded-lg flex items-center justify-center border border-gray-100">
+              {guideline.icon}
+            </div>
+          </div>
+          <p className="text-gray-700 text-sm leading-relaxed font-medium">
+            {guideline.title}
+          </p>
         </div>
-      </div>
-      <p className="text-gray-700 text-sm leading-relaxed font-medium">
-        {guideline.title}
-      </p>
+      ))}
     </div>
-  ))}
-</div>
-        </div>
-      </section>
+  </div>
+</section>
 
       {/* What Our Members Are Saying */}
+    {/* What Our Members Are Saying */}
+       {/* What Our Members Are Saying */}
        <section className="py-16 bg-white">
   <div className="container mx-auto px-6">
     <h2 
@@ -1029,41 +1060,49 @@ useEffect(() => {
     </h2>
     
     <div className="relative max-w-6xl mx-auto">
-      {/* Navigation Arrows */}
+      {/* Navigation Arrows - Hidden on mobile */}
       <button 
         onClick={prevTestimonial}
-        className="absolute left-4 top-1/2 -translate-y-1/2 z-10 p-3 rounded-full bg-white border-2 border-gray-200 hover:bg-gray-50 hover:border-teal-500 transition-all duration-300 shadow-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+        className="absolute left-4 top-1/2 -translate-y-1/2 z-10 p-3 rounded-full bg-white border-2 border-gray-200 hover:bg-gray-50 hover:border-teal-500 transition-all duration-300 shadow-lg focus:outline-none focus:ring-2 focus:ring-teal-500 hidden lg:block"
       >
         <ChevronLeft className="w-6 h-6 text-gray-600 hover:text-primary transition-colors" />
       </button>
       
       <button 
         onClick={nextTestimonial}
-        className="absolute right-4 top-1/2 -translate-y-1/2 z-10 p-3 rounded-full bg-white border-2 border-gray-200 hover:bg-gray-50 hover:border-teal-500 transition-all duration-300 shadow-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+        className="absolute right-4 top-1/2 -translate-y-1/2 z-10 p-3 rounded-full bg-white border-2 border-gray-200 hover:bg-gray-50 hover:border-teal-500 transition-all duration-300 shadow-lg focus:outline-none focus:ring-2 focus:ring-teal-500 hidden lg:block"
       >
         <ChevronRight className="w-6 h-6 text-gray-600 hover:text-primary transition-colors" />
       </button>
       
-      {/* Testimonials Grid - Show 3 at a time */}
-      <div className="px-16 overflow-hidden">
+      {/* Testimonials Grid - Responsive layout */}
+      <div className="px-0 lg:px-16 overflow-hidden">
         <div 
           className="flex transition-transform duration-500 ease-in-out"
-          style={{ transform: `translateX(-${currentTestimonial * 33.333}%)` }}
+          style={{ 
+            transform: `translateX(-${currentTestimonial * (
+              typeof window !== 'undefined' && window.innerWidth < 640 
+                ? 100 
+                : typeof window !== 'undefined' && window.innerWidth < 1024 
+                ? 50 
+                : 33.333
+            )}%)` 
+          }}
         >
           {testimonials.map((testimonial, index) => (
             <div 
               key={index} 
-              className="w-1/3 flex-shrink-0 px-4"
+              className="w-full sm:w-1/2 lg:w-1/3 flex-shrink-0 px-2 sm:px-4"
             >
               <div 
                 data-animate
                 id={`testimonial-${index}`}
-                className={`testimonial-card gpu-accelerated p-6 h-full ${
+                className={`testimonial-card gpu-accelerated p-4 sm:p-6 h-full ${
                   isVisible[`testimonial-${index}`] ? 'animate-scaleIn animate-in' : ''
                 }`}
               >
                 <div className="flex items-center mb-4">
-                  <div className="w-12 h-12 rounded-full overflow-hidden mr-3 ring-2 ring-teal-100">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden mr-3 ring-2 ring-teal-100">
                     <Image 
                       src={testimonial.avatar} 
                       alt={testimonial.name}
@@ -1099,19 +1138,42 @@ useEffect(() => {
         </div>
       </div>
       
-      {/* Dots indicator */}
+      {/* Dots indicator - Mobile friendly */}
       <div className="flex justify-center mt-8 space-x-2">
-        {Array.from({ length: testimonials.length - 2 }).map((_, index) => (
+        {Array.from({ 
+          length: typeof window !== 'undefined' && window.innerWidth < 640 
+            ? testimonials.length 
+            : typeof window !== 'undefined' && window.innerWidth < 1024 
+            ? testimonials.length - 1 
+            : testimonials.length - 2 
+        }).map((_, index) => (
           <button
             key={index}
             onClick={() => setCurrentTestimonial(index)}
             className={`w-2 h-2 rounded-full transition-all duration-300 ${
               currentTestimonial === index 
-                ? 'bg-teal-500 w-6' 
+                ? 'bg-teal-500 w-4 sm:w-6' 
                 : 'bg-gray-300 hover:bg-gray-400'
             }`}
           />
         ))}
+      </div>
+      
+      {/* Mobile swipe navigation buttons */}
+      <div className="flex justify-center mt-4 space-x-4 lg:hidden">
+        <button 
+          onClick={prevTestimonial}
+          className="p-2 rounded-full bg-white border-2 border-gray-200 hover:bg-gray-50 hover:border-teal-500 transition-all duration-300 shadow-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+        >
+          <ChevronLeft className="w-5 h-5 text-gray-600 hover:text-primary transition-colors" />
+        </button>
+        
+        <button 
+          onClick={nextTestimonial}
+          className="p-2 rounded-full bg-white border-2 border-gray-200 hover:bg-gray-50 hover:border-teal-500 transition-all duration-300 shadow-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+        >
+          <ChevronRight className="w-5 h-5 text-gray-600 hover:text-primary transition-colors" />
+        </button>
       </div>
     </div>
   </div>

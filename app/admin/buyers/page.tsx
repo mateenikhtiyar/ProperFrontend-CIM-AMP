@@ -21,6 +21,15 @@ import {
   ArrowUp,
   ArrowDown
 } from "lucide-react";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogClose,
+} from "@/components/ui/dialog";
 
 // Add Buyer interface
 interface CompanyProfile {
@@ -56,6 +65,13 @@ interface AdminProfile {
   role?: string;
 }
 
+// Add type for deal status counts
+interface BuyerDealStatusCounts {
+  active: number;
+  pending: number;
+  rejected: number;
+}
+
 // Helper to get image src with cache busting only for real URLs
 function getProfileImageSrc(src?: string | null) {
   if (!src) return undefined;
@@ -70,6 +86,7 @@ export default function BuyersManagementDashboard() {
   const [loading, setLoading] = useState(true);
   const router = useRouter()
   const { logout } = useAuth()
+  const [buyerDealCounts, setBuyerDealCounts] = useState<Record<string, BuyerDealStatusCounts>>({});
 
   // Add admin profile state
   const [adminProfile, setAdminProfile] = useState<AdminProfile | null>(null);
@@ -110,6 +127,64 @@ export default function BuyersManagementDashboard() {
     };
     fetchBuyers();
   }, []);
+
+  // Fetch real deal status counts for each buyer from backend (using invitationStatus logic)
+  useEffect(() => {
+    async function fetchDealCounts() {
+      const token = localStorage.getItem("token");
+      const counts: Record<string, BuyerDealStatusCounts> = {};
+      await Promise.all(
+        buyers.map(async (buyer) => {
+          const buyerId = buyer._id || buyer.id;
+          if (!buyerId) return;
+          try {
+            // Fetch real deal status counts from backend (invitationStatus logic)
+            const res = await fetch(`http://localhost:3001/deals/admin/buyer/${buyerId}/status-counts`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            if (!res.ok) throw new Error("Failed to fetch deal status counts");
+            const data = await res.json();
+            counts[buyerId] = {
+              active: data.active || 0,
+              pending: data.pending || 0,
+              rejected: data.rejected || 0,
+            };
+          } catch {
+            counts[buyerId] = { active: 0, pending: 0, rejected: 0 };
+          }
+        })
+      );
+      setBuyerDealCounts(counts);
+    }
+    if (buyers.length > 0) fetchDealCounts();
+  }, [buyers]);
+
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalDeals, setModalDeals] = useState<any[]>([]);
+  const [modalStatus, setModalStatus] = useState<"active" | "pending" | "rejected" | null>(null);
+  const [modalBuyer, setModalBuyer] = useState<Buyer | null>(null);
+  const [modalLoading, setModalLoading] = useState(false);
+
+  // Fetch deals for modal (using invitationStatus logic)
+  const openDealModal = async (buyer: Buyer, status: "active" | "pending" | "rejected") => {
+    setModalBuyer(buyer);
+    setModalStatus(status);
+    setModalLoading(true);
+    setModalOpen(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`http://localhost:3001/deals/admin/buyer/${buyer._id || buyer.id}/deals?status=${status}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to fetch deals");
+      const deals = await res.json();
+      setModalDeals(deals);
+    } catch {
+      setModalDeals([]);
+    } finally {
+      setModalLoading(false);
+    }
+  };
 
   const handleLogout = () => {
     logout()
@@ -320,44 +395,57 @@ export default function BuyersManagementDashboard() {
                       <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">Full Name</th>
                       <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">Email</th>
                       <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm hidden sm:table-cell">Phone</th>
+                      {/* New columns for deal status counts */}
+                      <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">Active</th>
+                      <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">Pending</th>
+                      <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">Rejected</th>
                       <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {currentBuyers.map((buyer) => (
-                      <tr key={buyer._id} className="hover:bg-gray-50 transition-colors">
-                        <td className="py-3 px-4">
-                          <div className="font-medium text-gray-900 text-sm truncate max-w-[150px]">
-                            {buyer.companyProfile?.companyName || buyer.companyName}
-                          </div>
-                        </td>
-                        <td className="py-3 px-4">
-                          <div className="text-gray-700 text-sm truncate max-w-[120px]">
-                            {buyer.fullName}
-                          </div>
-                        </td>
-                        <td className="py-3 px-4">
-                          <div className="text-gray-600 text-sm truncate max-w-[180px]">
-                            {buyer.email}
-                          </div>
-                        </td>
-                        <td className="py-3 px-4 hidden sm:table-cell">
-                          <div className="text-gray-600 text-sm truncate">
-                            {buyer.phone || "-"}
-                          </div>
-                        </td>
-                        <td className="py-3 px-4">
-                          <div className="flex items-center gap-1">
-                            {/* <Button
-                              variant="ghost"
-                              size="sm"
-                              className="p-1.5 h-7 w-7 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
-                              onClick={() => handleView((buyer._id || buyer.id) ?? "")}
-                              title="View"
-                            >
-                              <Eye className="h-3.5 w-3.5" />
-                            </Button> */}
-                          <Button
+                    {currentBuyers.map((buyer) => {
+                      const buyerId = String(buyer._id || buyer.id || "");
+                      const dealCounts = buyerId && buyerDealCounts && Object.prototype.hasOwnProperty.call(buyerDealCounts, buyerId)
+                        ? buyerDealCounts[buyerId]
+                        : { active: 0, pending: 0, rejected: 0 };
+                      return (
+                        <tr key={buyer._id} className="hover:bg-gray-50 transition-colors">
+                          <td className="py-3 px-4">
+                            <div className="font-medium text-gray-900 text-sm truncate max-w-[150px]">
+                              {buyer.companyProfile?.companyName || buyer.companyName}
+                            </div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="text-gray-700 text-sm truncate max-w-[120px]">
+                              {buyer.fullName}
+                            </div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="text-gray-600 text-sm truncate max-w-[180px]">
+                              {buyer.email}
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 hidden sm:table-cell">
+                            <div className="text-gray-600 text-sm truncate">
+                              {buyer.phone || "-"}
+                            </div>
+                          </td>
+                          {/* New deal status columns with clickable numbers */}
+                          <td className="py-3 px-4 text-green-700 font-semibold cursor-pointer underline" onClick={() => openDealModal(buyer, "active")}>{dealCounts.active}</td>
+                          <td className="py-3 px-4 text-yellow-700 font-semibold cursor-pointer underline" onClick={() => openDealModal(buyer, "pending")}>{dealCounts.pending}</td>
+                          <td className="py-3 px-4 text-red-700 font-semibold cursor-pointer underline" onClick={() => openDealModal(buyer, "rejected")}>{dealCounts.rejected}</td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-1">
+                              {/* <Button
+                                variant="ghost"
+                                size="sm"
+                                className="p-1.5 h-7 w-7 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                                onClick={() => handleView((buyer._id || buyer.id) ?? "")}
+                                title="View"
+                              >
+                                <Eye className="h-3.5 w-3.5" />
+                              </Button> */}
+                            <Button
   variant="ghost"
   size="sm"
   className="p-1.5 h-7 w-7 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-md transition-colors"
@@ -379,10 +467,11 @@ export default function BuyersManagementDashboard() {
                                                          <Trash2 className="h-3.5 w-3.5" />
                                                        </Button>
                             
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -454,6 +543,40 @@ export default function BuyersManagementDashboard() {
           )}
         </div>
       </div>
+
+      {/* Deal Info Modal */}
+      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {modalStatus && modalBuyer ? (
+                <>
+                  {modalStatus.charAt(0).toUpperCase() + modalStatus.slice(1)} Deals for {modalBuyer.fullName}
+                </>
+              ) : "Deals"}
+            </DialogTitle>
+            <DialogDescription>
+              {modalBuyer?.companyProfile?.companyName || modalBuyer?.companyName}
+            </DialogDescription>
+          </DialogHeader>
+          {modalLoading ? (
+            <div className="py-6 text-center">Loading deals...</div>
+          ) : modalDeals.length === 0 ? (
+            <div className="py-6 text-center text-gray-500">No deals found.</div>
+          ) : (
+            <ul className="divide-y divide-gray-200 max-h-80 overflow-y-auto">
+              {modalDeals.map((deal) => (
+                <li key={deal._id} className="py-2 px-1">
+                  <div className="font-medium text-gray-900">{deal.title}</div>
+                  <div className="text-xs text-gray-500">Status: {deal.status}</div>
+                  <div className="text-xs text-gray-400">Industry: {deal.industrySector}</div>
+                  <div className="text-xs text-gray-400">Last Updated: {deal.timeline?.updatedAt ? new Date(deal.timeline.updatedAt).toLocaleString() : "-"}</div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
