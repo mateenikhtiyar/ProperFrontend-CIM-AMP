@@ -8,6 +8,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { CheckCircle, XCircle } from "lucide-react"
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useRef } from 'react';
+import { Linkedin } from "lucide-react"
+
 
 export default function HomePage() {
     const router = useRouter();
@@ -176,13 +178,72 @@ const buttonShadow = useTransform(
     .hero-button:active {
         transform: translateY(0);
     }
+        .footer-background {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  }
+  
+  .footer-section {
+    transition: all 0.3s ease;
+  }
+  
+  .footer-link {
+    position: relative;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    padding: 8px 0;
+    border-radius: 6px;
+  }
+  
+  .footer-link:hover {
+    color: #14b8a6;
+    transform: translateX(5px);
+    padding-left: 10px;
+  }
+  
+  .footer-link::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #14b8a6, #0d9488);
+    transition: width 0.3s ease;
+  }
+  
+  .footer-link:hover::before {
+    width: 20px;
+  }
+  
+  .footer-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #e2e8f0, transparent);
+    margin: 3rem 0 2rem 0;
+  }
+  
+  .linkedin-icon {
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .linkedin-icon:hover {
+    transform: translateY(-3px) scale(1.1);
+    background: linear-gradient(135deg, #0077b5, #005885);
+    color: white;
+    box-shadow: 0 10px 20px rgba(0, 119, 181, 0.3);
+  }
+  
+  .focus-visible\\:focus:focus-visible {
+    outline: 2px solid #14b8a6;
+    outline-offset: 2px;
+  }
+  
 `}</style>
 
 
 <header className="border-b bg-white/95 backdrop-blur-sm sticky top-0 z-50 shadow-sm">
     <div className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
-            <div className="transition-all duration-500 ease-out hover:scale-105 hover:drop-shadow-lg">
+            <div className="transition-all duration-500 ease-out hover:scale-105 hover:drop-shadow-lg cursor-pointer"    onClick={() => router.push('/landing')}>
                 <Image 
                     src="/logo.svg" 
                     alt="CIM Amplify Logo" 
@@ -209,9 +270,9 @@ const buttonShadow = useTransform(
                 </a>
                 <a  onClick={(e) => {
                         e.preventDefault();
-                        router.push("/landing#marketplace");
+                        router.push("/landing#guidelines");
                     }} className="relative px-4 py-2.5 cursor-pointer font-medium text-gray-600 rounded-lg transition-all duration-500 ease-out hover:text-teal-600 hover:bg-gradient-to-r hover:from-teal-50 hover:to-emerald-50 hover:-translate-y-0.5 before:absolute before:bottom-0 before:left-1/2 before:w-0 before:h-0.5 before:bg-gradient-to-r before:from-teal-600 before:to-teal-500 before:transition-all before:duration-500 before:ease-out before:-translate-x-1/2 hover:before:w-full">
-                    Marketplace
+                  Guidelines
                 </a>
                 <a  onClick={(e) => {
                         e.preventDefault();
@@ -221,9 +282,9 @@ const buttonShadow = useTransform(
                 </a>
                 <Button 
                     className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl ml-4" 
-                    onClick={() => router.push("/select-role")}
+                    onClick={() => router.push("/member-login")}
                 >
-                    Get Started
+                   Member Login
                 </Button>
             </nav>
         </div>
@@ -378,9 +439,7 @@ From childhood ventures like newspaper routes and selling books to successfully 
                     >
                         <motion.div variants={itemVariants} className="space-y-6">
                             <p className="text-gray-700 text-lg leading-relaxed">
-                                Selling is the <span className="font-bold text-primary">"Brass Ring"</span> of business ownership. Company builders
-                                helped to build great companies that sustain a lot of great people but most of their net worth is tied up
-                                in those companies. It's time to find some liquidity - maybe retire.
+                          Selling represents the ultimate achievement for business owners. Entrepreneurs and hired guns who have built successful companies that support many employees often find most of their wealth locked in the business itself. Eventually, they need to unlock that value—whether for retirement or other opportunities.
                             </p>
                             <p className="text-gray-700 text-lg leading-relaxed">
                                 Our team have worked extensively with both company buyers and advisors. Through that work we have become convinced that there are an enormous
@@ -465,9 +524,7 @@ From childhood ventures like newspaper routes and selling books to successfully 
                         variants={itemVariants}
                         className="text-center"
                     >
-                        <p className="text-gray-500 text-sm max-w-2xl mx-auto">
-                           Below is a typical deal snippet from CIM Amplify Version 1.
-                        </p>
+                      
                     </motion.div>
                 </div>
             </motion.section>
@@ -477,95 +534,7 @@ From childhood ventures like newspaper routes and selling books to successfully 
            {/* Case Study */}
 {/* Case Study */}
  {/* Case Study */}
-            <motion.section 
-                className="py-20 bg-white section-reveal"
-                variants={containerVariants}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ margin: "-100px" }}
-            >
-                <div className="container mx-auto px-6">
-                    <motion.div 
-                        className="text-center mb-16"
-                        variants={containerVariants}
-                    >
-                        <motion.h2 
-                            variants={itemVariants}
-                            className="text-4xl font-bold text-gray-900 mb-4"
-                        >
-                            Deal Example from Version 1
-                        </motion.h2>
-                        <motion.p 
-                            variants={itemVariants}
-                            className="text-gray-600 text-lg max-w-3xl mx-auto"
-                        >
-                            Below is a typical deal snippet from CIM Amplify Version 1.
-                        </motion.p>
-                    </motion.div>
-
-                    <motion.div 
-                        className="max-w-4xl mx-auto space-y-8"
-                        variants={containerVariants}
-                    >
-                        {/* First Card */}
-                        <motion.div 
-                            variants={itemVariants}
-                            className="bg-white rounded-lg shadow-lg overflow-hidden flex flex-col md:flex-row"
-                        >
-                            {/* Left Image */}
-                            <div className="w-full md:w-64 h-98 relative flex-shrink-0">
-                                <img 
-                                    src="/pic2.png"
-                                    alt="Ferris wheel attraction"
-                                    className="w-full h-full object-cover"
-                                />
-                            </div>
-                            
-                            {/* Right Content */}
-                            <div className="flex-1 p-6 bg-gray-50">
-                                <h3 className="text-2xl font-bold text-gray-900 mb-3">ATTRACTION</h3>
-                                <p className="text-gray-700 mb-4">
-                                    Opportunity to acquire a premier family attraction park in New England
-                                </p>
-                                
-                                <div className="space-y-2 mb-6">
-                                    <div>
-                                        <span className="font-semibold text-gray-900">Industry:</span>
-                                        <span className="text-gray-700 ml-2">Media and Entertainment</span>
-                                    </div>
-                                    
-                                    <div>
-                                        <span className="font-semibold text-gray-900">Additional Industry Information:</span>
-                                        <div className="text-gray-700 mt-1">
-                                            Family attraction park (zoo, amusement rides, etc.) and a fine dining restaurant
-                                        </div>
-                                    </div>
-                                    
-                                    <div>
-                                        <span className="font-semibold text-gray-900">Country of Headquarters:</span>
-                                        <span className="text-gray-700 ml-2">United States of America</span>
-                                    </div>
-                                    
-                                    <div>
-                                        <span className="font-semibold text-gray-900">Revenue:</span>
-                                        <span className="text-gray-700 ml-2">$17.7 Million</span>
-                                        <span className="font-semibold text-gray-900 ml-4">EBITDA:</span>
-                                        <span className="text-gray-700 ml-2">$3.625 Million</span>
-                                    </div>
-                                </div>
-                                
-                                <button onClick={()=>router.push("/seller/login")} className="bg-teal-500 hover:bg-teal-600 text-white font-medium py-2 px-6 rounded-md transition-colors">
-                                    View Deal
-                                </button>
-                            </div>
-                        </motion.div>
-
-                        {/* Second Card - Optional scenic image */}
-                   
-                    </motion.div>
-                </div>
-            </motion.section>
-
+          
             {/* Problems Section */}
           <motion.section 
     className="py-20 bg-gray-50 section-reveal"
@@ -583,7 +552,7 @@ From childhood ventures like newspaper routes and selling books to successfully 
                 variants={itemVariants}
                 className="text-4xl font-bold text-gray-900"
             >
-                Problems We <span className="text-primary">Discovered</span>
+               Version 1 - Problems We <span className="text-primary">Discovered</span>
             </motion.h2>
         </motion.div>
 
@@ -805,7 +774,7 @@ From childhood ventures like newspaper routes and selling books to successfully 
 
             <motion.div variants={itemVariants}>
                 <motion.button
-                    onClick={() => router.push("/seller/register")}
+                    onClick={() => router.push("./select-role")}
                     className="bg-primary hover:bg-teal-700 text-white px-8 py-4 text-lg font-semibold rounded-md"
                     style={{
                         y: buttonY,
@@ -847,91 +816,113 @@ From childhood ventures like newspaper routes and selling books to successfully 
 
             {/* Footer */}
           {/* Footer */}
-<footer className="bg-gray-100 py-10 mt-[100px]">
-    <div className="container mx-auto px-6">
-        <div className="grid md:grid-cols-4 gap-8 max-w-6xl mx-auto">
-            <div className="md:col-span-2">
-                <div className="flex items-center space-x-3 mb-6">
-                    <Image 
-                        src="/logo.svg" 
-                        alt="CIM Amplify Logo" 
-                        width={150} 
-                        height={50} 
-                        className="h-auto" 
-                    />
-                </div>
-                <p className="text-gray-400 leading-relaxed max-w-md">
-                    CIM Amplify's mission is to help entrepreneurs and advisors get the "Brass Ring" of selling their
-                    company. Our owner group have all sold significant companies which has changed our lives forever.
+    <footer className="footer-background bg-gray-50 py-16 mt-[100px] border-t border-gray-200">
+        <div className="container mx-auto px-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
+            {/* Company Info */}
+            <div className="footer-section col-span-1 md:col-span-2">
+              <div className="mb-6">
+                <p className="text-gray-600 leading-relaxed max-w-md">
+                  CIM Amplify's mission is to help Entrepreneurs and Investors get the{' '}
+                  <span className="text-primary font-semibold">"Brass Ring"</span> of selling their company. 
+                  Our owner group have all sold significant companies which changed our lives forever.
                 </p>
+              </div>
+              <div>
+                <a 
+                  href="https://www.linkedin.com/company/cimamplify/" 
+                  className="inline-flex items-center justify-center w-12 h-12 bg-white rounded-full shadow-md text-gray-600 border border-gray-200 hover:bg-teal-50 hover:text-primary hover:border-teal-300 transition-all duration-300"
+                >
+               <Linkedin className="w-5 h-5" />
+                </a>
+              </div>
             </div>
-            <div>
-                <h4 className="font-semibold text-lg mb-4">Quick Links</h4>
-                <ul className="space-y-3">
-                    <li>
-                        <ul className="space-y-4">
-                            <li>
-                                <a onClick={(e) => {
-                                    e.preventDefault();
-                                    router.push("/landing#benefits");
-                                }} className="text-gray-700 hover:text-primary transition-colors cursor-pointer">
-                                    Benefits
-                                </a>
-                            </li>
-                            <li>
-                                <a onClick={(e) => {
-                                    e.preventDefault();
-                                    router.push("/landing#how-it-works");
-                                }} className="text-gray-700 hover:text-primary transition-colors cursor-pointer">
-                                    How it Works
-                                </a>
-                            </li>
-                            <li>
-                                <a onClick={(e) => {
-                                    e.preventDefault();
-                                    router.push("/landing#guidelines");
-                                }} className="text-gray-700 hover:text-primary transition-colors cursor-pointer">
-                                    Guidelines
-                                </a>
-                            </li>
-                            <li>
-                                <a onClick={(e) => {
-                                    e.preventDefault();
-                                    router.push("/about");
-                                }} className="text-gray-700 hover:text-primary transition-colors cursor-pointer">
-                                    About
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-                </ul>
+
+            {/* Quick Links */}
+            <div className="footer-section">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6">Quick Links</h3>
+              <ul className="space-y-2">
+                <li>
+                  <a href="#benefits" className="text-gray-600 hover:text-primary transition-colors duration-300 block py-1">
+                    Benefits
+                  </a>
+                </li>
+                <li>
+                  <a href="#how-it-works" className="text-gray-600 hover:text-primary transition-colors duration-300 block py-1">
+                    How it Works
+                  </a>
+                </li>
+                <li>
+                  <a href="#guidelines" className="text-gray-600 hover:text-primary transition-colors duration-300 block py-1">
+                    Guidelines
+                  </a>
+                </li>
+                <li onClick={()=>{router.push("/about")}}>
+                  <a className="text-gray-600 hover:text-primary cursor-pointer transition-colors duration-300 block py-1">
+                    About
+                  </a>
+                </li>
+              </ul>
             </div>
-            <div>
-                <h4 className="font-semibold text-lg mb-4">Actions</h4>
-                <ul className="space-y-3">
-                    <li onClick={() => router.push("/select-role")}>
-                        <a href="#" className="text-primary hover:text-shadow-2xs transition-colors">
-                            Member Login
-                        </a>
-                    </li>
-                    <li onClick={() => router.push("/seller/login")}>
-                        <a href="#" className="text-primary  hover:text-shadow-2xs transition-colors">
-                            Start Selling
-                        </a>
-                    </li>
+
+            {/* Actions & Support */}
+            <div className="space-y-8">
+              {/* Actions */}
+              <div className="footer-section">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 cursor-pointer">Actions</h3>
+                <div className="space-y-2">
+                  <div 
+                    onClick={() => router.push("/buyer/register")}
+                    className="text-primary hover:text-primary hover:bg-teal-50 block py-2 rounded-lg teal-600 cursor-pointer  transition-all duration-300"
+                  >
+                    Buyer registration
+                  </div>
+                  <div 
+                    onClick={() => router.push("/seller/register")}
+                    className="text-primary hover:text-primary hover:bg-teal-50 block py-2  rounded-lg teal-600 cursor-pointer  transition-all duration-300"
+                  >
+                    Add a Deal
+                  </div>
+                     <div 
+                    onClick={() => router.push("/buyer/login")}
+                    className="text-primary hover:text-primary hover:bg-teal-50 block py-2 rounded-lg teal-600 cursor-pointer  transition-all duration-300"
+                  >
+                    Buyer Login
+                  </div>
+                     <div 
+                    onClick={() => router.push("/seller/login")}
+                    className="text-primary hover:text-primary hover:bg-teal-50 block py-2  rounded-lg primary cursor-pointer  transition-all duration-300"
+                  >
+                    Seller Login
+                  </div>
+                </div>
+              </div>
+
+              {/* Support */}
+              <div className="footer-section">
+                <h3 className="text-lg font-semibold text-gray-900 mb-6">Support</h3>
+                <ul className="space-y-4">
+                  <li>
+                    <a href="#contact" className="text-gray-600 hover:text-primary transition-colors duration-300 block py-1">
+                      Contact Us
+                    </a>
+                  </li>
                 </ul>
-                <h4 className="font-semibold text-lg mb-4 mt-8">Support</h4>
-                <ul className="space-y-3">
-                    <li>
-                        <a href="#" className="text-gray-700 hover:text-shadow-2xs transition-colors">
-                            Contact Us
-                        </a>
-                    </li>
-                </ul>
+              </div>
             </div>
+          </div>
+
+          {/* Divider */}
+          <div className="footer-divider" />
+
+          {/* Copyright */}
+          <div className="text-center">
+            <p className="text-gray-500 text-sm">
+              © 2025 CIM Amplify. All rights reserved.
+            </p>
+          </div>
         </div>
-    </div>
-</footer>
+      </footer>
         </div>
     )
 }

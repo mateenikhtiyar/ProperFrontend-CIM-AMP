@@ -39,6 +39,7 @@ export default function Component() {
     "Our management platform to see buyer candidates and track progress",
   ]
 
+
   const stats = [
     { value: "$300M", label: "Monthly Deal Volume" },
     { value: "$2M-$250M", label: "Typical Revenue Range" },
@@ -48,100 +49,94 @@ export default function Component() {
 
 
 
-  const platformGuidelines = [
-    {
-      icon: (
-        <Image
-          src="/icon2.png"
-          alt="M&A Deal Icon"
-          width={60}
-          height={60}
-        />
-      ),
-      title: "M&A Deals must have a minimum of $1 Million in EBITDA or, failing that, $5 Million in revenue"
-    },
-    {
-      icon: (
-        <Image
-          src="/icon1.png"
-          alt="Advisor Icon"
-          width={70}
-          height={70}
-        />
-      ),
-      title: "Deals must be posted by an M&A Advisor."
-    },
-    {
-      icon: (
-        <Image
-          src="/icon3.png"
-          alt="CIM Icon"
-          width={70}
-          height={70}
-        />
-      ),
-      title: "A Confidential Information Memorandum, or similar data, must be available"
-    },
-     {
-      icon: (
-        <Image
-          src="/icon4.png"
-          alt="CIM Icon"
-          width={50}
-          height={50}
-        />
-      ),
-    title: "Only M&A deals may be posted. No other deal type will be accepted"
-    },
-  ];
-
-
- const testimonials = [
+const platformGuidelines = [
   {
-    name: "Stephen Brekke",
-    role: "Legacy Integration Producer",
-    rating: 5,
-    text: "If you want real marketing that works and effective implementation – mobile app's got you covered.",
-    avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop&crop=faces"
+    icon: (
+      <Image
+        src="/icon2.png"
+        alt="M&A Deal Icon"
+        width={60}
+        height={60}
+      />
+    ),
+    title: "Deals must have a minimum of $1 Million in EBITDA or $5 Million in revenue"
   },
   {
-    name: "Ava Chen",
-    role: "Product Manager",
-    rating: 4,
-    text: "The app completely transformed our workflows and improved our productivity.",
-    avatar: "https://images.unsplash.com/photo-1607746882042-944635dfe10e?w=80&h=80&fit=crop&crop=faces"
+    icon: (
+      <Image
+        src="/icon1.png"
+        alt="Advisor Icon"
+        width={70}
+        height={70}
+      />
+    ),
+    title: "Deals must be posted by an M&A Advisor."
   },
   {
-    name: "Liam Patel",
-    role: "UX Designer",
-    rating: 5,
-    text: "The user interface is sleek and intuitive. It exceeded all our expectations!",
-    avatar: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=80&h=80&fit=crop&crop=faces"
+    icon: (
+      <Image
+        src="/icon3.png"
+        alt="CIM Icon"
+        width={70}
+        height={70}
+      />
+    ),
+    title: "A Confidential Information Memorandum, or similar data, must be available"
   },
-  {
-    name: "Isabella Rossi",
-    role: "CTO at Novatech",
-    rating: 5,
-    text: "Exceptional performance and seamless integration. A must-have for modern teams.",
-    avatar: "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=80&h=80&fit=crop&crop=faces"
+   {
+    icon: (
+      <Image
+        src="/icon4.png"
+        alt="CIM Icon"
+        width={50}
+        height={50}
+      />
+    ),
+  title: "Only M&A deals may be posted. No other deal type will be accepted"
   },
  
-  {
-    name: "Sofia Nguyen",
-    role: "Marketing Strategist",
-    rating: 4,
-    text: "An essential part of our workflow now. Beautiful, fast, and reliable.",
-    avatar: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=80&h=80&fit=crop&crop=faces"
-  }
 ];
 
+
+const testimonials = [
+  {
+    name: "Dave Bell",
+    role: "President Calgary Stamp & Stencil; Ace Specialty Anodizing; Dolphin Printing",
+    text: "Finally, a dedicated platform for serious M&A deals! CIM Amplify has been a game-changer. This platform connects us directly with qualified deals that match our criteria."
+  },
+  {
+    name: "Richard Waller",
+    role: "CEO Wallerco",
+    text: "Only deals matched to our criteria. CIM Amplify solved our biggest challenge - finding quality acquisition opportunities in the $10M-$100M range. The executive summaries are well-curated. It's refreshing to have a platform dedicated to our market space rather than wading through lower-end listings."
+  },
+  {
+    name: "Bob Sheddy",
+    role: "Managing Partner Innovators Inc",
+    text: "If your deal doesn't come through CIM Amplify, it won't get to me. After months of using CIM Amplify, I can confidently say it delivers on its promise. The caliber of advisors on the platform is impressive. Highly recommended for any serious buyers."
+  },
+  {
+    name: "Troy Ferguson",
+    role: "CEO 720 Modular",
+    text: "Bridges the gap perfectly. CIM Amplify fills a crucial void in the M&A marketplace. While there are plenty of platforms for smaller deals, finding quality opportunities in the lower middle to upper market has always been challenging. The deal quality and professionalism are top-notch."
+  },
+  {
+    name: "David Kernan",
+    role: "Senior Managing Director Goldmark Advisors",
+    text: "Essential tool for M&A advisors. As someone who's been in M&A for over xx years, I appreciate how CIM Amplify respects the sophistication of our market segment. The platform attracts serious buyers who understand complex transactions, and the executive summaries maintain the confidentiality standards we require. It's become an indispensable part of our deal marketing strategy."
+  },
+  {
+    name: "Marvin Dejong",
+    role: "Dda Architecture Ltd",
+    text: "Quality over quantity approach works. What sets CIM Amplify apart is its focus on quality rather than quantity. Every deal goes through a screening process, which means we're dealing with legitimate sellers."
+  }
+];
 
 
   const faqs = [
     {
       id: 0,
       question: "Explain the 0.5% Buyer Fee?",
-      answer: "Over the past decade a lot of frustration has been built up over an age-old practice of referral fees. Ambiguity and unreasonable fees for represented deals have put a wrench into what should be a wonderful process - getting a deal done. High fees are often added to deal modeling and can change or eliminate offers which is against our mission. Dozens of interviews with all types of buyers resulted in an agreement that 0.5% is a more than fair fee that will not change deal structure at all.",
+      answer: "Over the past decade a lot of frustration has been built up over an age-old practice of referral fees. Ambiguity and unreasonable fees for represented deals have put a wrench into what should be a wonderful process - getting a deal done. High fees are often added to deal modeling and can change or eliminate offers which is against our mission. Dozens of interviews with all types of buyers resulted in an agreement that 0.5% is a more than fair fee that will not change deal structure at all.Please be aware that we do have a minimum service fee of $60,000 USD.",
       
     },
    {
@@ -193,7 +188,7 @@ export default function Component() {
     {
       id: 4,
       question: "Aren't you just another Deal Platform?",
-      answer: "The original CIM Amplify platform, launched in October 2024, quickly gained amazing traction with over $3 Billion in deals (none scraped), all with more than $1 Million in EBITDA. The original platform was a general posting site. We learned quickly that buyers don't have time to scroll deals and hate that a deal on our site may be on other sites. We also learned that most top Advisors have client requirements where they need to get buyers approved before approaching them - and open listings have the Tire-Kicker problem. We solved those issues and many more with this version launched in June 2025. TL:DR - No"
+      answer: "The original CIM Amplify platform, launched in October 2024, quickly gained amazing traction with over $3 Billion in deals (none scraped), all with more than $1 Million in EBITDA. The original platform was a general posting site. We learned quickly that buyers don't have time to scroll deals and hate that a deal on our site may be on other sites. We also learned that most top Advisors have client requirements where they need to get buyers approved before approaching them - and open listings have the Tire-Kicker problem. We solved those issues and many more with this version launched in August 2025. TL:DR - No"
     },
     {
       id: 5,
@@ -657,10 +652,18 @@ useEffect(() => {
     <header className="border-b bg-white/95 backdrop-blur-sm sticky top-0 z-50 shadow-sm">
   <div className="container mx-auto px-6 py-4">
     <div className="flex items-center justify-between">
-      <div className="logo-container">
-        <Image src="/logo.svg" alt="CIM Amplify Logo" width={150} height={50} className="h-auto" 
+     
+      <div className="logo-container cursor-pointer"    onClick={() => router.push('/landing')}>
+
+        <Image 
+          src="/logo.svg" 
+          alt="CIM Amplify Logo" 
+          width={150} 
+          height={50} 
+          className="h-auto" 
         />
       </div>
+      
       <nav className="hidden md:flex items-center gap-2">
         <a href="#benefits" className="navbar-link text-gray-600">
           Benefits
@@ -676,7 +679,11 @@ useEffect(() => {
         </a>
         <Button 
           className="bg-gradient-to-r from-teal-500 to-primary hover:from-primary hover:to-teal-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl ml-4" 
-          onClick={() => router.push("/member-login")}
+      onClick={
+        () =>{router.push("buyer/login")
+
+        }
+      }
         >
           Member Login
         </Button>
@@ -850,7 +857,7 @@ useEffect(() => {
                 <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
                   M&A Advisors choose a reward level based on exclusivity with CIM Amplify and add deal metrics.
                 </p>
-                <Button className="bg-teal-500 hover:bg-primary transition-colors" onClick={() => router.push("/seller/login")}>Add a Deal</Button>
+            
               </div>
 
               <div className="grid md:grid-cols-2 gap-12 items-center">
@@ -877,24 +884,15 @@ useEffect(() => {
                     <div className="absolute inset-0 bg-gradient-to-r from-teal-500/20 to-primary/20 rounded-lg blur-lg group-hover:blur-xl transition-all duration-300"></div>
                     <Image src="/cim1.png" alt="CIM Amplify Deal Tiers" width={550} height={450} className="h-auto relative z-10 transform group-hover:scale-105 transition-all duration-300" />
                   </div>
+                  
                 </div>
+
+                   
               </div>
+               <Button className="bg-teal-500 hover:bg-primary transition-colors" onClick={() => router.push("/seller/register")}>Add a Deal</Button>
             </div>
 
-            {/* Animated Flow Line 1 */}
-             <div className="flex items-center justify-center py-8">
-        <div className="w-32 h-0.5 bg-gradient-to-r from-transparent"></div>
-        <div className="mx-6">
-          <Image 
-            src="/line.png" 
-            alt="Process Flow" 
-            width={200} 
-            height={200} 
-            className="opacity-80 filter drop-shadow-sm"
-          />
-        </div>
-        <div className="w-32 h-0.5 bg-gradient-to-l from-transparent"></div>
-      </div>
+         
 
             {/* Step 2 */}
             <div className="relative">
@@ -910,7 +908,7 @@ useEffect(() => {
                 <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
                   CIM Amplify provides a list of buyers. Advisors select which buyers to engage.
                 </p>
-                <Button className="bg-teal-500 hover:bg-primary transition-colors" onClick={() => router.push("/buyer/register")}>View Marketplace</Button>
+          
               </div>
                 
               <div className="grid md:grid-cols-2 gap-12 items-center">
@@ -939,22 +937,10 @@ useEffect(() => {
                   </div>
                 </div>
               </div>
+  
             </div>
-
-            {/* Animated Flow Line 2 */}
-            <div className="flex items-center justify-center py-8">
-        <div className="w-32 h-0.5 bg-gradient-to-r from-transparent 0"></div>
-        <div className="mx-6">
-          <Image 
-            src="/line.png" 
-            alt="Process Flow" 
-            width={200} 
-            height={200} 
-            className="opacity-80 filter drop-shadow-sm"
-          />
-        </div>
-        <div className="w-32 h-0.5 bg-gradient-to-l from-transparent"></div>
-      </div>
+                  <Button className="bg-teal-500 hover:bg-primary transition-colors" onClick={() => router.push("/buyer/register")}>Buyer Registration</Button>
+         
 
             {/* Step 3 */}
             <div className="relative">
@@ -970,10 +956,7 @@ useEffect(() => {
                 <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
                   Buyers and Advisors monitor deals via an intuitive platform.
                 </p>
-                <div className="flex gap-4 text-center justify-center">
-                  <Button className="bg-teal-500 hover:bg-primary transition-colors" onClick={() => router.push("/seller/login")}>Add Listing</Button>
-                  <Button variant="outline" className="bg-teal-500 hover:bg-primary transition-colors text-white hover:text-white" onClick={() => router.push("/buyer/register")}>Deal Management</Button>
-                </div>
+              
               </div>
 
               <div className="grid md:grid-cols-2 gap-12 items-center">
@@ -1003,6 +986,10 @@ useEffect(() => {
                 </div>
               </div>
             </div>
+              <div className="flex gap-4 text-center justify-center">
+                  <Button className="bg-teal-500 hover:bg-primary transition-colors" onClick={() => router.push("/seller/Register")}>Add A Deal</Button>
+                  <Button variant="outline" className="bg-teal-500 hover:bg-primary transition-colors text-white hover:text-white" onClick={() => router.push("/buyer/register")}>Join the Buyer's List</Button>
+                </div>
           </div>
         </div>
       </section>
@@ -1047,7 +1034,7 @@ useEffect(() => {
       {/* What Our Members Are Saying */}
     {/* What Our Members Are Saying */}
        {/* What Our Members Are Saying */}
-       <section className="py-16 bg-white">
+   <section className="py-16 bg-white">
   <div className="container mx-auto px-6">
     <h2 
       data-animate
@@ -1097,40 +1084,22 @@ useEffect(() => {
               <div 
                 data-animate
                 id={`testimonial-${index}`}
-                className={`testimonial-card gpu-accelerated p-4 sm:p-6 h-full ${
+                className={`testimonial-card gpu-accelerated p-4 h-full bg-white rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 ${
                   isVisible[`testimonial-${index}`] ? 'animate-scaleIn animate-in' : ''
                 }`}
               >
-                <div className="flex items-center mb-4">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden mr-3 ring-2 ring-teal-100">
-                    <Image 
-                      src={testimonial.avatar} 
-                      alt={testimonial.name}
-                      width={48}
-                      height={48}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div>
-                    <div className="flex mb-1">
-                      {[...Array(testimonial.rating)].map((_, i) => (
-                        <span 
-                          key={i} 
-                          className="text-teal-500 text-sm animate-pulse" 
-                          style={{animationDelay: `${i * 0.1}s`}}
-                        >
-                          ★
-                        </span>
-                      ))}
-                    </div>
-                  </div>
+                {/* Testimonial Text */}
+                <div className="mb-4">
+                  <div className="text-teal-500 text-2xl mb-2 leading-none">"</div>
+                  <p className="text-gray-700 leading-relaxed text-sm italic">
+                    {testimonial.text}
+                  </p>
                 </div>
-                <p className="text-gray-700 mb-4 leading-relaxed text-sm">
-                  {testimonial.text}
-                </p>
-                <div>
-                  <h4 className="font-semibold text-gray-900 text-sm">{testimonial.name}</h4>
-                  <p className="text-gray-500 text-xs">{testimonial.role}</p>
+                
+                {/* Author Info */}
+                <div className="border-t border-gray-100 pt-3 mt-auto">
+                  <h4 className="font-semibold text-gray-900 text-sm mb-1">{testimonial.name}</h4>
+                  <p className="text-gray-500 text-xs leading-relaxed">{testimonial.role}</p>
                 </div>
               </div>
             </div>
@@ -1260,7 +1229,7 @@ useEffect(() => {
             {/* Quick Links */}
             <div className="footer-section">
               <h3 className="text-lg font-semibold text-gray-900 mb-6">Quick Links</h3>
-              <ul className="space-y-4">
+              <ul className="space-y-2">
                 <li>
                   <a href="#benefits" className="text-gray-600 hover:text-primary transition-colors duration-300 block py-1">
                     Benefits
@@ -1292,25 +1261,25 @@ useEffect(() => {
                 <div className="space-y-2">
                   <div 
                     onClick={() => router.push("/buyer/register")}
-                    className="text-primary hover:text-primary hover:bg-teal-50 block py-2 px-3 rounded-lg teal-600 cursor-pointer  transition-all duration-300"
+                    className="text-primary hover:text-primary hover:bg-teal-50 block py-2 rounded-lg teal-600 cursor-pointer  transition-all duration-300"
                   >
                     Buyer registration
                   </div>
                   <div 
-                    onClick={() => router.push("/seller/login")}
-                    className="text-primary hover:text-primary hover:bg-teal-50 block py-2 px-3 rounded-lg teal-600 cursor-pointer  transition-all duration-300"
+                    onClick={() => router.push("/seller/register")}
+                    className="text-primary hover:text-primary hover:bg-teal-50 block py-2  rounded-lg teal-600 cursor-pointer  transition-all duration-300"
                   >
                     Add a Deal
                   </div>
                      <div 
                     onClick={() => router.push("/buyer/login")}
-                    className="text-primary hover:text-primary hover:bg-teal-50 block py-2 px-3 rounded-lg teal-600 cursor-pointer  transition-all duration-300"
+                    className="text-primary hover:text-primary hover:bg-teal-50 block py-2 rounded-lg teal-600 cursor-pointer  transition-all duration-300"
                   >
                     Buyer Login
                   </div>
                      <div 
                     onClick={() => router.push("/seller/login")}
-                    className="text-primary hover:text-primary hover:bg-teal-50 block py-2 px-3 rounded-lg primary cursor-pointer  transition-all duration-300"
+                    className="text-primary hover:text-primary hover:bg-teal-50 block py-2  rounded-lg primary cursor-pointer  transition-all duration-300"
                   >
                     Seller Login
                   </div>
