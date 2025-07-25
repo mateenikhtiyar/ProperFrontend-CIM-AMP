@@ -4,6 +4,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { useState } from 'react'
 import Image from 'next/image'
 import axios from 'axios'
+import { EyeIcon, EyeOffIcon } from "lucide-react"
 
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -11,6 +12,7 @@ import { toast } from '@/components/ui/use-toast'
 import { Toaster } from '@/components/ui/toaster'
 
 export default function SellerResetPasswordPage() {
+      const [showPassword, setShowPassword] = useState(false)
   const searchParams = useSearchParams()
   const router = useRouter()
   const token = searchParams.get('token')
@@ -126,6 +128,13 @@ export default function SellerResetPasswordPage() {
                 placeholder="Enter new password"
                 className="w-full py-6"
               />
+               <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+                  >
+                    {showPassword ? <EyeOffIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
+                  </button>
             </div>
 
             <div>
@@ -144,6 +153,13 @@ export default function SellerResetPasswordPage() {
                 placeholder="Confirm new password"
                 className="w-full py-6"
               />
+               <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+                  >
+                    {showPassword ? <EyeOffIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
+                  </button>
             </div>
 
             <Button
