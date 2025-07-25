@@ -1256,15 +1256,14 @@ export default function DealsPage() {
               By clicking "Approve" you reaffirm your previous acceptance of the
               STRAIGHT TO CIM MASTER NON-DISCLOSURE AGREEMENT and the CIM
               AMPLIFY MASTER FEE AGREEMENT.
-              <br />
-              <br />
-              Some Advisors require their own NDA.  If this is the case you will find the NDA in documents on the next screen.  Please execute the NDA and return it directly to the Advisor mentioning that your were invited to this deal via CIM Amplify
-            </p>
-            <p className="text-sm text-gray-600">
+               <p className="text-sm text-gray-600">
               Once you approve, the seller will be notified and can contact you
               directly.
             </p>
-            
+              <br />
+              <br />
+             Note: Some Advisors require their own NDA.  If this is the case you will find the NDA in documents on the next screen.  Please execute the NDA and return it directly to the Advisor mentioning that your were invited to this deal via CIM Amplify
+            </p>
           </div>
           <DialogFooter className="sm:justify-between">
             <Button variant="outline" onClick={() => setTermsModalOpen(false)}>
