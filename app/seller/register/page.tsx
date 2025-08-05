@@ -18,6 +18,9 @@ interface RegisterFormData {
   password: string
   confirmPassword: string
   companyName: string
+  title: string
+  phoneNumber: string
+  website: string
 }
 
 export default function SellerRegisterPage() {
@@ -29,6 +32,9 @@ export default function SellerRegisterPage() {
     password: "",
     confirmPassword: "",
     companyName: "",
+    title: "",
+    phoneNumber: "",
+    website: "",
   })
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -127,31 +133,30 @@ export default function SellerRegisterPage() {
       console.log("Register page - Submitting registration")
 
       // Use the API service
-      const data = await sellerRegister({
+      await sellerRegister({
         fullName: formData.fullName,
         email: formData.email,
         password: formData.password,
         companyName: formData.companyName,
+        title: formData.title,
+        phoneNumber: formData.phoneNumber,
+        website: formData.website,
       })
-
-      // Set user role
-      localStorage.setItem("userRole", "seller")
 
       toast({
         title: "Registration Successful",
-        description: "Your account has been created successfully.",
+        description: "Please check your email to verify your account before logging in.",
       })
 
       // Redirect to dashboard page
-      setTimeout(() => {
-        router.push("/seller/dashboard")
-      }, 1500)
+      router.push("/verify-email?from=registration&role=seller")
+
     } catch (error: any) {
       console.error("Registration error:", error)
-      setErrors({ general: error.message || "Registration failed. Please try again." })
+      setErrors({ general: error.response?.data?.message || "Registration failed. Please try again." })
       toast({
         title: "Registration Failed",
-        description: error.message || "Registration failed. Please try again.",
+        description: error.response?.data?.message || "Registration failed. Please try again.",
         variant: "destructive",
       })
     } finally {
@@ -162,7 +167,7 @@ export default function SellerRegisterPage() {
   // Handle Google OAuth login
   const handleGoogleLogin = () => {
     console.log("Register page - Redirecting to Google OAuth")
-    window.location.href = "https://api.cimamplify.com/sellers/google/callback"
+    window.location.href = "http://localhost:3001/sellers/google/callback"
   }
 
   return (
@@ -240,6 +245,51 @@ export default function SellerRegisterPage() {
                   placeholder=""
                 />
                 {errors.fullName && <p className="mt-1 text-sm text-red-600">{errors.fullName}</p>}
+              </div>
+
+              <div>
+                <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
+                  Title
+                </label>
+                <Input
+                  id="title"
+                  name="title"
+                  type="text"
+                  value={formData.title}
+                  onChange={handleChange}
+                  placeholder=""
+                />
+                {errors.title && <p className="mt-1 text-sm text-red-600">{errors.title}</p>}
+              </div>
+
+              <div>
+                <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-1">
+                  Phone Number
+                </label>
+                <Input
+                  id="phoneNumber"
+                  name="phoneNumber"
+                  type="text"
+                  value={formData.phoneNumber}
+                  onChange={handleChange}
+                  placeholder=""
+                />
+                {errors.phoneNumber && <p className="mt-1 text-sm text-red-600">{errors.phoneNumber}</p>}
+              </div>
+
+              <div>
+                <label htmlFor="website" className="block text-sm font-medium text-gray-700 mb-1">
+                  Website
+                </label>
+                <Input
+                  id="website"
+                  name="website"
+                  type="text"
+                  value={formData.website}
+                  onChange={handleChange}
+                  placeholder=""
+                />
+                {errors.website && <p className="mt-1 text-sm text-red-600">{errors.website}</p>}
               </div>
 
               <div>

@@ -93,7 +93,7 @@ export default function BuyersManagementDashboard() {
   useEffect(() => {
     const fetchAdminProfile = async () => {
       const token = localStorage.getItem("token");
-      const res = await fetch("https://api.cimamplify.com/admin/profile", {
+      const res = await fetch("http://localhost:3001/admin/profile", {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -109,7 +109,7 @@ export default function BuyersManagementDashboard() {
       setLoading(true);
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch("https://api.cimamplify.com/buyers/all", {
+        const res = await fetch("http://localhost:3001/buyers/all", {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -139,7 +139,7 @@ export default function BuyersManagementDashboard() {
           if (!buyerId) return;
           try {
             // Fetch real deal status counts from backend (invitationStatus logic)
-            const res = await fetch(`https://api.cimamplify.com/deals/admin/buyer/${buyerId}/status-counts`, {
+            const res = await fetch(`http://localhost:3001/deals/admin/buyer/${buyerId}/status-counts`, {
               headers: { Authorization: `Bearer ${token}` },
             });
             if (!res.ok) throw new Error("Failed to fetch deal status counts");
@@ -173,7 +173,7 @@ export default function BuyersManagementDashboard() {
     setModalOpen(true);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`https://api.cimamplify.com/deals/admin/buyer/${buyer._id || buyer.id}/deals?status=${status}`, {
+      const res = await fetch(`http://localhost:3001/deals/admin/buyer/${buyer._id || buyer.id}/deals?status=${status}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error("Failed to fetch deals");
@@ -214,7 +214,7 @@ export default function BuyersManagementDashboard() {
     if (!window.confirm("Are you sure you want to delete this Buyer?")) return;
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`https://api.cimamplify.com/admin/buyers/${buyerId}`, {
+      const res = await fetch(`http://localhost:3001/admin/buyers/${buyerId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
