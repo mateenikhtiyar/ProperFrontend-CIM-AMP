@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { EyeIcon, EyeOffIcon } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import { Toaster } from "@/components/ui/toaster"
+import { register } from "@/services/api";
 
 interface RegisterFormData {
   fullName: string
@@ -121,145 +122,50 @@ export default function BuyerRegisterPage() {
 
   // Handle traditional registration
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setErrors({})
-
-    console.log("Form submission started")
-    console.log("Form data:", formData)
+    e.preventDefault();
+    setErrors({});
 
     if (!validateForm()) {
-      console.log("Form validation failed")
-      return
+      return;
     }
 
-    setIsSubmitting(true)
+    setIsSubmitting(true);
 
     try {
-      // Get API URL from localStorage or use default
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
-
-      console.log("Register page - Submitting registration to:", apiUrl)
-      console.log("POST to:", `${apiUrl}/buyers/register`)
-
-      const requestBody = {
+      await register({
         fullName: formData.fullName.trim(),
         email: formData.email.trim(),
-        phone: formData.phone.trim() || null, // Allow phone to be optional
         password: formData.password,
         companyName: formData.companyName.trim(),
-      }
+        phone: formData.phone.trim(),
+      });
 
-      console.log("Request body:", requestBody)
+      toast({
+        title: "Registration Successful",
+        description: "Please check your email to verify your account before logging in.",
+      });
 
-      const response = await fetch(`${apiUrl}/buyers/register`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(requestBody),
-      })
+      router.push("/verify-email?from=registration&role=buyer");
 
-      console.log("Response status:", response.status)
-      console.log("Response headers:", response.headers)
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        console.error("Registration failed:", errorData)
-        throw new Error(errorData.message || `Registration failed with status: ${response.status}`)
-      }
-
-      const data = await response.json()
-      console.log("Registration response:", data)
-
-      // The backend should return the user data and we'll generate a login token
-      if (data) {
-        // After successful registration, log the user in
-        console.log("Attempting automatic login...")
-        const loginResponse = await fetch(`${apiUrl}/buyers/login`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            email: formData.email.trim(),
-            password: formData.password,
-          }),
-        })
-
-        if (!loginResponse.ok) {
-          console.warn("Automatic login failed, redirecting to login page")
-          toast({
-            title: "Registration Successful",
-            description: "Please log in with your credentials.",
-          })
-          setTimeout(() => {
-            router.push("/buyer/login")
-          }, 1500)
-          return
-        }
-
-        const loginData = await loginResponse.json()
-        console.log("Login response:", loginData)
-
-        // Store token - adapt this to match your API response format
-        if (loginData.access_token) {
-          localStorage.setItem("token", loginData.access_token)
-          console.log("Register page - Token stored from login:", loginData.access_token.substring(0, 10) + "...")
-        } else if (loginData.token) {
-          localStorage.setItem("token", loginData.token)
-          console.log("Register page - Token stored from login:", loginData.token.substring(0, 10) + "...")
-        } else {
-          console.warn("Register page - Login response missing token")
-        }
-
-        // Store userId - adapt this to match your API response format
-        if (loginData.user && loginData.user._id) {
-          localStorage.setItem("userId", loginData.user._id)
-          console.log("Register page - User ID stored from login:", loginData.user._id)
-        } else if (loginData.user && loginData.user.id) {
-          localStorage.setItem("userId", loginData.user.id)
-          console.log("Register page - User ID stored from login:", loginData.user.id)
-        } else if (loginData.userId) {
-          localStorage.setItem("userId", loginData.userId)
-          console.log("Register page - User ID stored from login:", loginData.userId)
-        } else {
-          console.warn("Register page - Login response missing userId")
-        }
-
-        // Set user role
-        localStorage.setItem("userRole", "buyer")
-
-        toast({
-          title: "Registration Successful",
-          description: "Your account has been created successfully.",
-        })
-
-        // Redirect to company profile page
-        setTimeout(() => {
-          router.push("/buyer/acquireprofile")
-        }, 1500)
-      } else {
-        throw new Error("Registration response missing user data")
-      }
     } catch (error: any) {
-      console.error("Registration error:", error)
+      console.error("Registration error:", error);
       setErrors({
-        general: error.message || "Registration failed. Please try again.",
-      })
+        general: error.response?.data?.message || "Registration failed. Please try again.",
+      });
       toast({
         title: "Registration Failed",
-        description: error.message || "Registration failed. Please try again.",
+        description: error.response?.data?.message || "Registration failed. Please try again.",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   // Handle Google OAuth login
   const handleGoogleLogin = () => {
     // Get API URL from localStorage or use default
-    const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
     console.log("Register page - Redirecting to Google OAuth:", `${apiUrl}/buyers/google`)
 
     // Redirect to Google OAuth endpoint

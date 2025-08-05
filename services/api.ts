@@ -4,7 +4,7 @@ const getApiUrl = () => {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL
   if (!apiUrl) {
     console.warn("NEXT_PUBLIC_API_URL not set, using default backend URL")
-    return "https://api.cimamplify.com" // Default backend URL
+    return "http://localhost:3001" // Default backend URL
   }
   console.log("Using API URL:", apiUrl)
   return apiUrl
@@ -72,12 +72,7 @@ export const sellerRegister = async (userData: {
 }) => {
   try {
     const response = await api.post("/sellers/register", userData)
-    // Auto-login after registration
-    const loginResponse = await sellerLogin({
-      email: userData.email,
-      password: userData.password,
-    })
-    return loginResponse
+    return response.data
   } catch (error) {
     console.error("Seller registration error:", error)
     throw error
@@ -161,12 +156,7 @@ export const register = async (userData: {
 }) => {
   try {
     const response = await api.post("/buyers/register", userData)
-    // Auto-login after registration
-    const loginResponse = await login({
-      email: userData.email,
-      password: userData.password,
-    })
-    return loginResponse
+    return response.data
   } catch (error) {
     console.error("Registration error:", error)
     throw error
@@ -200,6 +190,16 @@ export const isAuthenticated = () => {
 }
 export const getUserId = () => {
   return localStorage.getItem("userId")
+}
+
+export const verifyEmail = async (token: string) => {
+  try {
+    const response = await api.get(`/auth/verify-email?token=${token}`)
+    return response.data
+  } catch (error) {
+    console.error("Email verification error:", error)
+    throw error
+  }
 }
 export default api
 
