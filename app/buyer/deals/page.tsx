@@ -907,7 +907,13 @@ export default function DealsPage() {
               <Briefcase className="mr-3 h-5 w-5" />
               <span>All Deals</span>
             </Link>
-
+            <Link
+              href="/buyer/marketplace"
+              className="mb-2 flex items-center rounded-md px-4 py-3 text-gray-700 hover:bg-gray-100"
+            >
+              <Store className="mr-3 h-5 w-5" />
+              <span>MarketPlace</span>
+            </Link>
             <Link
               href="/buyer/company-profile"
               className="mb-2 flex items-center rounded-md px-4 py-3 text-gray-700 hover:bg-gray-100"
@@ -915,7 +921,6 @@ export default function DealsPage() {
               <Eye className="mr-3 h-5 w-5" />
               <span>Company Profile</span>
             </Link>
-
             <button
               onClick={handleLogout}
               className="flex items-center rounded-md px-4 py-3 text-gray-700 hover:bg-gray-100 text-left w-full"
@@ -925,6 +930,13 @@ export default function DealsPage() {
             </button>
           </nav>
         </aside>
+
+
+
+
+
+
+
 
         {/* Main content */}
         <main className="flex-1 bg-gray-50 p-6">

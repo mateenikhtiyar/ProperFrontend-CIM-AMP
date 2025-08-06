@@ -194,13 +194,25 @@ export const getUserId = () => {
 
 export const verifyEmail = async (token: string) => {
   try {
-    const response = await api.get(`/auth/verify-email?token=${token}`)
-    return response.data
+    const response = await api.get(`/auth/verify-email?token=${token}`);
+    // Assuming the backend returns { token, userId, role }
+    return response.data;
   } catch (error) {
-    console.error("Email verification error:", error)
-    throw error
+    console.error("Email verification error:", error);
+    throw error;
   }
-}
+};
+
+export const resendVerificationEmail = async (email: string) => {
+  try {
+    const response = await api.post("/auth/resend-verification-email", { email });
+    return response.data;
+  } catch (error) {
+    console.error("Resend verification email error:", error);
+    throw error;
+  }
+};
+
 export default api
 
 
