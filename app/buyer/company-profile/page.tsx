@@ -29,6 +29,7 @@ import {
   LogOut,
   Settings,
   Briefcase,
+  Store,
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "@/components/ui/use-toast";
