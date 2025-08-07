@@ -1,105 +1,98 @@
-"use client";
+"use client"
 
-import type React from "react";
-import { useState, useEffect, useRef } from "react";
-import Image from "next/image";
-import Link from "next/link";
-import { useSearchParams, useRouter } from "next/navigation";
-import { Eye, Clock, LogOut, Plus, FileText, Download } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
-import { toast } from "@/components/ui/use-toast";
-import { Toaster } from "@/components/ui/toaster";
-import { useAuth } from "@/contexts/auth-context";
-import SellerProtectedRoute from "@/components/seller/protected-route";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
+import type React from "react"
+import { useState, useEffect, useRef } from "react"
+import Image from "next/image"
+import Link from "next/link"
+import { useSearchParams, useRouter } from "next/navigation"
+import { Eye, Clock, LogOut, Plus, FileText, Download } from 'lucide-react'
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Skeleton } from "@/components/ui/skeleton"
+import { toast } from "@/components/ui/use-toast"
+import { Toaster } from "@/components/ui/toaster"
+import { useAuth } from "@/contexts/auth-context"
+import SellerProtectedRoute from "@/components/seller/protected-route"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
 
 // Updated interfaces to match API structure
 interface SellerProfile {
-  _id: string;
-  fullName: string;
-  email: string;
-  companyName: string;
-  role: string;
-  profilePicture: string;
+  _id: string
+  fullName: string
+  email: string
+  companyName: string
+  role: string
+  profilePicture: string
 }
 
 interface DealDocument {
-  filename: string;
-  originalName: string;
-  path: string;
-  size: number;
-  mimetype: string;
-  uploadedAt: string;
+  filename: string
+  originalName: string
+  path: string
+  size: number
+  mimetype: string
+  uploadedAt: string
 }
 
 interface Deal {
-  _id: string;
-  id?: string;
-  title: string;
-  companyDescription: string;
-  dealType: string;
-  status: string;
-  visibility?: string;
-  industrySector: string;
-  geographySelection: string;
-  yearsInBusiness: number;
-  employeeCount?: number;
+  _id: string
+  id?: string
+  title: string
+  companyDescription: string
+  dealType: string
+  status: string
+  visibility?: string
+  industrySector: string
+  geographySelection: string
+  yearsInBusiness: number
+  employeeCount?: number
   financialDetails: {
-    trailingRevenueCurrency?: string;
-    trailingRevenueAmount?: number;
-    trailingEBITDACurrency?: string;
-    trailingEBITDAAmount?: number;
-    avgRevenueGrowth?: number;
-    netIncome?: number;
-    askingPrice?: number;
-    finalSalePrice?: number;
-  };
+    trailingRevenueCurrency?: string
+    trailingRevenueAmount?: number
+    trailingEBITDACurrency?: string
+    trailingEBITDAAmount?: number
+    avgRevenueGrowth?: number
+    netIncome?: number
+    askingPrice?: number
+    finalSalePrice?: number
+  }
   businessModel: {
-    recurringRevenue?: boolean;
-    projectBased?: boolean;
-    assetLight?: boolean;
-    assetHeavy?: boolean;
-  };
+    recurringRevenue?: boolean
+    projectBased?: boolean
+    assetLight?: boolean
+    assetHeavy?: boolean
+  }
   managementPreferences: {
-    retiringDivesting?: boolean;
-    staffStay?: boolean;
-  };
+    retiringDivesting?: boolean
+    staffStay?: boolean
+  }
   buyerFit: {
-    capitalAvailability?: string;
-    minPriorAcquisitions?: number;
-    minTransactionSize?: number;
-  };
-  targetedBuyers: string[];
-  interestedBuyers: string[];
-  tags: string[];
-  isPublic: boolean;
-  isFeatured: boolean;
-  stakePercentage?: number;
-  documents: DealDocument[];
+    capitalAvailability?: string
+    minPriorAcquisitions?: number
+    minTransactionSize?: number
+  }
+  targetedBuyers: string[]
+  interestedBuyers: string[]
+  tags: string[]
+  isPublic: boolean
+  isFeatured: boolean
+  stakePercentage?: number
+  documents: DealDocument[]
   timeline: {
-    createdAt: string;
-    updatedAt: string;
-    publishedAt?: string;
-    completedAt?: string;
-  };
+    createdAt: string
+    updatedAt: string
+    publishedAt?: string
+    completedAt?: string
+  }
 }
 
 // Helper function to get the complete profile picture URL
 function getProfilePictureUrl(path: string | null) {
-  if (!path) return null;
-  const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
-  const formattedPath = path.replace(/\\/g, "/");
-  return `${apiUrl}/${
-    formattedPath.startsWith("/") ? formattedPath.slice(1) : formattedPath
-  }`;
+  if (!path) return null
+  const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+  const formattedPath = path.replace(/\\/g, "/")
+  return `${apiUrl}/${formattedPath.startsWith("/") ? formattedPath.slice(1) : formattedPath}`
 }
 
 function DealCard({
@@ -108,127 +101,119 @@ function DealCard({
   handleOffMarketClick,
   handleCompleteDealClick,
 }: {
-  deal: Deal;
-  onDocumentUpload: (dealId: string) => void;
-  handleOffMarketClick: (deal: Deal) => void;
-  handleCompleteDealClick: (deal: Deal) => void;
+  deal: Deal
+  onDocumentUpload: (dealId: string) => void
+  handleOffMarketClick: (deal: Deal) => void
+  handleCompleteDealClick: (deal: Deal) => void
 }) {
-  const router = useRouter();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
+  const router = useRouter()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
 
   // Helper functions
   const handleDocumentUpload = async (dealId: string) => {
-    const token = localStorage.getItem("token");
-    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
+    const token = localStorage.getItem("token")
+    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
 
     const response = await fetch(`${apiUrl}/deals/${dealId}`, {
       headers: { Authorization: `Bearer ${token}` },
-    });
+    })
     if (response.ok) {
-      onDocumentUpload(dealId);
+      onDocumentUpload(dealId)
     } else {
-      toast({ title: "Error refreshing deal data after upload" });
+      toast({ title: "Error refreshing deal data after upload" })
     }
-  };
+  }
 
   const getBusinessModel = (model: Deal["businessModel"]): string => {
-    const models = [];
-    if (model.recurringRevenue) models.push("Recurring Revenue");
-    if (model.projectBased) models.push("Project-Based");
-    if (model.assetLight) models.push("Asset Light");
-    if (model.assetHeavy) models.push("Asset Heavy");
-    return models.length > 0 ? models[0] : "Not specified";
-  };
+    const models = []
+    if (model.recurringRevenue) models.push("Recurring Revenue")
+    if (model.projectBased) models.push("Project-Based")
+    if (model.assetLight) models.push("Asset Light")
+    if (model.assetHeavy) models.push("Asset Heavy")
+    return models.length > 0 ? models[0] : "Not specified"
+  }
 
-  const getManagementPreferences = (
-    prefs: Deal["managementPreferences"]
-  ): string => {
-    if (prefs.retiringDivesting && prefs.staffStay)
-      return "Retiring to diversity";
-    if (prefs.retiringDivesting) return "Owner(s) Departing";
-    if (prefs.staffStay) return "Management Team Staying";
-    return "Not specified";
-  };
+  const getManagementPreferences = (prefs: Deal["managementPreferences"]): string => {
+    if (prefs.retiringDivesting && prefs.staffStay) return "Retiring to diversity"
+    if (prefs.retiringDivesting) return "Owner(s) Departing"
+    if (prefs.staffStay) return "Management Team Staying"
+    return "Not specified"
+  }
 
   const formatCurrency = (amount = 0, currency = "USD($)"): string => {
     const currencySymbol = currency.includes("USD")
       ? "$"
       : currency.includes("EUR")
-      ? "€"
-      : currency.includes("GBP")
-      ? "£"
-      : "$";
-    return `${currencySymbol}${amount.toLocaleString()}`;
-  };
+        ? "€"
+        : currency.includes("GBP")
+          ? "£"
+          : "$"
+    return `${currencySymbol}${amount.toLocaleString()}`
+  }
 
-  const handleDocumentUploadInner = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const files = event.target.files;
-    if (!files || files.length === 0) return;
+  const handleDocumentUploadInner = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files
+    if (!files || files.length === 0) return
 
-    setUploading(true);
-    const formData = new FormData();
+    setUploading(true)
+    const formData = new FormData()
 
     Array.from(files).forEach((file) => {
-      formData.append("files", file);
-    });
+      formData.append("files", file)
+    })
 
     try {
-      const token = localStorage.getItem("token");
-      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
+      const token = localStorage.getItem("token")
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
 
-      const response = await fetch(
-        `${apiUrl}/deals/${deal._id}/upload-documents`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: formData,
-        }
-      );
+      const response = await fetch(`${apiUrl}/deals/${deal._id}/upload-documents`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      })
 
       if (!response.ok) {
-        throw new Error(`Upload failed: ${response.statusText}`);
+        throw new Error(`Upload failed: ${response.statusText}`)
       }
 
-      const result = await response.json();
+      const result = await response.json()
 
       toast({
         title: "Documents uploaded successfully",
         description: `Uploaded ${result.uploadedFiles} document(s)`,
-      });
+      })
 
       // Trigger refresh
-      onDocumentUpload(deal._id);
+      onDocumentUpload(deal._id)
     } catch (error: any) {
       toast({
         title: "Upload failed",
         description: error.message || "Failed to upload documents",
         variant: "destructive",
-      });
+      })
     } finally {
-      setUploading(false);
+      setUploading(false)
       if (fileInputRef.current) {
-        fileInputRef.current.value = "";
+        fileInputRef.current.value = ""
       }
     }
-  };
+  }
 
   const downloadDocument = (doc: DealDocument) => {
-    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
+    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
 
     // Create a download link
-    const link = document.createElement("a");
-    link.href = `${apiUrl}/uploads/deal-documents/${doc.filename}`;
-    link.download = doc.originalName;
-    link.target = "_blank";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+    const link = document.createElement("a")
+    link.href = `${apiUrl}/uploads/deal-documents/${doc.filename}`
+    link.download = doc.originalName
+    link.target = "_blank"
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
@@ -273,7 +258,7 @@ function DealCard({
               {deal.financialDetails
                 ? formatCurrency(
                     deal.financialDetails.trailingRevenueAmount,
-                    deal.financialDetails.trailingRevenueCurrency
+                    deal.financialDetails.trailingRevenueCurrency,
                   )
                 : "N/A"}
             </span>
@@ -284,7 +269,7 @@ function DealCard({
               {deal.financialDetails
                 ? formatCurrency(
                     deal.financialDetails.trailingEBITDAAmount,
-                    deal.financialDetails.trailingRevenueCurrency
+                    deal.financialDetails.trailingRevenueCurrency,
                   )
                 : "N/A"}
             </span>
@@ -316,7 +301,7 @@ function DealCard({
         </div>
       </div>
 
-      {/* Documents Section */}
+    
 
       {/* Action Buttons */}
       <div className="flex p-4 gap-2">
@@ -351,93 +336,87 @@ function DealCard({
         </Button>
       </div>
     </div>
-  );
+  )
 }
 
 export default function SellerDashboardPage() {
-  const router = useRouter();
-  const [deals, setDeals] = useState<Deal[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [userProfile, setUserProfile] = useState<any>(null);
-  const [sellerProfile, setSellerProfile] = useState<SellerProfile | null>(
-    null
-  );
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const router = useRouter()
+  const [deals, setDeals] = useState<Deal[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [userProfile, setUserProfile] = useState<any>(null)
+  const [sellerProfile, setSellerProfile] = useState<SellerProfile | null>(null)
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
 
-  const [offMarketDialogOpen, setOffMarketDialogOpen] = useState(false);
-  const [currentDialogStep, setCurrentDialogStep] = useState(1);
-  const [selectedDealForOffMarket, setSelectedDealForOffMarket] =
-    useState<Deal | null>(null);
+  const [offMarketDialogOpen, setOffMarketDialogOpen] = useState(false)
+  const [currentDialogStep, setCurrentDialogStep] = useState(1)
+  const [selectedDealForOffMarket, setSelectedDealForOffMarket] = useState<Deal | null>(null)
   const [offMarketData, setOffMarketData] = useState({
     dealSold: null as boolean | null,
     transactionValue: "",
     buyerFromCIM: null as boolean | null,
-  });
+  })
 
-  const [completeDealDialogOpen, setCompleteDealDialogOpen] = useState(false);
-  const [selectedDealForCompletion, setSelectedDealForCompletion] =
-    useState<Deal | null>(null);
+  const [completeDealDialogOpen, setCompleteDealDialogOpen] = useState(false)
+  const [selectedDealForCompletion, setSelectedDealForCompletion] = useState<Deal | null>(null)
   const [completionData, setCompletionData] = useState({
     finalSalePrice: "",
-  });
+  })
 
   // Add this state near the other state declarations
-  const [buyerActivity, setBuyerActivity] = useState<any[]>([]);
-  const [selectedWinningBuyer, setSelectedWinningBuyer] = useState<string>("");
-  const [buyerActivityLoading, setBuyerActivityLoading] = useState(false);
+  const [buyerActivity, setBuyerActivity] = useState<any[]>([])
+  const [selectedWinningBuyer, setSelectedWinningBuyer] = useState<string>("")
+  const [buyerActivityLoading, setBuyerActivityLoading] = useState(false)
 
-  const searchParams = useSearchParams();
-  const { logout } = useAuth();
+  const searchParams = useSearchParams()
+  const { logout } = useAuth()
 
-  const [profileName, setProfileName] = useState("");
+  const [profileName, setProfileName] = useState("")
 
   // Fetch seller profile
   useEffect(() => {
     const fetchSellerProfile = async () => {
       try {
-        const token = localStorage.getItem("token");
-        const apiUrl =
-          localStorage.getItem("apiUrl") || "http://localhost:3001";
+        const token = localStorage.getItem("token")
+        const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
 
         const response = await fetch(`${apiUrl}/sellers/profile`, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-        });
+        })
 
         if (response.ok) {
-          const data = await response.json();
-          setSellerProfile(data);
+          const data = await response.json()
+          setSellerProfile(data)
           setUserProfile({
             fullName: data.fullName,
             location: data.companyName,
             phone: data.email,
             profilePicture: data.profilePicture, // This comes from the API
-          });
-          setProfileName(data.fullName);
+          })
+          setProfileName(data.fullName)
         }
       } catch (error) {
-        console.error("Error fetching seller profile:", error);
+        console.error("Error fetching seller profile:", error)
       }
-    };
-    fetchSellerProfile();
-  }, []);
+    }
+    fetchSellerProfile()
+  }, [])
 
   // Fetch deals
   useEffect(() => {
     const fetchDeals = async () => {
       try {
-        setLoading(true);
-        const token = localStorage.getItem("token");
-        const apiUrl =
-          localStorage.getItem("apiUrl") || "http://localhost:3001";
+        setLoading(true)
+        const token = localStorage.getItem("token")
+        const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
 
         if (!token) {
-          router.push("/seller/login?error=no_token");
-          return;
+          router.push("/seller/login?error=no_token")
+          return
         }
 
         const response = await fetch(`${apiUrl}/deals/my-deals`, {
@@ -445,171 +424,153 @@ export default function SellerDashboardPage() {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-        });
+        })
 
         if (!response.ok) {
-          throw new Error(
-            `API Error: ${response.status} ${response.statusText}`
-          );
+          throw new Error(`API Error: ${response.status} ${response.statusText}`)
         }
 
-        const data = await response.json();
+        const data = await response.json()
 
         if (Array.isArray(data)) {
           // Sort deals by creation date (most recent first)
           const sortedDeals = data
             .map((deal: any) => ({ ...deal, id: deal._id }))
-            .sort(
-              (a, b) =>
-                new Date(b.timeline.createdAt).getTime() -
-                new Date(a.timeline.createdAt).getTime()
-            );
-          setDeals(sortedDeals);
+            .sort((a, b) => new Date(b.timeline.createdAt).getTime() - new Date(a.timeline.createdAt).getTime())
+          setDeals(sortedDeals)
         } else {
-          setDeals([]);
+          setDeals([])
         }
 
-        setError(null);
+        setError(null)
       } catch (err: any) {
-        console.error("Error fetching deals:", err);
-        setError(err.message || "Failed to load deals");
-        setDeals([]);
+        console.error("Error fetching deals:", err)
+        setError(err.message || "Failed to load deals")
+        setDeals([])
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
+    }
 
-    fetchDeals();
-  }, [router, refreshTrigger]);
+    fetchDeals()
+  }, [router, refreshTrigger])
 
   const handleLogout = () => {
-    logout();
-    router.push("/seller/login");
-  };
+    logout()
+    router.push("/seller/login")
+  }
 
   const filteredDeals = deals.filter(
     (deal) =>
       deal.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      deal.companyDescription.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+      deal.companyDescription.toLowerCase().includes(searchTerm.toLowerCase()),
+  )
 
   const handleUpdateName = async () => {
     if (profileName.trim()) {
       try {
-        const token = localStorage.getItem("token");
-        const apiUrl =
-          localStorage.getItem("apiUrl") || "http://localhost:3001";
+        const token = localStorage.getItem("token")
+        const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
 
-        const response = await fetch(
-          `${apiUrl}/sellers/${sellerProfile?._id}`,
-          {
-            method: "PATCH",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({ fullName: profileName }),
-          }
-        );
+        const response = await fetch(`${apiUrl}/sellers/${sellerProfile?._id}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ fullName: profileName }),
+        })
 
         if (response.ok) {
           setUserProfile((prev: any) => ({
             ...prev,
             fullName: profileName,
-          }));
+          }))
         }
       } catch (error) {
         toast({
           title: "Update failed",
           description: "Failed to update name",
           variant: "destructive",
-        });
+        })
       }
     }
-  };
+  }
 
   const handleDocumentUpload = (dealId: string) => {
     // Refresh deals to show updated documents
-    setRefreshTrigger((prev) => prev + 1);
-  };
+    setRefreshTrigger((prev) => prev + 1)
+  }
 
   const handleOffMarketClick = (deal: Deal) => {
-    setSelectedDealForOffMarket(deal);
-    setCurrentDialogStep(1);
-    setOffMarketDialogOpen(true);
+    setSelectedDealForOffMarket(deal)
+    setCurrentDialogStep(1)
+    setOffMarketDialogOpen(true)
     setOffMarketData({
       dealSold: null,
       transactionValue: "",
       buyerFromCIM: null,
-    });
-  };
+    })
+  }
 
   const handleCompleteDealClick = (deal: Deal) => {
-    setSelectedDealForCompletion(deal);
+    setSelectedDealForCompletion(deal)
     setCompletionData({
       finalSalePrice: "",
-    });
-    setCompleteDealDialogOpen(true);
-  };
+    })
+    setCompleteDealDialogOpen(true)
+  }
 
   const formatTransactionValue = (value: string) => {
     // Remove all non-digits
-    const numericValue = value.replace(/\D/g, "");
+    const numericValue = value.replace(/\D/g, '')
     // Add commas for thousands
-    return numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-  };
+    return numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+  }
 
   const handleDialogResponse = async (key: string, value: boolean) => {
-    setOffMarketData((prev) => ({ ...prev, [key]: value }));
+    setOffMarketData((prev) => ({ ...prev, [key]: value }))
     if (key === "dealSold") {
       if (value === false) {
         // Mark deal as off-market
         if (selectedDealForOffMarket) {
           try {
-            const token = localStorage.getItem("token");
-            const apiUrl =
-              localStorage.getItem("apiUrl") || "http://localhost:3001";
-            const response = await fetch(
-              `${apiUrl}/deals/${selectedDealForOffMarket._id}/close-deal`,
-              {
-                method: "POST",
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({}),
-              }
-            );
+            const token = localStorage.getItem("token")
+            const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+            const response = await fetch(`${apiUrl}/deals/${selectedDealForOffMarket._id}/close-deal`, {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({}),
+            })
             if (!response.ok) {
-              const errorText = await response.text();
-              throw new Error(errorText || "Failed to close deal");
+              const errorText = await response.text()
+              throw new Error(errorText || "Failed to close deal")
             }
-            setDeals((prevDeals) =>
-              prevDeals.filter(
-                (deal) => deal._id !== selectedDealForOffMarket._id
-              )
-            );
-            setOffMarketDialogOpen(false);
+            setDeals((prevDeals) => prevDeals.filter((deal) => deal._id !== selectedDealForOffMarket._id))
+            setOffMarketDialogOpen(false)
             toast({
               title: "Deal marked as off-market",
               description: "The deal has been removed from your active deals.",
-            });
+            })
           } catch (error: any) {
             toast({
               title: "Error marking deal off-market",
               description: error.message || "Failed to mark deal off-market.",
               variant: "destructive",
-            });
+            })
           }
         } else {
-          setOffMarketDialogOpen(false);
+          setOffMarketDialogOpen(false)
         }
       } else {
         // Go to next step if deal sold
-        setCurrentDialogStep(2);
+        setCurrentDialogStep(2)
       }
     }
-  };
+  }
 
   // Replace the handleCompleteDealSubmit function with this updated version
   const handleCompleteDealSubmit = async () => {
@@ -618,8 +579,8 @@ export default function SellerDashboardPage() {
         title: "Missing information",
         description: "Please provide final sale price",
         variant: "destructive",
-      });
-      return;
+      })
+      return
     }
 
     // Ensure we have a selected buyer
@@ -628,57 +589,50 @@ export default function SellerDashboardPage() {
         title: "Buyer required",
         description: "Please select a winning buyer to complete the deal",
         variant: "destructive",
-      });
-      return;
+      })
+      return
     }
 
     try {
-      const token = localStorage.getItem("token");
-      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
+      const token = localStorage.getItem("token")
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
 
       // Close the deal with the selected buyer
-      const closeResponse = await fetch(
-        `${apiUrl}/deals/${selectedDealForCompletion._id}/close`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            finalSalePrice: Number.parseFloat(completionData.finalSalePrice),
-            winningBuyerId: selectedWinningBuyer, // Use the selected buyer ID
-          }),
-        }
-      );
+      const closeResponse = await fetch(`${apiUrl}/deals/${selectedDealForCompletion._id}/close`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          finalSalePrice: Number.parseFloat(completionData.finalSalePrice),
+          winningBuyerId: selectedWinningBuyer, // Use the selected buyer ID
+        }),
+      })
 
       if (!closeResponse.ok) {
-        const errorText = await closeResponse.text();
-        console.error("Error response:", errorText);
-        throw new Error(`Failed to complete deal: ${closeResponse.statusText}`);
+        const errorText = await closeResponse.text()
+        console.error("Error response:", errorText)
+        throw new Error(`Failed to complete deal: ${closeResponse.statusText}`)
       }
 
       // Remove the deal from the deals list
-      setDeals((prevDeals) =>
-        prevDeals.filter((deal) => deal._id !== selectedDealForCompletion._id)
-      );
+      setDeals((prevDeals) => prevDeals.filter((deal) => deal._id !== selectedDealForCompletion._id))
 
-      setCompleteDealDialogOpen(false);
+      setCompleteDealDialogOpen(false)
       toast({
         title: "Deal completed successfully",
-        description:
-          "The deal has been marked as completed and removed from your active deals",
-      });
+        description: "The deal has been marked as completed and removed from your active deals",
+      })
     } catch (error: any) {
-      console.error("Error completing deal:", error);
+      console.error("Error completing deal:", error)
       toast({
         title: "Error completing deal",
-        description:
-          error.message || "Failed to complete deal. Please try again.",
+        description: error.message || "Failed to complete deal. Please try again.",
         variant: "destructive",
-      });
+      })
     }
-  };
+  }
 
   // Replace the handleOffMarketSubmit function with this updated version
   const handleOffMarketSubmit = async () => {
@@ -687,8 +641,8 @@ export default function SellerDashboardPage() {
         title: "Missing information",
         description: "Please provide transaction value",
         variant: "destructive",
-      });
-      return;
+      })
+      return
     }
 
     // If buyer is from CIM, ensure a buyer is selected
@@ -697,86 +651,77 @@ export default function SellerDashboardPage() {
         title: "Buyer required",
         description: "Please select a buyer from the list",
         variant: "destructive",
-      });
-      return;
+      })
+      return
     }
 
     try {
-      const token = localStorage.getItem("token");
-      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
+      const token = localStorage.getItem("token")
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
 
       // Prepare winningBuyerId: only send if buyerFromCIM is true
       const body: any = {
         finalSalePrice: Number.parseFloat(offMarketData.transactionValue),
-      };
+      }
       if (offMarketData.buyerFromCIM === true) {
-        body.winningBuyerId = selectedWinningBuyer;
+        body.winningBuyerId = selectedWinningBuyer
       }
 
       // Close the deal
-      const closeResponse = await fetch(
-        `${apiUrl}/deals/${selectedDealForOffMarket._id}/close`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(body),
-        }
-      );
+      const closeResponse = await fetch(`${apiUrl}/deals/${selectedDealForOffMarket._id}/close`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      })
 
       if (!closeResponse.ok) {
-        const errorText = await closeResponse.text();
-        console.error("Error response:", errorText);
-        throw new Error(`Failed to close deal: ${closeResponse.statusText}`);
+        const errorText = await closeResponse.text()
+        console.error("Error response:", errorText)
+        throw new Error(`Failed to close deal: ${closeResponse.statusText}`)
       }
 
       // Remove the deal from the deals list
-      setDeals((prevDeals) =>
-        prevDeals.filter((deal) => deal._id !== selectedDealForOffMarket._id)
-      );
+      setDeals((prevDeals) => prevDeals.filter((deal) => deal._id !== selectedDealForOffMarket._id))
 
-      setOffMarketDialogOpen(false);
+      setOffMarketDialogOpen(false)
       toast({
         title: "Deal closed successfully",
-        description:
-          "The deal has been marked as closed and removed from your active deals",
-      });
+        description: "The deal has been marked as closed and removed from your active deals",
+      })
     } catch (error: any) {
-      console.error("Error closing deal:", error);
+      console.error("Error closing deal:", error)
       toast({
         title: "Error closing deal",
         description: error.message || "Failed to close deal. Please try again.",
         variant: "destructive",
-      });
+      })
     }
-  };
+  }
 
   const fetchDealStatusSummary = async (dealId: string) => {
     try {
-      const token = localStorage.getItem("token");
-      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
+      const token = localStorage.getItem("token")
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
 
       const response = await fetch(`${apiUrl}/deals/${dealId}/status-summary`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-      });
+      })
 
       if (response.ok) {
-        const data = await response.json();
-        console.log("Deal status summary:", data);
+        const data = await response.json()
+        console.log("Deal status summary:", data)
 
         // Extract buyer IDs from the deal data
-        const allBuyerIds = [
-          ...data.deal.targetedBuyers,
-          ...data.deal.interestedBuyers,
-        ];
+        const allBuyerIds = [...data.deal.targetedBuyers, ...data.deal.interestedBuyers]
 
         // Remove duplicates
-        const uniqueBuyerIds = [...new Set(allBuyerIds)];
+        const uniqueBuyerIds = [...new Set(allBuyerIds)]
 
         // Fetch individual buyer details
         const buyerDetailsPromises = uniqueBuyerIds.map(async (buyerId) => {
@@ -786,98 +731,80 @@ export default function SellerDashboardPage() {
                 Authorization: `Bearer ${token}`,
                 "Content-Type": "application/json",
               },
-            });
+            })
 
             if (buyerResponse.ok) {
-              const buyerData = await buyerResponse.json();
+              const buyerData = await buyerResponse.json()
 
               // Determine status based on invitation status
-              let status = "pending";
-              const invitationStatus = data.deal.invitationStatus[buyerId];
+              let status = "pending"
+              const invitationStatus = data.deal.invitationStatus[buyerId]
               if (invitationStatus) {
                 if (invitationStatus.response === "accepted") {
-                  status = "active";
+                  status = "active"
                 } else if (invitationStatus.response === "rejected") {
-                  status = "rejected";
+                  status = "rejected"
                 }
               }
 
               return {
                 buyerId: buyerId,
-                buyerName:
-                  buyerData.fullName || buyerData.name || "Unknown Buyer",
+                buyerName: buyerData.fullName || buyerData.name || "Unknown Buyer",
                 companyName: buyerData.companyName || "Unknown Company",
                 buyerEmail: buyerData.email || "",
                 status: status,
                 invitationStatus: invitationStatus,
-              };
+              }
             }
           } catch (error) {
-            console.error(`Error fetching buyer ${buyerId}:`, error);
-            return null;
+            console.error(`Error fetching buyer ${buyerId}:`, error)
+            return null
           }
-        });
+        })
 
-        const buyerDetails = await Promise.all(buyerDetailsPromises);
-        const validBuyerDetails = buyerDetails.filter(
-          (buyer) => buyer !== null
-        );
+        const buyerDetails = await Promise.all(buyerDetailsPromises)
+        const validBuyerDetails = buyerDetails.filter((buyer) => buyer !== null)
 
-        setBuyerActivity(validBuyerDetails);
+        setBuyerActivity(validBuyerDetails)
 
         // If there's an active buyer, pre-select them
-        const activeBuyer = validBuyerDetails.find(
-          (buyer) => buyer && buyer.status === "active"
-        );
+        const activeBuyer = validBuyerDetails.find((buyer) => buyer && buyer.status === "active")
         if (activeBuyer) {
-          setSelectedWinningBuyer(activeBuyer.buyerId);
+          setSelectedWinningBuyer(activeBuyer.buyerId)
         }
 
-        return validBuyerDetails;
+        return validBuyerDetails
       }
     } catch (error) {
-      console.error("Error fetching deal status summary:", error);
+      console.error("Error fetching deal status summary:", error)
     }
-    return [];
-  };
+    return []
+  }
 
   // Update the useEffect that fetches buyer activity for off-market dialog:
   useEffect(() => {
-    if (
-      offMarketDialogOpen &&
-      selectedDealForOffMarket &&
-      offMarketData.buyerFromCIM === true
-    ) {
-      setBuyerActivity([]); // Reset before fetching
-      setBuyerActivityLoading(true);
-      fetchDealStatusSummary(selectedDealForOffMarket._id).finally(() =>
-        setBuyerActivityLoading(false)
-      );
+    if (offMarketDialogOpen && selectedDealForOffMarket && offMarketData.buyerFromCIM === true) {
+      setBuyerActivity([]) // Reset before fetching
+      setBuyerActivityLoading(true)
+      fetchDealStatusSummary(selectedDealForOffMarket._id).finally(() => setBuyerActivityLoading(false))
     }
-  }, [
-    offMarketDialogOpen,
-    selectedDealForOffMarket,
-    offMarketData.buyerFromCIM,
-  ]);
+  }, [offMarketDialogOpen, selectedDealForOffMarket, offMarketData.buyerFromCIM])
 
   // Update the useEffect for complete deal dialog:
   useEffect(() => {
     if (completeDealDialogOpen && selectedDealForCompletion) {
-      setBuyerActivity([]); // Reset before fetching
-      setBuyerActivityLoading(true);
-      fetchDealStatusSummary(selectedDealForCompletion._id).finally(() =>
-        setBuyerActivityLoading(false)
-      );
+      setBuyerActivity([]) // Reset before fetching
+      setBuyerActivityLoading(true)
+      fetchDealStatusSummary(selectedDealForCompletion._id).finally(() => setBuyerActivityLoading(false))
     }
-  }, [completeDealDialogOpen, selectedDealForCompletion]);
+  }, [completeDealDialogOpen, selectedDealForCompletion])
 
   // Utility to format numbers with commas for display
   const formatWithCommas = (value: string | number) => {
-    const num =
-      typeof value === "string" ? Number(value.replace(/,/g, "")) : value;
-    if (isNaN(num)) return "";
-    return num.toLocaleString();
-  };
+    const num = typeof value === "string" ? Number(value.replace(/,/g, "")) : value
+    if (isNaN(num)) return ""
+    return num.toLocaleString()
+  }
 
   return (
     <SellerProtectedRoute>
@@ -886,13 +813,7 @@ export default function SellerDashboardPage() {
         <div className="w-64 bg-white border-r border-gray-200 p-6 flex flex-col">
           <div className="mb-8">
             <Link href="/seller/dashboard">
-              <Image
-                src="/logo.svg"
-                alt="CIM Amplify Logo"
-                width={150}
-                height={50}
-                className="h-auto"
-              />
+              <Image src="/logo.svg" alt="CIM Amplify Logo" width={150} height={50} className="h-auto" />
             </Link>
           </div>
 
@@ -901,12 +822,7 @@ export default function SellerDashboardPage() {
               variant="secondary"
               className="w-full justify-start gap-3 font-normal bg-teal-100 text-teal-700 hover:bg-teal-200"
             >
-              <svg
-                className="h-5 w-5"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
+              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path
                   d="M16.5 6L12 1.5L7.5 6M3.75 8.25H20.25M5.25 8.25V19.5C5.25 19.9142 5.58579 20.25 6 20.25H18C18.4142 20.25 18.75 19.9142 18.75 19.5V8.25"
                   stroke="currentColor"
@@ -975,15 +891,12 @@ export default function SellerDashboardPage() {
                   {sellerProfile?.profilePicture ? (
                     <img
                       src={
-                        getProfilePictureUrl(sellerProfile.profilePicture) ||
-                        "/placeholder.svg" ||
-                        "/placeholder.svg"
+                        getProfilePictureUrl(sellerProfile.profilePicture) || "/placeholder.svg" || "/placeholder.svg"
                       }
                       alt={sellerProfile.fullName}
                       className="h-full w-full object-cover"
                       onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).src =
-                          "/placeholder.svg";
+                        ;(e.currentTarget as HTMLImageElement).src = "/placeholder.svg"
                       }}
                     />
                   ) : (
@@ -1034,26 +947,16 @@ export default function SellerDashboardPage() {
                   </div>
                 ) : error && deals.length === 0 ? (
                   <div className="bg-white rounded-lg shadow p-6 text-center">
-                    <div className="text-red-500 text-lg mb-2">
-                      Error loading deals
-                    </div>
+                    <div className="text-red-500 text-lg mb-2">Error loading deals</div>
                     <p className="text-gray-600 mb-4">{error}</p>
-                    <Button
-                      onClick={() => setRefreshTrigger((prev) => prev + 1)}
-                    >
-                      Try Again
-                    </Button>
+                    <Button onClick={() => setRefreshTrigger((prev) => prev + 1)}>Try Again</Button>
                   </div>
                 ) : filteredDeals.length === 0 ? (
                   <div className="bg-white rounded-lg shadow p-8 text-center">
                     <div className="text-gray-500 text-lg mb-4">
-                      {searchTerm
-                        ? "No deals match your search"
-                        : "You don't have any deals yet"}
+                      {searchTerm ? "No deals match your search" : "You don't have any deals yet"}
                     </div>
-                    <Button onClick={() => router.push("/seller/seller-form")}>
-                      Create Your First Deal
-                    </Button>
+                    <Button onClick={() => router.push("/seller/seller-form")}>Create Your First Deal</Button>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1073,23 +976,16 @@ export default function SellerDashboardPage() {
           </div>
         </div>
         {/* Off Market Dialog */}
-        <Dialog
-          open={offMarketDialogOpen}
-          onOpenChange={setOffMarketDialogOpen}
-        >
+        <Dialog open={offMarketDialogOpen} onOpenChange={setOffMarketDialogOpen}>
           <DialogContent className="sm:max-w-md">
             {currentDialogStep === 1 ? (
               <>
                 <DialogHeader>
-                  <DialogTitle className="text-center text-lg font-medium">
-                    Did the deal sell?
-                  </DialogTitle>
+                  <DialogTitle className="text-center text-lg font-medium">Did the deal sell?</DialogTitle>
                 </DialogHeader>
                 <div className="flex justify-center gap-4 mt-6">
                   <Button
-                    variant={
-                      offMarketData.dealSold === false ? "default" : "outline"
-                    }
+                    variant={offMarketData.dealSold === false ? "default" : "outline"}
                     onClick={() => handleDialogResponse("dealSold", false)}
                     className={
                       offMarketData.dealSold === false
@@ -1100,9 +996,7 @@ export default function SellerDashboardPage() {
                     No
                   </Button>
                   <Button
-                    variant={
-                      offMarketData.dealSold === true ? "default" : "outline"
-                    }
+                    variant={offMarketData.dealSold === true ? "default" : "outline"}
                     onClick={() => handleDialogResponse("dealSold", true)}
                     className={
                       offMarketData.dealSold === true
@@ -1117,25 +1011,22 @@ export default function SellerDashboardPage() {
             ) : currentDialogStep === 2 ? (
               <>
                 <DialogHeader>
-                  <DialogTitle className="text-center text-lg font-medium">
-                    What was the transaction value?
-                  </DialogTitle>
+                  <DialogTitle className="text-center text-lg font-medium">What was the transaction value?</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 mt-4">
                   <Input
                     value={
-                      offMarketData.transactionValue &&
-                      offMarketData.transactionValue !== "0"
+                      offMarketData.transactionValue && offMarketData.transactionValue !== "0"
                         ? formatWithCommas(offMarketData.transactionValue)
                         : ""
                     }
                     onChange={(e) => {
                       // Remove commas before storing in state
-                      const rawValue = e.target.value.replace(/,/g, "");
+                      const rawValue = e.target.value.replace(/,/g, "")
                       setOffMarketData((prev) => ({
                         ...prev,
                         transactionValue: rawValue,
-                      }));
+                      }))
                     }}
                     placeholder="Enter transaction value"
                     className="w-full"
@@ -1162,11 +1053,7 @@ export default function SellerDashboardPage() {
                   {/* Buyer from CIM Amplify */}
                   <div className="flex gap-4">
                     <Button
-                      variant={
-                        offMarketData.buyerFromCIM === false
-                          ? "default"
-                          : "outline"
-                      }
+                      variant={offMarketData.buyerFromCIM === false ? "default" : "outline"}
                       onClick={() =>
                         setOffMarketData((prev) => ({
                           ...prev,
@@ -1182,11 +1069,7 @@ export default function SellerDashboardPage() {
                       No
                     </Button>
                     <Button
-                      variant={
-                        offMarketData.buyerFromCIM === true
-                          ? "default"
-                          : "outline"
-                      }
+                      variant={offMarketData.buyerFromCIM === true ? "default" : "outline"}
                       onClick={() =>
                         setOffMarketData((prev) => ({
                           ...prev,
@@ -1206,14 +1089,10 @@ export default function SellerDashboardPage() {
                   {/* Show buyers list if buyer came from CIM Amplify */}
                   {offMarketData.buyerFromCIM === true && (
                     <div>
-                      <Label className="text-base font-medium mb-3 block">
-                        Select the buyer:
-                      </Label>
+                      <Label className="text-base font-medium mb-3 block">Select the buyer:</Label>
                       <div className="space-y-2 max-h-48 overflow-y-auto">
                         {buyerActivityLoading ? (
-                          <div className="text-center text-gray-500 py-4">
-                            Loading buyer activity...
-                          </div>
+                          <div className="text-center text-gray-500 py-4">Loading buyer activity...</div>
                         ) : buyerActivity.length > 0 ? (
                           buyerActivity.map((buyer) => (
                             <div
@@ -1223,9 +1102,7 @@ export default function SellerDashboardPage() {
                                   ? "border-teal-500 bg-teal-50"
                                   : "border-gray-200"
                               }`}
-                              onClick={() =>
-                                setSelectedWinningBuyer(buyer.buyerId)
-                              }
+                              onClick={() => setSelectedWinningBuyer(buyer.buyerId)}
                             >
                               <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center overflow-hidden">
@@ -1236,19 +1113,13 @@ export default function SellerDashboardPage() {
                                   />
                                 </div>
                                 <div>
-                                  <div className="font-medium text-sm">
-                                    {buyer.buyerName || "Unknown Buyer"}
-                                  </div>
-                                  <div className="text-xs text-gray-500">
-                                    {buyer.companyName || "Unknown Company"}
-                                  </div>
+                                  <div className="font-medium text-sm">{buyer.buyerName || "Unknown Buyer"}</div>
+                                  <div className="text-xs text-gray-500">{buyer.companyName || "Unknown Company"}</div>
                                 </div>
                               </div>
                               <div
                                 className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                  buyer.status === "active"
-                                    ? "bg-green-100 text-green-800"
-                                    : "bg-red-100 text-red-800"
+                                  buyer.status === "active" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
                                 }`}
                               >
                                 {buyer.status || "Unknown"}
@@ -1257,7 +1128,7 @@ export default function SellerDashboardPage() {
                           ))
                         ) : (
                           <div className="text-center text-amber-600 text-sm mt-2">
-                            We did not present any buyers. Please click No
+                           We did not present any buyers.  Please click No
                           </div>
                         )}
                       </div>
@@ -1270,10 +1141,7 @@ export default function SellerDashboardPage() {
                       {/* <Button variant="outline" onClick={() => setOffMarketDialogOpen(false)}>
                         Skip
                       </Button> */}
-                      <Button
-                        onClick={handleOffMarketSubmit}
-                        className="bg-teal-500 hover:bg-teal-600"
-                      >
+                      <Button onClick={handleOffMarketSubmit} className="bg-teal-500 hover:bg-teal-600">
                         Submit
                       </Button>
                     </div>
@@ -1284,15 +1152,10 @@ export default function SellerDashboardPage() {
           </DialogContent>
         </Dialog>
         {/* Complete Deal Dialog */}
-        <Dialog
-          open={completeDealDialogOpen}
-          onOpenChange={setCompleteDealDialogOpen}
-        >
+        <Dialog open={completeDealDialogOpen} onOpenChange={setCompleteDealDialogOpen}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle className="text-center text-green-600 text-lg font-medium">
-                Complete Deal
-              </DialogTitle>
+              <DialogTitle className="text-center text-green-600 text-lg font-medium">Complete Deal</DialogTitle>
             </DialogHeader>
             <div className="space-y-6 mt-4">
               <div className="text-center text-gray-600">
@@ -1301,9 +1164,7 @@ export default function SellerDashboardPage() {
 
               {/* Final Sale Price */}
               <div>
-                <Label className="text-base font-medium mb-3 block">
-                  Final Sale Price
-                </Label>
+                <Label className="text-base font-medium mb-3 block">Final Sale Price</Label>
                 <Input
                   type="number"
                   value={completionData.finalSalePrice}
@@ -1318,25 +1179,20 @@ export default function SellerDashboardPage() {
                 />
                 <div className="text-sm text-gray-500 mt-1">
                   Original asking price: $
-                  {selectedDealForCompletion?.financialDetails.askingPrice?.toLocaleString() ||
-                    0}
+                  {selectedDealForCompletion?.financialDetails.askingPrice?.toLocaleString() || 0}
                 </div>
               </div>
 
               {/* Buyer Selection */}
               <div>
-                <Label className="text-base font-medium mb-3 block">
-                  Select Winning Buyer
-                </Label>
+                <Label className="text-base font-medium mb-3 block">Select Winning Buyer</Label>
                 <div className="space-y-2 max-h-48 overflow-y-auto">
                   {buyerActivity.length > 0 ? (
                     buyerActivity.map((buyer) => (
                       <div
                         key={buyer.buyerId}
                         className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer ${
-                          selectedWinningBuyer === buyer.buyerId
-                            ? "border-green-500 bg-green-50"
-                            : "border-gray-200"
+                          selectedWinningBuyer === buyer.buyerId ? "border-green-500 bg-green-50" : "border-gray-200"
                         }`}
                         onClick={() => setSelectedWinningBuyer(buyer.buyerId)}
                       >
@@ -1349,19 +1205,13 @@ export default function SellerDashboardPage() {
                             />
                           </div>
                           <div>
-                            <div className="font-medium text-sm">
-                              {buyer.buyerName || "Unknown Buyer"}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              {buyer.companyName || "Unknown Company"}
-                            </div>
+                            <div className="font-medium text-sm">{buyer.buyerName || "Unknown Buyer"}</div>
+                            <div className="text-xs text-gray-500">{buyer.companyName || "Unknown Company"}</div>
                           </div>
                         </div>
                         <div
                           className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            buyer.status === "active"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-gray-100 text-gray-800"
+                            buyer.status === "active" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"
                           }`}
                         >
                           {buyer.status || "Unknown"}
@@ -1369,33 +1219,25 @@ export default function SellerDashboardPage() {
                       </div>
                     ))
                   ) : (
-                    <div className="text-center text-gray-500 py-4">
-                      Loading buyer activity...
-                    </div>
+                    <div className="text-center text-gray-500 py-4">Loading buyer activity...</div>
                   )}
                 </div>
                 {buyerActivity.length === 0 && (
                   <div className="text-center text-amber-600 text-sm mt-2">
-                    No buyers found. Please ensure there are interested buyers
-                    before completing the deal.
+                    No buyers found. Please ensure there are interested buyers before completing the deal.
                   </div>
                 )}
               </div>
 
               {/* Submit buttons */}
               <div className="flex justify-between pt-4">
-                <Button
-                  variant="outline"
-                  onClick={() => setCompleteDealDialogOpen(false)}
-                >
+                <Button variant="outline" onClick={() => setCompleteDealDialogOpen(false)}>
                   Cancel
                 </Button>
                 <Button
                   onClick={handleCompleteDealSubmit}
                   className="bg-green-600 hover:bg-green-700"
-                  disabled={
-                    !completionData.finalSalePrice || !selectedWinningBuyer
-                  }
+                  disabled={!completionData.finalSalePrice || !selectedWinningBuyer}
                 >
                   Complete Deal
                 </Button>
@@ -1406,5 +1248,5 @@ export default function SellerDashboardPage() {
       </div>
       <Toaster />
     </SellerProtectedRoute>
-  );
+  )
 }

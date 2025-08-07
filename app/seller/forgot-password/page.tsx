@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/use-toast'
 import { Toaster } from '@/components/ui/toaster'
+import Footer from "@/components/ui/auth-footer";
+import Header from "@/components/ui/auth-header";
 
 export default function SellerForgotPasswordPage() {
   const [email, setEmail] = useState('')
@@ -45,6 +47,8 @@ export default function SellerForgotPasswordPage() {
   }
 
   return (
+    <div>
+      <Header />
     <div className="flex h-screen bg-gradient-to-b from-[#C3C6BE] to-[#828673] overflow-hidden">
       {/* Left Side - Illustration */}
       <div className="hidden md:flex md:w-1/2 items-center justify-center relative">
@@ -99,5 +103,7 @@ export default function SellerForgotPasswordPage() {
 
       <Toaster />
     </div>
-  )
-}
+    <Footer />
+    </div>
+  );
+} 

@@ -4,7 +4,7 @@ import type React from "react";
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Search, Eye, LogOut, Briefcase } from "lucide-react";
+import { Search, Eye, LogOut, Briefcase, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -1152,61 +1152,6 @@ export default function DealsPage() {
                         </div>
                       )}
 
-                      {/* 📄 Document Section */}
-                      {activeTab === "active" ? (
-                        <h4 className="mb-2 font-medium text-gray-800"><strong>Documents</strong></h4>
-                      ) : (
-                        <h4 className="mb-2 font-medium text-gray-800">Documents</h4>
-                      )}
-                      {/*active tab*/}
-                      {activeTab === "active" ? (
-                        <div className="mb-4 text-sm text-gray-600">
-                          {deal.documents && deal.documents.length > 0 ? (
-                            <ul className="space-y-1">
-                              {deal.documents.map((doc, index) => (
-                                <li
-                                  key={doc.filename || index}
-                                  className="flex items-center justify-between border border-gray-200 p-2 rounded-md"
-                                >
-                                  <div className="flex flex-col">
-                                    <span className="font-medium"><strong>{doc.originalName || doc.filename}</strong></span>
-                                    <span className="text-xs text-gray-500">
-                                      (
-                                      {typeof doc.size === "number"
-                                        ? (doc.size / (1024 * 1024)).toFixed(2)
-                                        : "?"}{" "}
-                                      MB)
-                                    </span>
-                                  </div>
-                                  <Button
-                                    variant="link"
-                                    className="text-teal-500 hover:underline"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      const apiUrl =
-                                        localStorage.getItem("apiUrl") ||
-                                        "http://localhost:3001";
-                                      const fullPath = `${apiUrl}/${doc.path}`;
-                                      window.open(fullPath, "_blank");
-                                    }}
-                                  >
-                                    Download
-                                  </Button>
-                                </li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <p className="italic text-gray-500">
-                              No documents uploaded yet.
-                            </p>
-                          )}
-                        </div>
-                      ) : (
-                        <p className="mb-4 italic text-gray-500">
-                          Hidden Until Active
-                        </p>
-                      )}
-
                       {/* Actions */}
                       <div className="flex justify-end space-x-2">
                         {/* Go to CIM button */}
@@ -1219,7 +1164,7 @@ export default function DealsPage() {
                               handleGoToCIMClick(deal.id);
                             }}
                           >
-                            Go to CIM
+                            Move to Active
                           </Button>
                         )}
                         {/* Pass button */}
@@ -1244,7 +1189,7 @@ export default function DealsPage() {
                               handleGoToCIMClick(deal.id);
                             }}
                           >
-                            Go to CIM
+                            Move to Active
                           </Button>
                         )}
                       </div>
@@ -1257,6 +1202,7 @@ export default function DealsPage() {
         </main>
       </div>
 
+
 {/* Terms of Access Modal */}
 <Dialog open={termsModalOpen} onOpenChange={setTermsModalOpen}>
         <DialogContent className="sm:max-w-md">
@@ -1265,16 +1211,11 @@ export default function DealsPage() {
           </DialogHeader>
           <div className="py-4">
             <p className="mb-4 text-sm text-gray-600">
-              By clicking "Approve" you reaffirm your previous acceptance of the
-              STRAIGHT TO CIM MASTER NON-DISCLOSURE AGREEMENT and the CIM
-              AMPLIFY MASTER FEE AGREEMENT.
+             By clicking "Approve" you reaffirm your previous acceptance of the CIM AMPLIFY MASTER FEE AGREEMENT.
+             <br />
                <p className="text-sm text-gray-600">
-              Once you approve, the seller will be notified and can contact you
-              directly.
+             Once you approve, this deal will be moved to Active and an introduction will be sent to you and the M&A Advisor via email.
             </p>
-              <br />
-              <br />
-             Note: Some Advisors require their own NDA.  If this is the case you will find the NDA in documents on the next screen.  Please execute the NDA and return it directly to the Advisor mentioning that your were invited to this deal via CIM Amplify
             </p>
           </div>
           <DialogFooter className="sm:justify-between">

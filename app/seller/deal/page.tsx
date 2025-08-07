@@ -109,6 +109,7 @@ interface Buyer {
   companyName?: string; // (optional, for legacy)
   buyerCompany?: string; // <-- add this line
   companyProfileId?: string;
+  website?: string;
   status: string;
   invitedAt: string;
   lastActivity?: string;
@@ -119,6 +120,7 @@ interface CompanyProfile {
   companyName: string;
   companyType: string;
   description?: string;
+  website:string;
   capitalEntity?: string;
   dealsCompletedLast5Years: number;
   averageDealSize: number;
@@ -164,6 +166,7 @@ interface MatchedBuyer {
   _id: string;
   buyerId: string;
   buyerName: string;
+  website:string;
   buyerEmail: string;
   companyName: string;
   companyType: string;
@@ -589,12 +592,31 @@ const [showAllCountries, setShowAllCountries] = useState(false);
             }
           });
           const buyerDetails = await Promise.all(buyerDetailsPromises);
+
+          // Fetch all company profiles once
+          const companyProfilesResponse = await fetch(`${apiUrl}/company-profiles/public`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          });
+          let allCompanyProfiles: CompanyProfile[] = [];
+          if (companyProfilesResponse.ok) {
+            allCompanyProfiles = await companyProfilesResponse.json();
+          } else {
+            console.error("Failed to fetch all company profiles:", companyProfilesResponse.status);
+          }
+
           for (let i = 0; i < buyerIds.length; i++) {
             const buyerId = buyerIds[i];
             const invitation = data.deal.invitationStatus[buyerId];
             const buyerInfo = buyerDetails[i];
-            // Debug: log buyerInfo and invitation
-            console.log('buyerInfo', buyerInfo, 'invitation', invitation);
+            
+            // Ensure companyProfileId is a string before using it to find the company profile
+            const companyProfileIdString = buyerInfo?.companyProfileId ? (typeof buyerInfo.companyProfileId === 'object' ? (buyerInfo.companyProfileId as any)._id.toString() : buyerInfo.companyProfileId) : undefined;
+
+            const companyProfile = allCompanyProfiles.find(cp => cp._id === companyProfileIdString);
+
             processedBuyers.push({
               _id: buyerId,
               buyerId: buyerId,
@@ -604,15 +626,16 @@ const [showAllCountries, setShowAllCountries] = useState(false);
                 `Buyer ${buyerId.slice(-4)}`,
               buyerEmail: buyerInfo?.email || "Email not available",
               companyName:
-                (buyerInfo?.companyProfileId && buyerInfo?.companyProfileId.companyName) ||
+                companyProfile?.companyName ||
                 buyerInfo?.companyName ||
                 buyerInfo?.company ||
                 "Company not available",
               buyerCompany:
-                (buyerInfo?.companyProfileId && buyerInfo?.companyProfileId.companyName) ||
+                companyProfile?.companyName ||
                 buyerInfo?.companyName ||
                 buyerInfo?.company,
-              companyProfileId: buyerInfo?.companyProfileId?._id || buyerInfo?.companyProfileId,
+              companyProfileId: companyProfileIdString,
+              website: companyProfile?.website || "Unknown", // Add website here
               status: invitation?.response || "pending",
               invitedAt: invitation?.invitedAt,
               lastActivity: invitation?.respondedAt,
@@ -714,7 +737,12 @@ const [showAllCountries, setShowAllCountries] = useState(false);
 
     // Fetch company profile if companyProfileId exists
     if (buyer.companyProfileId) {
-      await fetchCompanyProfile(buyer.companyProfileId);
+      const companyProfileIdString = typeof buyer.companyProfileId === 'object' && buyer.companyProfileId !== null
+        ? (buyer.companyProfileId as any)._id.toString()
+        : buyer.companyProfileId;
+      await fetchCompanyProfile(companyProfileIdString);
+    } else if (buyer.website) {
+      setSelectedCompanyProfile({ ...selectedCompanyProfile, website: buyer.website } as CompanyProfile);
     }
   };
 
@@ -1143,6 +1171,10 @@ const [showAllCountries, setShowAllCountries] = useState(false);
                                   {buyer.buyerEmail || "Not provided"}
                                 </div>
                                 <div>
+                                  <span className="text-gray-500">Website: </span>
+                                  {buyer.website || "Unknown"}
+                                </div>
+                                <div>
                                   <span className="text-gray-500">
                                     Company Type:{" "}
                                   </span>
@@ -1544,6 +1576,7 @@ const [showAllCountries, setShowAllCountries] = useState(false);
                                                   "Unknown"}
                                               </span>
                                             </div>
+                                            
                                             <div>
                                               <span className="text-gray-500 font-medium">
                                                 Email:{" "}
@@ -1553,6 +1586,18 @@ const [showAllCountries, setShowAllCountries] = useState(false);
                                                   "Not provided"}
                                               </span>
                                             </div>
+                                            {selectedCompanyProfile?.website && (
+                                              <div>
+                                                <span className="text-gray-500 font-medium">
+                                                  Website:{" "}
+                                                </span>
+                                                <span className="text-gray-900">
+                                                  <a href={selectedCompanyProfile.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                                                    {selectedCompanyProfile.website}
+                                                  </a>
+                                                </span>
+                                              </div>
+                                            )}
                                             {selectedCompanyProfile?.description && (
                                               <div>
                                                 <span className="text-gray-500 font-medium">
