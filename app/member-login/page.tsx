@@ -1,6 +1,9 @@
 "use client"
 import Image from "next/image"
 import type React from "react"
+import { Button } from "@/components/ui/button";
+
+import { Linkedin } from "lucide-react";
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -77,8 +80,445 @@ export default function SelectRolePage() {
   }
 
   return (
+    <>
+        <style jsx>{`
+        * {
+          scroll-behavior: smooth;
+        }
+        body {
+          background-color: black;
+        }
+
+        html {
+          scroll-behavior: smooth;
+        }
+
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes slideInLeft {
+          from {
+            opacity: 0;
+            transform: translateX(-40px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+
+        @keyframes slideInRight {
+          from {
+            opacity: 0;
+            transform: translateX(40px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+
+        @keyframes slideInFromBottom {
+          from {
+            opacity: 0;
+            transform: translateY(40px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes scaleIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+
+        @keyframes float {
+          0%,
+          100% {
+            transform: translateY(0px);
+          }
+          50% {
+            transform: translateY(-10px);
+          }
+        }
+
+        .animate-fadeInUp {
+          animation: fadeInUp 0.8s ease-out forwards;
+        }
+
+        .animate-slideInLeft {
+          animation: slideInLeft 0.8s ease-out forwards;
+        }
+
+        .animate-slideInRight {
+          animation: slideInRight 0.8s ease-out forwards;
+        }
+
+        .animate-slideInFromBottom {
+          animation: slideInFromBottom 0.8s ease-out forwards;
+        }
+
+        .animate-scaleIn {
+          animation: scaleIn 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+
+        .animate-fadeIn {
+          animation: fadeIn 0.8s ease-out forwards;
+        }
+
+        .animate-delay-50 {
+          animation-delay: 0.1s;
+        }
+
+        .animate-delay-100 {
+          animation-delay: 0.2s;
+        }
+
+        .animate-delay-200 {
+          animation-delay: 0.3s;
+        }
+
+        .animate-delay-300 {
+          animation-delay: 0.4s;
+        }
+
+        .animate-delay-400 {
+          animation-delay: 0.5s;
+        }
+
+        .animate-delay-500 {
+          animation-delay: 0.6s;
+        }
+
+        .animate-delay-600 {
+          animation-delay: 0.7s;
+        }
+
+        .animate-delay-700 {
+          animation-delay: 0.8s;
+        }
+
+        [data-animate] {
+          opacity: 0;
+          transform: translateY(20px);
+          transition: all 0.3s ease;
+        }
+
+        [data-animate].animate-in {
+          opacity: 1;
+          transform: translateY(0);
+        }
+
+        .gpu-accelerated {
+          will-change: transform;
+          transform: translateZ(0);
+        }
+
+        .stat-number {
+          background: linear-gradient(135deg, #14b8a6, #0d9488);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          animation: float 3s ease-in-out infinite;
+        }
+
+        .testimonial-card {
+          background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+          border: 1px solid #e2e8f0;
+          border-radius: 16px;
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+            0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .testimonial-card:hover {
+          transform: translateY(-8px) scale(1.02);
+          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+            0 10px 10px -5px rgba(0, 0, 0, 0.04);
+          border-color: #14b8a6;
+        }
+
+        .guideline-card {
+          background: linear-gradient(135deg, #ffffff 0%, #f0fdfa 100%);
+          border: 1px solid #e6fffa;
+          border-radius: 20px;
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .guideline-card:hover {
+          transform: translateY(-5px) scale(1.05);
+          box-shadow: 0 25px 50px -12px rgba(20, 184, 166, 0.25);
+          border-color: #14b8a6;
+        }
+
+        .icon-container {
+          background: linear-gradient(135deg, #14b8a6, #0d9488);
+          transition: all 0.3s ease;
+        }
+
+        .guideline-card:hover .icon-container {
+          transform: rotate(360deg) scale(1.1);
+          box-shadow: 0 10px 20px rgba(20, 184, 166, 0.3);
+        }
+
+        .icon-emoji {
+          filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+        }
+
+        .faq-item {
+          background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+          border: 1px solid #e2e8f0;
+          border-radius: 12px;
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .faq-item:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+          border-color: #14b8a6;
+        }
+
+        .faq-content {
+          max-height: 0;
+          overflow: hidden;
+          transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .faq-content.expanded {
+          max-height: 500px;
+        }
+
+        .nav-arrow {
+          background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+          border: 2px solid #e2e8f0;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-arrow:hover {
+          background: linear-gradient(135deg, #14b8a6, #0d9488);
+          border-color: #14b8a6;
+          transform: scale(1.1);
+          box-shadow: 0 10px 20px rgba(20, 184, 166, 0.3);
+        }
+
+        .nav-arrow:hover .arrow-icon {
+          color: white;
+          transform: scale(1.2);
+        }
+
+        .arrow-icon {
+          transition: all 0.3s ease;
+        }
+
+        .footer-background {
+          background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        }
+
+        .footer-section {
+          transition: all 0.3s ease;
+        }
+
+        .footer-link {
+          position: relative;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          padding: 8px 0;
+          border-radius: 6px;
+        }
+
+        .footer-link:hover {
+          color: #14b8a6;
+          transform: translateX(5px);
+          padding-left: 10px;
+        }
+
+        .footer-link::before {
+          content: "";
+          position: absolute;
+          left: 0;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 0;
+          height: 2px;
+          background: linear-gradient(90deg, #14b8a6, #0d9488);
+          transition: width 0.3s ease;
+        }
+
+        .footer-link:hover::before {
+          width: 20px;
+        }
+
+        .footer-divider {
+          height: 1px;
+          background: linear-gradient(90deg, transparent, #e2e8f0, transparent);
+          margin: 3rem 0 2rem 0;
+        }
+
+        .linkedin-icon {
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .linkedin-icon:hover {
+          transform: translateY(-3px) scale(1.1);
+          background: linear-gradient(135deg, #0077b5, #005885);
+          color: white;
+          box-shadow: 0 10px 20px rgba(0, 119, 181, 0.3);
+        }
+
+        .focus-visible\\:focus:focus-visible {
+          outline: 2px solid #14b8a6;
+          outline-offset: 2px;
+        }
+
+        /* Enhanced navbar styles */
+        .navbar-link {
+          position: relative;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          padding: 10px 16px;
+          border-radius: 8px;
+          font-weight: 500;
+        }
+
+        .navbar-link:hover {
+          color: #14b8a6;
+          background: linear-gradient(135deg, #f0fdfa, #ccfbf1);
+          transform: translateY(-2px);
+        }
+
+        .navbar-link::after {
+          content: "";
+          position: absolute;
+          bottom: -4px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 0;
+          height: 2px;
+          background: linear-gradient(90deg, #14b8a6, #0d9488);
+          transition: width 0.3s ease;
+        }
+
+        .navbar-link:hover::after {
+          width: 100%;
+        }
+
+        .logo-container {
+          transition: all 0.3s ease;
+        }
+
+        .logo-container:hover {
+          transform: scale(1.05);
+          filter: drop-shadow(0 4px 8px rgba(20, 184, 166, 0.2));
+        }
+
+        /* Smooth scroll for the entire page */
+        html {
+          scroll-behavior: smooth;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+          width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+          background: #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-thumb {
+          background: linear-gradient(135deg, #14b8a6, #0d9488);
+          border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+          background: linear-gradient(135deg, #0d9488, #0f766e);
+        }
+
+        .animate-smoothFadeIn {
+          animation: smoothFadeIn 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94)
+            forwards;
+        }
+
+        @keyframes smoothFadeIn {
+          from {
+            opacity: 0;
+            transform: scale(0.95) translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+          }
+        }
+      `}</style>
+      {/* Header */}
+      <header className="border-b bg-white/95 backdrop-blur-sm sticky top-0 z-50 shadow-sm">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div
+              className="logo-container cursor-pointer"
+              onClick={() => router.push("/landing")}
+            >
+              <Image
+                src="/logo.svg"
+                alt="CIM Amplify Logo"
+                width={150}
+                height={50}
+                className="h-auto"
+              />
+            </div>
+
+            <nav className="hidden md:flex items-center gap-2">
+              <a href="#benefits" className="navbar-link text-gray-600">
+                Benefits
+              </a>
+              <a href="#how-it-works" className="navbar-link text-gray-600">
+                How it Works
+              </a>
+              <a href="#guidelines" className="navbar-link text-gray-600">
+                Guidelines
+              </a>
+              <a href="#faqs" className="navbar-link text-gray-600">
+                FAQs
+              </a>
+              <Button
+                className="bg-gradient-to-r from-teal-500 to-primary hover:from-primary hover:to-teal-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl ml-4"
+                onClick={() => {
+                  router.push("/member-login");
+                }}
+              >
+                Member Login
+              </Button>
+            </nav>
+          </div>
+        </div>
+      </header>
     <div className="flex h-screen bg-[#C6D6D6] overflow-hidden">
       {/* Left side with chart graphic */}
+
       <div className="hidden md:flex md:w-1/2 items-center justify-center relative">
         <Image
           src="/Bg.svg"
@@ -108,13 +548,12 @@ export default function SelectRolePage() {
               onClick={handleSellerClick}
               className="bg-[#3aafa9] hover:bg-white text-white hover:text-[#2a9d8f] hover:border-[#2a9d8f] border font-medium py-4 px-6 rounded-full text-center transition-colors"
             >
-              Seller Login
+              Advisor Login
             </a>
             <a
               href="/buyer/register"
               onClick={handleBuyerProfileClick}
-              className="border border-[#3aafa9] text-[#3aafa9] hover:text-white hover:bg-[#3aafa9] font-medium py-4 px-6 rounded-full text-center transition-colors"
-            >
+             className="bg-[#3aafa9] hover:bg-white text-white hover:text-[#2a9d8f] hover:border-[#2a9d8f] border font-medium py-4 px-6 rounded-full text-center transition-colors" >
               Buyer Login
             </a>
             {/* <Link
@@ -127,5 +566,139 @@ export default function SelectRolePage() {
         </div>
       </div>
     </div>
+        <footer className="footer-background bg-gray-50 py-16 border-t border-gray-200">
+            <div className="container mx-auto px-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
+                {/* Company Info */}
+                <div className="footer-section col-span-1 md:col-span-2">
+                  <div className="mb-6">
+                    <p className="text-gray-600 leading-relaxed max-w-md">
+                      CIM Amplify's mission is to help Entrepreneurs and Investors
+                      get the{" "}
+                      <span className="text-primary font-semibold">
+                        "Brass Ring"
+                      </span>{" "}
+                      of selling their company. Our owner group have all sold
+                      significant companies which changed our lives forever.
+                    </p>
+                  </div>
+                  <div>
+                    <a
+                      href="https://www.linkedin.com/company/cimamplify/"
+                      className="inline-flex items-center justify-center w-12 h-12 bg-white rounded-full shadow-md text-gray-600 border border-gray-200 hover:bg-teal-50 hover:text-primary hover:border-teal-300 transition-all duration-300"
+                    >
+                      <Linkedin className="w-5 h-5" />
+                    </a>
+                  </div>
+                </div>
+    
+                {/* Quick Links */}
+                <div className="footer-section">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-6">
+                    Quick Links
+                  </h3>
+                  <ul className="space-y-2">
+                    <li>
+                      <a
+                        href="#benefits"
+                        className="text-gray-600 hover:text-primary transition-colors duration-300 block py-1"
+                      >
+                        Benefits
+                      </a>
+                    </li>
+                    <li>
+                      <a
+                        href="#how-it-works"
+                        className="text-gray-600 hover:text-primary transition-colors duration-300 block py-1"
+                      >
+                        How it Works
+                      </a>
+                    </li>
+                    <li>
+                      <a
+                        href="#guidelines"
+                        className="text-gray-600 hover:text-primary transition-colors duration-300 block py-1"
+                      >
+                        Guidelines
+                      </a>
+                    </li>
+                    <li
+                      onClick={() => {
+                        router.push("/about");
+                      }}
+                    >
+                      <a className="text-gray-600 hover:text-primary cursor-pointer transition-colors duration-300 block py-1">
+                        About
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+    
+                {/* Actions & Support */}
+                <div className="space-y-8">
+                  {/* Actions */}
+                  <div className="footer-section">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 cursor-pointer">
+                      Actions
+                    </h3>
+                    <div className="space-y-2">
+                      <div
+                        onClick={() => router.push("/buyer/register")}
+                        className="text-primary hover:text-primary hover:bg-teal-50 block py-2 rounded-lg teal-600 cursor-pointer  transition-all duration-300"
+                      >
+                        Buyer registration
+                      </div>
+                      <div
+                        onClick={() => router.push("/seller/register")}
+                        className="text-primary hover:text-primary hover:bg-teal-50 block py-2  rounded-lg teal-600 cursor-pointer  transition-all duration-300"
+                      >
+                        Add a Deal
+                      </div>
+                      <div
+                        onClick={() => router.push("/buyer/login")}
+                        className="text-primary hover:text-primary hover:bg-teal-50 block py-2 rounded-lg teal-600 cursor-pointer  transition-all duration-300"
+                      >
+                        Buyer Login
+                      </div>
+                      <div
+                        onClick={() => router.push("/seller/login")}
+                        className="text-primary hover:text-primary hover:bg-teal-50 block py-2  rounded-lg primary cursor-pointer  transition-all duration-300"
+                      >
+                        Seller Login
+                      </div>
+                    </div>
+                  </div>
+    
+                  {/* Support */}
+                  <div className="footer-section">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-6">
+                      Support
+                    </h3>
+                    <ul className="space-y-4">
+                      <li>
+                        <a
+                          href="#contact"
+                          className="text-gray-600 hover:text-primary transition-colors duration-300 block py-1"
+                        >
+                          Contact Us
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+    
+              {/* Divider */}
+              <div className="footer-divider" />
+    
+              {/* Copyright */}
+              <div className="text-center">
+                <p className="text-gray-500 text-sm">
+                  © 2025 CIM Amplify. All rights reserved.
+                </p>
+              </div>
+            </div>
+          </footer>
+    </>
   )
 }

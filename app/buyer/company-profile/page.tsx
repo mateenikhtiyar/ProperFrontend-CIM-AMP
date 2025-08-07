@@ -29,6 +29,7 @@ import {
   LogOut,
   Settings,
   Briefcase,
+  Store,
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "@/components/ui/use-toast";
@@ -1681,7 +1682,13 @@ export default function CompanyProfilePage() {
               <Briefcase className="mr-3 h-5 w-5" />
               <span>All Deals</span>
             </Link>
-
+            <Link
+              href="/buyer/marketplace"
+              className="mb-2 flex items-center rounded-md px-4 py-3 text-gray-700 hover:bg-gray-100"
+            >
+              <Store className="mr-3 h-5 w-5" />
+              <span>MarketPlace</span>
+            </Link>
             <Link
               href="/buyer/company-profile"
               className="mb-2 flex items-center rounded-md bg-teal-500 px-4 py-3 text-white hover:bg-teal-600"
@@ -1689,7 +1696,6 @@ export default function CompanyProfilePage() {
               <Settings className="mr-3 h-5 w-5" />
               <span>Company Profile</span>
             </Link>
-
             <button
               onClick={handleLogout}
               className="flex items-center rounded-md px-4 py-3 text-gray-700 hover:bg-gray-100 text-left w-full"

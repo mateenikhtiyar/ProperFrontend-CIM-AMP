@@ -301,65 +301,7 @@ function DealCard({
         </div>
       </div>
 
-      {/* Documents Section */}
-      <div className="p-4 border-b border-gray-200">
-        <div className="flex justify-between items-center mb-3">
-          {/* <h3 className="text-lg font-medium">Documents</h3> */}
-          {/* <Button
-            variant="outline"
-            size="sm"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-            className="flex items-center gap-2"
-          >
-            {uploading ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#3aafa9]"></div>
-                Uploading...
-              </>
-            ) : (
-              <>
-                <Upload className="h-4 w-4" />
-                Upload
-              </>
-            )}
-          </Button> */}
-          <input
-            type="file"
-            ref={fileInputRef}
-            className="hidden"
-            multiple
-            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.gif"
-            onChange={handleDocumentUploadInner}
-          />
-        </div>
-
-        {deal.documents && deal.documents.length > 0 ? (
-          <div className="space-y-2">
-            {deal.documents.map((doc, index) => (
-              <div key={index} className="flex items-center justify-between p-2 border border-gray-200 rounded">
-                <div className="flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm">{doc.originalName}</span>
-                  <span className="text-xs text-gray-400">({(doc.size / 1024 / 1024).toFixed(2)} MB)</span>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => downloadDocument(doc)}
-                  className="flex items-center gap-1"
-                >
-                  <Download className="h-3 w-3" />
-                </Button>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="border border-dashed border-[#3aafa9] rounded-md p-3 text-center text-gray-500">
-            No documents uploaded yet
-          </div>
-        )}
-      </div>
+    
 
       {/* Action Buttons */}
       <div className="flex p-4 gap-2">

@@ -22,6 +22,7 @@ interface Deal {
   finalSalePrice: string | null
   avgRevenueGrowth?: number
   trailingEBITDAAmount?: number
+  trailingRevenueAmount?: number
   closedWithBuyerCompany?: string
   closedWithBuyerEmail?: string
 }
@@ -47,7 +48,15 @@ function DealCard({ deal }: { deal: Deal }) {
           </span>
         </div>
         <div>
-          <span className="text-gray-500">Trailing EBITDA: </span>
+          <span className="text-gray-500">Trailing 12 Revenue Amount: </span>
+          <span className="font-medium text-gray-900">
+            {deal.trailingRevenueAmount !== undefined && deal.trailingRevenueAmount !== null
+              ? `${deal.trailingRevenueAmount.toLocaleString()}`
+              : "N/A"}
+          </span>
+        </div>
+        <div>
+          <span className="text-gray-500">Trailing 12 EBITDA: </span>
           <span className="font-medium text-gray-900">
             {deal.trailingEBITDAAmount !== undefined
               ? `$${deal.trailingEBITDAAmount.toLocaleString()}`
@@ -154,6 +163,7 @@ export default function DealsHistoryPage() {
   geographySelection: deal.geographySelection,
   avgRevenueGrowth: deal.financialDetails?.avgRevenueGrowth,
   trailingEBITDAAmount: deal.financialDetails?.trailingEBITDAAmount,
+  trailingRevenueAmount: deal.financialDetails?.trailingRevenueAmount,
   buyersActive: deal.interestedBuyers?.length || 0,
   buyersPassed:
     (deal.targetedBuyers?.length || 0) - (deal.interestedBuyers?.length || 0),
