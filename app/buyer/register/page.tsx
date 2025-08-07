@@ -180,11 +180,9 @@ export default function BuyerRegisterPage() {
   // Handle Google OAuth login
   const handleGoogleLogin = () => {
     // Get API URL from localStorage or use default
-    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
-    console.log(
-      "Register page - Redirecting to Google OAuth:",
-      `${apiUrl}/buyers/google`
-    );
+
+    const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+    console.log("Register page - Redirecting to Google OAuth:", `${apiUrl}/buyers/google`)
 
     // Redirect to Google OAuth endpoint
     window.location.href = `${apiUrl}/buyers/google`;
