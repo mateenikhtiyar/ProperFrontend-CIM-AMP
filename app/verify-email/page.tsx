@@ -30,27 +30,45 @@ function VerifyEmailContent() {
     }
 
     if (!token) {
-      setStatus("error")
-      setMessage("Invalid verification link. No token provided.")
-      return
+      setStatus("error");
+      setMessage("Invalid verification link. No token provided.");
+      return;
     }
 
     async function verify() {
       try {
-        const { role } = await verifyEmail(token)
-        setRole(role)
-        setStatus("success")
-        setMessage("Thank you! Your email has been successfully verified. You can now login.")
+        const data = await verifyEmail(token);
+        setRole(data.role);
+        setStatus("success");
+        setMessage(
+          "Thank you! Your email has been successfully verified. You will be redirected shortly."
+        );
+
+        // Store token and user info
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("userId", data.userId);
+        localStorage.setItem("userRole", data.role);
+
+        // Redirect to the appropriate page after a short delay
+        setTimeout(() => {
+          if (data.role === "buyer") {
+            router.push("/buyer/acquireprofile");
+          } else if (data.role === "seller") {
+            router.push("/seller/company-profile");
+          } else {
+            router.push("/login"); // Fallback
+          }
+        }, 2000); // 2-second delay
       } catch (error) {
-        setStatus("error")
-        setMessage("Verification failed or token expired. Please request a new verification email.")
+        setStatus("error");
+        setMessage(
+          "Verification failed or token expired. Please request a new verification email."
+        );
       }
     }
 
-    verify()
-  }, [token, from, searchParams])
-
-  const loginUrl = role ? `/${role}/login` : "/login"
+    verify();
+  }, [token, from, searchParams, router]);
 
   const getStatusIcon = () => {
     switch (status) {
@@ -64,7 +82,7 @@ function VerifyEmailContent() {
               <Clock className="w-3 h-3 text-white" />
             </div>
           </div>
-        )
+        );
       case "success":
         return (
           <div className="relative animate-bounce">
@@ -75,7 +93,7 @@ function VerifyEmailContent() {
               <Shield className="w-4 h-4 text-white" />
             </div>
           </div>
-        )
+        );
       case "error":
         return (
           <div className="relative">
@@ -83,7 +101,7 @@ function VerifyEmailContent() {
               <XCircle className="w-12 h-12 text-red-500" />
             </div>
           </div>
-        )
+        );
       case "informational":
         return (
           <div className="relative">
@@ -92,26 +110,26 @@ function VerifyEmailContent() {
             </div>
             <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-teal-500 rounded-full animate-pulse"></div>
           </div>
-        )
+        );
       default:
-        return null
+        return null;
     }
-  }
+  };
 
   const getStatusColor = () => {
     switch (status) {
       case "loading":
-        return "text-teal-700"
+        return "text-teal-700";
       case "success":
-        return "text-teal-800"
+        return "text-teal-800";
       case "error":
-        return "text-red-600"
+        return "text-red-600";
       case "informational":
-        return "text-teal-700"
+        return "text-teal-700";
       default:
-        return "text-gray-600"
+        return "text-gray-600";
     }
-  }
+  };
 
   const getBackgroundPattern = () => {
     return (
@@ -121,8 +139,8 @@ function VerifyEmailContent() {
         <div className="absolute top-20 left-20 w-32 h-32 bg-teal-50 rounded-full opacity-30"></div>
         <div className="absolute bottom-20 right-20 w-24 h-24 bg-teal-100 rounded-full opacity-25"></div>
       </div>
-    )
-  }
+    );
+  };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gradient-to-br from-slate-50 via-teal-50/30 to-cyan-50/20 relative">
@@ -144,11 +162,8 @@ function VerifyEmailContent() {
                 <Mail className="w-8 h-8 text-white" />
               </div>
               <h1 className="text-3xl font-bold bg-gradient-to-r from-teal-700 to-teal-800 bg-clip-text text-transparent mb-3">
-                Email Verification
+                Email Verification Complete
               </h1>
-              <p className="text-gray-500 text-sm font-medium tracking-wide">
-                Secure your account with email verification
-              </p>
             </div>
 
             {/* Enhanced Status Icon with animation */}
@@ -164,7 +179,11 @@ function VerifyEmailContent() {
             {/* Status Message with better styling */}
             <div className="text-center mb-10">
               <div className="bg-gradient-to-r from-gray-50 to-teal-50/50 rounded-2xl p-6 border border-gray-100">
-                <p className={`text-lg leading-relaxed font-medium ${getStatusColor()}`}>{message}</p>
+                <p
+                  className={`text-lg leading-relaxed font-medium ${getStatusColor()}`}
+                >
+                  {message}
+                </p>
                 {status === "success" && (
                   <div className="mt-4 flex items-center justify-center space-x-2">
                     <div className="flex space-x-1">
@@ -172,7 +191,9 @@ function VerifyEmailContent() {
                       <div className="w-2 h-2 bg-teal-500 rounded-full animate-bounce delay-100"></div>
                       <div className="w-2 h-2 bg-teal-500 rounded-full animate-bounce delay-200"></div>
                     </div>
-                    <span className="text-teal-600 font-semibold text-sm">Welcome to CIM Amplify!</span>
+                    <span className="text-teal-600 font-semibold text-sm">
+                      Welcome to CIM Amplify!
+                    </span>
                   </div>
                 )}
               </div>
@@ -194,16 +215,9 @@ function VerifyEmailContent() {
 
                 {/* Login button only appears when email is successfully verified */}
                 {status === "success" && (
-                  <Button
-                    onClick={() => router.push(loginUrl)}
-                    className="w-full py-4 bg-gradient-to-r from-teal-600 via-teal-700 to-cyan-600 hover:from-teal-700 hover:via-teal-800 hover:to-cyan-700 text-white shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02] rounded-xl font-semibold group relative overflow-hidden"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
-                    <span className="relative flex items-center justify-center">
-                      Continue to Login
-                      <ArrowRight className="w-5 h-5 ml-3 group-hover:translate-x-1 transition-transform duration-200" />
-                    </span>
-                  </Button>
+                  <div className="text-center text-gray-500">
+                    Redirecting...
+                  </div>
                 )}
 
                 {status === "informational" && (

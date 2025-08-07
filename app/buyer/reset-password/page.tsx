@@ -1,23 +1,24 @@
 'use client'
 
-import { EyeIcon, EyeOffIcon } from "lucide-react"
+import { EyeIcon, EyeOffIcon } from 'lucide-react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useState } from 'react'
 import Image from 'next/image'
 import axios from 'axios'
-
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/use-toast'
 import { Toaster } from '@/components/ui/toaster'
+import Header from "@/components/ui/auth-header";
+import Footer from "@/components/ui/auth-footer";
 
 export default function BuyerResetPasswordPage() {
-    const [showPassword, setShowPassword] = useState(false)
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const searchParams = useSearchParams()
   const router = useRouter()
   const token = searchParams.get('token')
   const role = searchParams.get('role') || 'buyer'
-
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [message, setMessage] = useState('')
@@ -60,10 +61,8 @@ export default function BuyerResetPasswordPage() {
         response.data?.message || 'Password has been updated successfully.'
       setMessage(successMsg)
       toast({ title: 'Success', description: successMsg })
-
       setNewPassword('')
       setConfirmPassword('')
-
       setTimeout(() => {
         router.push('/buyer/login')
       }, 1000)
@@ -82,6 +81,8 @@ export default function BuyerResetPasswordPage() {
   }
 
   return (
+    <div>
+      <Header />
     <div className="flex h-screen bg-gradient-to-b from-[#C7D7D7] to-[#8C9EA8] overflow-hidden">
       {/* Left side - Illustration */}
       <div className="hidden md:flex md:w-1/2 items-center justify-center relative">
@@ -105,6 +106,7 @@ export default function BuyerResetPasswordPage() {
               {message}
             </div>
           )}
+
           {error && (
             <div className="p-3 bg-red-100 text-red-700 rounded-md text-sm">
               {error}
@@ -119,22 +121,28 @@ export default function BuyerResetPasswordPage() {
               >
                 New Password
               </label>
-              <Input
-                id="newPassword"
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                required
-                placeholder="Enter new password"
-                className="w-full py-6"
-              />
+              <div className="relative">
+                <Input
+                  id="newPassword"
+                  type={showNewPassword ? "text" : "password"}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  required
+                  placeholder="Enter new password"
+                  className="w-full py-6 pr-12"
+                />
                 <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
-                  >
-                    {showPassword ? <EyeOffIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
-                  </button>
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                >
+                  {showNewPassword ? (
+                    <EyeOffIcon className="h-5 w-5" />
+                  ) : (
+                    <EyeIcon className="h-5 w-5" />
+                  )}
+                </button>
+              </div>
             </div>
 
             <div>
@@ -144,22 +152,28 @@ export default function BuyerResetPasswordPage() {
               >
                 Confirm Password
               </label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-                placeholder="Confirm new password"
-                className="w-full py-6"
-              />
-               <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
-                  >
-                    {showPassword ? <EyeOffIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
-                  </button>
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  placeholder="Confirm new password"
+                  className="w-full py-6 pr-12"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                >
+                  {showConfirmPassword ? (
+                    <EyeOffIcon className="h-5 w-5" />
+                  ) : (
+                    <EyeIcon className="h-5 w-5" />
+                  )}
+                </button>
+              </div>
             </div>
 
             <Button
@@ -172,8 +186,10 @@ export default function BuyerResetPasswordPage() {
           </form>
         </div>
       </div>
-
       <Toaster />
     </div>
-  )
+    <Footer />
+      <Toaster />
+    </div>
+  );
 }
