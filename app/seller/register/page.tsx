@@ -186,9 +186,9 @@ export default function SellerRegisterPage() {
 
   // Handle Google OAuth login
   const handleGoogleLogin = () => {
-    console.log("Register page - Redirecting to Google OAuth");
-    window.location.href = "http://localhost:3001/sellers/google/callback";
-  };
+    console.log("Register page - Redirecting to Google OAuth")
+    window.location.href = "https://api.cimamplify.com/sellers/google/callback"
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-[#C3C6BE] to-[#828673]">
