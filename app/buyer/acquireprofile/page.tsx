@@ -114,7 +114,9 @@ const BUSINESS_MODELS = [
   "Asset Heavy",
 ];
 
-const DEFAULT_API_URL = "http://localhost:3001";
+
+// Default API URL
+const DEFAULT_API_URL = "https://api.cimamplify.com";
 
 export default function AcquireProfilePage() {
   const router = useRouter();
