@@ -714,7 +714,7 @@ export default function SellerDashboardPage() {
 
     try {
       const token = localStorage.getItem("token")
-      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
 
       const body: any = {}
       if (offMarketData.transactionValue) {
