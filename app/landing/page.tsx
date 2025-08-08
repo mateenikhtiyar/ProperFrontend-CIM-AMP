@@ -22,6 +22,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 import { Linkedin } from "lucide-react";
+import Header from "@/components/ui/auth-header";
+import Footer from "@/components/ui/auth-footer";
 
 export default function Component() {
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
@@ -684,47 +686,7 @@ export default function Component() {
       `}</style>
 
       {/* Header */}
-      <header className="border-b bg-white/95 backdrop-blur-sm sticky top-0 z-50 shadow-sm">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div
-              className="logo-container cursor-pointer"
-              onClick={() => router.push("/landing")}
-            >
-              <Image
-                src="/logo.svg"
-                alt="CIM Amplify Logo"
-                width={150}
-                height={50}
-                className="h-auto"
-              />
-            </div>
-
-            <nav className="hidden md:flex items-center gap-2">
-              <a href="#benefits" className="navbar-link text-gray-600">
-                Benefits
-              </a>
-              <a href="#how-it-works" className="navbar-link text-gray-600">
-                How it Works
-              </a>
-              <a href="#guidelines" className="navbar-link text-gray-600">
-                Guidelines
-              </a>
-              <a href="#faqs" className="navbar-link text-gray-600">
-                FAQs
-              </a>
-              <Button
-                className="bg-gradient-to-r from-teal-500 to-primary hover:from-primary hover:to-teal-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl ml-4"
-                onClick={() => {
-                  router.push("/member-login");
-                }}
-              >
-                Member Login
-              </Button>
-            </nav>
-          </div>
-        </div>
-      </header>
+    <Header/>
 
       {/* Hero Section */}
       <section className="py-16 bg-gray-50">
@@ -795,7 +757,7 @@ export default function Component() {
                 onClick={() => {
                   router.push("/buyer/register");
                 }}
-                className="mt-6 bg-teal-500 hover:bg-primary transition-colors"
+                className="mt-6 bg-teal-500 hover:bg-primary transition-colors text-white"
               >
                 Create a Free Buyer Profile
               </Button>
@@ -833,7 +795,7 @@ export default function Component() {
               </ul>
               <Button
                 onClick={() => router.push("/seller/register")}
-                className="mt-6 bg-teal-500 hover:bg-primary transition-colors"
+                className="mt-6 bg-teal-500 hover:bg-primary transition-colors text-white"
               >
                 Add A Deal
               </Button>
@@ -964,7 +926,7 @@ export default function Component() {
                 </div>
               </div>
               <Button
-                className="bg-teal-500 hover:bg-primary transition-colors"
+                className="bg-teal-500 hover:bg-primary transition-colors text-white"
                 onClick={() => router.push("/seller/register")}
               >
                 Add a Deal
@@ -1007,7 +969,7 @@ export default function Component() {
                   <div className="relative group">
                     <div className="absolute inset-0 bg-gradient-to-r from-teal-500/20 to-primary/20 rounded-lg blur-lg group-hover:blur-xl transition-all duration-300"></div>
                     <Image
-                      src="/cimcim.png"
+                      src="/step2.png"
                       alt="CIM Amplify Buyer Matching"
                       width={550}
                       height={450}
@@ -1038,7 +1000,7 @@ export default function Component() {
               </div>
             </div>
             <Button
-              className="bg-teal-500 hover:bg-primary transition-colors"
+              className="bg-teal-500 hover:bg-primary transition-colors text-white"
               onClick={() => router.push("/buyer/register")}
             >
               Buyer Registration
@@ -1111,14 +1073,14 @@ export default function Component() {
             </div>
             <div className="flex gap-4 text-center justify-center">
               <Button
-                className="bg-teal-500 hover:bg-primary transition-colors"
+                className="bg-teal-500 hover:bg-primary transition-colors text-white"
                 onClick={() => router.push("/seller/Register")}
               >
                 Add A Deal
               </Button>
               <Button
                 variant="outline"
-                className="bg-teal-500 hover:bg-primary transition-colors text-white hover:text-white"
+                className="bg-teal-500 hover:bg-primary transition-colors text-white hover:text-white border-white"
                 onClick={() => router.push("/buyer/register")}
               >
                 Join the Buyer's List
@@ -1356,139 +1318,7 @@ export default function Component() {
       {/* Footer CTA */}
       {/* Footer CTA */}
       {/* Footer CTA */}
-      <footer className="footer-background bg-gray-50 py-16 border-t border-gray-200">
-        <div className="container mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
-            {/* Company Info */}
-            <div className="footer-section col-span-1 md:col-span-2">
-              <div className="mb-6">
-                <p className="text-gray-600 leading-relaxed max-w-md">
-                  CIM Amplify's mission is to help Entrepreneurs and Investors
-                  get the{" "}
-                  <span className="text-primary font-semibold">
-                    "Brass Ring"
-                  </span>{" "}
-                  of selling their company. Our owner group have all sold
-                  significant companies which changed our lives forever.
-                </p>
-              </div>
-              <div>
-                <a
-                  href="https://www.linkedin.com/company/cimamplify/"
-                  className="inline-flex items-center justify-center w-12 h-12 bg-white rounded-full shadow-md text-gray-600 border border-gray-200 hover:bg-teal-50 hover:text-primary hover:border-teal-300 transition-all duration-300"
-                >
-                  <Linkedin className="w-5 h-5" />
-                </a>
-              </div>
-            </div>
-
-            {/* Quick Links */}
-            <div className="footer-section">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6">
-                Quick Links
-              </h3>
-              <ul className="space-y-2">
-                <li>
-                  <a
-                    href="#benefits"
-                    className="text-gray-600 hover:text-primary transition-colors duration-300 block py-1"
-                  >
-                    Benefits
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#how-it-works"
-                    className="text-gray-600 hover:text-primary transition-colors duration-300 block py-1"
-                  >
-                    How it Works
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#guidelines"
-                    className="text-gray-600 hover:text-primary transition-colors duration-300 block py-1"
-                  >
-                    Guidelines
-                  </a>
-                </li>
-                <li
-                  onClick={() => {
-                    router.push("/about");
-                  }}
-                >
-                  <a className="text-gray-600 hover:text-primary cursor-pointer transition-colors duration-300 block py-1">
-                    About
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            {/* Actions & Support */}
-            <div className="space-y-8">
-              {/* Actions */}
-              <div className="footer-section">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 cursor-pointer">
-                  Actions
-                </h3>
-                <div className="space-y-2">
-                  <div
-                    onClick={() => router.push("/buyer/register")}
-                    className="text-primary hover:text-primary hover:bg-teal-50 block py-2 rounded-lg teal-600 cursor-pointer  transition-all duration-300"
-                  >
-                    Buyer registration
-                  </div>
-                  <div
-                    onClick={() => router.push("/seller/register")}
-                    className="text-primary hover:text-primary hover:bg-teal-50 block py-2  rounded-lg teal-600 cursor-pointer  transition-all duration-300"
-                  >
-                    Add a Deal
-                  </div>
-                  <div
-                    onClick={() => router.push("/buyer/login")}
-                    className="text-primary hover:text-primary hover:bg-teal-50 block py-2 rounded-lg teal-600 cursor-pointer  transition-all duration-300"
-                  >
-                    Buyer Login
-                  </div>
-                  <div
-                    onClick={() => router.push("/seller/login")}
-                    className="text-primary hover:text-primary hover:bg-teal-50 block py-2  rounded-lg primary cursor-pointer  transition-all duration-300"
-                  >
-                    Seller Login
-                  </div>
-                </div>
-              </div>
-
-              {/* Support */}
-              <div className="footer-section">
-                <h3 className="text-lg font-semibold text-gray-900 mb-6">
-                  Support
-                </h3>
-                <ul className="space-y-4">
-                  <li>
-                    <a
-                      href="#contact"
-                      className="text-gray-600 hover:text-primary transition-colors duration-300 block py-1"
-                    >
-                      Contact Us
-                    </a>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          {/* Divider */}
-          <div className="footer-divider" />
-
-          {/* Copyright */}
-          <div className="text-center">
-            <p className="text-gray-500 text-sm">
-              © 2025 CIM Amplify. All rights reserved.
-            </p>
-          </div>
-        </div>
-      </footer>
+     <Footer/>
     </div>
   );
 }

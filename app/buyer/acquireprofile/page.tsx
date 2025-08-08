@@ -347,13 +347,17 @@ export default function AcquireProfilePage() {
 
         setFormData({
           ...formData,
-          companyName: buyerDetails.companyName || profileData.companyName || "",
+          companyName: profileData.companyName || buyerDetails.companyName || "",
           website: profileData.companyWebsite || profileData.website || "",
           companyType: profileData.companyType || "",
           capitalEntity: profileData.capitalEntity || "",
           dealsCompletedLast5Years: profileData.dealsCompletedLast5Years || undefined,
           averageDealSize: profileData.averageDealSize || undefined,
-          contacts: [{ name: buyerDetails.fullName || "", email: buyerDetails.email || "", phone: buyerDetails.phone || "" }],
+          contacts: profileData.contacts?.length
+            ? profileData.contacts
+            : buyerDetails.fullName && buyerDetails.email
+              ? [{ name: buyerDetails.fullName, email: buyerDetails.email, phone: buyerDetails.phone || "" }]
+              : [{ name: "", email: "", phone: "" }],
           targetCriteria: {
             countries: profileData.targetCriteria?.countries || [],
             industrySectors: profileData.targetCriteria?.industrySectors || [],

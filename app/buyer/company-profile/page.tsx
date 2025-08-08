@@ -28,8 +28,7 @@ import {
   ChevronRight,
   LogOut,
   Settings,
-  Briefcase,
-  Store,
+  Briefcase,Store
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "@/components/ui/use-toast";
@@ -300,8 +299,6 @@ export default function CompanyProfilePage() {
       description: "",
     },
     agreements: {
-      termsAndConditionsAccepted: false,
-      ndaAccepted: false,
       feeAgreementAccepted: false,
     },
     selectedCurrency: "USD",
@@ -356,8 +353,7 @@ export default function CompanyProfilePage() {
             ...(profileData.targetCriteria || {}),
           },
           agreements: {
-            ...formData.agreements,
-            ...(profileData.agreements || {}),
+            feeAgreementAccepted: (formData.agreements?.feeAgreementAccepted ?? false) || (profileData.agreements?.feeAgreementAccepted ?? false),
           },
           selectedCurrency: profileData.selectedCurrency || "USD",
           capitalEntity:
@@ -520,10 +516,8 @@ export default function CompanyProfilePage() {
         return !phoneRegex.test(value)
           ? "Please enter a valid phone number (e.g., 123-456-7890)"
           : null;
-      case "agreements.termsAndConditions":
-        return value ? null : "You must accept the terms and conditions";
-      case "agreements.nda":
-        return value ? null : "You must accept the NDA";
+      case "agreements.feeAgreement":
+        return value ? null : "You must accept the fee agreement";
       case "agreements.feeAgreement":
         return value ? null : "You must accept the fee agreement";
       case "targetCriteria.revenueMin":
@@ -2763,36 +2757,14 @@ export default function CompanyProfilePage() {
                   </div>
                   <div className="mt-4 text-sm text-[#667085] border-t pt-4">
                     <p>
-                      The{" "}
-                      <Link
+                      The <Link
                         href="/buyer/masterfeeagreement"
                         className="text-[#3aafa9] underline"
                         target="_blank"
                         rel="noopener noreferrer"
                       >
                         Master Fee Agreement
-                      </Link>
-                      ,{" "}
-                      <Link
-                        href="/buyer/universalNDA"
-                        className="text-[#3aafa9] underline"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        Universal NDA
-                      </Link>{" "}
-                      and{" "}
-                      <Link
-                        href="/buyer/terms"
-                        className="text-[#3aafa9] underline"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        CIM Amplify Terms and Conditions
-                      </Link>{" "}
-                      were agreed to by{" "}
-                      {buyerProfile?.fullName || "(insert buyer's name)"} on{" "}
-                      {(() => {
+                      </Link> was agreed to by {buyerProfile?.fullName || "(insert buyer's name)"} on {(() => {
                         let dateStr = formData.agreementsAcceptedAt ?? formData.updatedAt;
                         if (dateStr && !isNaN(Date.parse(dateStr))) {
                           const date = new Date(dateStr);
