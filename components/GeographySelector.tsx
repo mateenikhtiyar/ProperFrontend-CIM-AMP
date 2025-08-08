@@ -10,9 +10,18 @@ interface GeographySelectorProps {
 const GeographySelector: React.FC<GeographySelectorProps> = ({ selectedCountries, onChange, searchTerm }) => {
   const [expandedCountries, setExpandedCountries] = useState<Record<string, boolean>>({});
   const [expandedStates, setExpandedStates] = useState<Record<string, boolean>>({});
-  const allCountries = Country.getAllCountries().filter((country) =>
-    country.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  let allCountries = Country.getAllCountries().filter((country) => {
+    const countryMatch = country.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const states = State.getStatesOfCountry(country.isoCode);
+    const stateMatch = states.some(state => state.name.toLowerCase().includes(searchTerm.toLowerCase()));
+    return countryMatch || stateMatch;
+  });
+
+  // Move United States, Canada, and Mexico to the top
+  const priorityCountries = ["United States", "Canada", "Mexico"];
+  const priority = allCountries.filter(c => priorityCountries.includes(c.name));
+  const rest = allCountries.filter(c => !priorityCountries.includes(c.name));
+  allCountries = [...priority, ...rest];
   // Handler for country checkbox (no city logic)
   const handleCountryToggle = (country: any) => {
     const countryName = country.name;
@@ -129,40 +138,40 @@ const GeographySelector: React.FC<GeographySelectorProps> = ({ selectedCountries
             </div>
             {expandedCountries[country.isoCode] && (
               <div className="ml-6 mt-1 space-y-1">
-                {State.getStatesOfCountry(country.isoCode).map((state) => (
-                  <div key={state.isoCode} className="pl-2">
-                    <div className="flex items-center">
-                      <input
-                        type="checkbox"
-                        id={`geo-${country.isoCode}-${state.isoCode}`}
-                        checked={selectedCountries.includes(
-                          `${country.name} > ${state.name}`
-                        )}
-                        onChange={() => handleStateToggle(country, state)}
-                        className="custom-checkbox"
-                      />
-                      <div
-                        className="flex items-center cursor-pointer flex-1"
-                        onClick={() =>
-                          setExpandedStates((prev) => ({
-                            ...prev,
-                            [`${country.isoCode}-${state.isoCode}`]:
-                              !prev[`${country.isoCode}-${state.isoCode}`],
-                          }))
-                        }
-                      >
-                        {expandedStates[`${country.isoCode}-${state.isoCode}`] ? (
-                          <ChevronDown className="h-4 w-4 mr-1 text-gray-500" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4 mr-1 text-gray-500" />
-                        )}
-                        <Label htmlFor={`geo-${country.isoCode}-${state.isoCode}`} className="text-[#344054] cursor-pointer">
-                          {state.name}
-                        </Label>
+                {(() => {
+                  let states = State.getStatesOfCountry(country.isoCode);
+                  if (country.name === "United States") {
+                    // Only show contiguous US, Hawaii, and Alaska
+                    const contiguous = [
+                      "Alabama","Arizona","Arkansas","California","Colorado","Connecticut","Delaware","Florida","Georgia","Idaho","Illinois","Indiana","Iowa","Kansas","Kentucky","Louisiana","Maine","Maryland","Massachusetts","Michigan","Minnesota","Mississippi","Missouri","Montana","Nebraska","Nevada","New Hampshire","New Jersey","New Mexico","New York","North Carolina","North Dakota","Ohio","Oklahoma","Oregon","Pennsylvania","Rhode Island","South Carolina","South Dakota","Tennessee","Texas","Utah","Vermont","Virginia","Washington","West Virginia","Wisconsin","Wyoming"
+                    ];
+                    states = states.filter(state => contiguous.includes(state.name) || ["Hawaii","Alaska"].includes(state.name));
+                  }
+                  return states
+                    .filter(state =>
+                      searchTerm.trim() === '' ||
+                      country.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      state.name.toLowerCase().includes(searchTerm.toLowerCase())
+                    )
+                    .map((state) => (
+                      <div key={state.isoCode} className="pl-2">
+                        <div className="flex items-center">
+                          <input
+                            type="checkbox"
+                            id={`geo-${country.isoCode}-${state.isoCode}`}
+                            checked={selectedCountries.includes(
+                              `${country.name} > ${state.name}`
+                            )}
+                            onChange={() => handleStateToggle(country, state)}
+                            className="custom-checkbox"
+                          />
+                          <Label htmlFor={`geo-${country.isoCode}-${state.isoCode}`} className="text-[#344054] cursor-pointer">
+                            {state.name}
+                          </Label>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                ))}
+                    ));
+                })()}
               </div>
             )}
           </div>

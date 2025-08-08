@@ -1645,50 +1645,7 @@ export default function DealManagementDashboard() {
                         )}
                       </div>
 
-                      <h4 className="mb-2 font-medium text-gray-800">
-                        Documents
-                      </h4>
-                      <div className="mb-4 text-sm text-gray-600">
-                        {deal.documents && deal.documents.length > 0 ? (
-                          <ul className="space-y-1">
-                            {deal.documents.map((doc, index) => (
-                              <li
-                                key={index}
-                                className="flex items-center justify-between border border-gray-200 p-2 rounded-md"
-                              >
-                                <div className="flex flex-col">
-                                  <span className="font-medium">
-                                    {doc.originalName ||
-                                      doc.filename ||
-                                      "Document"}
-                                  </span>
-                                  <span className="text-xs text-gray-500">
-                                    {(doc.size / 1024).toFixed(1)} KB
-                                  </span>
-                                </div>
-                                <Button
-                                  variant="link"
-                                  className="text-teal-500 hover:underline"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleDownloadDocument(
-                                      deal._id,
-                                      doc.filename,
-                                      doc.originalName
-                                    );
-                                  }}
-                                >
-                                  Download
-                                </Button>
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className="italic text-gray-500">
-                            No documents uploaded yet.
-                          </p>
-                        )}
-                      </div>
+                   
                       <div className="flex justify-end">
                         <Button
                           className="bg-teal-500 hover:bg-teal-600 px-8 py-2"
@@ -1893,50 +1850,7 @@ export default function DealManagementDashboard() {
                           )}
                         </div>
                       )}
-                      <h4 className="mb-2 font-medium text-gray-800">
-                        Documents
-                      </h4>
-                      <div className="mb-4 text-sm text-gray-600">
-                        {deal.documents && deal.documents.length > 0 ? (
-                          <ul className="space-y-1">
-                            {deal.documents.map((doc, index) => (
-                              <li
-                                key={index}
-                                className="flex items-center justify-between border border-gray-200 p-2 rounded-md"
-                              >
-                                <div className="flex flex-col">
-                                  <span className="font-medium">
-                                    {doc.originalName ||
-                                      doc.filename ||
-                                      "Document"}
-                                  </span>
-                                  <span className="text-xs text-gray-500">
-                                    {(doc.size / 1024).toFixed(1)} KB
-                                  </span>
-                                </div>
-                                <Button
-                                  variant="link"
-                                  className="text-teal-500 hover:underline"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleDownloadDocument(
-                                      deal._id,
-                                      doc.filename,
-                                      doc.originalName
-                                    );
-                                  }}
-                                >
-                                  Download
-                                </Button>
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className="italic text-gray-500">
-                            No documents uploaded yet.
-                          </p>
-                        )}
-                      </div>
+           
                       <div className="flex justify-end">
                         <Button
                           className="bg-teal-500 hover:bg-teal-600 px-8 py-2"

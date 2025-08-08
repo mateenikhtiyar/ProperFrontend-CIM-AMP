@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 import Link from "next/link";
-import api from "@/services/api";
+import api, { resendVerificationEmail } from "@/services/api";
 
 export default function ResendVerificationPage() {
   const [email, setEmail] = useState("");
@@ -26,7 +26,7 @@ export default function ResendVerificationPage() {
         throw new Error("Email is required");
       }
 
-      await api.post("/auth/resend-verification-email", { email });
+      await resendVerificationEmail(email);
 
       setSuccess(true);
       toast({

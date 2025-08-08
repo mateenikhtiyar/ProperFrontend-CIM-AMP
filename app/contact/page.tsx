@@ -5,8 +5,8 @@ import { Mail, Phone, MapPin, Globe, MessageSquare, Clock, Star, CheckCircle, Ca
 import { Button } from "@/components/ui/button";
 import { Linkedin } from "lucide-react";
 import Image from "next/image";
-import Footer from "@/components/ui/auth-footer";
 import Header from "@/components/ui/auth-header";
+import Footer from "@/components/ui/auth-footer";
 
 export default function WorldClassContact() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -95,8 +95,6 @@ export default function WorldClassContact() {
   ];
 
   return (
-    <div>
-      <Header />
     <div className="min-h-screen bg-gray-50">
             <style jsx>{`
               /* Simplified navbar styles - removed animations */
@@ -325,44 +323,7 @@ export default function WorldClassContact() {
       />
 
       {/* Header */}
-      <header className="border-b bg-white/95 backdrop-blur-sm sticky top-0 z-50 shadow-sm">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div
-                         className="transition-all duration-500 ease-out hover:scale-105 hover:drop-shadow-lg cursor-pointer"
-                         onClick={() => router.push("/landing")}
-                       >
-                         <Image
-                           src="/logo.svg"
-                           alt="CIM Amplify Logo"
-                           width={150}
-                           height={50}
-                           className="h-auto"
-                         />
-                       </div>
-          <nav className="hidden md:flex items-center gap-2">
-              <a href="/landing#benefits" className="navbar-link text-gray-600">
-                Benefits
-              </a>
-              <a
-                href="/landing#how-it-works"
-                className="navbar-link text-gray-600"
-              >
-                How it Works
-              </a>
-              <a
-                href="/landing#guidelines"
-                className="navbar-link text-gray-600"
-              >
-                Guidelines
-              </a>
-              <a href="/landing#faqs" className="navbar-link text-gray-600">
-                FAQs
-              </a>
-            </nav>
-          </div>
-        </div>
-      </header>
+         <Header />
 
       {/* Hero Section */}
       <section ref={heroRef} className="relative py-20 overflow-hidden">
@@ -515,76 +476,7 @@ export default function WorldClassContact() {
     
 
       {/* Footer */}
-      <footer className="bg-gray-50 py-16 mt-[100px] border-t border-gray-200">
-        <div className="container mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
-            <div className="col-span-1 md:col-span-2">
-              <div className="mb-6">
-                <p className="text-gray-600 leading-relaxed max-w-md">
-                  CIM Amplify's mission is to help Entrepreneurs and Investors
-                  get the{" "}
-                  <span className="text-teal-600 font-semibold">
-                    "Brass Ring"
-                  </span>{" "}
-                  of selling their company. Our owner group have all sold
-                  significant companies which changed our lives forever.
-                </p>
-              </div>
-              <div>
-                <a
-                  href="https://www.linkedin.com/company/cimamplify/"
-                  className="inline-flex items-center justify-center w-12 h-12 bg-white rounded-full shadow-md text-gray-600 border border-gray-200 hover:bg-teal-50 hover:text-teal-600 hover:border-teal-300 transition-all duration-300"
-                >
-                  <Linkedin className="w-5 h-5" />
-                </a>
-              </div>
-            </div>
-
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-6">Quick Links</h3>
-              <ul className="space-y-2">
-                <li><a href="#benefits" className="text-gray-600 hover:text-teal-600 transition-colors duration-300 block py-1">Benefits</a></li>
-                <li><a href="#how-it-works" className="text-gray-600 hover:text-teal-600 transition-colors duration-300 block py-1">How it Works</a></li>
-                <li><a href="#guidelines" className="text-gray-600 hover:text-teal-600 transition-colors duration-300 block py-1">Guidelines</a></li>
-                <li><a href="#about" className="text-gray-600 hover:text-teal-600 cursor-pointer transition-colors duration-300 block py-1">About</a></li>
-              </ul>
-            </div>
-
-            <div className="space-y-8">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 cursor-pointer">Actions</h3>
-                <div className="space-y-2">
-                  <div className="text-teal-600 hover:text-teal-700 hover:bg-teal-50 block py-2 rounded-lg cursor-pointer transition-all duration-300">Buyer registration</div>
-                  <div className="text-teal-600 hover:text-teal-700 hover:bg-teal-50 block py-2 rounded-lg cursor-pointer transition-all duration-300">Add a Deal</div>
-                  <div className="text-teal-600 hover:text-teal-700 hover:bg-teal-50 block py-2 rounded-lg cursor-pointer transition-all duration-300">Buyer Login</div>
-                  <div className="text-teal-600 hover:text-teal-700 hover:bg-teal-50 block py-2 rounded-lg cursor-pointer transition-all duration-300">Seller Login</div>
-                </div>
-              </div>
-
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-6">Support</h3>
-                <ul className="space-y-4">
-                  <li>
-                    <a className="text-gray-600 hover:text-teal-600 transition-colors duration-300 block py-1 cursor-pointer">
-                      Contact Us
-                    </a>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          <div className="h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent my-12" />
-          
-          <div className="text-center">
-            <p className="text-gray-500 text-sm">
-              © 2025 CIM Amplify. All rights reserved.
-            </p>
-          </div>
-        </div>
-      </footer>
-    </div>
-    <Footer />
+  <Footer />
     </div>
   );
-} 
+}

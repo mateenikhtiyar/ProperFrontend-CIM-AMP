@@ -24,12 +24,12 @@ export default function Footer() {
   };
 
   return (
-    <footer className="footer-background bg-gray-50 py-16 border-t border-gray-200">
-      <div className="container mx-auto px-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
+    <footer className="footer-background bg-gray-50 py-8 border-t border-gray-200">
+      <div className="container mx-auto px-4 flex flex-col items-center">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 w-full max-w-5xl justify-items-center">
           {/* Company Info */}
           <div className="footer-section col-span-1 md:col-span-2">
-            <div className="mb-6">
+            <div className="mb-3">
               <p className="text-gray-600 leading-relaxed max-w-md">
                 CIM Amplify's mission is to help Entrepreneurs and Investors get
                 the{" "}
@@ -50,10 +50,10 @@ export default function Footer() {
 
           {/* Quick Links */}
           <div className="footer-section">
-            <h3 className="text-lg font-semibold text-gray-900 mb-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">
               Quick Links
             </h3>
-            <ul className="space-y-2">
+            <ul className="space-y-1">
               <li>
                 <a
                   href="#benefits"
@@ -106,10 +106,10 @@ export default function Footer() {
           <div className="space-y-8">
             {/* Actions */}
             <div className="footer-section">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 cursor-pointer">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2 cursor-pointer">
                 Actions
               </h3>
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <div
                   onClick={() => router.push("/buyer/register")}
                   className="text-primary hover:text-primary hover:bg-teal-50 block py-2 rounded-lg teal-600 cursor-pointer  transition-all duration-300"
@@ -139,17 +139,17 @@ export default function Footer() {
 
             {/* Support */}
             <div className="footer-section">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 Support
               </h3>
-              <ul className="space-y-4">
+              <ul className="space-y-1">
                 <li>
-                  <a
-                    href="#contact"
-                    className="text-gray-600 hover:text-primary transition-colors duration-300 block py-1"
-                  >
-                    Contact Us
-                  </a>
+                 <a
+                     onClick={() => router.push("/contact")}
+                      className="text-gray-600 hover:text-primary transition-colors duration-300 block py-1 cursor-pointer"
+                    >
+                      Contact Us
+                    </a>
                 </li>
               </ul>
             </div>
@@ -157,7 +157,7 @@ export default function Footer() {
         </div>
 
         {/* Divider */}
-        <div className="footer-divider" />
+  <div className="footer-divider mt-4 mb-2" />
 
         {/* Copyright */}
         <div className="text-center">
