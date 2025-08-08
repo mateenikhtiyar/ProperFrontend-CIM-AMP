@@ -21,6 +21,7 @@ export default function VerifyEmailSuccessPage() {
 
   const token = searchParams.get('token');
   const role = searchParams.get('role');
+  const fullNameParam = searchParams.get('fullName');
 
   useEffect(() => {
     if (token && role) {
@@ -28,7 +29,7 @@ export default function VerifyEmailSuccessPage() {
         const decoded: JwtPayload = jwtDecode(token);
         const userId = decoded.sub;
         
-        setUserName(decoded.name || 'User');
+        setUserName(fullNameParam || decoded.name || 'User');
         setUserRole(role);
         
         localStorage.setItem('token', token);
@@ -110,7 +111,7 @@ export default function VerifyEmailSuccessPage() {
               <img 
                 src="/illustration.png" 
                 alt="CIM Amplify Logo" 
-                className="h-16 w-auto filter drop-shadow-sm" 
+                className="h-48 w-auto filter drop-shadow-sm" 
               />
             </div>
           </div>
@@ -188,10 +189,18 @@ export default function VerifyEmailSuccessPage() {
                 <div className="flex-1">
                   <h2 className="text-xl font-bold text-gray-900 mb-3 flex items-center">
                     <Shield className="w-5 h-5 mr-2 text-amber-600" />
-                    Important: Ensure you receive our emails!
+                    How to Whitelist an Email Address or Domain
                   </h2>
                   <p className="text-gray-700 mb-4 leading-relaxed">
-                    Please check your spam/junk folder and mark emails from <strong className="text-gray-900">cimamplify.com</strong> as not junk. To ensure delivery, we strongly suggest adding our domain to your safe senders list.
+                    Internet service providers sometimes restrict the kinds of emails that come into an organization, especially if they contain links. While that can reduce unwanted emails it can also block emails that a person is expecting or place them in a spam folder. For anyone working in an organization that restricts incoming emails, there are steps that can be taken to ensure you receive emails that you want.
+                  </p>
+                  <h3 className="font-bold text-gray-900 mb-2">Whitelist Meaning</h3>
+                  <p className="text-gray-700 mb-4 leading-relaxed">
+                    Whitelisting an email address means you are adding an address to an approved senders list and telling your email provider that you want messages from an email provider in your inbox. If you’re wondering “why am I not receiving emails?” These procedures may help solve that issue.
+                  </p>
+                  <h3 className="font-bold text-gray-900 mb-2">How to Whitelist an Email Address or Domain</h3>
+                  <p className="text-gray-700 mb-4 leading-relaxed">
+                    Every email provider has slightly different steps and whitelisting directions are provided here for several common providers.
                   </p>
 
                   {/* Gmail Instructions */}
@@ -201,70 +210,118 @@ export default function VerifyEmailSuccessPage() {
                         <div className="w-6 h-6 bg-red-100 rounded mr-2 flex items-center justify-center">
                           <Mail className="w-3 h-3 text-red-600" />
                         </div>
-                        Instructions for Gmail:
+                        How to Whitelist an Email in a Gmail Account on a desktop or laptop computer
                       </h3>
                       <ul className="space-y-2 text-sm text-gray-700">
                         <li className="flex items-start">
                           <Star className="w-4 h-4 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
-                          Log in to your Gmail account.
+                          Click on the settings button (the gear icon in the top-right corner) and click on “See all settings”
                         </li>
                         <li className="flex items-start">
                           <Star className="w-4 h-4 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
-                          Click the gear icon, then select "See all settings".
+                          Click on the tab at the top labeled “Filters and Blocked Addresses”
                         </li>
                         <li className="flex items-start">
                           <Star className="w-4 h-4 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
-                          Go to the "Filters and Blocked Addresses" tab.
+                          Select “Create a new filter” and enter emails or domains you want to whitelist. To add any emails from Building Wings, add @cimamplify.com in the From section.
                         </li>
                         <li className="flex items-start">
                           <Star className="w-4 h-4 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
-                          Click "Create a new filter".
-                        </li>
-                        <li className="flex items-start">
-                          <Star className="w-4 h-4 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
-                          In the "From" field, enter <strong className="text-gray-900">@cimamplify.com</strong>.
-                        </li>
-                        <li className="flex items-start">
-                          <Star className="w-4 h-4 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
-                          Click "Create filter".
-                        </li>
-                        <li className="flex items-start">
-                          <Star className="w-4 h-4 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
-                          Check the box next to "Never send it to Spam" and click "Create filter" again.
+                          If you use stars or labels you can add them to mark them as important, mark “Never send to spam” and then then click “Create filter” to approve the filter
                         </li>
                       </ul>
                     </div>
                   </div>
 
-                  {/* Outlook Instructions */}
+                  {/* Gmail Mobile Instructions */}
+                  <div className="mb-6">
+                    <div className="bg-white rounded-lg p-4 border border-gray-200">
+                      <h3 className="font-bold text-gray-900 mb-3 flex items-center">
+                        <div className="w-6 h-6 bg-red-100 rounded mr-2 flex items-center justify-center">
+                          <Mail className="w-3 h-3 text-red-600" />
+                        </div>
+                        How to Whitelist an Email in the Gmail mobile app
+                      </h3>
+                      <ul className="space-y-2 text-sm text-gray-700">
+                        <li className="flex items-start">
+                          <Star className="w-4 h-4 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
+                          Open gmail on your cell phone
+                        </li>
+                        <li className="flex items-start">
+                          <Star className="w-4 h-4 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
+                          Navigate to the spam or junk folder and click on edit which is usually at the top
+                        </li>
+                        <li className="flex items-start">
+                          <Star className="w-4 h-4 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
+                          Click on any messages that aren’t spam
+                        </li>
+                        <li className="flex items-start">
+                          <Star className="w-4 h-4 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
+                          Select either the “mark” or “move” function and move to inbox.
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  {/* Outlook Desktop Instructions */}
+                  <div className="mb-6">
+                    <div className="bg-white rounded-lg p-4 border border-gray-200">
+                      <h3 className="font-bold text-gray-900 mb-3 flex items-center">
+                        <div className="w-6 h-6 bg-blue-100 rounded mr-2 flex items-center justify-center">
+                          <Mail className="w-3 h-3 text-blue-600" />
+                        </div>
+                        How to Whitelist an Email in Outlook on a Desktop or Laptop computer
+                      </h3>
+                      <ul className="space-y-2 text-sm text-gray-700">
+                        <li className="flex items-start">
+                          <Star className="w-4 h-4 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
+                          Click on “Settings” and then “View all Outlook Settings.”
+                        </li>
+                        <li className="flex items-start">
+                          <Star className="w-4 h-4 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
+                          Go to “Junk email” and then choose “Safe Senders and Domains” or “Safe Mailing Lists” to select the domain or email you want to add such as
+                        </li>
+                        <li className="flex items-start">
+                          <Star className="w-4 h-4 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
+                          Enter the domain name or individual email addresses you want to add. To receive emails from CIM Amplify, enter @cimamplify.com
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  {/* Outlook Mobile Instructions */}
                   <div>
                     <div className="bg-white rounded-lg p-4 border border-gray-200">
                       <h3 className="font-bold text-gray-900 mb-3 flex items-center">
                         <div className="w-6 h-6 bg-blue-100 rounded mr-2 flex items-center justify-center">
                           <Mail className="w-3 h-3 text-blue-600" />
                         </div>
-                        Instructions for Outlook:
+                        How to Whitelist an Email the Outlook mobile app
                       </h3>
                       <ul className="space-y-2 text-sm text-gray-700">
                         <li className="flex items-start">
                           <Star className="w-4 h-4 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
-                          Log in to your Outlook account.
+                          Open the Outlook mobile app
                         </li>
                         <li className="flex items-start">
                           <Star className="w-4 h-4 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
-                          Click the gear icon (Settings) and select "View all Outlook settings".
+                          Click on the message you want to whitelist
                         </li>
                         <li className="flex items-start">
                           <Star className="w-4 h-4 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
-                          Go to "Junk email" and then "Safe senders and domains".
+                          Click on the three dots in the right corner
                         </li>
                         <li className="flex items-start">
                           <Star className="w-4 h-4 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
-                          Click "+ Add" and enter <strong className="text-gray-900">cimamplify.com</strong>.
+                          Click “Move to focused inbox”
                         </li>
                         <li className="flex items-start">
                           <Star className="w-4 h-4 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
-                          Press Enter and then click "Save".
+                          A “pop-up” screen will appear, when it does click “Move this and all future messages.”
+                        </li>
+                        <li className="flex items-start">
+                          <Star className="w-4 h-4 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
+                          If you’ve followed these steps and are still not receiving emails, it’s suggested you contact your IT Department and ask if they can whitelist @cimamplify.com
                         </li>
                       </ul>
                     </div>

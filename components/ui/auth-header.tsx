@@ -435,6 +435,14 @@ export default function Header() {
               <a href="/landing#faqs" className="navbar-link text-gray-600">
                 FAQs
               </a>
+                <Button
+                              className=" text-white bg-gradient-to-r from-teal-500 to-primary hover:from-primary hover:to-teal-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl ml-4"
+                              onClick={() => {
+                                router.push("/member-login");
+                              }}
+                            >
+                              Member Login
+                            </Button>
             </nav>
           </div>
         </div>

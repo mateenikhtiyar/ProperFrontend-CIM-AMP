@@ -701,6 +701,57 @@ export default function SellerDashboardPage() {
     }
   }
 
+  // New: Immediately close the deal when seller chooses "No" (buyer did not come from CIM)
+  const handleImmediateCloseNoCIM = async () => {
+    if (!selectedDealForOffMarket) {
+      toast({
+        title: "Error",
+        description: "No deal selected for off-market.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      const token = localStorage.getItem("token")
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+
+      const body: any = {}
+      if (offMarketData.transactionValue) {
+        body.finalSalePrice = Number.parseFloat(offMarketData.transactionValue)
+      }
+
+      const closeResponse = await fetch(`${apiUrl}/deals/${selectedDealForOffMarket._id}/close`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      })
+
+      if (!closeResponse.ok) {
+        const errorText = await closeResponse.text()
+        console.error("Error response:", errorText)
+        throw new Error(`Failed to close deal: ${closeResponse.statusText}`)
+      }
+
+      setDeals((prevDeals) => prevDeals.filter((deal) => deal._id !== selectedDealForOffMarket._id))
+      setOffMarketDialogOpen(false)
+      toast({
+        title: "Deal closed successfully",
+        description: "The deal has been marked as closed and removed from your active deals",
+      })
+    } catch (error: any) {
+      console.error("Error closing deal:", error)
+      toast({
+        title: "Error closing deal",
+        description: error.message || "Failed to close deal. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
   const fetchDealStatusSummary = async (dealId: string) => {
     try {
       const token = localStorage.getItem("token")
@@ -1042,24 +1093,17 @@ export default function SellerDashboardPage() {
                   </div>
                 </div>
               </>
-            ) : (
+            ) : currentDialogStep === 3 ? (
               <>
                 <DialogHeader>
-                  <DialogTitle className="text-center text-teal-500 text-lg font-medium">
-                    Did the buyer come from CIM Amplify?
-                  </DialogTitle>
+                  <DialogTitle className="text-center text-teal-500 text-lg font-medium">Did the buyer come from CIM Amplify?</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-6 mt-4">
                   {/* Buyer from CIM Amplify */}
                   <div className="flex gap-4">
                     <Button
                       variant={offMarketData.buyerFromCIM === false ? "default" : "outline"}
-                      onClick={() =>
-                        setOffMarketData((prev) => ({
-                          ...prev,
-                          buyerFromCIM: false,
-                        }))
-                      }
+                      onClick={handleImmediateCloseNoCIM}
                       className={
                         offMarketData.buyerFromCIM === false
                           ? "flex-1 bg-red-500 text-white hover:bg-red-600 border-red-500"
@@ -1070,12 +1114,10 @@ export default function SellerDashboardPage() {
                     </Button>
                     <Button
                       variant={offMarketData.buyerFromCIM === true ? "default" : "outline"}
-                      onClick={() =>
-                        setOffMarketData((prev) => ({
-                          ...prev,
-                          buyerFromCIM: true,
-                        }))
-                      }
+                      onClick={() => {
+                        setOffMarketData((prev) => ({ ...prev, buyerFromCIM: true }))
+                        setCurrentDialogStep(4)
+                      }}
                       className={
                         offMarketData.buyerFromCIM === true
                           ? "flex-1 bg-teal-500 text-white hover:bg-teal-600 border-teal-500"
@@ -1085,70 +1127,73 @@ export default function SellerDashboardPage() {
                       Yes
                     </Button>
                   </div>
-
-                  {/* Show buyers list if buyer came from CIM Amplify */}
-                  {offMarketData.buyerFromCIM === true && (
-                    <div>
-                      <Label className="text-base font-medium mb-3 block">Select the buyer:</Label>
-                      <div className="space-y-2 max-h-48 overflow-y-auto">
-                        {buyerActivityLoading ? (
-                          <div className="text-center text-gray-500 py-4">Loading buyer activity...</div>
-                        ) : buyerActivity.length > 0 ? (
-                          buyerActivity.map((buyer) => (
-                            <div
-                              key={buyer.buyerId}
-                              className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer ${
-                                selectedWinningBuyer === buyer.buyerId
-                                  ? "border-teal-500 bg-teal-50"
-                                  : "border-gray-200"
-                              }`}
-                              onClick={() => setSelectedWinningBuyer(buyer.buyerId)}
-                            >
-                              <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center overflow-hidden">
-                                  <img
-                                    src="/placeholder.svg?height=40&width=40"
-                                    alt={buyer.buyerName || "Buyer"}
-                                    className="w-full h-full object-cover"
-                                  />
-                                </div>
-                                <div>
-                                  <div className="font-medium text-sm">{buyer.buyerName || "Unknown Buyer"}</div>
-                                  <div className="text-xs text-gray-500">{buyer.companyName || "Unknown Company"}</div>
-                                </div>
-                              </div>
-                              <div
-                                className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                  buyer.status === "active" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                                }`}
-                              >
-                                {buyer.status || "Unknown"}
-                              </div>
-                            </div>
-                          ))
-                        ) : (
-                          <div className="text-center text-amber-600 text-sm mt-2">
-                           We did not present any buyers.  Please click No
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Submit buttons - only show when buyer question is answered */}
-                  {offMarketData.buyerFromCIM !== null && (
-                    <div className="flex justify-end pt-4">
-                      {/* <Button variant="outline" onClick={() => setOffMarketDialogOpen(false)}>
-                        Skip
-                      </Button> */}
-                      <Button onClick={handleOffMarketSubmit} className="bg-teal-500 hover:bg-teal-600">
-                        Submit
-                      </Button>
-                    </div>
-                  )}
                 </div>
               </>
+            ) : (
+              <DialogHeader>
+                <DialogTitle className="sr-only">Off Market Dialog</DialogTitle>
+              </DialogHeader>
             )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Buyer Selection Dialog (Step 4) */}
+        <Dialog open={offMarketDialogOpen && currentDialogStep === 4} onOpenChange={setOffMarketDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <div className="space-y-6 mt-2">
+              <div>
+                <Label className="text-base font-medium mb-3 block">Select the buyer:</Label>
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {buyerActivityLoading ? (
+                    <div className="text-center text-gray-500 py-4">Loading buyer activity...</div>
+                  ) : buyerActivity.length > 0 ? (
+                    buyerActivity.map((buyer) => (
+                      <div
+                        key={buyer.buyerId}
+                        className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer ${
+                          selectedWinningBuyer === buyer.buyerId ? "border-teal-500 bg-teal-50" : "border-gray-200"
+                        }`}
+                        onClick={() => setSelectedWinningBuyer(buyer.buyerId)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center overflow-hidden">
+                            <img
+                              src="/placeholder.svg?height=40&width=40"
+                              alt={buyer.buyerName || "Buyer"}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <div>
+                            <div className="font-medium text-sm">{buyer.buyerName || "Unknown Buyer"}</div>
+                            <div className="text-xs text-gray-500">{buyer.companyName || "Unknown Company"}</div>
+                          </div>
+                        </div>
+                        <div
+                          className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            buyer.status === "active" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {buyer.status || "Unknown"}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center text-gray-500 py-4">Loading buyer activity...</div>
+                  )}
+                </div>
+                {buyerActivity.length === 0 && (
+                  <div className="text-center text-amber-600 text-sm mt-2">
+                    No buyers found. Please ensure there are interested buyers before completing the deal.
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end pt-2">
+                <Button onClick={handleOffMarketSubmit} className="bg-teal-500 hover:bg-teal-600" disabled={!selectedWinningBuyer}>
+                  Submit
+                </Button>
+              </div>
+            </div>
           </DialogContent>
         </Dialog>
         {/* Complete Deal Dialog */}
