@@ -195,7 +195,10 @@ export const getUserId = () => {
 export const verifyEmail = async (token: string) => {
   try {
     const response = await api.get(`/auth/verify-email?token=${token}`);
-    // Assuming the backend returns { token, userId, role }
+    const { user } = response.data;
+    if (user?.fullName) {
+      localStorage.setItem("userFullName", user.fullName);
+    }
     return response.data;
   } catch (error) {
     console.error("Email verification error:", error);
@@ -205,7 +208,7 @@ export const verifyEmail = async (token: string) => {
 
 export const resendVerificationEmail = async (email: string) => {
   try {
-    const response = await api.post("/auth/resend-verification-email", { email });
+    const response = await api.post("/auth/resend-verification", { email });
     return response.data;
   } catch (error) {
     console.error("Resend verification email error:", error);
