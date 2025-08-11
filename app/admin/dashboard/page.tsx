@@ -946,7 +946,7 @@ export default function DealManagementDashboard() {
   useEffect(() => {
     const fetchAdminProfile = async () => {
       const token = localStorage.getItem("token");
-      const res = await fetch("https://api.cimamplify.com/admin/profile", {
+      const res = await fetch("http://localhost:3001/admin/profile", {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {

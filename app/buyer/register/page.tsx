@@ -181,7 +181,7 @@ export default function BuyerRegisterPage() {
   const handleGoogleLogin = () => {
     // Get API URL from localStorage or use default
 
-    const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
     console.log("Register page - Redirecting to Google OAuth:", `${apiUrl}/buyers/google`)
 
     // Redirect to Google OAuth endpoint
@@ -268,14 +268,14 @@ export default function BuyerRegisterPage() {
                   htmlFor="companyWebsite"
                   className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Company Website <span className="text-red-500">*</span>
+                  Company Name <span className="text-red-500">*</span>
                 </label>
                 <Input
                   id="companyName"
                   name="companyName"
                   value={formData.companyName}
                   onChange={handleChange}
-                  placeholder="Enter your company website"
+                  placeholder="Enter your company name"
                   className={`${
                     errors.companyName ? "border-red-300" : ""
                   } py-5`}

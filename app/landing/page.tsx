@@ -1074,7 +1074,7 @@ export default function Component() {
             <div className="flex gap-4 text-center justify-center">
               <Button
                 className="bg-teal-500 hover:bg-primary transition-colors text-white"
-                onClick={() => router.push("/seller/Register")}
+                onClick={() => router.push("/seller/register")}
               >
                 Add A Deal
               </Button>
@@ -1179,42 +1179,54 @@ export default function Component() {
                   }%)`,
                 }}
               >
-                {testimonials.map((testimonial, index) => (
-                  <div
-                    key={index}
-                    className="w-full sm:w-1/2 lg:w-1/3 flex-shrink-0 px-2 sm:px-4 py-2"
-                  >
+                {testimonials.map((testimonial, index) => {
+                  const periodIndex = testimonial.text.indexOf(".");
+                  const firstSentence =
+                    periodIndex !== -1
+                      ? testimonial.text.substring(0, periodIndex + 1)
+                      : testimonial.text;
+                  const restOfText =
+                    periodIndex !== -1
+                      ? testimonial.text.substring(periodIndex + 1)
+                      : "";
+                  return (
                     <div
-                      data-animate
-                      id={`testimonial-${index}`}
-                      className={`testimonial-card gpu-accelerated p-4 h-full bg-white rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 ${
-                        isVisible[`testimonial-${index}`]
-                          ? "animate-scaleIn animate-in"
-                          : ""
-                      }`}
+                      key={index}
+                      className="w-full sm:w-1/2 lg:w-1/3 flex-shrink-0 px-2 sm:px-4 py-2"
                     >
-                      {/* Testimonial Text */}
-                      <div className="mb-4">
-                        <div className="text-teal-500 text-2xl mb-2 leading-none">
-                          "
+                      <div
+                        data-animate
+                        id={`testimonial-${index}`}
+                        className={`testimonial-card gpu-accelerated p-4 h-full bg-white rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 ${
+                          isVisible[`testimonial-${index}`]
+                            ? "animate-scaleIn animate-in"
+                            : ""
+                        }`}
+                      >
+                        {/* Testimonial Text */}
+                        <div className="mb-4">
+                          <div className="text-teal-500 text-2xl mb-2 leading-none">
+                            "
+                          </div>
+                          <p className="text-gray-700 leading-relaxed text-sm italic">
+                            <span className="font-bold">{firstSentence}</span>
+                            {restOfText}
+                          </p>
                         </div>
-                        <p className="text-gray-700 leading-relaxed text-sm italic first-line:font-semibold">
-                          {testimonial.text}
-                        </p>
-                      </div>
 
-                      {/* Author Info */}
-                      <div className="border-t border-gray-100 pt-3 mt-auto">
-                        <h4 className="font-semibold text-gray-900 text-sm mb-1">
-                          {testimonial.name}
-                        </h4>
-                        <p className="text-gray-500 text-xs leading-relaxed">
-                          {testimonial.role}
-                        </p>
+                        {/* Author Info */}
+                        <div className="border-t border-gray-100 pt-3 mt-auto">
+                          <h4 className="font-semibold text-gray-900 text-sm mb-1">
+                            {testimonial.name}
+                          </h4>
+                          <p className="text-gray-500 text-xs leading-relaxed">
+                            {testimonial.role}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
