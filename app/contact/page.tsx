@@ -90,7 +90,7 @@ export default function SimpleContact() {
       ].join('\n');
 
       // Create mailto link with better encoding
-      const recipientEmail = 'abdulahadaa88345@gmail.com';
+      const recipientEmail = 'deals@amp-ven.com';
       const mailtoLink = `mailto:${recipientEmail}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
       
       // Check if mailto link is too long (some email clients have limits)
@@ -132,7 +132,7 @@ export default function SimpleContact() {
       
     } catch (error) {
       console.error('Mailto error:', error);
-      setSubmitStatus('Something went wrong opening your email client. Please try again or contact us directly at abdulahadaa88345@gmail.com');
+      setSubmitStatus('Something went wrong opening your email client. Please try again or contact us directly at deals@amp-ven.com');
     } finally {
       setIsSubmitting(false);
     }
@@ -140,7 +140,7 @@ export default function SimpleContact() {
 
   // Handle direct email contact
   const handleDirectEmail = () => {
-    const mailtoLink = 'mailto:abdulahadaa88345@gmail.com?subject=General Inquiry';
+    const mailtoLink = 'mailto:deals@amp-ven.com?subject=General Inquiry';
     window.open(mailtoLink, '_blank');
   };
 
@@ -374,7 +374,7 @@ export default function SimpleContact() {
                   onClick={handleDirectEmail}
                   className="text-primary hover:underline font-medium"
                 >
-                  abdulahadaa88345@gmail.com
+                  deals@amp-ven.com
                 </button>
               </div>
             </div>
