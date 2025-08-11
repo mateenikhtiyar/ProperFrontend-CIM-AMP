@@ -90,7 +90,7 @@ interface Deal {
 // Helper function to get the complete profile picture URL
 function getProfilePictureUrl(path: string | null) {
   if (!path) return null
-  const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+  const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
   const formattedPath = path.replace(/\\/g, "/")
   return `${apiUrl}/${formattedPath.startsWith("/") ? formattedPath.slice(1) : formattedPath}`
 }
@@ -113,7 +113,7 @@ function DealCard({
   // Helper functions
   const handleDocumentUpload = async (dealId: string) => {
     const token = localStorage.getItem("token")
-    const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
 
     const response = await fetch(`${apiUrl}/deals/${dealId}`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -165,7 +165,7 @@ function DealCard({
 
     try {
       const token = localStorage.getItem("token")
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
 
       const response = await fetch(`${apiUrl}/deals/${deal._id}/upload-documents`, {
         method: "POST",
@@ -203,7 +203,7 @@ function DealCard({
   }
 
   const downloadDocument = (doc: DealDocument) => {
-    const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
 
     // Create a download link
     const link = document.createElement("a")
@@ -379,7 +379,7 @@ export default function SellerDashboardPage() {
     const fetchSellerProfile = async () => {
       try {
         const token = localStorage.getItem("token")
-        const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+        const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
 
         const response = await fetch(`${apiUrl}/sellers/profile`, {
           headers: {
@@ -412,7 +412,7 @@ export default function SellerDashboardPage() {
       try {
         setLoading(true)
         const token = localStorage.getItem("token")
-        const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+        const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
 
         if (!token) {
           router.push("/seller/login?error=no_token")
@@ -470,7 +470,7 @@ export default function SellerDashboardPage() {
     if (profileName.trim()) {
       try {
         const token = localStorage.getItem("token")
-        const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+        const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
 
         const response = await fetch(`${apiUrl}/sellers/${sellerProfile?._id}`, {
           method: "PATCH",
@@ -536,7 +536,7 @@ export default function SellerDashboardPage() {
         if (selectedDealForOffMarket) {
           try {
             const token = localStorage.getItem("token")
-            const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+            const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
             const response = await fetch(`${apiUrl}/deals/${selectedDealForOffMarket._id}/close-deal`, {
               method: "POST",
               headers: {
@@ -595,7 +595,7 @@ export default function SellerDashboardPage() {
 
     try {
       const token = localStorage.getItem("token")
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
 
       // Close the deal with the selected buyer
       const closeResponse = await fetch(`${apiUrl}/deals/${selectedDealForCompletion._id}/close`, {
@@ -657,7 +657,7 @@ export default function SellerDashboardPage() {
 
     try {
       const token = localStorage.getItem("token")
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
 
       // Prepare winningBuyerId: only send if buyerFromCIM is true
       const body: any = {
@@ -755,7 +755,7 @@ export default function SellerDashboardPage() {
   const fetchDealStatusSummary = async (dealId: string) => {
     try {
       const token = localStorage.getItem("token")
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
 
       const response = await fetch(`${apiUrl}/deals/${dealId}/status-summary`, {
         headers: {
@@ -1140,6 +1140,9 @@ export default function SellerDashboardPage() {
         {/* Buyer Selection Dialog (Step 4) */}
         <Dialog open={offMarketDialogOpen && currentDialogStep === 4} onOpenChange={setOffMarketDialogOpen}>
           <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="sr-only">Select Buyer</DialogTitle>
+            </DialogHeader>
             <div className="space-y-6 mt-2">
               <div>
                 <Label className="text-base font-medium mb-3 block">Select the buyer:</Label>
@@ -1168,13 +1171,7 @@ export default function SellerDashboardPage() {
                             <div className="text-xs text-gray-500">{buyer.companyName || "Unknown Company"}</div>
                           </div>
                         </div>
-                        <div
-                          className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            buyer.status === "active" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                          }`}
-                        >
-                          {buyer.status || "Unknown"}
-                        </div>
+                        
                       </div>
                     ))
                   ) : (
@@ -1233,7 +1230,7 @@ export default function SellerDashboardPage() {
                 <Label className="text-base font-medium mb-3 block">Select Winning Buyer</Label>
                 <div className="space-y-2 max-h-48 overflow-y-auto">
                   {buyerActivity.length > 0 ? (
-                    buyerActivity.map((buyer) => (
+                    buyerActivity.filter((buyer) => buyer.status === "active").map((buyer) => (
                       <div
                         key={buyer.buyerId}
                         className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer ${
@@ -1254,13 +1251,7 @@ export default function SellerDashboardPage() {
                             <div className="text-xs text-gray-500">{buyer.companyName || "Unknown Company"}</div>
                           </div>
                         </div>
-                        <div
-                          className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            buyer.status === "active" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"
-                          }`}
-                        >
-                          {buyer.status || "Unknown"}
-                        </div>
+                        
                       </div>
                     ))
                   ) : (

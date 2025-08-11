@@ -1765,7 +1765,7 @@ export default function MarketPlace() {
 
         {/* Main content */}
         <main className="flex flex-1 justify-center items-center">
-          <h1 className="text-3xl font-bold text-gray-800">Coming Soon!!!</h1>
+          <h1 className="text-3xl font-bold text-gray-800">Coming Soon - Marketplace will feature deals that Advisors post for everyone to see.</h1>
         </main>
       </div>
     </div>

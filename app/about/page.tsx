@@ -713,7 +713,6 @@ From childhood ventures like newspaper routes and selling books to successfully 
       {/* Hero Section - Fixed version */}
       <motion.section
         className="bg-gradient-to-b from-gray-50/30 to-white relative overflow-hidden py-12"
-        style={{ opacity: heroOpacity, y: heroTranslateY }}
       >
         <div className="absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center opacity-80 pointer-events-none overflow-hidden">
           <motion.div

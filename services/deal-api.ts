@@ -6,7 +6,7 @@ interface UpdateDealStatusParams {
 
 export async function updateDealStatus({ dealId, status, finalSalePrice }: UpdateDealStatusParams) {
   const token = localStorage.getItem("token")
-  const apiUrl = localStorage.getItem("apiUrl") || process.env.NEXT_PUBLIC_API_URL || "https://api.cimamplify.com"
+  const apiUrl = localStorage.getItem("apiUrl") || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
 
   if (!token) {
     throw new Error("Authentication required")

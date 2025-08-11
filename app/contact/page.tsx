@@ -1,482 +1,389 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { Mail, Phone, MapPin, Globe, MessageSquare, Clock, Star, CheckCircle, Calendar, Users, Award, Shield } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Linkedin } from "lucide-react";
-import Image from "next/image";
+import { useState } from "react";
+import { Mail, Phone, MapPin, MessageSquare } from "lucide-react";
 import Header from "@/components/ui/auth-header";
 import Footer from "@/components/ui/auth-footer";
 
-export default function WorldClassContact() {
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const heroRef = useRef(null);
+export default function SimpleContact() {
+  const [formData, setFormData] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+    company: '',
+    message: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState('');
 
-  // Mouse tracking for interactive effects
-  useEffect(() => {
-    const handleMouseMove = (e) => {
-      setMousePosition({ x: e.clientX, y: e.clientY });
-    };
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, []);
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
 
-  const contactMethods = [
-    {
-      icon: Mail,
-      title: "Email Us",
-      description: "Get a response within 24 hours",
-      value: "deals@amp-ven.com",
-      action: "mailto:deals@amp-ven.com"
-    },
-    {
-      icon: Phone,
-      title: "Call Us",
-      description: "Mon-Fri from 8am to 6pm PST",
-      value: "+1 (555) 000-0000",
-      action: "tel:+15550000000"
-    },
-    {
-      icon: MessageSquare,
-      title: "Live Chat",
-      description: "Chat with our team instantly",
-      value: "Start conversation",
-      action: "#"
-    },
-    {
-      icon: MapPin,
-      title: "Visit Us",
-      description: "Meet us in person",
-      value: "San Francisco, CA",
-      action: "https://maps.google.com"
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setSubmitStatus('');
+
+    // Enhanced validation
+    if (!formData.fullName.trim()) {
+      setSubmitStatus('Please enter your full name.');
+      setIsSubmitting(false);
+      return;
     }
-  ];
 
-  const features = [
-    { icon: Clock, text: "24-hour response time", color: "text-teal-600" },
-    { icon: Globe, text: "Global support coverage", color: "text-blue-600" },
-    { icon: Star, text: "Premium customer experience", color: "text-yellow-600" },
-    { icon: CheckCircle, text: "Dedicated account manager", color: "text-green-600" }
-  ];
-
-  const teamMembers = [
-    {
-      name: "Sarah Johnson",
-      role: "VP of Client Relations",
-      image: "/api/placeholder/200/200",
-      contact: "sarah@cim-amplify.com"
-    },
-    {
-      name: "Michael Chen",
-      role: "Senior Deal Advisor",
-      image: "/api/placeholder/200/200", 
-      contact: "michael@cim-amplify.com"
-    },
-    {
-      name: "Emily Rodriguez",
-      role: "Client Success Manager",
-      image: "/api/placeholder/200/200",
-      contact: "emily@cim-amplify.com"
+    if (!formData.email.trim()) {
+      setSubmitStatus('Please enter your email address.');
+      setIsSubmitting(false);
+      return;
     }
-  ];
 
-  const stats = [
-    { number: "500+", label: "Successful Deals", icon: Award },
-    { number: "24/7", label: "Support Available", icon: Clock },
-    { number: "98%", label: "Client Satisfaction", icon: Star },
-    { number: "50+", label: "Countries Served", icon: Globe }
-  ];
+    if (!validateEmail(formData.email)) {
+      setSubmitStatus('Please enter a valid email address.');
+      setIsSubmitting(false);
+      return;
+    }
 
-  const officeHours = [
-    { day: "Monday - Friday", hours: "8:00 AM - 6:00 PM PST" },
-    { day: "Saturday", hours: "10:00 AM - 4:00 PM PST" },
-    { day: "Sunday", hours: "Closed" },
-    { day: "Holidays", hours: "Emergency support only" }
-  ];
+    if (!formData.message.trim()) {
+      setSubmitStatus('Please enter your message.');
+      setIsSubmitting(false);
+      return;
+    }
+
+    try {
+      // Create more professional email content
+      const emailSubject = `New Contact Form Inquiry from ${formData.fullName}`;
+      
+      const emailBody = [
+        `Hello,`,
+        ``,
+        `You have received a new contact form submission with the following details:`,
+        ``,
+        `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+        `CONTACT DETAILS`,
+        `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+        `Name: ${formData.fullName}`,
+        `Email: ${formData.email}`,
+        `Phone: ${formData.phone || 'Not provided'}`,
+        `Company: ${formData.company || 'Not provided'}`,
+        ``,
+        `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+        `MESSAGE`,
+        `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+        `${formData.message}`,
+        ``,
+        `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+        ``,
+        `Please respond to this inquiry at your earliest convenience.`,
+        ``,
+        `Best regards,`,
+        `Contact Form System`
+      ].join('\n');
+
+      // Create mailto link with better encoding
+      const recipientEmail = 'abdulahadaa88345@gmail.com';
+      const mailtoLink = `mailto:${recipientEmail}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+      
+      // Check if mailto link is too long (some email clients have limits)
+      if (mailtoLink.length > 2000) {
+        // Fallback for very long messages
+        const shortEmailBody = [
+          `New contact form submission from ${formData.fullName}`,
+          ``,
+          `Contact: ${formData.email}`,
+          `Phone: ${formData.phone || 'N/A'}`,
+          `Company: ${formData.company || 'N/A'}`,
+          ``,
+          `Message: ${formData.message.substring(0, 500)}${formData.message.length > 500 ? '...' : ''}`,
+          ``,
+          `(Message may be truncated due to length limits)`
+        ].join('\n');
+        
+        const shortMailtoLink = `mailto:${recipientEmail}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(shortEmailBody)}`;
+        window.open(shortMailtoLink, '_blank');
+      } else {
+        // Open mailto link in a new window/tab for better user experience
+        window.open(mailtoLink, '_blank');
+      }
+      
+      // Show success message
+      setSubmitStatus('success');
+      
+      // Reset form after a delay
+      setTimeout(() => {
+        setFormData({
+          fullName: '',
+          email: '',
+          phone: '',
+          company: '',
+          message: ''
+        });
+        setSubmitStatus('');
+      }, 3000);
+      
+    } catch (error) {
+      console.error('Mailto error:', error);
+      setSubmitStatus('Something went wrong opening your email client. Please try again or contact us directly at abdulahadaa88345@gmail.com');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Handle direct email contact
+  const handleDirectEmail = () => {
+    const mailtoLink = 'mailto:abdulahadaa88345@gmail.com?subject=General Inquiry';
+    window.open(mailtoLink, '_blank');
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
-            <style jsx>{`
-              /* Simplified navbar styles - removed animations */
-              .navbar-link {
-                padding: 10px 16px;
-                border-radius: 8px;
-                font-weight: 500;
-                color: #4b5563;
-                transition: color 0.3s ease;
-              }
-      
-              .navbar-link:hover {
-                color: #14b8a6;
-              }
-      
-              .logo-container {
-                /* Removed hover animations */
-              }
-      
-              /* Smooth scroll for the entire page */
-              html {
-                scroll-behavior: smooth;
-              }
-      
-              /* Enhanced animations */
-              .section-reveal {
-                opacity: 0;
-                transform: translateY(50px);
-                transition: all 1.5s cubic-bezier(0.4, 0, 0.2, 1);
-              }
-      
-              .section-reveal.visible {
-                opacity: 1;
-                transform: translateY(0);
-              }
-      
-              .image-scale {
-                transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
-              }
-      
-              .image-scale:hover {
-                transform: scale(1.03);
-              }
-      
-              .card-reveal {
-                opacity: 0;
-                transform: translateY(30px);
-                transition: all 1.2s cubic-bezier(0.4, 0, 0.2, 1);
-              }
-      
-              .card-reveal.visible {
-                opacity: 1;
-                transform: translateY(0);
-              }
-      
-              /* Enhanced button styles */
-              .hero-button {
-                position: relative;
-                overflow: hidden;
-                background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
-                border: none;
-                border-radius: 12px;
-                padding: 16px 32px;
-                font-size: 18px;
-                font-weight: 600;
-                color: white;
-                cursor: pointer;
-                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-              }
-      
-              .hero-button::before {
-                content: "";
-                position: absolute;
-                top: 0;
-                left: -100%;
-                width: 100%;
-                height: 100%;
-                background: linear-gradient(
-                  90deg,
-                  transparent,
-                  rgba(255, 255, 255, 0.2),
-                  transparent
-                );
-                transition: left 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-              }
-      
-              .hero-button:hover::before {
-                left: 100%;
-              }
-      
-              .hero-button:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 12px 30px rgba(20, 184, 166, 0.4);
-              }
-      
-              .hero-button:active {
-                transform: translateY(0);
-              }
-              .footer-background {
-                background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-              }
-      
-              .footer-section {
-                transition: all 0.3s ease;
-              }
-      
-              .footer-link {
-                position: relative;
-                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                padding: 8px 0;
-                border-radius: 6px;
-              }
-      
-              .footer-link:hover {
-                color: #14b8a6;
-                transform: translateX(5px);
-                padding-left: 10px;
-              }
-      
-              .footer-link::before {
-                content: "";
-                position: absolute;
-                left: 0;
-                top: 50%;
-                transform: translateY(-50%);
-                width: 0;
-                height: 2px;
-                background: linear-gradient(90deg, #14b8a6, #0d9488);
-                transition: width 0.3s ease;
-              }
-      
-              .footer-link:hover::before {
-                width: 20px;
-              }
-      
-              .footer-divider {
-                height: 1px;
-                background: linear-gradient(90deg, transparent, #e2e8f0, transparent);
-                margin: 3rem 0 2rem 0;
-              }
-      
-              .linkedin-icon {
-                transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-              }
-      
-              .linkedin-icon:hover {
-                transform: translateY(-3px) scale(1.1);
-                background: linear-gradient(135deg, #0077b5, #005885);
-                color: white;
-                box-shadow: 0 10px 20px rgba(0, 119, 181, 0.3);
-              }
-      
-              .focus-visible\\:focus:focus-visible {
-                outline: 2px solid #14b8a6;
-                outline-offset: 2px;
-              }
-            `}</style>
       <style jsx>{`
         html {
           scroll-behavior: smooth;
         }
 
         .contact-card {
-          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-          transform-style: preserve-3d;
+          transition: all 0.3s ease;
+          cursor: pointer;
         }
 
         .contact-card:hover {
-          transform: translateY(-8px) scale(1.02);
-          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+          transform: translateY(-2px);
+          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
         }
 
-        .team-card {
-          transition: all 0.3s ease;
-          overflow: hidden;
+        .form-input {
+          transition: all 0.2s ease;
+          border: 1px solid #d1d5db;
+          background-color: #ffffff;
+          color: #1f2937;
         }
 
-        .team-card:hover {
-          transform: translateY(-5px);
-          box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.15);
+        .form-input:focus {
+          border-color: #3aafa9;
+          outline: none;
+          box-shadow: 0 0 0 3px rgba(58, 175, 169, 0.1);
         }
 
-        .team-card:hover .team-image {
-          transform: scale(1.1);
+        .form-input::placeholder {
+          color: #9ca3af;
         }
 
-        .team-image {
-          transition: transform 0.3s ease;
-        }
-
-        .stat-card {
-          background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.7) 100%);
-          backdrop-filter: blur(10px);
+        .submit-button {
+          background: linear-gradient(135deg, #3aafa9 0%, #2d8f89 100%);
           transition: all 0.3s ease;
         }
 
-        .stat-card:hover {
-          transform: translateY(-3px);
-          box-shadow: 0 15px 30px -10px rgba(20, 184, 166, 0.2);
+        .submit-button:hover:not(:disabled) {
+          transform: translateY(-1px);
+          box-shadow: 0 8px 20px rgba(58, 175, 169, 0.3);
         }
 
-        .floating-element {
-          animation: float 6s ease-in-out infinite;
+        .submit-button:disabled {
+          opacity: 0.7;
+          cursor: not-allowed;
         }
 
-        .floating-element:nth-child(2) {
-          animation-delay: 2s;
+        .success-message {
+          background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+          animation: slideIn 0.3s ease-out;
         }
 
-        .floating-element:nth-child(3) {
-          animation-delay: 4s;
-        }
-
-        @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-20px); }
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
       `}</style>
 
-      {/* Dynamic background gradient */}
-      <div 
-        className="fixed inset-0 pointer-events-none opacity-20"
-        style={{
-          background: `radial-gradient(circle at ${mousePosition.x}px ${mousePosition.y}px, rgba(20, 184, 166, 0.15) 0%, transparent 50%)`
-        }}
-      />
-
       {/* Header */}
-         <Header />
+      <Header />
 
       {/* Hero Section */}
-      <section ref={heroRef} className="relative py-20 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50" />
-        
-        {/* Floating background elements */}
-        <div className="absolute inset-0">
-          <div className="floating-element absolute top-20 left-20 w-64 h-64 bg-teal-200/20 rounded-full blur-3xl" />
-          <div className="floating-element absolute bottom-20 right-20 w-96 h-96 bg-cyan-200/15 rounded-full blur-3xl" />
-          <div className="floating-element absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-blue-200/10 rounded-full blur-3xl" />
-        </div>
-        
-        <div className="relative container mx-auto px-6 text-center">
-          <div className="max-w-4xl mx-auto">
-            <h1 className="text-6xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-gray-900 via-teal-700 to-cyan-700 bg-clip-text text-transparent leading-tight">
-              Let's Connect &
-              <span className="block text-teal-600">Create Together</span>
-            </h1>
-            <p className="text-xl md:text-2xl text-gray-600 mb-8 leading-relaxed max-w-3xl mx-auto">
-              Your success is our priority. Choose how you'd like to connect with our expert team 
-              and let's start building something extraordinary together.
-            </p>
-            
-            {/* Feature highlights */}
-            <div className="flex flex-wrap justify-center gap-6 mb-12">
-              {features.map((feature, index) => (
-                <div key={index} className="flex items-center space-x-3 bg-white/80 backdrop-blur-sm rounded-full px-6 py-3 border border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
-                  <feature.icon className={`w-5 h-5 ${feature.color}`} />
-                  <span className="text-sm font-medium text-gray-700">{feature.text}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-16">
-              {stats.map((stat, index) => (
-                <div key={index} className="stat-card rounded-2xl p-6 text-center border border-white/50">
-                  <stat.icon className="w-8 h-8 text-teal-600 mx-auto mb-3" />
-                  <div className="text-3xl font-bold text-gray-900 mb-1">{stat.number}</div>
-                  <div className="text-sm text-gray-600">{stat.label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
+      <section className="py-16 bg-gradient-to-br from-primary/10 via-primary/5 to-primary/20">
+        <div className="container mx-auto px-6 text-center">
+          <h1 className="text-5xl font-bold mb-4 text-gray-900">
+            Reach Out To Us <span className="text-primary">Today</span>
+          </h1>
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            We'd love to hear from you. Send us a message and we'll respond as soon as possible.
+          </p>
         </div>
       </section>
 
       {/* Contact Methods */}
-      <section className="py-16 relative">
+      <section className="py-8">
         <div className="container mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Get in Touch</h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Choose your preferred way to connect. We're here to help you succeed.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
-            {contactMethods.map((method, index) => (
-              <a
-                key={index}
-                href={method.action}
-                className="contact-card block p-8 bg-white rounded-3xl border border-gray-200/50 hover:border-teal-300 shadow-lg group"
-              >
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-                    <method.icon className="w-8 h-8 text-white" />
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">{method.title}</h3>
-                  <p className="text-sm text-gray-500 mb-4">{method.description}</p>
-                  <p className="text-teal-600 font-semibold text-lg">{method.value}</p>
-                </div>
-              </a>
-            ))}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto mb-8">
+            <div className="contact-card text-center p-4 bg-white rounded-lg shadow-sm border" onClick={handleDirectEmail}>
+              <Mail className="w-6 h-6 text-primary mx-auto mb-2" />
+              <h3 className="font-medium text-gray-900 mb-1 text-sm">Email</h3>
+              <p className="text-xs text-gray-600 truncate">Click to email us</p>
+            </div>
+            
+            <div className="contact-card text-center p-4 bg-white rounded-lg shadow-sm border" onClick={() => window.open('tel:+15550000000', '_blank')}>
+              <Phone className="w-6 h-6 text-primary mx-auto mb-2" />
+              <h3 className="font-medium text-gray-900 mb-1 text-sm">Phone</h3>
+              <p className="text-xs text-gray-600">+1 (555) 000-0000</p>
+            </div>
+            
+            <div className="contact-card text-center p-4 bg-white rounded-lg shadow-sm border">
+              <MessageSquare className="w-6 h-6 text-primary mx-auto mb-2" />
+              <h3 className="font-medium text-gray-900 mb-1 text-sm">Live Chat</h3>
+              <p className="text-xs text-gray-600">Available 24/7</p>
+            </div>
+            
+            <div className="contact-card text-center p-4 bg-white rounded-lg shadow-sm border">
+              <MapPin className="w-6 h-6 text-primary mx-auto mb-2" />
+              <h3 className="font-medium text-gray-900 mb-1 text-sm">Location</h3>
+              <p className="text-xs text-gray-600">San Francisco</p>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Office Hours & Team Section */}
-      <section className="py-16 bg-white">
+      {/* Contact Form */}
+      <section className="pb-12">
         <div className="container mx-auto px-6">
-          <div className="grid lg:grid-cols-2 gap-16 max-w-6xl mx-auto">
-            
-            {/* Office Hours */}
-            <div>
-              <div className="flex items-center mb-8">
-                <Clock className="w-8 h-8 text-teal-600 mr-3" />
-                <h2 className="text-3xl font-bold text-gray-900">Office Hours</h2>
-              </div>
-              
-              <div className="space-y-4">
-                {officeHours.map((schedule, index) => (
-                  <div key={index} className="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
-                    <span className="font-medium text-gray-900">{schedule.day}</span>
-                    <span className="text-teal-600 font-medium">{schedule.hours}</span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-8 p-6 bg-gradient-to-br from-teal-50 to-cyan-50 rounded-2xl border border-teal-200">
-                <div className="flex items-center mb-3">
-                  <Shield className="w-6 h-6 text-teal-600 mr-2" />
-                  <h3 className="font-semibold text-gray-900">Emergency Support</h3>
+          <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-sm border p-6 md:p-8">
+            <div className="space-y-6">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-1">
+                    Full name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="fullName"
+                    value={formData.fullName}
+                    onChange={handleInputChange}
+                    placeholder="Ex. John Doe"
+                    className="form-input w-full px-3 py-2 rounded-md text-sm"
+                    required
+                  />
                 </div>
-                <p className="text-sm text-gray-700">
-                  For urgent matters outside business hours, please email us at{" "}
-                  <a href="mailto:emergency@cim-amplify.com" className="text-teal-600 font-medium hover:underline">
-                    emergency@cim-amplify.com
-                  </a>
-                </p>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-1">
+                    Email address <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    placeholder="example@gmail.com"
+                    className="form-input w-full px-3 py-2 rounded-md text-sm"
+                    required
+                  />
+                </div>
               </div>
-            </div>
 
-            {/* Team Members */}
-            <div>
-              <div className="flex items-center mb-8">
-                <Users className="w-8 h-8 text-teal-600 mr-3" />
-                <h2 className="text-3xl font-bold text-gray-900">Meet Our Team</h2>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-1">
+                    Phone number
+                  </label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                    placeholder="+1 234 567 890"
+                    className="form-input w-full px-3 py-2 rounded-md text-sm"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-1">
+                    Company
+                  </label>
+                  <input
+                    type="text"
+                    name="company"
+                    value={formData.company}
+                    onChange={handleInputChange}
+                    placeholder="Ex. Company Co"
+                    className="form-input w-full px-3 py-2 rounded-md text-sm"
+                  />
+                </div>
               </div>
-              
-              <div className="space-y-6">
-                {teamMembers.map((member, index) => (
-                  <div key={index} className="team-card bg-white rounded-2xl p-6 border border-gray-200/50 shadow-lg">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-16 h-16 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full overflow-hidden">
-                        <div className="team-image w-full h-full bg-gradient-to-br from-teal-400 to-teal-500 flex items-center justify-center text-white font-bold text-lg">
-                          {member.name.split(' ').map(n => n[0]).join('')}
-                        </div>
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-lg font-bold text-gray-900">{member.name}</h3>
-                        <p className="text-sm text-gray-500 mb-2">{member.role}</p>
-                        <a 
-                          href={`mailto:${member.contact}`}
-                          className="text-teal-600 text-sm font-medium hover:underline"
-                        >
-                          {member.contact}
-                        </a>
-                      </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-900 mb-1">
+                  Message <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  name="message"
+                  value={formData.message}
+                  onChange={handleInputChange}
+                  placeholder="Type your message here..."
+                  rows={4}
+                  className="form-input w-full px-3 py-2 rounded-md resize-none text-sm"
+                  required
+                />
+              </div>
+
+              {/* Enhanced Status Messages */}
+              {submitStatus === 'success' && (
+                <div className="success-message p-4 rounded-md text-sm text-white">
+                  <div className="flex items-center">
+                    <Mail className="w-5 h-5 mr-2" />
+                    <div>
+                      <div className="font-medium">Email client opened successfully!</div>
+                      <div className="text-green-100 text-xs mt-1">Please send the pre-filled email from your email application.</div>
                     </div>
                   </div>
-                ))}
+                </div>
+              )}
+
+              {submitStatus && submitStatus !== 'success' && (
+                <div className="p-3 rounded-md text-sm bg-red-50 text-red-700 border border-red-200">
+                  {submitStatus}
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+                className="submit-button w-full py-3 px-6 text-white font-medium rounded-md text-sm flex items-center justify-center"
+              >
+                <Mail className="w-4 h-4 mr-2" />
+                {isSubmitting ? 'Opening Email Client...' : 'Send Inquiry'}
+              </button>
+
+              {/* Alternative contact method */}
+              <div className="text-center text-sm text-gray-600">
+                Email client not working? Contact us directly at{' '}
+                <button 
+                  onClick={handleDirectEmail}
+                  className="text-primary hover:underline font-medium"
+                >
+                  abdulahadaa88345@gmail.com
+                </button>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Quick Actions */}
-    
-
       {/* Footer */}
-  <Footer />
+      <Footer />
     </div>
   );
 }

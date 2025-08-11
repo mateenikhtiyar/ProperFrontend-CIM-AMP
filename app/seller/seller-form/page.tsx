@@ -1452,7 +1452,7 @@ export default function SellerFormPage() {
       console.log("Geography hierarchy data:", formData.geographyHierarchy);
       console.log("Industry hierarchy data:", formData.industryHierarchy);
 
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
 
       const multipartFormData = new FormData();
       multipartFormData.append("dealData", JSON.stringify(dealData));
