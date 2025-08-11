@@ -116,7 +116,7 @@ const BUSINESS_MODELS = [
 
 
 // Default API URL
-const DEFAULT_API_URL = "https://api.cimamplify.com";
+const DEFAULT_API_URL = "http://localhost:3001";
 
 export default function AcquireProfilePage() {
   const router = useRouter();
@@ -2278,7 +2278,7 @@ export default function AcquireProfilePage() {
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    fee agreement
+                    Master Fee Agreement
                   </Link>
                 </Label>
               </div>

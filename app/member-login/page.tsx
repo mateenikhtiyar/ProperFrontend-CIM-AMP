@@ -496,7 +496,7 @@ export default function SelectRolePage() {
       <div className="w-full md:w-2/3 bg-white rounded-l-[40px] flex items-center justify-center p-8">
         <div className="w-full max-w-lg space-y-8 items-center justify-center flex flex-col">
           <h1 className="text-3xl md:text-4xl lg:text-4xl font-bold text-black text-center leading-tight">
-            Connect Buyers and Sellers in the Deal Marketplace
+          Let's do some deals!
           </h1>
 
           <p className="text-[#667085] text-lg text-center md:text-center">
