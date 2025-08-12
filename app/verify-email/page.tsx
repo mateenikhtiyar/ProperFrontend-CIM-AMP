@@ -23,12 +23,6 @@ function VerifyEmailContent() {
       setRole(roleFromUrl)
     }
 
-    if (from === "registration") {
-      setStatus("informational")
-      setMessage("Thank you for registering! Please check your email to verify your account.")
-      return
-    }
-
     if (!token) {
       setStatus("error");
       setMessage("Invalid verification link. No token provided.");
@@ -162,18 +156,8 @@ function VerifyEmailContent() {
                 <Mail className="w-8 h-8 text-white" />
               </div>
               <h1 className="text-3xl font-bold bg-gradient-to-r from-teal-700 to-teal-800 bg-clip-text text-transparent mb-3">
-                Email Verification Complete
+                Email Verification
               </h1>
-            </div>
-
-            {/* Enhanced Status Icon with animation */}
-            <div className="flex justify-center mb-8">
-              <div className="relative">
-                {getStatusIcon()}
-                {status === "loading" && (
-                  <div className="absolute inset-0 rounded-full border-4 border-teal-200 border-t-teal-500 animate-spin"></div>
-                )}
-              </div>
             </div>
 
             {/* Status Message with better styling */}
@@ -223,13 +207,8 @@ function VerifyEmailContent() {
                 {status === "informational" && (
                   <div className="text-center space-y-6">
                     <div className="bg-gradient-to-r from-teal-50 to-cyan-50 rounded-xl p-6 border border-teal-100">
-                      <div className="flex items-center justify-center mb-3">
-                        <div className="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center">
-                          <Mail className="w-6 h-6 text-teal-600" />
-                        </div>
-                      </div>
                       <p className="text-teal-700 font-medium mb-4">
-                        Check your inbox and click the verification link to activate your account.
+                        Thank you for registering! Check your inbox and click the verification link to activate your account.
                       </p>
                       <div className="text-xs text-teal-600 bg-teal-100 rounded-lg px-3 py-2 inline-block">
                         💡 Don't forget to check your spam folder

@@ -209,9 +209,6 @@ export default function VerifyEmailSuccessPage() {
                     <p className="text-white/80 mb-4 leading-relaxed text-lg">
                       Welcome to CIM Amplify! You can now log in to your dashboard to add and manage your deals.
                     </p>
-                    <p className="text-white/60 text-base">
-                      You will be redirected to your dashboard shortly, or click the button above.
-                    </p>
                   </div>
                 </div>
               </div>
