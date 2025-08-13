@@ -114,8 +114,6 @@ const BUSINESS_MODELS = [
   "Asset Heavy",
 ];
 
-
-// Default API URL
 const DEFAULT_API_URL = "http://localhost:3001";
 
 export default function AcquireProfilePage() {
@@ -349,17 +347,17 @@ export default function AcquireProfilePage() {
 
         setFormData({
           ...formData,
-          companyName: profileData.companyName || buyerDetails.companyName || "",
+          companyName: buyerDetails.companyName || profileData.companyName || "",
           website: profileData.companyWebsite || profileData.website || "",
           companyType: profileData.companyType || "",
           capitalEntity: profileData.capitalEntity || "",
           dealsCompletedLast5Years: profileData.dealsCompletedLast5Years || undefined,
           averageDealSize: profileData.averageDealSize || undefined,
-          contacts: profileData.contacts?.length
-            ? profileData.contacts
-            : buyerDetails.fullName && buyerDetails.email
-              ? [{ name: buyerDetails.fullName, email: buyerDetails.email, phone: buyerDetails.phone || "" }]
-              : [{ name: "", email: "", phone: "" }],
+          contacts: buyerDetails.fullName && buyerDetails.email
+            ? [{ name: buyerDetails.fullName, email: buyerDetails.email, phone: buyerDetails.phone || "" }]
+            : (profileData.contacts?.length
+                ? profileData.contacts
+                : [{ name: "", email: "", phone: "" }]),
           targetCriteria: {
             countries: profileData.targetCriteria?.countries || [],
             industrySectors: profileData.targetCriteria?.industrySectors || [],
@@ -1197,6 +1195,12 @@ export default function AcquireProfilePage() {
                     </div>
                     {expandedIndustryGroups[group.id] && (
                       <div className="ml-6 mt-1 space-y-1">
+                        {/* Show group description if present */}
+                        {group.description && (
+                          <div className="text-xs text-gray-500 mb-2 pl-2 font-poppins italic">
+                            {group.description}
+                          </div>
+                        )}
                         {group.industries.map((industry) => (
                           <div key={industry.id} className="pl-2">
                             <div className="flex items-center">

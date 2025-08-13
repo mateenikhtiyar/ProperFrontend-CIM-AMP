@@ -179,7 +179,7 @@ export default function Component() {
           </p>
           <ul className="list-disc list-inside space-y-2 pl-4">
             <li>
-              Larger deals of at least $500k EBITDA or, failing that, $5 Million
+              Larger deals of at least $1 Million EBITDA or, failing that, $5 Million
               in revenue
             </li>
             <li>"Ability to close" filters for every deal</li>
@@ -847,30 +847,13 @@ export default function Component() {
       {/* How It Works */}
       <section id="how-it-works" className="py-16 bg-[#FFFFFF]">
         <div className="container mx-auto px-6 text-center">
-          <h2
-            data-animate
-            id="how-it-works-title"
-            className={`text-3xl font-bold text-center text-gray-900 mb-16 ${
-              isVisible["how-it-works-title"]
-                ? "animate-fadeInUp animate-in"
-                : ""
-            }`}
-          >
+          <h2 className="text-3xl font-bold text-center text-gray-900 mb-16">
             How It Works
           </h2>
-
           <div className="space-y-20">
             {/* Step 1 */}
             <div className="relative">
-              <div
-                data-animate
-                id="step-1-text"
-                className={`mb-12 ${
-                  isVisible["step-1-text"]
-                    ? "animate-slideInLeft animate-in"
-                    : ""
-                }`}
-              >
+              <div className="mb-12">
                 <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-r from-teal-500 to-primary text-white font-bold text-lg mb-4 shadow-lg">
                   1
                 </div>
@@ -882,17 +865,8 @@ export default function Component() {
                   CIM Amplify and add deal metrics.
                 </p>
               </div>
-
               <div className="grid md:grid-cols-2 gap-12 items-center">
-                <div
-                  data-animate
-                  id="step-1-image"
-                  className={`rounded-lg p-8 flex items-center justify-center h-64 ${
-                    isVisible["step-1-image"]
-                      ? "animate-slideInLeft animate-delay-200 animate-in"
-                      : ""
-                  }`}
-                >
+                <div className="rounded-lg p-8 flex items-center justify-center h-64">
                   <div className="relative group">
                     <div className="absolute inset-0 bg-gradient-to-r from-teal-500/20 to-primary/20 rounded-lg blur-lg group-hover:blur-xl transition-all duration-300"></div>
                     <Image
@@ -904,15 +878,7 @@ export default function Component() {
                     />
                   </div>
                 </div>
-                <div
-                  data-animate
-                  id="step-1-image-2"
-                  className={`rounded-lg p-8 flex items-center justify-center h-94 ${
-                    isVisible["step-1-image-2"]
-                      ? "animate-slideInRight animate-delay-300 animate-in"
-                      : ""
-                  }`}
-                >
+                <div className="rounded-lg p-8 flex items-center justify-center h-94">
                   <div className="relative group">
                     <div className="absolute inset-0 bg-gradient-to-r from-teal-500/20 to-primary/20 rounded-lg blur-lg group-hover:blur-xl transition-all duration-300"></div>
                     <Image
@@ -932,18 +898,9 @@ export default function Component() {
                 Add a Deal
               </Button>
             </div>
-
             {/* Step 2 */}
             <div className="relative">
-              <div
-                data-animate
-                id="step-2-text"
-                className={`mb-12 ${
-                  isVisible["step-2-text"]
-                    ? "animate-slideInRight animate-in"
-                    : ""
-                }`}
-              >
+              <div className="mb-12">
                 <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-r from-teal-500 to-primary text-white font-bold text-lg mb-4 shadow-lg">
                   2
                 </div>
@@ -955,17 +912,8 @@ export default function Component() {
                   buyers to engage.
                 </p>
               </div>
-
               <div className="grid md:grid-cols-2 gap-12 items-center">
-                <div
-                  data-animate
-                  id="step-2-image"
-                  className={`rounded-lg p-8 flex items-center justify-center h-94 ${
-                    isVisible["step-2-image"]
-                      ? "animate-slideInLeft animate-delay-200 animate-in"
-                      : ""
-                  }`}
-                >
+                <div className="rounded-lg p-8 flex items-center justify-center h-94">
                   <div className="relative group">
                     <div className="absolute inset-0 bg-gradient-to-r from-teal-500/20 to-primary/20 rounded-lg blur-lg group-hover:blur-xl transition-all duration-300"></div>
                     <Image
@@ -977,15 +925,7 @@ export default function Component() {
                     />
                   </div>
                 </div>
-                <div
-                  data-animate
-                  id="step-2-image-2"
-                  className={`rounded-lg p-8 flex items-center justify-center h-64 ${
-                    isVisible["step-2-image-2"]
-                      ? "animate-slideInRight animate-delay-300 animate-in"
-                      : ""
-                  }`}
-                >
+                <div className="rounded-lg p-8 flex items-center justify-center h-64">
                   <div className="relative group">
                     <div className="absolute inset-0 bg-gradient-to-r from-teal-500/20 to-primary/20 rounded-lg blur-lg group-hover:blur-xl transition-all duration-300"></div>
                     <Image
@@ -1005,18 +945,9 @@ export default function Component() {
             >
               Buyer Registration
             </Button>
-
             {/* Step 3 */}
             <div className="relative">
-              <div
-                data-animate
-                id="step-3-text"
-                className={`mb-12 ${
-                  isVisible["step-3-text"]
-                    ? "animate-slideInLeft animate-in"
-                    : ""
-                }`}
-              >
+              <div className="mb-12">
                 <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-r from-teal-500 to-primary text-white font-bold text-lg mb-4 shadow-lg">
                   3
                 </div>
@@ -1027,17 +958,8 @@ export default function Component() {
                   Buyers and Advisors monitor deals via an intuitive platform.
                 </p>
               </div>
-
               <div className="grid md:grid-cols-2 gap-12 items-center">
-                <div
-                  data-animate
-                  id="step-3-image"
-                  className={`rounded-lg p-8 flex items-center justify-center h-64 ${
-                    isVisible["step-3-image"]
-                      ? "animate-slideInLeft animate-delay-200 animate-in"
-                      : ""
-                  }`}
-                >
+                <div className="rounded-lg p-8 flex items-center justify-center h-64">
                   <div className="relative group">
                     <div className="absolute inset-0 bg-gradient-to-r from-teal-500/20 to-primary/20 rounded-lg blur-lg group-hover:blur-xl transition-all duration-300"></div>
                     <Image
@@ -1049,15 +971,7 @@ export default function Component() {
                     />
                   </div>
                 </div>
-                <div
-                  data-animate
-                  id="step-3-image-2"
-                  className={`rounded-lg p-8 flex items-center justify-center h-64 ${
-                    isVisible["step-3-image-2"]
-                      ? "animate-slideInRight animate-delay-300 animate-in"
-                      : ""
-                  }`}
-                >
+                <div className="rounded-lg p-8 flex items-center justify-center h-64">
                   <div className="relative group">
                     <div className="absolute inset-0 bg-gradient-to-r from-teal-500/20 to-primary/20 rounded-lg blur-lg group-hover:blur-xl transition-all duration-300"></div>
                     <Image
@@ -1080,7 +994,7 @@ export default function Component() {
               </Button>
               <Button
                 variant="outline"
-                className="bg-teal-500 hover:bg-primary transition-colors text-white hover:text-white border-white"
+                className="bg-teal-500 hover:bg-primary transition-colors text-white hover:text-white"
                 onClick={() => router.push("/buyer/register")}
               >
                 Join the Buyer's List
@@ -1179,54 +1093,42 @@ export default function Component() {
                   }%)`,
                 }}
               >
-                {testimonials.map((testimonial, index) => {
-                  const periodIndex = testimonial.text.indexOf(".");
-                  const firstSentence =
-                    periodIndex !== -1
-                      ? testimonial.text.substring(0, periodIndex + 1)
-                      : testimonial.text;
-                  const restOfText =
-                    periodIndex !== -1
-                      ? testimonial.text.substring(periodIndex + 1)
-                      : "";
-                  return (
+                {testimonials.map((testimonial, index) => (
+                  <div
+                    key={index}
+                    className="w-full sm:w-1/2 lg:w-1/3 flex-shrink-0 px-2 sm:px-4 py-2"
+                  >
                     <div
-                      key={index}
-                      className="w-full sm:w-1/2 lg:w-1/3 flex-shrink-0 px-2 sm:px-4 py-2"
+                      data-animate
+                      id={`testimonial-${index}`}
+                      className={`testimonial-card gpu-accelerated p-4 h-full bg-white rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 ${
+                        isVisible[`testimonial-${index}`]
+                          ? "animate-scaleIn animate-in"
+                          : ""
+                      }`}
                     >
-                      <div
-                        data-animate
-                        id={`testimonial-${index}`}
-                        className={`testimonial-card gpu-accelerated p-4 h-full bg-white rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 ${
-                          isVisible[`testimonial-${index}`]
-                            ? "animate-scaleIn animate-in"
-                            : ""
-                        }`}
-                      >
-                        {/* Testimonial Text */}
-                        <div className="mb-4">
-                          <div className="text-teal-500 text-2xl mb-2 leading-none">
-                            "
-                          </div>
-                          <p className="text-gray-700 leading-relaxed text-sm italic">
-                            <span className="font-bold">{firstSentence}</span>
-                            {restOfText}
-                          </p>
+                      {/* Testimonial Text */}
+                      <div className="mb-4">
+                        <div className="text-teal-500 text-2xl mb-2 leading-none">
+                          "
                         </div>
+                        <p className="text-gray-700 leading-relaxed text-sm italic first-line:font-semibold">
+                          {testimonial.text}
+                        </p>
+                      </div>
 
-                        {/* Author Info */}
-                        <div className="border-t border-gray-100 pt-3 mt-auto">
-                          <h4 className="font-semibold text-gray-900 text-sm mb-1">
-                            {testimonial.name}
-                          </h4>
-                          <p className="text-gray-500 text-xs leading-relaxed">
-                            {testimonial.role}
-                          </p>
-                        </div>
+                      {/* Author Info */}
+                      <div className="border-t border-gray-100 pt-3 mt-auto">
+                        <h4 className="font-semibold text-gray-900 text-sm mb-1">
+                          {testimonial.name}
+                        </h4>
+                        <p className="text-gray-500 text-xs leading-relaxed">
+                          {testimonial.role}
+                        </p>
                       </div>
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
               </div>
             </div>
 

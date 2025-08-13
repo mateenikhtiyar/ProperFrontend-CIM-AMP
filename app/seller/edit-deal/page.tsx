@@ -49,7 +49,6 @@ import {
 } from "@/lib/industry-data";
 import SellerProtectedRoute from "@/components/seller/protected-route";
 
-// ...existing code...
 // ✅ Define the exact enum values as constants to match backend schema
 const CAPITAL_AVAILABILITY_OPTIONS = {
   READY: "Ready to deploy immediately",
@@ -339,10 +338,9 @@ export default function EditDealPageFixed() {
     }
 
     try {
-
-      setIsLoading(true)
-      const token = localStorage.getItem("token")
-      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+      setIsLoading(true);
+      const token = localStorage.getItem("token");
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
       const response = await fetch(`${apiUrl}/deals/${dealId}`, {
         headers: {
@@ -1125,6 +1123,11 @@ export default function EditDealPageFixed() {
                         </Label>
                       </div>
                     </div>
+                    {group.description && (
+                      <div className="ml-6 mt-1 text-xs text-gray-500 font-poppins italic">
+                        {group.description}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -1160,7 +1163,7 @@ export default function EditDealPageFixed() {
       } // Do not handle cities
 
       return acc;
-    }, {} as Record<string, { country: GeoItem | null; states: GeoItem[] }>);
+    }, {} as Record<string, { country: GeoItem | null; states: GeoItem }>);
 
     return (
       <div className="space-y-2 font-poppins">
@@ -1292,9 +1295,9 @@ export default function EditDealPageFixed() {
           "Please select at least one capital availability option"
         );
 
-      const token = localStorage.getItem("token")
-      const sellerId = localStorage.getItem("userId")
-      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+      const token = localStorage.getItem("token");
+      const sellerId = localStorage.getItem("userId");
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
       if (!token || !sellerId) throw new Error("Authentication required");
 
@@ -1416,8 +1419,9 @@ export default function EditDealPageFixed() {
     if (!dealId) return;
 
     try {
-      const token = localStorage.getItem("token")
-      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+      const token = localStorage.getItem("token");
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
+
       const docIndex = existingDocuments.findIndex(
         (d) => d.filename === doc.filename
       );
@@ -1456,15 +1460,15 @@ export default function EditDealPageFixed() {
 
   // Handle document download
   const handleDocumentDownload = (doc: DealDocument) => {
-    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
-    const link = document.createElement("a")
-    link.href = `${apiUrl}/uploads/deal-documents/${doc.filename}`
-    link.download = doc.originalName
-    link.target = "_blank"
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  }
+    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
+    const link = document.createElement("a");
+    link.href = `${apiUrl}/uploads/deal-documents/${doc.filename}`;
+    link.download = doc.originalName;
+    link.target = "_blank";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   // Handle new document deletion (remove from formData.documents)
   const handleNewDocumentDelete = (indexToRemove: number) => {
@@ -2494,10 +2498,8 @@ export default function EditDealPageFixed() {
                     id="minPriorAcquisitions"
                     type="number"
                     min="0"
-                    value={formData.minPriorAcquisitions || ""}
-                    onChange={(e) =>
-                      handleNumberChange(e, "minPriorAcquisitions")
-                    }
+                    value={formData.minPriorAcquisitions === 0 ? "0" : formData.minPriorAcquisitions || ""}
+                    onChange={(e) => handleNumberChange(e, "minPriorAcquisitions")}
                     className="w-full"
                   />
                 </div>
@@ -2514,10 +2516,8 @@ export default function EditDealPageFixed() {
                     id="minTransactionSize"
                     type="number"
                     min="0"
-                    value={formData.minTransactionSize || ""}
-                    onChange={(e) =>
-                      handleNumberChange(e, "minTransactionSize")
-                    }
+                    value={formData.minTransactionSize === 0 ? "0" : formData.minTransactionSize || ""}
+                    onChange={(e) => handleNumberChange(e, "minTransactionSize")}
                     className="w-full"
                   />
                 </div>

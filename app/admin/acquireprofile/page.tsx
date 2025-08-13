@@ -1570,6 +1570,12 @@ const fetchAdminProfile = async (id: string) => {
 
                     {expandedIndustryGroups[group.id] && (
                       <div className="ml-6 mt-1 space-y-1">
+                        {/* Show group description if present */}
+                        {group.description && (
+                          <div className="text-xs text-gray-500 mb-2 pl-2 font-poppins italic">
+                            {group.description}
+                          </div>
+                        )}
                         {group.industries.map((industry) => (
                           <div key={industry.id} className="pl-2">
                             <div className="flex items-center">
@@ -2929,7 +2935,7 @@ const fetchAdminProfile = async (id: string) => {
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      fee agreement
+                      Master Fee Agreement
                     </Link>
                   </Label>
                 </div>
