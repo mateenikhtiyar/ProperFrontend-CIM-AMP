@@ -110,7 +110,7 @@ export default function SellersManagementDashboard() {
         if (!token) {
           throw new Error("No authentication token found");
         }
-        const res = await fetch("http://localhost:3001/sellers", {
+        const res = await fetch("https://api.cimamplify.com/sellers", {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -130,7 +130,7 @@ export default function SellersManagementDashboard() {
         setSellers(sellersData);
 
         // Fetch total deals from /deals endpoint for validation
-        const dealsRes = await fetch("http://localhost:3001/deals", {
+        const dealsRes = await fetch("https://api.cimamplify.com/deals", {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -165,7 +165,7 @@ export default function SellersManagementDashboard() {
   useEffect(() => {
     const fetchAdminProfile = async () => {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:3001/admin/profile", {
+      const res = await fetch("https://api.cimamplify.com/admin/profile", {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -188,7 +188,7 @@ export default function SellersManagementDashboard() {
           let offMarketDealsCount = 0;
           try {
             // Fetch true active deals
-            const activeRes = await fetch(`http://localhost:3001/deals/admin/seller/${sellerId}/deals?status=active`, {
+            const activeRes = await fetch(`https://api.cimamplify.com/deals/admin/seller/${sellerId}/deals?status=active`, {
               headers: { Authorization: `Bearer ${token}` },
             });
             if (activeRes.ok) {
@@ -196,7 +196,7 @@ export default function SellersManagementDashboard() {
               activeDealsCount = Array.isArray(activeDeals) ? activeDeals.length : 0;
             }
             // Fetch off-market deals
-            const offMarketRes = await fetch(`http://localhost:3001/deals/admin/seller/${sellerId}/deals?status=completed`, {
+            const offMarketRes = await fetch(`https://api.cimamplify.com/deals/admin/seller/${sellerId}/deals?status=completed`, {
               headers: { Authorization: `Bearer ${token}` },
             });
             if (offMarketRes.ok) {
@@ -280,7 +280,7 @@ export default function SellersManagementDashboard() {
       delete (body as any).activeDealsCount;
       delete (body as any).offMarketDealsCount;
       if (!editSeller) throw new Error("No seller selected");
-      const res = await fetch(`http://localhost:3001/sellers/${editSeller._id || editSeller.id}`, {
+      const res = await fetch(`https://api.cimamplify.com/sellers/${editSeller._id || editSeller.id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -314,7 +314,7 @@ export default function SellersManagementDashboard() {
       if (!token) {
         throw new Error("No authentication token found");
       }
-      const res = await fetch(`http://localhost:3001/sellers/${sellerId}`, {
+      const res = await fetch(`https://api.cimamplify.com/sellers/${sellerId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -368,7 +368,7 @@ export default function SellersManagementDashboard() {
     setModalOpen(true);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:3001/deals/admin/seller/${seller._id || seller.id}/deals?status=${status}`, {
+      const res = await fetch(`https://api.cimamplify.com/deals/admin/seller/${seller._id || seller.id}/deals?status=${status}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error("Failed to fetch deals");
