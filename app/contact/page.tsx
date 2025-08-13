@@ -60,60 +60,8 @@ export default function SimpleContact() {
     }
 
     try {
-      // Create more professional email content
-      const emailSubject = `New Contact Form Inquiry from ${formData.fullName}`;
-      
-      const emailBody = [
-        `Hello,`,
-        ``,
-        `You have received a new contact form submission with the following details:`,
-        ``,
-        `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
-        `CONTACT DETAILS`,
-        `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
-        `Name: ${formData.fullName}`,
-        `Email: ${formData.email}`,
-        `Phone: ${formData.phone || 'Not provided'}`,
-        `Company: ${formData.company || 'Not provided'}`,
-        ``,
-        `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
-        `MESSAGE`,
-        `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
-        `${formData.message}`,
-        ``,
-        `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
-        ``,
-        `Please respond to this inquiry at your earliest convenience.`,
-        ``,
-        `Best regards,`,
-        `Contact Form System`
-      ].join('\n');
-
-      // Create mailto link with better encoding
-      const recipientEmail = 'deals@amp-ven.com';
-      const mailtoLink = `mailto:${recipientEmail}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
-      
-      // Check if mailto link is too long (some email clients have limits)
-      if (mailtoLink.length > 2000) {
-        // Fallback for very long messages
-        const shortEmailBody = [
-          `New contact form submission from ${formData.fullName}`,
-          ``,
-          `Contact: ${formData.email}`,
-          `Phone: ${formData.phone || 'N/A'}`,
-          `Company: ${formData.company || 'N/A'}`,
-          ``,
-          `Message: ${formData.message.substring(0, 500)}${formData.message.length > 500 ? '...' : ''}`,
-          ``,
-          `(Message may be truncated due to length limits)`
-        ].join('\n');
-        
-        const shortMailtoLink = `mailto:${recipientEmail}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(shortEmailBody)}`;
-        window.open(shortMailtoLink, '_blank');
-      } else {
-        // Open mailto link in a new window/tab for better user experience
-        window.open(mailtoLink, '_blank');
-      }
+      // Simulate form submission
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Show success message
       setSubmitStatus('success');
@@ -131,17 +79,11 @@ export default function SimpleContact() {
       }, 3000);
       
     } catch (error) {
-      console.error('Mailto error:', error);
-      setSubmitStatus('Something went wrong opening your email client. Please try again or contact us directly at deals@amp-ven.com');
+      console.error('Form submission error:', error);
+      setSubmitStatus('Something went wrong. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  // Handle direct email contact
-  const handleDirectEmail = () => {
-    const mailtoLink = 'mailto:deals@amp-ven.com?subject=General Inquiry';
-    window.open(mailtoLink, '_blank');
   };
 
   return (
@@ -222,37 +164,6 @@ export default function SimpleContact() {
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
             We'd love to hear from you. Send us a message and we'll respond as soon as possible.
           </p>
-        </div>
-      </section>
-
-      {/* Contact Methods */}
-      <section className="py-8">
-        <div className="container mx-auto px-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto mb-8">
-            <div className="contact-card text-center p-4 bg-white rounded-lg shadow-sm border" onClick={handleDirectEmail}>
-              <Mail className="w-6 h-6 text-primary mx-auto mb-2" />
-              <h3 className="font-medium text-gray-900 mb-1 text-sm">Email</h3>
-              <p className="text-xs text-gray-600 truncate">Click to email us</p>
-            </div>
-            
-            <div className="contact-card text-center p-4 bg-white rounded-lg shadow-sm border" onClick={() => window.open('tel:+15550000000', '_blank')}>
-              <Phone className="w-6 h-6 text-primary mx-auto mb-2" />
-              <h3 className="font-medium text-gray-900 mb-1 text-sm">Phone</h3>
-              <p className="text-xs text-gray-600">+1 (555) 000-0000</p>
-            </div>
-            
-            <div className="contact-card text-center p-4 bg-white rounded-lg shadow-sm border">
-              <MessageSquare className="w-6 h-6 text-primary mx-auto mb-2" />
-              <h3 className="font-medium text-gray-900 mb-1 text-sm">Live Chat</h3>
-              <p className="text-xs text-gray-600">Available 24/7</p>
-            </div>
-            
-            <div className="contact-card text-center p-4 bg-white rounded-lg shadow-sm border">
-              <MapPin className="w-6 h-6 text-primary mx-auto mb-2" />
-              <h3 className="font-medium text-gray-900 mb-1 text-sm">Location</h3>
-              <p className="text-xs text-gray-600">San Francisco</p>
-            </div>
-          </div>
         </div>
       </section>
 
@@ -338,14 +249,14 @@ export default function SimpleContact() {
                 />
               </div>
 
-              {/* Enhanced Status Messages */}
+              {/* Status Messages */}
               {submitStatus === 'success' && (
                 <div className="success-message p-4 rounded-md text-sm text-white">
                   <div className="flex items-center">
                     <Mail className="w-5 h-5 mr-2" />
                     <div>
-                      <div className="font-medium">Email client opened successfully!</div>
-                      <div className="text-green-100 text-xs mt-1">Please send the pre-filled email from your email application.</div>
+                      <div className="font-medium">Message sent successfully!</div>
+                      <div className="text-green-100 text-xs mt-1">We'll get back to you as soon as possible.</div>
                     </div>
                   </div>
                 </div>
@@ -364,19 +275,8 @@ export default function SimpleContact() {
                 className="submit-button w-full py-3 px-6 text-white font-medium rounded-md text-sm flex items-center justify-center"
               >
                 <Mail className="w-4 h-4 mr-2" />
-                {isSubmitting ? 'Opening Email Client...' : 'Send Inquiry'}
+                {isSubmitting ? 'Sending Message...' : 'Send Message'}
               </button>
-
-              {/* Alternative contact method */}
-              <div className="text-center text-sm text-gray-600">
-                Email client not working? Contact us directly at{' '}
-                <button 
-                  onClick={handleDirectEmail}
-                  className="text-primary hover:underline font-medium"
-                >
-                  deals@amp-ven.com
-                </button>
-              </div>
             </div>
           </div>
         </div>

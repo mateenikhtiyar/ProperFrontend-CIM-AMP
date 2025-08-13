@@ -164,7 +164,7 @@ export default function SellerRegisterPage() {
       });
 
       // Redirect to dashboard page
-      router.push("/verify-email?from=registration&role=seller");
+      router.push("/registration-pending-verification");
     } catch (error: any) {
       console.error("Registration error:", error);
       setErrors({
@@ -210,7 +210,7 @@ export default function SellerRegisterPage() {
         <div className="w-full md:w-2/3 bg-white flex items-center justify-center p-8">
           <div className="w-full max-w-md space-y-3">
             <h1 className="text-3xl font-bold mb-8 text-center">
-              Seller Registration
+            Advisor Registration
             </h1>
 
             {errors.general && (

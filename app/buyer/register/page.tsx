@@ -157,7 +157,7 @@ export default function BuyerRegisterPage() {
           "Please check your email to verify your account before logging in.",
       });
 
-      router.push("/verify-email?from=registration&role=buyer");
+      router.push("/registration-pending-verification");
     } catch (error: any) {
       console.error("Registration error:", error);
       setErrors({

@@ -160,7 +160,7 @@ export default function BuyersManagementDashboard() {
   }, [buyers]);
 
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalDeals, setModalDeals] = useState<Deal[]>([]);
+  const [modalDeals, setModalDeals] = useState<any[]>([]);
   const [modalStatus, setModalStatus] = useState<"active" | "pending" | "rejected" | null>(null);
   const [modalBuyer, setModalBuyer] = useState<Buyer | null>(null);
   const [modalLoading, setModalLoading] = useState(false);
@@ -238,8 +238,16 @@ export default function BuyersManagementDashboard() {
   const startIndex = (currentPage - 1) * buyersPerPage;
   const endIndex = startIndex + buyersPerPage;
   const [companySort, setCompanySort] = useState<"asc" | "desc" | null>(null);
-  // Sorting logic for company name
+  // Sorting logic for company name and deal status
+  const [dealSort, setDealSort] = useState<"active" | "pending" | "rejected" | null>(null);
   const sortedBuyers = [...filteredBuyers].sort((a, b) => {
+    if (dealSort) {
+      const buyerIdA = String(a._id || a.id || "");
+      const buyerIdB = String(b._id || b.id || "");
+      const countA = buyerDealCounts[buyerIdA]?.[dealSort] || 0;
+      const countB = buyerDealCounts[buyerIdB]?.[dealSort] || 0;
+      return countB - countA;
+    }
     const nameA = (a.companyProfile?.companyName || a.companyName || "").toLowerCase();
     const nameB = (b.companyProfile?.companyName || b.companyName || "").toLowerCase();
     if (!companySort) return 0;
@@ -341,9 +349,8 @@ export default function BuyersManagementDashboard() {
               </header>
         {/* Content Area */}
         <div className="flex-1 p-6">
-          {/* Page Title */}
-          <div className="mb-6">
-        
+          {/* Page Title & Sorting */}
+          <div className="mb-6 flex items-center gap-6">
             <div className="flex items-center gap-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -355,6 +362,19 @@ export default function BuyersManagementDashboard() {
                   onChange={handleSearch}
                 />
               </div>
+            </div>
+            <div>
+              <label className="mr-2 text-sm font-medium text-gray-700">Sort by Deals:</label>
+              <select
+                value={dealSort || ""}
+                onChange={e => setDealSort(e.target.value ? e.target.value as "active" | "pending" | "rejected" : null)}
+                className="border border-gray-300 rounded px-2 py-1 text-sm"
+              >
+                <option value="">None</option>
+                <option value="active">Active</option>
+                <option value="pending">Pending</option>
+                <option value="rejected">Rejected</option>
+              </select>
             </div>
           </div>
 
@@ -571,16 +591,6 @@ export default function BuyersManagementDashboard() {
                   <div className="text-xs text-gray-500">Status: {deal.status}</div>
                   <div className="text-xs text-gray-400">Industry: {deal.industrySector}</div>
                   <div className="text-xs text-gray-400">Last Updated: {deal.timeline?.updatedAt ? new Date(deal.timeline.updatedAt).toLocaleString() : "-"}</div>
-                  {deal.seller && (
-                    <>
-                      <div className="text-xs text-gray-400">
-                        Seller: {deal.seller.fullName}
-                      </div>
-                      <div className="text-xs text-gray-400">
-                        Seller Company: {deal.seller.companyName}
-                      </div>
-                    </>
-                  )}
                 </li>
               ))}
             </ul>
