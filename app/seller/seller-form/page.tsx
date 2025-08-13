@@ -1253,6 +1253,11 @@ export default function SellerFormPage() {
                         </Label>
                       </div>
                     </div>
+                    {group.description && (
+                      <div className="ml-6 mt-1 text-xs text-gray-500 font-poppins italic">
+                        {group.description}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -1452,7 +1457,7 @@ export default function SellerFormPage() {
       console.log("Geography hierarchy data:", formData.geographyHierarchy);
       console.log("Industry hierarchy data:", formData.industryHierarchy);
 
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
       const multipartFormData = new FormData();
       multipartFormData.append("dealData", JSON.stringify(dealData));
@@ -2262,6 +2267,7 @@ export default function SellerFormPage() {
                   onCheckedChange={(checked) => {
                     if (checked) {
                       handleMultiSelectChange(
+
                         "need-raise",
                         "capitalAvailability"
                       );
@@ -2450,7 +2456,7 @@ export default function SellerFormPage() {
                 id="minPriorAcquisitions"
                 type="number"
                 min="0"
-                value={formData.minPriorAcquisitions || ""}
+                value={formData.minPriorAcquisitions === 0 ? "0" : formData.minPriorAcquisitions || ""}
                 onChange={(e) => handleNumberChange(e, "minPriorAcquisitions")}
                 className="w-full"
               />
@@ -2466,12 +2472,9 @@ export default function SellerFormPage() {
               <Input
                 id="minTransactionSize"
                 type="text"
-                value={
-                  formData.minTransactionSize
-                    ? formatNumberWithCommas(formData.minTransactionSize)
-                    : ""
-                }
+                value={formData.minTransactionSize === 0 ? "0" : (formData.minTransactionSize ? formatNumberWithCommas(formData.minTransactionSize) : "")}
                 onChange={(e) => {
+                  
                   const rawValue = e.target.value.replace(/,/g, "");
                   if (rawValue === "" || /^-?\d*$/.test(rawValue)) {
                     handleNumberChange(
