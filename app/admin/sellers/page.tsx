@@ -70,6 +70,7 @@ function getProfileImageSrc(src?: string | null) {
 
 export default function SellersManagementDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [activeSort, setActiveSort] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [sellers, setSellers] = useState<Seller[]>([]);
   const [loading, setLoading] = useState(true);
@@ -334,11 +335,13 @@ export default function SellersManagementDashboard() {
     setCurrentPage(page);
   };
 
-  const filteredSellers = sellers.filter(seller =>
-    (seller.companyName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (seller.email || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (seller.fullName || "").toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredSellers = sellers.filter(seller => {
+    const matchesSearch = (seller.companyName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (seller.email || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (seller.fullName || "").toLowerCase().includes(searchTerm.toLowerCase());
+    if (!activeSort) return matchesSearch;
+    return matchesSearch && seller.activeDealsCount > 0;
+  });
 
   const sellersPerPage = 10;
   const startIndex = (currentPage - 1) * sellersPerPage;
@@ -346,13 +349,15 @@ export default function SellersManagementDashboard() {
   const totalPages = Math.ceil(filteredSellers.length / sellersPerPage);
 
   // Sorting logic for company name
-  const sortedSellers = [...filteredSellers].sort((a, b) => {
-    const nameA = (a.companyName || "").toLowerCase();
-    const nameB = (b.companyName || "").toLowerCase();
-    if (!companySort) return 0;
-    if (companySort === "asc") return nameA.localeCompare(nameB);
-    return nameB.localeCompare(nameA);
-  });
+  const sortedSellers = activeSort
+    ? [...filteredSellers].sort((a, b) => (b.activeDealsCount || 0) - (a.activeDealsCount || 0))
+    : [...filteredSellers].sort((a, b) => {
+        const nameA = (a.companyName || "").toLowerCase();
+        const nameB = (b.companyName || "").toLowerCase();
+        if (!companySort) return 0;
+        if (companySort === "asc") return nameA.localeCompare(nameB);
+        return nameB.localeCompare(nameA);
+      });
   const currentSellers = sortedSellers.slice(startIndex, endIndex);
 
   // Update openDealModal to fetch the correct deals for the popup
@@ -470,7 +475,7 @@ export default function SellersManagementDashboard() {
           )}
 
           {/* Page Title and Search */}
-          <div className="mb-6">
+          <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -482,6 +487,13 @@ export default function SellersManagementDashboard() {
                   onChange={handleSearch}
                 />
               </div>
+              <Button
+                variant={activeSort ? "default" : "outline"}
+                className={`ml-4 px-4 py-2 text-sm rounded-lg ${activeSort ? "bg-[#3aafa9] text-white" : "border-gray-200"}`}
+                onClick={() => setActiveSort((prev) => !prev)}
+              >
+                {activeSort ? "Sorted by Active Deals" : "Sort by Active Deals"}
+              </Button>
             </div>
           </div>
 
