@@ -946,7 +946,7 @@ export default function DealManagementDashboard() {
   useEffect(() => {
     const fetchAdminProfile = async () => {
       const token = localStorage.getItem("token");
-      const res = await fetch("https://api.cimamplify.com/admin/profile", {
+      const res = await fetch("http://localhost:3001/admin/profile", {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -2114,7 +2114,7 @@ export default function DealManagementDashboard() {
                   {buyerActivityLoading ? (
                     <div className="text-center text-gray-500 py-4">Loading buyer activity...</div>
                   ) : buyerActivity.length > 0 ? (
-                    buyerActivity.map((buyer) => (
+                    buyerActivity.filter(Boolean).map((buyer) => (
                       <div
                         key={buyer.buyerId}
                         className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer ${selectedWinningBuyer === buyer.buyerId ? "border-teal-500 bg-teal-50" : "border-gray-200"}`}

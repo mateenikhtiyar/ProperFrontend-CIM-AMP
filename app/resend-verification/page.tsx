@@ -90,7 +90,7 @@ export default function ResendVerificationPage() {
 
           <p className="mt-6 text-center text-sm text-gray-600">
             Remember your password?{" "}
-            <Link href="/login" className="text-[#3aafa9] hover:underline font-medium">
+            <Link href="/member-login" className="text-[#3aafa9] hover:underline font-medium">
               Login
             </Link>
           </p>
