@@ -1,8 +1,9 @@
 "use client";
 
-import { Toaster } from "@/components/ui/sonner";
 import type React from "react";
 import Link from "next/link";
+import { useToast, toast } from "@/hooks/use-toast";
+import { Toaster } from "@/components/ui/sonner";
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -28,7 +29,6 @@ import {
   Store,
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { toast } from "@/components/ui/use-toast";
 import {
   getGeoData,
   type GeoData,
@@ -902,6 +902,15 @@ export default function AcquireProfilePage() {
     if (found) {
       setCountrySearchTerm("");
     }
+  };
+
+  const { dismiss } = useToast();
+  const handleLogout = () => {
+    console.log("Logging out");
+    dismiss();
+    localStorage.removeItem("token");
+    localStorage.removeItem("userId");
+    router.push("/buyer/login");
   };
 
   // Filter industry data based on search term
