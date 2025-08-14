@@ -988,7 +988,7 @@ export default function Component() {
             <div className="flex gap-4 text-center justify-center">
               <Button
                 className="bg-teal-500 hover:bg-primary transition-colors text-white"
-                onClick={() => router.push("/seller/register")}
+                onClick={() => router.push("/seller/Register")}
               >
                 Add A Deal
               </Button>
@@ -1047,132 +1047,158 @@ export default function Component() {
       {/* What Our Members Are Saying */}
       {/* What Our Members Are Saying */}
       {/* What Our Members Are Saying */}
-      <section className="py-16 bg-white">
-        <div className="container mx-auto px-6">
-          <h2
-            data-animate
-            id="testimonials-title"
-            className={`text-3xl font-bold text-center text-gray-900 mb-16 ${
-              isVisible["testimonials-title"]
-                ? "animate-fadeInUp animate-in"
-                : ""
-            }`}
-          >
-            What Our Members Are Saying
-          </h2>
+ <section className="py-16 bg-white">
+  <div className="container mx-auto px-6">
+    <h2
+      data-animate
+      id="testimonials-title"
+      className={`text-3xl font-bold text-center text-gray-900 mb-16 ${
+        isVisible["testimonials-title"]
+          ? "animate-fadeInUp animate-in"
+          : ""
+      }`}
+    >
+      What Our Members Are Saying
+    </h2>
 
-          <div className="relative max-w-6xl mx-auto">
-            {/* Navigation Arrows - Hidden on mobile */}
-            <button
-              onClick={prevTestimonial}
-              className="absolute left-4 top-1/2 -translate-y-1/2 z-10 p-3 rounded-full bg-white border-2 border-gray-200 hover:bg-gray-50 hover:border-teal-500 transition-all duration-300 shadow-lg focus:outline-none focus:ring-2 focus:ring-teal-500 hidden lg:block"
+    <div className="relative max-w-6xl mx-auto">
+      {/* Navigation Arrows - Hidden on mobile */}
+      <button
+        onClick={prevTestimonial}
+        className="absolute left-4 top-1/2 -translate-y-1/2 z-10 p-3 rounded-full bg-white border-2 border-gray-200 hover:bg-gray-50 hover:border-teal-500 transition-all duration-300 shadow-lg focus:outline-none focus:ring-2 focus:ring-teal-500 hidden lg:block"
+      >
+        <ChevronLeft className="w-6 h-6 text-gray-600 hover:text-primary transition-colors" />
+      </button>
+
+      <button
+        onClick={nextTestimonial}
+        className="absolute right-4 top-1/2 -translate-y-1/2 z-10 p-3 rounded-full bg-white border-2 border-gray-200 hover:bg-gray-50 hover:border-teal-500 transition-all duration-300 shadow-lg focus:outline-none focus:ring-2 focus:ring-teal-500 hidden lg:block"
+      >
+        <ChevronRight className="w-6 h-6 text-gray-600 hover:text-primary transition-colors" />
+      </button>
+
+      {/* Testimonials Grid - Responsive layout */}
+      <div className="px-0 lg:px-16 overflow-hidden">
+        <div
+          className="flex transition-transform duration-500 ease-in-out"
+          style={{
+            transform: `translateX(-${
+              currentTestimonial *
+              (typeof window !== "undefined" && window.innerWidth < 640
+                ? 100
+                : typeof window !== "undefined" &&
+                  window.innerWidth < 1024
+                ? 50
+                : 33.333)
+            }%)`,
+          }}
+        >
+          {testimonials.map((testimonial, index) => (
+            <div
+              key={index}
+              className="w-full sm:w-1/2 lg:w-1/3 flex-shrink-0 px-2 sm:px-4 py-2"
             >
-              <ChevronLeft className="w-6 h-6 text-gray-600 hover:text-primary transition-colors" />
-            </button>
-
-            <button
-              onClick={nextTestimonial}
-              className="absolute right-4 top-1/2 -translate-y-1/2 z-10 p-3 rounded-full bg-white border-2 border-gray-200 hover:bg-gray-50 hover:border-teal-500 transition-all duration-300 shadow-lg focus:outline-none focus:ring-2 focus:ring-teal-500 hidden lg:block"
-            >
-              <ChevronRight className="w-6 h-6 text-gray-600 hover:text-primary transition-colors" />
-            </button>
-
-            {/* Testimonials Grid - Responsive layout */}
-            <div className="px-0 lg:px-16 overflow-hidden">
               <div
-                className="flex transition-transform duration-500 ease-in-out"
-                style={{
-                  transform: `translateX(-${
-                    currentTestimonial *
-                    (typeof window !== "undefined" && window.innerWidth < 640
-                      ? 100
-                      : typeof window !== "undefined" &&
-                        window.innerWidth < 1024
-                      ? 50
-                      : 33.333)
-                  }%)`,
-                }}
+                data-animate
+                id={`testimonial-${index}`}
+                className={`testimonial-card gpu-accelerated p-4 h-full bg-white rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 ${
+                  isVisible[`testimonial-${index}`]
+                    ? "animate-scaleIn animate-in"
+                    : ""
+                }`}
               >
-                {testimonials.map((testimonial, index) => (
-                  <div
-                    key={index}
-                    className="w-full sm:w-1/2 lg:w-1/3 flex-shrink-0 px-2 sm:px-4 py-2"
-                  >
-                    <div
-                      data-animate
-                      id={`testimonial-${index}`}
-                      className={`testimonial-card gpu-accelerated p-4 h-full bg-white rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 ${
-                        isVisible[`testimonial-${index}`]
-                          ? "animate-scaleIn animate-in"
-                          : ""
-                      }`}
-                    >
-                      {/* Testimonial Text */}
-                      <div className="mb-4">
-                        <div className="text-teal-500 text-2xl mb-2 leading-none">
-                          "
-                        </div>
-                        <p className="text-gray-700 leading-relaxed text-sm italic first-line:font-semibold">
-                          {testimonial.text}
-                        </p>
-                      </div>
-
-                      {/* Author Info */}
-                      <div className="border-t border-gray-100 pt-3 mt-auto">
-                        <h4 className="font-semibold text-gray-900 text-sm mb-1">
-                          {testimonial.name}
-                        </h4>
-                        <p className="text-gray-500 text-xs leading-relaxed">
-                          {testimonial.role}
-                        </p>
-                      </div>
-                    </div>
+                {/* Testimonial Text */}
+                <div className="mb-4">
+                  <div className="text-teal-500 text-2xl mb-2 leading-none">
+                    "
                   </div>
-                ))}
+                  <p className={`text-gray-700 leading-relaxed text-sm italic ${index !== 3 && index !== 4 ? 'first-line:font-semibold' : ''}`}>
+                    {(() => {
+                      // Custom formatting for specific testimonials
+                      if (index === 3) { // 4th testimonial (Troy Ferguson)
+                        return (
+                          <>
+                            <strong>Bridges the gap perfectly.</strong> CIM Amplify fills a crucial void in the M&A marketplace. While there are plenty of platforms for smaller deals, finding quality opportunities in the lower middle to upper market has always been challenging. The deal quality and professionalism are top-notch.
+                          </>
+                        );
+                      } else if (index === 4) { // 5th testimonial (David Kernan)
+                        return (
+                          <>
+                            <strong>Essential tool for M&A advisors.</strong> As someone who's been in M&A for over xx years, I appreciate how CIM Amplify respects the sophistication of our market segment. The platform attracts serious buyers who understand complex transactions, and the executive summaries maintain the confidentiality standards we require. It's become an indispensable part of our deal marketing strategy.
+                          </>
+                        );
+                      } else {
+                        // Default logic for other testimonials - bold only the first sentence
+                        const match = testimonial.text.match(/^(.*?\.)\s*(.*)$/);
+                        if (match) {
+                          return (
+                            <>
+                              <strong>{match[1]}</strong>{' '}{match[2]}
+                            </>
+                          );
+                        }
+                        return <strong>{testimonial.text}</strong>;
+                      }
+                    })()}
+                  </p>
+                </div>
+
+                {/* Author Info */}
+                <div className="border-t border-gray-100 pt-3 mt-auto">
+                  <h4 className="font-semibold text-gray-900 text-sm mb-1">
+                    {testimonial.name}
+                  </h4>
+                  <p className="text-gray-500 text-xs leading-relaxed">
+                    {testimonial.role}
+                  </p>
+                </div>
               </div>
             </div>
-
-            {/* Dots indicator - Mobile friendly */}
-            <div className="flex justify-center mt-8 space-x-2">
-              {Array.from({
-                length:
-                  typeof window !== "undefined" && window.innerWidth < 640
-                    ? testimonials.length
-                    : typeof window !== "undefined" && window.innerWidth < 1024
-                    ? testimonials.length - 1
-                    : testimonials.length - 2,
-              }).map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentTestimonial(index)}
-                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                    currentTestimonial === index
-                      ? "bg-teal-500 w-4 sm:w-6"
-                      : "bg-gray-300 hover:bg-gray-400"
-                  }`}
-                />
-              ))}
-            </div>
-
-            {/* Mobile swipe navigation buttons */}
-            <div className="flex justify-center mt-4 space-x-4 lg:hidden">
-              <button
-                onClick={prevTestimonial}
-                className="p-2 rounded-full bg-white border-2 border-gray-200 hover:bg-gray-50 hover:border-teal-500 transition-all duration-300 shadow-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-              >
-                <ChevronLeft className="w-5 h-5 text-gray-600 hover:text-primary transition-colors" />
-              </button>
-
-              <button
-                onClick={nextTestimonial}
-                className="p-2 rounded-full bg-white border-2 border-gray-200 hover:bg-gray-50 hover:border-teal-500 transition-all duration-300 shadow-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-              >
-                <ChevronRight className="w-5 h-5 text-gray-600 hover:text-primary transition-colors" />
-              </button>
-            </div>
-          </div>
+          ))}
         </div>
-      </section>
+      </div>
+
+      {/* Dots indicator - Mobile friendly */}
+      <div className="flex justify-center mt-8 space-x-2">
+        {Array.from({
+          length:
+            typeof window !== "undefined" && window.innerWidth < 640
+              ? testimonials.length
+              : typeof window !== "undefined" && window.innerWidth < 1024
+              ? testimonials.length - 1
+              : testimonials.length - 2,
+        }).map((_, index) => (
+          <button
+            key={index}
+            onClick={() => setCurrentTestimonial(index)}
+            className={`w-2 h-2 rounded-full transition-all duration-300 ${
+              currentTestimonial === index
+                ? "bg-teal-500 w-4 sm:w-6"
+                : "bg-gray-300 hover:bg-gray-400"
+            }`}
+          />
+        ))}
+      </div>
+
+      {/* Mobile swipe navigation buttons */}
+      <div className="flex justify-center mt-4 space-x-4 lg:hidden">
+        <button
+          onClick={prevTestimonial}
+          className="p-2 rounded-full bg-white border-2 border-gray-200 hover:bg-gray-50 hover:border-teal-500 transition-all duration-300 shadow-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+        >
+          <ChevronLeft className="w-5 h-5 text-gray-600 hover:text-primary transition-colors" />
+        </button>
+
+        <button
+          onClick={nextTestimonial}
+          className="p-2 rounded-full bg-white border-2 border-gray-200 hover:bg-gray-50 hover:border-teal-500 transition-all duration-300 shadow-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+        >
+          <ChevronRight className="w-5 h-5 text-gray-600 hover:text-primary transition-colors" />
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
 
       {/* FAQ Section */}
       <section id="faqs" className="py-16 bg-gray-50">

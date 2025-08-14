@@ -3,6 +3,7 @@
 import type React from "react"
 import { createContext, useContext, useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { useToast } from "@/hooks/use-toast"
 
 interface AuthContextType {
   isLoggedIn: boolean
@@ -119,8 +120,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }
 
+  const { dismiss } = useToast()
   const logout = () => {
     try {
+      dismiss()
       localStorage.removeItem("token")
       localStorage.removeItem("userId")
       localStorage.removeItem("userRole")
