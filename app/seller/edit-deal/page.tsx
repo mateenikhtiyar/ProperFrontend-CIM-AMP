@@ -340,7 +340,7 @@ export default function EditDealPageFixed() {
     try {
       setIsLoading(true);
       const token = localStorage.getItem("token");
-      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
+      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
 
       const response = await fetch(`${apiUrl}/deals/${dealId}`, {
         headers: {
@@ -1297,7 +1297,7 @@ export default function EditDealPageFixed() {
 
       const token = localStorage.getItem("token");
       const sellerId = localStorage.getItem("userId");
-      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
+      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
 
       if (!token || !sellerId) throw new Error("Authentication required");
 
@@ -1420,7 +1420,7 @@ export default function EditDealPageFixed() {
 
     try {
       const token = localStorage.getItem("token");
-      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
+      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
 
       const docIndex = existingDocuments.findIndex(
         (d) => d.filename === doc.filename
@@ -1460,7 +1460,7 @@ export default function EditDealPageFixed() {
 
   // Handle document download
   const handleDocumentDownload = (doc: DealDocument) => {
-    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
+    const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
     const link = document.createElement("a");
     link.href = `${apiUrl}/uploads/deal-documents/${doc.filename}`;
     link.download = doc.originalName;
