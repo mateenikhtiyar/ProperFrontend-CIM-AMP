@@ -1,6 +1,7 @@
 "use client";
 import Image from "next/image";
 import type React from "react";
+import { useToast, toast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -31,7 +32,6 @@ import {
   Briefcase,Store
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { toast } from "@/components/ui/use-toast";
 
 import {
   getGeoData,
@@ -69,7 +69,7 @@ const BUSINESS_MODELS = [
 ];
 
 // Default API URL
-const DEFAULT_API_URL = "https://api.cimamplify.com";
+const DEFAULT_API_URL = "http://localhost:3001";
 
 // Type for hierarchical selection
 interface HierarchicalSelection {
@@ -454,7 +454,7 @@ export default function CompanyProfilePage() {
         return;
       }
 
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
       const response = await fetch(`${apiUrl}/buyers/profile`, {
         headers: {
@@ -1562,7 +1562,7 @@ export default function CompanyProfilePage() {
   const getProfilePictureUrl = (path: string | null) => {
     if (!path) return null;
 
-    const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
     if (path.startsWith("http://") || path.startsWith("https://")) {
       return path;
@@ -1576,10 +1576,12 @@ export default function CompanyProfilePage() {
   };
 
   // Handle logout
+  const { dismiss } = useToast();
   const handleLogout = () => {
     if (!isClient) return;
 
     console.log("Company Profile - Logging out");
+    dismiss();
     localStorage.removeItem("token");
     localStorage.removeItem("userId");
     router.push("/buyer/login");
