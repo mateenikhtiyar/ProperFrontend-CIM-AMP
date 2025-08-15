@@ -17,6 +17,7 @@ interface RegisterFormData {
   password: string
   confirmPassword: string
   companyName: string
+  website: string
 }
 
 export default function RegisterPage() {
@@ -28,6 +29,7 @@ export default function RegisterPage() {
     password: "",
     confirmPassword: "",
     companyName: "",
+    website: "",
   })
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -105,6 +107,12 @@ export default function RegisterPage() {
       newErrors.companyName = "Company name is required"
     }
 
+    if (!formData.website.trim()) {
+      newErrors.website = "Company website is required"
+    } else if (!/^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/.test(formData.website)) {
+      newErrors.website = "Invalid website URL"
+    }
+
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -136,6 +144,7 @@ export default function RegisterPage() {
           email: formData.email,
           password: formData.password,
           companyName: formData.companyName,
+          website: formData.website,
         }),
       })
 
@@ -381,6 +390,21 @@ export default function RegisterPage() {
                   className={`${errors.companyName ? "border-red-300" : ""} py-5`}
                 />
                 {errors.companyName && <p className="mt-1 text-sm text-red-600">{errors.companyName}</p>}
+              </div>
+
+              <div>
+                <label htmlFor="website" className="block text-sm font-medium text-gray-700 mb-1">
+                  Company Website
+                </label>
+                <Input
+                  id="website"
+                  name="website"
+                  value={formData.website}
+                  onChange={handleChange}
+                  placeholder=""
+                  className={`${errors.website ? "border-red-300" : ""} py-5`}
+                />
+                {errors.website && <p className="mt-1 text-sm text-red-600">{errors.website}</p>}
               </div>
 
               <Button
