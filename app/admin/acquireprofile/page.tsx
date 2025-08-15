@@ -264,6 +264,7 @@ const fetchAdminProfile = async (id: string) => {
     setFormData({
       ...formData,
       ...data,
+      website: data.buyer.website || data.website,
       selectedCurrency: data.selectedCurrency || "USD",
       contacts: data.contacts && data.contacts.length > 0 ? data.contacts : [{ name: "", email: "", phone: "" }],
       preferences: { ...formData.preferences, ...(data.preferences || {}) },
@@ -309,6 +310,7 @@ const fetchAdminProfile = async (id: string) => {
           const newForm = {
             ...prev,
             companyName: buyerDetails?.companyName || "",
+            website: buyerDetails?.website || "",
             contacts: [
               {
                 name: buyerDetails?.fullName || "",
@@ -333,6 +335,7 @@ const fetchAdminProfile = async (id: string) => {
       const updatedProfile = {
         ...formData,
         ...profileData,
+        website: buyerDetails.website || profileData.website,
         contacts: [
           {
             name: buyerDetails?.fullName || "",
@@ -354,7 +357,7 @@ const fetchAdminProfile = async (id: string) => {
           ...(profileData.agreements || {}),
         },
         selectedCurrency: profileData.selectedCurrency || "USD",
-        capitalEntity: profileData.capitalEntity || "Need to raise",
+        capitalEntity: profileData.capitalEntity || undefined,
       };
       console.log("Setting formData from profileData:", updatedProfile);
       setFormData(updatedProfile);
@@ -441,7 +444,7 @@ const fetchAdminProfile = async (id: string) => {
     website: "",
     contacts: [{ name: "", email: "", phone: "" }],
     companyType: "",
-    capitalEntity: "Need to raise", // Default value
+    capitalEntity: undefined, // Default value
     dealsCompletedLast5Years: undefined,
     averageDealSize: undefined,
     preferences: {
@@ -492,6 +495,8 @@ const fetchAdminProfile = async (id: string) => {
         return null;
       case "companyType":
         return !value ? "Please select a company type" : null;
+      case "capitalEntity": // <-- NEW CASE
+        return !value ? "Please select capital availability" : null; // Check if value is falsy (undefined, null, empty string)
       case "contact.name":
         return !value?.trim() ? "Contact name is required" : null;
       case "contact.email":
@@ -522,6 +527,24 @@ const fetchAdminProfile = async (id: string) => {
         return value === undefined || value === ""
           ? "This field is required"
           : null;
+      case "targetCriteria.countries":
+        return value.length === 0 ? "Please select at least one country" : null;
+      case "targetCriteria.industrySectors":
+        return value.length === 0 ? "Please select at least one industry sector" : null;
+      case "targetCriteria.revenueMin":
+      case "targetCriteria.revenueMax":
+      case "targetCriteria.ebitdaMin":
+      case "targetCriteria.ebitdaMax":
+      case "targetCriteria.transactionSizeMin":
+      case "targetCriteria.transactionSizeMax":
+      case "targetCriteria.revenueGrowth":
+      case "targetCriteria.minStakePercent":
+      case "targetCriteria.minYearsInBusiness":
+        return value === undefined || value === "" ? "This field is required" : null;
+      case "targetCriteria.preferredBusinessModels":
+        return value.length === 0 ? "Please select at least one business model" : null;
+      case "targetCriteria.description":
+        return !value?.trim() ? "Description is required" : null;
       default:
         return null;
     }
@@ -1190,6 +1213,8 @@ const fetchAdminProfile = async (id: string) => {
     errors["website"] = validateField("website", formData.website) || "";
     errors["companyType"] =
       validateField("companyType", formData.companyType) || "";
+    errors["capitalEntity"] =
+      validateField("capitalEntity", formData.capitalEntity) || "";
     errors["dealsCompletedLast5Years"] =
       validateField(
         "dealsCompletedLast5Years",
@@ -1197,6 +1222,32 @@ const fetchAdminProfile = async (id: string) => {
       ) || "";
     errors["averageDealSize"] =
       validateField("averageDealSize", formData.averageDealSize) || "";
+    errors["targetCriteria.countries"] =
+      validateField("targetCriteria.countries", formData.targetCriteria.countries) || "";
+    errors["targetCriteria.industrySectors"] =
+      validateField("targetCriteria.industrySectors", formData.targetCriteria.industrySectors) || "";
+    errors["targetCriteria.revenueMin"] =
+      validateField("targetCriteria.revenueMin", formData.targetCriteria.revenueMin) || "";
+    errors["targetCriteria.revenueMax"] =
+      validateField("targetCriteria.revenueMax", formData.targetCriteria.revenueMax) || "";
+    errors["targetCriteria.ebitdaMin"] =
+      validateField("targetCriteria.ebitdaMin", formData.targetCriteria.ebitdaMin) || "";
+    errors["targetCriteria.ebitdaMax"] =
+      validateField("targetCriteria.ebitdaMax", formData.targetCriteria.ebitdaMax) || "";
+    errors["targetCriteria.transactionSizeMin"] =
+      validateField("targetCriteria.transactionSizeMin", formData.targetCriteria.transactionSizeMin) || "";
+    errors["targetCriteria.transactionSizeMax"] =
+      validateField("targetCriteria.transactionSizeMax", formData.targetCriteria.transactionSizeMax) || "";
+    errors["targetCriteria.revenueGrowth"] =
+      validateField("targetCriteria.revenueGrowth", formData.targetCriteria.revenueGrowth) || "";
+    errors["targetCriteria.minStakePercent"] =
+      validateField("targetCriteria.minStakePercent", formData.targetCriteria.minStakePercent) || "";
+    errors["targetCriteria.minYearsInBusiness"] =
+      validateField("targetCriteria.minYearsInBusiness", formData.targetCriteria.minYearsInBusiness) || "";
+    errors["targetCriteria.preferredBusinessModels"] =
+      validateField("targetCriteria.preferredBusinessModels", formData.targetCriteria.preferredBusinessModels) || "";
+    errors["targetCriteria.description"] =
+      validateField("targetCriteria.description", formData.targetCriteria.description) || "";
 
     // Contact validation
     if (formData.contacts.length === 0) {
@@ -1310,6 +1361,8 @@ const fetchAdminProfile = async (id: string) => {
     errors["website"] = validateField("website", formData.website) || "";
     errors["companyType"] =
       validateField("companyType", formData.companyType) || "";
+    errors["capitalEntity"] =
+      validateField("capitalEntity", formData.capitalEntity) || "";
     errors["dealsCompletedLast5Years"] =
       validateField(
         "dealsCompletedLast5Years",
@@ -1317,6 +1370,32 @@ const fetchAdminProfile = async (id: string) => {
       ) || "";
     errors["averageDealSize"] =
       validateField("averageDealSize", formData.averageDealSize) || "";
+    errors["targetCriteria.countries"] =
+      validateField("targetCriteria.countries", formData.targetCriteria.countries) || "";
+    errors["targetCriteria.industrySectors"] =
+      validateField("targetCriteria.industrySectors", formData.targetCriteria.industrySectors) || "";
+    errors["targetCriteria.revenueMin"] =
+      validateField("targetCriteria.revenueMin", formData.targetCriteria.revenueMin) || "";
+    errors["targetCriteria.revenueMax"] =
+      validateField("targetCriteria.revenueMax", formData.targetCriteria.revenueMax) || "";
+    errors["targetCriteria.ebitdaMin"] =
+      validateField("targetCriteria.ebitdaMin", formData.targetCriteria.ebitdaMin) || "";
+    errors["targetCriteria.ebitdaMax"] =
+      validateField("targetCriteria.ebitdaMax", formData.targetCriteria.ebitdaMax) || "";
+    errors["targetCriteria.transactionSizeMin"] =
+      validateField("targetCriteria.transactionSizeMin", formData.targetCriteria.transactionSizeMin) || "";
+    errors["targetCriteria.transactionSizeMax"] =
+      validateField("targetCriteria.transactionSizeMax", formData.targetCriteria.transactionSizeMax) || "";
+    errors["targetCriteria.revenueGrowth"] =
+      validateField("targetCriteria.revenueGrowth", formData.targetCriteria.revenueGrowth) || "";
+    errors["targetCriteria.minStakePercent"] =
+      validateField("targetCriteria.minStakePercent", formData.targetCriteria.minStakePercent) || "";
+    errors["targetCriteria.minYearsInBusiness"] =
+      validateField("targetCriteria.minYearsInBusiness", formData.targetCriteria.minYearsInBusiness) || "";
+    errors["targetCriteria.preferredBusinessModels"] =
+      validateField("targetCriteria.preferredBusinessModels", formData.targetCriteria.preferredBusinessModels) || "";
+    errors["targetCriteria.description"] =
+      validateField("targetCriteria.description", formData.targetCriteria.description) || "";
     errors["contacts"] =
       formData.contacts.length === 0 ? "At least one contact is required" : "";
     errors["agreements.termsAndConditionsAccepted"] =
@@ -1929,7 +2008,7 @@ const fetchAdminProfile = async (id: string) => {
                       id="capital_holding"
                       name="capitalEntity"
                       value="Need to raise"
-                      checked={formData.capitalEntity === "Need to raise"}
+                      checked={formData.capitalEntity !== undefined && formData.capitalEntity === "Need to raise"}
                       onChange={(e) =>
                         handleChange("capitalEntity", e.target.value)
                       }
@@ -1943,6 +2022,11 @@ const fetchAdminProfile = async (id: string) => {
                     </Label>
                   </div>
                 </div>
+                {fieldErrors["capitalEntity"] && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {fieldErrors["capitalEntity"]}
+                  </p>
+                )}
               </div>
             </div>
 
