@@ -2487,7 +2487,8 @@ export default function EditDealPageFixed() {
             <div className="md:col-span-2">
               <div className="flex flex-col md:flex-row w-full gap-4">
                 {/* Minimum Prior Acquisitions */}
-                <div className="w-full">
+               
+<div className="w-full">
                   <label
                     htmlFor="minPriorAcquisitions"
                     className="block text-sm font-medium text-gray-700 mb-1"
@@ -2496,14 +2497,26 @@ export default function EditDealPageFixed() {
                   </label>
                   <Input
                     id="minPriorAcquisitions"
-                    type="number"
-                    min="0"
-                    value={formData.minPriorAcquisitions === 0 ? "0" : formData.minPriorAcquisitions || ""}
-                    onChange={(e) => handleNumberChange(e, "minPriorAcquisitions")}
+                    type="text"
+                    value={
+                      typeof formData.minPriorAcquisitions === 'number'
+                        ? formatNumberWithCommas(formData.minPriorAcquisitions)
+                        : ""
+                    }
+                    onChange={(e) => {
+                      const rawValue = e.target.value.replace(/,/g, "");
+                      if (rawValue === "" || /^\d*$/.test(rawValue)) {
+                        handleNumberChange(
+                          {
+                            target: { value: rawValue },
+                          } as React.ChangeEvent<HTMLInputElement>,
+                          "minPriorAcquisitions"
+                        );
+                      }
+                    }}
                     className="w-full"
                   />
                 </div>
-
                 {/* Minimum Transaction Size */}
                 <div className="w-full">
                   <label
@@ -2514,10 +2527,23 @@ export default function EditDealPageFixed() {
                   </label>
                   <Input
                     id="minTransactionSize"
-                    type="number"
-                    min="0"
-                    value={formData.minTransactionSize === 0 ? "0" : formData.minTransactionSize || ""}
-                    onChange={(e) => handleNumberChange(e, "minTransactionSize")}
+                    type="text"
+                    value={
+                      typeof formData.minTransactionSize === 'number'
+                        ? formatNumberWithCommas(formData.minTransactionSize)
+                        : ""
+                    }
+                    onChange={(e) => {
+                      const rawValue = e.target.value.replace(/,/g, "");
+                      if (rawValue === "" || /^\d*$/.test(rawValue)) {
+                        handleNumberChange(
+                          {
+                            target: { value: rawValue },
+                          } as React.ChangeEvent<HTMLInputElement>,
+                          "minTransactionSize"
+                        );
+                      }
+                    }}
                     className="w-full"
                   />
                 </div>

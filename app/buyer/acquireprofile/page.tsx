@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Toaster } from "@/components/ui/toaster";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -51,7 +52,7 @@ interface CompanyProfile {
   website: string;
   contacts: { name: string; email: string; phone: string }[];
   companyType: string;
-  capitalEntity: string;
+  capitalEntity: string | undefined;
   dealsCompletedLast5Years?: number;
   averageDealSize?: number;
   preferences: {
@@ -151,7 +152,7 @@ export default function AcquireProfilePage() {
     website: "",
     contacts: [{ name: "", email: "", phone: "" }],
     companyType: "",
-    capitalEntity: "",
+    capitalEntity: undefined,
     dealsCompletedLast5Years: undefined,
     averageDealSize: undefined,
     preferences: {
@@ -309,6 +310,7 @@ export default function AcquireProfilePage() {
       if (profileRes.ok) {
         const profileData = await profileRes.json();
         console.log("Existing profile loaded:", profileData);
+        console.log("profileData.capitalEntity:", profileData.capitalEntity);
 
         // Map industrySectors to industrySelection
         const newIndustrySelection: IndustrySelection = {
@@ -347,9 +349,9 @@ export default function AcquireProfilePage() {
         setFormData({
           ...formData,
           companyName: buyerDetails.companyName || profileData.companyName || "",
-          website: profileData.companyWebsite || profileData.website || "",
+          website: buyerDetails.website || profileData.companyWebsite || profileData.website || "",
           companyType: profileData.companyType || "",
-          capitalEntity: profileData.capitalEntity || "",
+          capitalEntity: profileData.capitalEntity || undefined,
           dealsCompletedLast5Years: profileData.dealsCompletedLast5Years || undefined,
           averageDealSize: profileData.averageDealSize || undefined,
           contacts: buyerDetails.fullName && buyerDetails.email
@@ -391,6 +393,7 @@ export default function AcquireProfilePage() {
         setFormData({
           ...formData,
           companyName: buyerDetails.companyName || "",
+          website: buyerDetails.website || "",
           contacts: buyerDetails.fullName && buyerDetails.email
             ? [{ name: buyerDetails.fullName, email: buyerDetails.email, phone: buyerDetails.phone || "" }]
             : [{ name: "", email: "", phone: "" }],
@@ -432,6 +435,8 @@ export default function AcquireProfilePage() {
         return null;
       case "companyType":
         return !value ? "Please select a company type" : null;
+      case "capitalEntity": // <-- NEW CASE
+        return !value ? "Please select capital availability" : null;
       case "contact.name":
         return !value?.trim() ? "Contact name is required" : null;
       case "contact.email":
@@ -462,6 +467,24 @@ export default function AcquireProfilePage() {
         return value === undefined || value === "" ? "Maximum transaction size is required" : null;
       case "targetCriteria.revenueGrowth":
         return value === undefined || value === "" ? "Minimum 3 Year Average Revenue Growth is required" : null;
+      case "targetCriteria.countries":
+        return value.length === 0 ? "Please select at least one country" : null;
+      case "targetCriteria.industrySectors":
+        return value.length === 0 ? "Please select at least one industry sector" : null;
+      case "targetCriteria.revenueMin":
+      case "targetCriteria.revenueMax":
+      case "targetCriteria.ebitdaMin":
+      case "targetCriteria.ebitdaMax":
+      case "targetCriteria.transactionSizeMin":
+      case "targetCriteria.transactionSizeMax":
+      case "targetCriteria.revenueGrowth":
+      case "targetCriteria.minStakePercent":
+      case "targetCriteria.minYearsInBusiness":
+        return value === undefined || value === "" ? "This field is required" : null;
+      case "targetCriteria.preferredBusinessModels":
+        return value.length === 0 ? "Please select at least one business model" : null;
+      case "targetCriteria.description":
+        return !value?.trim() ? "Description is required" : null;
       default:
         return null;
     }
@@ -954,6 +977,7 @@ export default function AcquireProfilePage() {
     errors["companyName"] = validateField("companyName", formData.companyName) || "";
     errors["website"] = validateField("website", formData.website) || "";
     errors["companyType"] = validateField("companyType", formData.companyType) || "";
+    errors["capitalEntity"] = validateField("capitalEntity", formData.capitalEntity) || ""; // <-- NEW LINE
     errors["dealsCompletedLast5Years"] =
       validateField("dealsCompletedLast5Years", formData.dealsCompletedLast5Years) || "";
     errors["averageDealSize"] = validateField("averageDealSize", formData.averageDealSize) || "";
@@ -1425,7 +1449,7 @@ export default function AcquireProfilePage() {
         id="capital_fund"
         name="capitalEntity"
         value="Ready to deploy immediately"
-        checked={formData.capitalEntity === "Ready to deploy immediately"}
+        checked={formData.capitalEntity !== undefined && formData.capitalEntity === "Ready to deploy immediately"}
         onChange={(e) => handleChange("capitalEntity", e.target.value)}
         className="text-[#3aafa9] focus:ring-[#3aafa9] h-4 w-4"
       />
@@ -1439,7 +1463,7 @@ export default function AcquireProfilePage() {
         id="capital_holding"
         name="capitalEntity"
         value="Need to raise"
-        checked={formData.capitalEntity === "Need to raise"}
+        checked={formData.capitalEntity !== undefined && formData.capitalEntity === "Need to raise"}
         onChange={(e) => handleChange("capitalEntity", e.target.value)}
         className="text-[#3aafa9] focus:ring-[#3aafa9] h-4 w-4"
       />
@@ -1448,6 +1472,11 @@ export default function AcquireProfilePage() {
       </Label>
     </div>
   </div>
+  {fieldErrors["capitalEntity"] && (
+    <p className="text-red-500 text-sm mt-1">
+      {fieldErrors["capitalEntity"]}
+    </p>
+  )}
 </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

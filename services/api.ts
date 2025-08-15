@@ -153,6 +153,8 @@ export const register = async (userData: {
   email: string
   password: string
   companyName: string
+  phone: string
+  website: string
 }) => {
   try {
     const response = await api.post("/buyers/register", userData)
