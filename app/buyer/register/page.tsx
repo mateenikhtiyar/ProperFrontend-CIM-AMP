@@ -21,6 +21,7 @@ interface RegisterFormData {
   password: string;
   confirmPassword: string;
   companyName: string;
+  website: string;
   targetCriteria: {
     countries: string[];
   };
@@ -36,6 +37,7 @@ export default function BuyerRegisterPage() {
     password: "",
     confirmPassword: "",
     companyName: "",
+    website: "",
     targetCriteria: {
       countries: [],
     },
@@ -127,6 +129,12 @@ export default function BuyerRegisterPage() {
       newErrors.companyName = "Company name is required";
     }
 
+    if (!formData.website.trim()) {
+      newErrors.website = "Company website is required";
+    } else if (!/^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/.test(formData.website)) {
+      newErrors.website = "Invalid website URL";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -149,6 +157,7 @@ export default function BuyerRegisterPage() {
         password: formData.password,
         companyName: formData.companyName.trim(),
         phone: formData.phone.trim(),
+        website: formData.website.trim(),
       });
 
       toast({
@@ -265,7 +274,7 @@ export default function BuyerRegisterPage() {
 
               <div>
                 <label
-                  htmlFor="companyWebsite"
+                  htmlFor="companyName"
                   className="block text-sm font-medium text-gray-700 mb-1"
                 >
                   Company Name <span className="text-red-500">*</span>
@@ -276,14 +285,35 @@ export default function BuyerRegisterPage() {
                   value={formData.companyName}
                   onChange={handleChange}
                   placeholder="Enter your company name"
-                  className={`${
-                    errors.companyName ? "border-red-300" : ""
-                  } py-5`}
+                  className={`${errors.companyName ? "border-red-300" : ""} py-5`}
                   required
                 />
                 {errors.companyName && (
                   <p className="mt-1 text-sm text-red-600">
                     {errors.companyName}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label
+                  htmlFor="website"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Company Website <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  id="website"
+                  name="website"
+                  value={formData.website}
+                  onChange={handleChange}
+                  placeholder="Enter your company website"
+                  className={`${errors.website ? "border-red-300" : ""} py-5`}
+                  required
+                />
+                {errors.website && (
+                  <p className="mt-1 text-sm text-red-600">
+                    {errors.website}
                   </p>
                 )}
               </div>
@@ -323,9 +353,7 @@ export default function BuyerRegisterPage() {
                     value={formData.password}
                     onChange={handleChange}
                     placeholder="Enter your password"
-                    className={`${
-                      errors.password ? "border-red-300 pr-10" : "pr-10"
-                    } py-5`}
+                    className={`${errors.password ? "border-red-300 pr-10" : "pr-10"} py-5`}
                     required
                   />
                   <button
@@ -360,9 +388,7 @@ export default function BuyerRegisterPage() {
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     placeholder="Confirm your password"
-                    className={`${
-                      errors.confirmPassword ? "border-red-300 pr-10" : "pr-10"
-                    } py-5`}
+                    className={`${errors.confirmPassword ? "border-red-300 pr-10" : "pr-10"} py-5`}
                     required
                   />
                   <button

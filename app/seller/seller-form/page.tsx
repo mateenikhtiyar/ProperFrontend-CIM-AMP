@@ -385,7 +385,7 @@ export default function SellerFormPage() {
     e: React.ChangeEvent<HTMLInputElement>,
     fieldName: string
   ) => {
-    const value = e.target.value === "" ? 0 : Number.parseFloat(e.target.value);
+    const value = Number.parseFloat(e.target.value) || 0;
     setFormData((prev) => ({ ...prev, [fieldName]: value }));
   };
 
@@ -2082,9 +2082,9 @@ export default function SellerFormPage() {
                   id="revenueGrowth"
                   type="text"
                   value={
-                    formData.revenueGrowth === 0
-                      ? ""
-                      : formatNumberWithCommas(formData.revenueGrowth)
+                    typeof formData.revenueGrowth === 'number'
+                      ? formatNumberWithCommas(formData.revenueGrowth)
+                      : ""
                   }
                   onChange={(e) => {
                     const rawValue = e.target.value.replace(/,/g, "");
@@ -2445,6 +2445,7 @@ export default function SellerFormPage() {
             </p>
           )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
             <div>
               <label
                 htmlFor="minPriorAcquisitions"
@@ -2454,13 +2455,27 @@ export default function SellerFormPage() {
               </label>
               <Input
                 id="minPriorAcquisitions"
-                type="number"
-                min="0"
-                value={formData.minPriorAcquisitions === 0 ? "0" : formData.minPriorAcquisitions || ""}
-                onChange={(e) => handleNumberChange(e, "minPriorAcquisitions")}
+                type="text"
+                value={
+                  typeof formData.minPriorAcquisitions === 'number'
+                    ? formatNumberWithCommas(formData.minPriorAcquisitions)
+                    : ""
+                }
+                onChange={(e) => {
+                  const rawValue = e.target.value.replace(/,/g, "");
+                  if (rawValue === "" || /^\d*$/.test(rawValue)) {
+                    handleNumberChange(
+                      {
+                        target: { value: rawValue },
+                      } as React.ChangeEvent<HTMLInputElement>,
+                      "minPriorAcquisitions"
+                    );
+                  }
+                }}
                 className="w-full"
               />
             </div>
+
 
             <div>
               <label
@@ -2472,11 +2487,14 @@ export default function SellerFormPage() {
               <Input
                 id="minTransactionSize"
                 type="text"
-                value={formData.minTransactionSize === 0 ? "0" : (formData.minTransactionSize ? formatNumberWithCommas(formData.minTransactionSize) : "")}
+                value={
+                  typeof formData.minTransactionSize === 'number'
+                    ? formatNumberWithCommas(formData.minTransactionSize)
+                    : ""
+                }
                 onChange={(e) => {
-                  
                   const rawValue = e.target.value.replace(/,/g, "");
-                  if (rawValue === "" || /^-?\d*$/.test(rawValue)) {
+                  if (rawValue === "" || /^\d*$/.test(rawValue)) {
                     handleNumberChange(
                       {
                         target: { value: rawValue },
