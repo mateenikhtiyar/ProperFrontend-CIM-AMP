@@ -1149,40 +1149,40 @@ export default function SellerDashboardPage() {
                 <div className="space-y-2 max-h-60 overflow-y-auto">
                   {buyerActivityLoading ? (
                     <div className="text-center text-gray-500 py-4">Loading buyer activity...</div>
-                  ) : buyerActivity.length > 0 ? (
-                    buyerActivity.map((buyer) => (
-                      <div
-                        key={buyer.buyerId}
-                        className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer ${
-                          selectedWinningBuyer === buyer.buyerId ? "border-teal-500 bg-teal-50" : "border-gray-200"
-                        }`}
-                        onClick={() => setSelectedWinningBuyer(buyer.buyerId)}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center overflow-hidden">
-                            <img
-                              src="/placeholder.svg?height=40&width=40"
-                              alt={buyer.buyerName || "Buyer"}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          <div>
-                            <div className="font-medium text-sm">{buyer.buyerName || "Unknown Buyer"}</div>
-                            <div className="text-xs text-gray-500">{buyer.companyName || "Unknown Company"}</div>
+                  ) : buyerActivity.filter((buyer) => buyer.status === "active").length > 0 ? (
+                    buyerActivity
+                      .filter((buyer) => buyer.status === "active")
+                      .map((buyer) => (
+                        <div
+                          key={buyer.buyerId}
+                          className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer ${
+                            selectedWinningBuyer === buyer.buyerId
+                              ? "border-teal-500 bg-teal-50"
+                              : "border-gray-200"
+                          }`}
+                          onClick={() => setSelectedWinningBuyer(buyer.buyerId)}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center overflow-hidden">
+                              <img
+                                src="/placeholder.svg?height=40&width=40"
+                                alt={buyer.buyerName || "Buyer"}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <div>
+                              <div className="font-medium text-sm">{buyer.buyerName || "Unknown Buyer"}</div>
+                              <div className="text-xs text-gray-500">{buyer.companyName || "Unknown Company"}</div>
+                            </div>
                           </div>
                         </div>
-                        
-                      </div>
-                    ))
+                      ))
                   ) : (
-                    <div className="text-center text-gray-500 py-4">Loading buyer activity...</div>
+                    <div className="text-center text-gray-500 py-4">
+                      No active buyers found. Please ensure there are interested buyers before completing the deal.
+                    </div>
                   )}
                 </div>
-                {buyerActivity.length === 0 && (
-                  <div className="text-center text-amber-600 text-sm mt-2">
-                    No buyers found. Please ensure there are interested buyers before completing the deal.
-                  </div>
-                )}
               </div>
 
               <div className="flex justify-end pt-2">

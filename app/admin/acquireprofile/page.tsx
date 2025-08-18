@@ -2260,7 +2260,7 @@ const fetchAdminProfile = async (id: string) => {
       />
     </div>
     {/* Pills block below search bar */}
-    {formData.targetCriteria.countries.length > 0 && (
+    {/* {formData.targetCriteria.countries.length > 0 && (
       <div className="mb-4">
         <div className="text-sm text-[#667085] mb-1">Selected</div>
         <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
@@ -2300,7 +2300,7 @@ const fetchAdminProfile = async (id: string) => {
           ))}
         </div>
       </div>
-    )}
+    )} */}
     {/* Dropdown (GeographySelector) */}
     <GeographySelector
       selectedCountries={formData.targetCriteria.countries}
@@ -2328,7 +2328,7 @@ const fetchAdminProfile = async (id: string) => {
                     />
                   </div>
 
-                  {formData.targetCriteria.industrySectors.length > 0 && (
+                  {/* {formData.targetCriteria.industrySectors.length > 0 && (
                     <div className="mb-4">
                       <div className="text-sm text-[#667085] mb-1">
                         Selected Industries
@@ -2364,7 +2364,7 @@ const fetchAdminProfile = async (id: string) => {
                         )}
                       </div>
                     </div>
-                  )}
+                  )} */}
 
                   <div className="flex-1 overflow-y-auto">
                     {renderIndustrySelection()}
