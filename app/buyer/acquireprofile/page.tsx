@@ -1635,7 +1635,7 @@ export default function AcquireProfilePage() {
       />
     </div>
     {/* Pills block below search bar */}
-    {formData.targetCriteria.countries.length > 0 && (
+    {/* {formData.targetCriteria.countries.length > 0 && (
       <div className="mb-4">
         <div className="text-sm text-[#667085] mb-1">Selected</div>
         <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
@@ -1675,7 +1675,7 @@ export default function AcquireProfilePage() {
           ))}
         </div>
       </div>
-    )}
+    )} */}
     {/* Dropdown (GeographySelector) */}
     <GeographySelector
       selectedCountries={formData.targetCriteria.countries}
@@ -1703,7 +1703,7 @@ export default function AcquireProfilePage() {
                     />
                   </div>
 
-                  {formData.targetCriteria.industrySectors.length > 0 && (
+                  {/* {formData.targetCriteria.industrySectors.length > 0 && (
                     <div className="mb-4">
                       <div className="text-sm text-[#667085] mb-1">
                         Selected Industries
@@ -1739,7 +1739,7 @@ export default function AcquireProfilePage() {
                         )}
                       </div>
                     </div>
-                  )}
+                  )} */}
 
                   <div className="flex-1 overflow-y-auto">
                     {renderIndustrySelection()}
