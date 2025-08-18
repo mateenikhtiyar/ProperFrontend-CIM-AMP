@@ -1714,7 +1714,7 @@ export default function SellerFormPage() {
                     />
                   </div>
 
-                  {formData.geographySelections.length > 0 && (
+                  {/* {formData.geographySelections.length > 0 && (
                     <div className="mb-4">
                       <div className="text-sm text-[#667085] mb-1">
                         Selected{" "}
@@ -1748,7 +1748,7 @@ export default function SellerFormPage() {
                         ))}
                       </div>
                     </div>
-                  )}
+                  )} */}
 
                   <div className="flex-1 overflow-y-auto">
                     {renderGeographySelection()}
@@ -1771,7 +1771,7 @@ export default function SellerFormPage() {
                       onChange={(e) => setIndustrySearchTerm(e.target.value)}
                     />
                   </div>
-
+{/* 
                   {formData.selectedIndustryDisplay && (
                     <div className="mb-4">
                       <div className="text-sm text-[#667085] mb-1">
@@ -1815,7 +1815,7 @@ export default function SellerFormPage() {
                         </span>
                       </div>
                     </div>
-                  )}
+                  )} */}
 
                   <div className="flex-1 overflow-y-auto">
                     {renderIndustrySelection()}
