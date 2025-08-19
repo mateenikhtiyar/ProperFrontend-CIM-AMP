@@ -1967,7 +1967,7 @@ export default function CompanyProfilePage() {
                 </div>
                 <div className="mb-4 mt-4">
                   <Label className="text-[#667085] text-sm mb-1.5 block">
-                    Contact Information (up to 3 contacts){" "}
+                    Contact Information{" "}
                     <span className="text-red-500">*</span>
                   </Label>
                   <div className="border border-[#d0d5dd] rounded-md p-4">
@@ -2088,7 +2088,7 @@ export default function CompanyProfilePage() {
                         </div>
                       </div>
                     ))}
-                    {formData.contacts.length < 3 && (
+                    {/* {formData.contacts.length < 3 && (
                       <Button
                         type="button"
                         variant="ghost"
@@ -2098,7 +2098,7 @@ export default function CompanyProfilePage() {
                         <PlusCircle className="h-4 w-4 mr-2" />
                         Add More Contacts
                       </Button>
-                    )}
+                    )} */}
                   </div>
                 </div>
               </div>
