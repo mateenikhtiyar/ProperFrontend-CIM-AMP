@@ -988,7 +988,7 @@ export default function Component() {
             <div className="flex gap-4 text-center justify-center">
               <Button
                 className="bg-teal-500 hover:bg-primary transition-colors text-white"
-                onClick={() => router.push("/seller/Register")}
+                onClick={() => router.push("/seller/register")}
               >
                 Add A Deal
               </Button>
