@@ -2100,7 +2100,7 @@ const fetchAdminProfile = async (id: string) => {
             </div>
             <div className="mb-4 mt-4">
               <Label className="text-[#667085] text-sm mb-1.5 block">
-                Contact Information (up to 3 contacts){" "}
+                Contact Information{" "}
                 <span className="text-red-500">*</span>
               </Label>
               <div className="border border-[#d0d5dd] rounded-md p-4">
@@ -2221,7 +2221,7 @@ const fetchAdminProfile = async (id: string) => {
                     </div>
                   </div>
                 ))}
-                {formData.contacts.length < 3 && (
+                {/* {formData.contacts.length < 3 && (
                   <Button
                     type="button"
                     variant="ghost"
@@ -2231,7 +2231,7 @@ const fetchAdminProfile = async (id: string) => {
                     <PlusCircle className="h-4 w-4 mr-2" />
                     Add More Contacts
                   </Button>
-                )}
+                )} */}
               </div>
             </div>
           </div>
@@ -2907,128 +2907,47 @@ const fetchAdminProfile = async (id: string) => {
               </div>
             </div>
           </div>
-          {/* Agreements */}
-          <div className="bg-white rounded-lg p-6 shadow-sm mb-6">
+           {/* Agreements */}
+           <div className="bg-white rounded-lg p-6 shadow-sm mb-6">
             <h2 className="text-[#2f2b43] text-lg font-medium mb-4">
-              Agreements
+              Agreement
             </h2>
-            <div className="space-y-4">
-              <div className="flex flex-col">
-                <div className="flex items-end space-x-2">
-                  <Checkbox
-                    id="termsAndConditions"
-                    className={`mt-1 ${
-                      fieldErrors["agreements.termsAndConditionsAccepted"]
-                        ? "border-red-500"
-                        : "border-[#d0d5dd]"
-                    }`}
-                    checked={formData.agreements.termsAndConditionsAccepted}
-                    onCheckedChange={(checked) =>
-                      handleNestedChange(
-                        "agreements",
-                        "termsAndConditionsAccepted",
-                        checked === true
-                      )
-                    }
-                    required
-                  />
-                  <Label
-                    htmlFor="termsAndConditions"
-                    className="text-[#344054]"
+            <div className="flex flex-col">
+              <div className="flex items-end space-x-2">
+                <Checkbox
+                  id="feeAgreement"
+                  className={`mt-1 ${
+                    fieldErrors["agreements.feeAgreementAccepted"]
+                      ? "border-red-500"
+                      : "border-[#d0d5dd]"
+                  }`}
+                  checked={formData.agreements.feeAgreementAccepted}
+                  onCheckedChange={(checked) =>
+                    handleNestedChange(
+                      "agreements",
+                      "feeAgreementAccepted",
+                      checked === true
+                    )
+                  }
+                  required
+                />
+                <Label htmlFor="feeAgreement" className="text-[#344054]">
+                  I have read and agree to the{' '}
+                  <Link
+                    href="/buyer/masterfeeagreement"
+                    className="text-[#38A4F1] hover:text-[#2a9d8f] cursor-pointer"
+                    target="_blank"
+                    rel="noopener noreferrer"
                   >
-                    I have read and agree to the website{" "}
-                    <Link
-                      href="/buyer/terms"
-                      className="text-[#38A4F1] hover:text-[#2a9d8f] cursor-pointer"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      terms and conditions
-                    </Link>
-                  </Label>
-                </div>
-                {fieldErrors["agreements.termsAndConditionsAccepted"] && (
-                  <p className="text-red-500 text-sm mt-1 ml-6">
-                    {fieldErrors["agreements.termsAndConditionsAccepted"]}
-                  </p>
-                )}
+                    Master Fee Agreement
+                  </Link>
+                </Label>
               </div>
-              <div className="flex flex-col">
-                <div className="flex items-end space-x-2">
-                  <Checkbox
-                    id="nda"
-                    className={`mt-1 ${
-                      fieldErrors["agreements.ndaAccepted"]
-                        ? "border-red-500"
-                        : "border-[#d0d5dd]"
-                    }`}
-                    checked={formData.agreements.ndaAccepted}
-                    onCheckedChange={(checked) =>
-                      handleNestedChange(
-                        "agreements",
-                        "ndaAccepted",
-                        checked === true
-                      )
-                    }
-                    required
-                  />
-                  <Label htmlFor="nda" className="text-[#344054]">
-                    I have read and agree to the{" "}
-                    <Link
-                      href="/buyer/universalNDA"
-                      className="text-[#38A4F1] hover:text-[#2a9d8f] cursor-pointer"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      universal NDA
-                    </Link>{" "}
-                    so that I can go straight to CIM
-                  </Label>
-                </div>
-                {fieldErrors["agreements.ndaAccepted"] && (
-                  <p className="text-red-500 text-sm mt-1 ml-6">
-                    {fieldErrors["agreements.ndaAccepted"]}
-                  </p>
-                )}
-              </div>
-
-              <div className="flex flex-col">
-                <div className="flex items-end space-x-2">
-                  <Checkbox
-                    id="feeAgreement"
-                    className={`mt-1 ${
-                      fieldErrors["agreements.feeAgreementAccepted"]
-                        ? "border-red-500"
-                        : "border-[#d0d5dd]"
-                    }`}
-                    checked={formData.agreements.feeAgreementAccepted}
-                    onCheckedChange={(checked) =>
-                      handleNestedChange(
-                        "agreements",
-                        "feeAgreementAccepted",
-                        checked === true
-                      )
-                    }
-                    required
-                  />
-                  <Label htmlFor="feeAgreement" className="text-[#344054]">
-                    I have read and agree to the{" "}
-                    <Link
-                      href="/buyer/masterfeeagreement"
-                      className="text-[#38A4F1] hover:text-[#2a9d8f] cursor-pointer"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Master Fee Agreement
-                    </Link>
-                  </Label>
-                </div>
-                {fieldErrors["agreements.feeAgreementAccepted"] && (
-                  <p className="text-red-500 text-sm mt-1 ml-6">
-                    {fieldErrors["agreements.feeAgreementAccepted"]}
-                  </p>
-                )}
-              </div>
+              {fieldErrors["agreements.feeAgreementAccepted"] && (
+                <p className="text-red-500 text-sm mt-1 ml-6">
+                  {fieldErrors["agreements.feeAgreementAccepted"]}
+                </p>
+              )}
             </div>
           </div>
           {/* Submit Button */}
