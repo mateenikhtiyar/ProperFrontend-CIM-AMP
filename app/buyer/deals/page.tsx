@@ -1076,7 +1076,7 @@ export default function DealsPage() {
                   ? "Only Passed Deals that are still on the market will show here."
                   : activeTab === "active"
                   ? "You have no Active Deals."
-                  : "No pending deals found."}
+                  : "We will send you an email when a deal matches your criteria."}
               </div>
             </div>
           ) : (
