@@ -327,123 +327,168 @@ export default function EditDealPageFixed() {
   };
 
   const fetchDealData = async () => {
-    if (!dealId) {
-      toast({
-        title: "Error",
-        description: "No deal ID provided",
-        variant: "destructive",
-      });
-      router.push("/seller/dashboard");
-      return;
+  if (!dealId) {
+    toast({
+      title: "Error",
+      description: "No deal ID provided",
+      variant: "destructive",
+    });
+    router.push("/seller/dashboard");
+    return;
+  }
+
+  try {
+    setIsLoading(true);
+    const token = localStorage.getItem("token");
+    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
+
+    const response = await fetch(`${apiUrl}/deals/${dealId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch deal: ${response.statusText}`);
     }
 
-    try {
-      setIsLoading(true);
-      const token = localStorage.getItem("token");
-      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
+    const dealData = await response.json();
 
-      const response = await fetch(`${apiUrl}/deals/${dealId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch deal: ${response.statusText}`);
-      }
-
-      const dealData = await response.json();
-
-      // ✅ Fixed: Proper capitalAvailability parsing with normalization
-      let capitalAvailabilityArray: CapitalAvailabilityType[] = [];
-      if (Array.isArray(dealData.buyerFit?.capitalAvailability)) {
-        capitalAvailabilityArray = dealData.buyerFit.capitalAvailability
-          .map(normalizeCapitalAvailability)
-          .filter(
-            (item: unknown): item is CapitalAvailabilityType => item !== null
-          );
-      } else if (typeof dealData.buyerFit?.capitalAvailability === "string") {
-        const normalized = normalizeCapitalAvailability(
-          dealData.buyerFit.capitalAvailability
+    // ✅ Fixed: Proper capitalAvailability parsing with normalization
+    let capitalAvailabilityArray: CapitalAvailabilityType[] = [];
+    if (Array.isArray(dealData.buyerFit?.capitalAvailability)) {
+      capitalAvailabilityArray = dealData.buyerFit.capitalAvailability
+        .map(normalizeCapitalAvailability)
+        .filter(
+          (item: unknown): item is CapitalAvailabilityType => item !== null
         );
-        if (normalized) {
-          capitalAvailabilityArray = [normalized];
+    } else if (typeof dealData.buyerFit?.capitalAvailability === "string") {
+      const normalized = normalizeCapitalAvailability(
+        dealData.buyerFit.capitalAvailability
+      );
+      if (normalized) {
+        capitalAvailabilityArray = [normalized];
+      }
+    }
+
+    // ✅ Improved: Robust companyType parsing
+    let companyTypeArray: string[] = [];
+    if (Array.isArray(dealData.companyType)) {
+      companyTypeArray = dealData.companyType.filter(Boolean);
+    } else if (
+      typeof dealData.companyType === "string" &&
+      dealData.companyType.trim()
+    ) {
+      companyTypeArray = dealData.companyType
+        .split(",")
+        .map((s: string) => s.trim())
+        .filter(Boolean);
+    }
+
+    setFormData({
+      dealTitle: dealData.title || "",
+      companyDescription: dealData.companyDescription || "",
+      geographySelections: dealData.geographySelection
+        ? [dealData.geographySelection]
+        : [],
+      industrySelections: dealData.industrySector
+        ? [dealData.industrySector]
+        : [],
+      selectedIndustryDisplay: dealData.industrySector || undefined,
+      yearsInBusiness: dealData.yearsInBusiness || 0,
+      trailingRevenue: dealData.financialDetails?.trailingRevenueAmount || 0,
+      trailingEBITDA: dealData.financialDetails?.trailingEBITDAAmount || 0,
+      revenueGrowth: dealData.financialDetails?.avgRevenueGrowth || 0,
+      currency:
+        dealData.financialDetails?.trailingRevenueCurrency || "USD($)",
+      netIncome: dealData.financialDetails?.netIncome || 0,
+      askingPrice: dealData.financialDetails?.askingPrice || 0,
+      businessModels: [
+        ...(dealData.businessModel?.recurringRevenue
+          ? ["recurring-revenue"]
+          : []),
+        ...(dealData.businessModel?.projectBased ? ["project-based"] : []),
+        ...(dealData.businessModel?.assetLight ? ["asset-light"] : []),
+        ...(dealData.businessModel?.assetHeavy ? ["asset-heavy"] : []),
+      ],
+      managementPreferences: dealData.managementPreferences || "",
+      capitalAvailability: capitalAvailabilityArray,
+      companyType: [...new Set(companyTypeArray)],
+      minPriorAcquisitions:
+        dealData.buyerFit?.minPriorAcquisitions ?? undefined,
+      minTransactionSize: dealData.buyerFit?.minTransactionSize ?? undefined,
+      documents: [],
+      t12FreeCashFlow: dealData.financialDetails?.t12FreeCashFlow || 0,
+      t12NetIncome: dealData.financialDetails?.t12NetIncome || 0,
+    });
+
+    setDealData(dealData);
+    setExistingDocuments(dealData.documents || []);
+    setSelectedReward(dealData.visibility || "seed");
+
+    // ✅ NEW: Handle geography selection properly
+    if (dealData.geographySelection) {
+      const savedGeography = dealData.geographySelection;
+      
+      // Parse the geography selection to get country and state
+      const parts = savedGeography.split(' > ');
+      if (parts.length > 1) {
+        const countryName = parts[0];
+        const stateName = parts[1];
+        
+        // Find the country
+        const country = Country.getAllCountries().find(c => c.name === countryName);
+        if (country) {
+          // Load states for this country
+          await loadStatesAndCities(country.isoCode);
+          
+          // Set expanded state for the country
+          setExpandedContinents(prev => ({
+            ...prev,
+            [country.isoCode]: true
+          }));
+          
+          // Find the state and set selection
+          setTimeout(() => {
+            const matchingGeoItem = flatGeoData.find(item => 
+              item.path === savedGeography || 
+              (item.name === stateName && item.countryCode === country.isoCode)
+            );
+            
+            if (matchingGeoItem) {
+              setGeoSelection({
+                selectedId: matchingGeoItem.id,
+                selectedName: savedGeography,
+              });
+            } else {
+              // Fallback: set by name only
+              setGeoSelection({
+                selectedId: null,
+                selectedName: savedGeography,
+              });
+            }
+          }, 100);
         }
-      }
-
-      // ✅ Improved: Robust companyType parsing
-      let companyTypeArray: string[] = [];
-      if (Array.isArray(dealData.companyType)) {
-        companyTypeArray = dealData.companyType.filter(Boolean);
-      } else if (
-        typeof dealData.companyType === "string" &&
-        dealData.companyType.trim()
-      ) {
-        companyTypeArray = dealData.companyType
-          .split(",")
-          .map((s: string) => s.trim())
-          .filter(Boolean);
-      }
-
-      setFormData({
-        dealTitle: dealData.title || "",
-        companyDescription: dealData.companyDescription || "",
-        geographySelections: dealData.geographySelection
-          ? [dealData.geographySelection]
-          : [],
-        industrySelections: dealData.industrySector
-          ? [dealData.industrySector]
-          : [],
-        selectedIndustryDisplay: dealData.industrySector || undefined,
-        yearsInBusiness: dealData.yearsInBusiness || 0,
-        trailingRevenue: dealData.financialDetails?.trailingRevenueAmount || 0,
-        trailingEBITDA: dealData.financialDetails?.trailingEBITDAAmount || 0,
-        revenueGrowth: dealData.financialDetails?.avgRevenueGrowth || 0,
-        currency:
-          dealData.financialDetails?.trailingRevenueCurrency || "USD($)",
-        netIncome: dealData.financialDetails?.netIncome || 0,
-        askingPrice: dealData.financialDetails?.askingPrice || 0,
-        businessModels: [
-          ...(dealData.businessModel?.recurringRevenue
-            ? ["recurring-revenue"]
-            : []),
-          ...(dealData.businessModel?.projectBased ? ["project-based"] : []),
-          ...(dealData.businessModel?.assetLight ? ["asset-light"] : []),
-          ...(dealData.businessModel?.assetHeavy ? ["asset-heavy"] : []),
-        ],
-        managementPreferences: dealData.managementPreferences || "",
-        capitalAvailability: capitalAvailabilityArray,
-        companyType: [...new Set(companyTypeArray)],
-        minPriorAcquisitions:
-          dealData.buyerFit?.minPriorAcquisitions ?? undefined,
-        minTransactionSize: dealData.buyerFit?.minTransactionSize ?? undefined,
-        documents: [],
-        t12FreeCashFlow: dealData.financialDetails?.t12FreeCashFlow || 0,
-        t12NetIncome: dealData.financialDetails?.t12NetIncome || 0,
-      });
-
-      setDealData(dealData);
-      setExistingDocuments(dealData.documents || []);
-      setSelectedReward(dealData.visibility || "seed");
-
-      if (dealData.geographySelection) {
+      } else {
+        // It's just a country selection
         setGeoSelection({
           selectedId: null,
-          selectedName: dealData.geographySelection,
+          selectedName: savedGeography,
         });
       }
-    } catch (error: any) {
-      console.error("Error fetching deal:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to load deal data",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
     }
-  };
+  } catch (error: any) {
+    console.error("Error fetching deal:", error);
+    toast({
+      title: "Error",
+      description: error.message || "Failed to load deal data",
+      variant: "destructive",
+    });
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   // Fetch geography and industry data
   // useEffect(() => {
@@ -514,23 +559,17 @@ export default function EditDealPageFixed() {
   //   fetchInitialData()
   // }, [router, dealId])
 
-  const loadStatesAndCities = async (countryCode: string) => {
-    const hasStates = flatGeoData.some(
-      (item) => item.countryCode === countryCode && item.type === "state"
-    );
-
-    if (hasStates) return;
-
-    const states = State.getStatesOfCountry(countryCode);
-    const newGeoData = [...flatGeoData];
-
+ const loadStatesAndCities = async (countryCode: string) => {
+  const states = State.getStatesOfCountry(countryCode);
+  const countryName = Country.getCountryByCode(countryCode)?.name;
+  
+  setFlatGeoData(prevGeoData => {
+    const newGeoData = [...prevGeoData];
     const existingIds = new Set(newGeoData.map((item) => item.id));
 
     states.forEach((state) => {
       const stateId = `${countryCode}-${state.isoCode}`;
-      const statePath = `${Country.getCountryByCode(countryCode)?.name} > ${
-        state.name
-      }`;
+      const statePath = `${countryName} > ${state.name}`;
 
       if (!existingIds.has(stateId)) {
         newGeoData.push({
@@ -543,33 +582,11 @@ export default function EditDealPageFixed() {
         });
         existingIds.add(stateId);
       }
-
-      const cities = City.getCitiesOfState(countryCode, state.isoCode).slice(
-        0,
-        5
-      );
-      cities.forEach((city, cityIndex) => {
-        const cityId = `${countryCode}-${state.isoCode}-${city.name}-${cityIndex}`;
-        const cityPath = `${Country.getCountryByCode(countryCode)?.name} > ${
-          state.name
-        } > ${city.name}`;
-
-        if (!existingIds.has(cityId)) {
-          newGeoData.push({
-            id: cityId,
-            name: city.name,
-            path: cityPath,
-            type: "city",
-            countryCode: countryCode,
-            stateCode: state.isoCode,
-          });
-          existingIds.add(cityId);
-        }
-      });
     });
 
-    setFlatGeoData(newGeoData);
-  };
+    return newGeoData;
+  });
+};
 
   // Handle text input changes
   const handleInputChange = (
@@ -1205,16 +1222,18 @@ export default function EditDealPageFixed() {
                           className="pl-2"
                         >
                           <div className="flex items-center">
-                            <input
-                              type="radio"
-                              id={`geo-${state.id}`}
-                              name="geography"
-                              checked={geoSelection.selectedId === state.id}
-                              onChange={() =>
-                                selectGeography(state.id, state.path)
-                              }
-                              className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9]"
-                            />
+                           <input
+  type="radio"
+  id={`geo-${state.id}`}
+  name="geography"
+  checked={
+    geoSelection.selectedId === state.id || 
+    geoSelection.selectedName === state.path ||
+    formData.geographySelections.includes(state.path)
+  }
+  onChange={() => selectGeography(state.id, state.path)}
+  className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9]"
+/>
                             <Label
                               htmlFor={`geo-${state.id}`}
                               className="text-[#344054] cursor-pointer"
@@ -1526,55 +1545,96 @@ export default function EditDealPageFixed() {
   }, [industrySearchTerm]);
 
   // Fetch geography and industry data
-  useEffect(() => {
-    const fetchInitialData = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const userRole = localStorage.getItem("userRole");
+// Fetch geography and industry data
+useEffect(() => {
+  const fetchInitialData = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const userRole = localStorage.getItem("userRole");
 
-        if (!token || userRole !== "seller") {
-          router.push("/seller/login");
-          return;
-        }
-
-        // Load all countries initially but limit the visible ones
-        const allCountries = Country.getAllCountries();
-        const geoData: GeoItem[] = [];
-
-        // Add all countries to enable search
-        allCountries.forEach((country) => {
-          geoData.push({
-            id: country.isoCode,
-            name: country.name,
-            path: country.name,
-            type: "country",
-            countryCode: country.isoCode,
-          });
-        });
-
-        setFlatGeoData(geoData);
-
-        // Load industry data asynchronously
-        const industryResponse = await getIndustryData();
-        setIndustryData(industryResponse);
-        setFlatIndustryData(flattenIndustryData(industryResponse.sectors));
-
-        // Then fetch the existing deal data (for edit)
-        await fetchDealData();
-      } catch (error) {
-        console.error("Error fetching data:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load form data. Please refresh the page.",
-          variant: "destructive",
-        });
-        setIsLoading(false);
+      if (!token || userRole !== "seller") {
+        router.push("/seller/login");
+        return;
       }
-    };
 
-    fetchInitialData();
-  }, [router, dealId]);
+      // Load all countries initially
+      const allCountries = Country.getAllCountries();
+      const geoData: GeoItem[] = [];
 
+      // Add all countries to enable search
+      allCountries.forEach((country) => {
+        geoData.push({
+          id: country.isoCode,
+          name: country.name,
+          path: country.name,
+          type: "country",
+          countryCode: country.isoCode,
+        });
+      });
+
+      setFlatGeoData(geoData);
+
+      // Load industry data asynchronously
+      const industryResponse = await getIndustryData();
+      setIndustryData(industryResponse);
+      setFlatIndustryData(flattenIndustryData(industryResponse.sectors));
+
+      // Then fetch the existing deal data (for edit)
+      await fetchDealData();
+      
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load form data. Please refresh the page.",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+    }
+  };
+
+  fetchInitialData();
+}, [router, dealId]);
+
+// ✅ Handle geography selection after data is loaded
+useEffect(() => {
+  const handleGeographySelection = async () => {
+    if (dealData?.geographySelection && flatGeoData.length > 0) {
+      const savedGeography = dealData.geographySelection;
+      
+      // Parse the geography selection to get country and state
+      const parts = savedGeography.split(' > ');
+      if (parts.length > 1) {
+        const countryName = parts[0];
+        const stateName = parts[1];
+        
+        // Find the country
+        const country = Country.getAllCountries().find(c => c.name === countryName);
+        if (country) {
+          // Load states for this country
+          await loadStatesAndCities(country.isoCode);
+          
+          // Set expanded state for the country
+          setExpandedContinents(prev => ({
+            ...prev,
+            [country.isoCode]: true
+          }));
+          
+          // Use a small delay to ensure states are loaded
+          setTimeout(() => {
+            const stateId = `${country.isoCode}-${State.getStatesOfCountry(country.isoCode).find(s => s.name === stateName)?.isoCode}`;
+            setGeoSelection({
+              selectedId: stateId,
+              selectedName: savedGeography,
+            });
+          }, 100);
+        }
+      }
+    }
+  };
+
+  handleGeographySelection();
+}, [dealData?.geographySelection, flatGeoData.length]);
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
