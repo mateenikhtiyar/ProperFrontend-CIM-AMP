@@ -95,7 +95,7 @@ export default function RegistrationPendingVerificationPage() {
 
     setIsResending(true);
     try {
-      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
+      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
       const response = await fetch(`${apiUrl}/auth/resend-verification`, {
         method: "POST",
         headers: {
@@ -156,7 +156,7 @@ export default function RegistrationPendingVerificationPage() {
                 <p
                   className={`text-lg leading-relaxed font-medium ${getStatusColor(isResending ? 'resending' : 'informational')}`}
                 >
-                  Thank you for registering! Please check your email to verify your account.
+                  Thank you for registering! Please check your email for a verification message from deals@amp-ven.com. Clicking on the link in the email will conclude the verification and bring you back to CIM Amplify to complete your profile.
                 </p>
                 <div className="mt-4 flex items-center justify-center space-x-2">
                   <div className="flex space-x-1">
