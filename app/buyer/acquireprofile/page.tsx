@@ -3,13 +3,14 @@
 import type React from "react";
 import Link from "next/link";
 import { useToast, toast } from "@/hooks/use-toast";
+import { Toaster } from "@/components/ui/sonner";
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Toaster } from "@/components/ui/toaster";
+// import { Toaster } from "@/components/ui/toaster";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -114,7 +115,7 @@ const BUSINESS_MODELS = [
   "Asset Heavy",
 ];
 
-const DEFAULT_API_URL = "http://localhost:3001";
+const DEFAULT_API_URL = "https://api.cimamplify.com";
 
 export default function AcquireProfilePage() {
   const router = useRouter();
