@@ -24,144 +24,146 @@ export default function Footer() {
   };
 
   return (
-    <footer className="footer-background bg-gray-50 py-8 border-t border-gray-200">
+    <footer className="footer-background py-8" style={{ backgroundColor: '#17252A' }}>
       <div className="container mx-auto px-4 flex flex-col items-center">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 w-full max-w-5xl justify-items-center">
           {/* Company Info */}
           <div className="footer-section col-span-1 md:col-span-2">
             <div className="mb-3">
-              <p className="text-gray-600 leading-relaxed max-w-md">
+              <p className="text-gray-300 leading-relaxed max-w-md">
                 CIM Amplify's mission is to help Entrepreneurs and Investors get
                 the{" "}
-                <span className="text-primary font-semibold">"Brass Ring"</span>{" "}
+                <span className="font-semibold" style={{ color: '#3AAFA9' }}>
+                  "Brass Ring"
+                </span>{" "}
                 of selling their company. Our owner group have all sold
                 significant companies which changed our lives forever.
               </p>
             </div>
             <div>
-              <a
-                href="https://www.linkedin.com/company/cimamplify/"
-                className="inline-flex items-center justify-center w-12 h-12 bg-white rounded-full shadow-md text-gray-600 border border-gray-200 hover:bg-teal-50 hover:text-primary hover:border-teal-300 transition-all duration-300"
-              >
-                <Linkedin className="w-5 h-5" />
-              </a>
+             
             </div>
           </div>
 
           {/* Quick Links */}
           <div className="footer-section">
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">
-              Quick Links
+            <h3 className="text-lg font-semibold mb-3" style={{ color: '#3AAFA9' }}>
+              QUICK LINKS
             </h3>
             <ul className="space-y-1">
               <li>
                 <a
-                  href="#benefits"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleQuickLink("#benefits");
-                  }}
-                  className="text-gray-600 hover:text-primary transition-colors duration-300 block py-1"
+                  href="https://cimamplify.com/#Benefits"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-300 hover:text-[#229273] transition-colors duration-300 block py-1"
                 >
                   Benefits
                 </a>
               </li>
               <li>
                 <a
-                  href="#how-it-works"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleQuickLink("#how-it-works");
-                  }}
-                  className="text-gray-600 hover:text-primary transition-colors duration-300 block py-1"
+                  href="https://cimamplify.com/#How%20it%20Works"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-300 hover:text-[#229273] transition-colors duration-300 block py-1"
                 >
                   How it Works
                 </a>
               </li>
               <li>
                 <a
-                  href="#guidelines"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleQuickLink("#guidelines");
-                  }}
-                  className="text-gray-600 hover:text-primary transition-colors duration-300 block py-1"
+                  href="https://cimamplify.com/#Guidelines"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-300 hover:text-[#229273] transition-colors duration-300 block py-1"
                 >
                   Guidelines
                 </a>
               </li>
-              <li
-                onClick={() => {
-                  router.push("/about");
-                }}
-              >
-                <a className="text-gray-600 hover:text-primary cursor-pointer transition-colors duration-300 block py-1">
+              <li>
+                <a
+                  href="https://cimamplify.com/#FAQs"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-300 hover:text-[#229273] transition-colors duration-300 block py-1"
+                >
+                  FAQs
+                </a>
+              </li>
+              <li>
+                <a
+                  href="https://cimamplify.com/about"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-300 hover:text-[#229273] cursor-pointer transition-colors duration-300 block py-1"
+                >
                   About
+                </a>
+              </li>
+              <li>
+                <a
+                  href="https://cimamplify.com/contact"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-300 hover:text-[#229273] cursor-pointer transition-colors duration-300 block py-1"
+                >
+                  Contact
                 </a>
               </li>
             </ul>
           </div>
 
-          {/* Actions & Support */}
-          <div className="space-y-8">
-            {/* Actions */}
-            <div className="footer-section">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2 cursor-pointer">
-                Actions
-              </h3>
-              <div className="space-y-1">
-                <div
-                  onClick={() => router.push("/buyer/register")}
-                  className="text-primary hover:text-primary hover:bg-teal-50 block py-2 rounded-lg teal-600 cursor-pointer  transition-all duration-300"
-                >
-                  Buyer registration
-                </div>
-                <div
-                  onClick={() => router.push("/seller/register")}
-                  className="text-primary hover:text-primary hover:bg-teal-50 block py-2  rounded-lg teal-600 cursor-pointer  transition-all duration-300"
-                >
-                  Add a Deal
-                </div>
-                <div
-                  onClick={() => router.push("/buyer/login")}
-                  className="text-primary hover:text-primary hover:bg-teal-50 block py-2 rounded-lg teal-600 cursor-pointer  transition-all duration-300"
-                >
-                  Buyer Login
-                </div>
-                <div
-                  onClick={() => router.push("/seller/login")}
-                  className="text-primary hover:text-primary hover:bg-teal-50 block py-2  rounded-lg primary cursor-pointer  transition-all duration-300"
-                >
-                  Seller Login
-                </div>
+          {/* Actions */}
+          <div className="footer-section">
+            <h3 className="text-lg font-semibold mb-3" style={{ color: '#3AAFA9' }}>
+              ACTIONS
+            </h3>
+            <div className="space-y-1">
+              <div
+                onClick={() => router.push("/buyer/register")}
+                className="text-gray-300 hover:text-[#229273] block py-1 cursor-pointer transition-colors duration-300"
+              >
+                Buyer registration
               </div>
+              <a
+                href="https://cimamplify.com/Advisor%20Registration"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gray-300 hover:text-[#229273] block py-1 cursor-pointer transition-colors duration-300"
+              >
+                Add a Deal
+              </a>
+              <div
+                onClick={() => router.push("/buyer/login")}
+                className="text-gray-300 hover:text-[#229273] block py-1 cursor-pointer transition-colors duration-300"
+              >
+                Buyer Login
+              </div>
+              <a
+                href="https://cimamplify.com/Advisor%20Registration"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gray-300 hover:text-[#229273] block py-1 cursor-pointer transition-colors duration-300"
+              >
+                Seller Login
+              </a>
             </div>
-
-            {/* Support */}
-            <div className="footer-section">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Support
-              </h3>
-              <ul className="space-y-1">
-                <li>
-                 <a
-                     onClick={() => router.push("/contact")}
-                      className="text-gray-600 hover:text-primary transition-colors duration-300 block py-1 cursor-pointer"
-                    >
-                      Contact Us
-                    </a>
-                </li>
-              </ul>
+            <div className="mt-6">
+              <a
+                href="https://www.linkedin.com/company/cimamplify/"
+                className="inline-flex items-center justify-center w-12 h-12 rounded-full text-gray-300 border-2 border-gray-300 hover:border-[#229273] hover:text-[#229273] transition-all duration-300"
+                style={{ backgroundColor: 'transparent' }}
+              >
+                <Linkedin className="w-5 h-5" />
+              </a>
             </div>
           </div>
         </div>
 
-        {/* Divider */}
-  <div className="footer-divider mt-4 mb-2" />
-
         {/* Copyright */}
-        <div className="text-center">
-          <p className="text-gray-500 text-sm">
+        <div className="text-center mt-8">
+          <p className="text-gray-400 text-sm">
             © 2025 CIM Amplify. All rights reserved.
           </p>
         </div>

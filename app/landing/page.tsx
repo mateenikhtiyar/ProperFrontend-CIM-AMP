@@ -793,12 +793,14 @@ export default function Component() {
                   </li>
                 ))}
               </ul>
-              <Button
-                onClick={() => router.push("/seller/register")}
-                className="mt-6 bg-teal-500 hover:bg-primary transition-colors text-white"
+              <a
+                href="https://cimamplify.com/Advisor%20Registration"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-6 bg-teal-500 hover:bg-primary transition-colors text-white rounded px-6 py-3 inline-block text-center font-medium"
               >
                 Add A Deal
-              </Button>
+              </a>
             </div>
           </div>
         </div>
@@ -891,12 +893,14 @@ export default function Component() {
                   </div>
                 </div>
               </div>
-              <Button
-                className="bg-teal-500 hover:bg-primary transition-colors text-white"
-                onClick={() => router.push("/seller/register")}
+              <a
+                href="https://cimamplify.com/Advisor%20Registration"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-teal-500 hover:bg-primary transition-colors text-white rounded px-6 py-3 inline-block text-center font-medium"
               >
                 Add a Deal
-              </Button>
+              </a>
             </div>
             {/* Step 2 */}
             <div className="relative">
@@ -986,12 +990,14 @@ export default function Component() {
               </div>
             </div>
             <div className="flex gap-4 text-center justify-center">
-              <Button
-                className="bg-teal-500 hover:bg-primary transition-colors text-white"
-                onClick={() => router.push("/seller/register")}
+              <a
+                href="https://cimamplify.com/Advisor%20Registration"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-teal-500 hover:bg-primary transition-colors text-white rounded px-6 py-3 inline-block text-center font-medium"
               >
                 Add A Deal
-              </Button>
+              </a>
               <Button
                 variant="outline"
                 className="bg-teal-500 hover:bg-primary transition-colors text-white hover:text-white"
