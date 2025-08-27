@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Link } from "lucide-react";
 
 export default function Header() {
   const router = useRouter();
@@ -403,9 +404,11 @@ export default function Header() {
       <header className="">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <div
+            <a
               className="logo-container cursor-pointer"
-              onClick={() => router.push("/landing")}
+              href="https://cimamplify.com"
+              target="_blank"
+              rel="noopener noreferrer"
             >
               <Image
                 src="/logo.svg"
@@ -414,25 +417,29 @@ export default function Header() {
                 height={50}
                 className="h-auto"
               />
-            </div>
+            </a>
 
             <nav className="hidden md:flex items-center gap-2">
-              <a href="/landing#benefits" className="navbar-link text-gray-600">
+              <a href="https://cimamplify.com/#Benefits" className="navbar-link text-gray-600" target="_blank" rel="noopener noreferrer">
                 Benefits
               </a>
               <a
-                href="/landing#how-it-works"
+                href="https://cimamplify.com/#How%20it%20Works"
                 className="navbar-link text-gray-600"
+                target="_blank"
+                rel="noopener noreferrer"
               >
                 How it Works
               </a>
               <a
-                href="/landing#guidelines"
+                href="https://cimamplify.com/#Guidelines"
                 className="navbar-link text-gray-600"
+                target="_blank"
+                rel="noopener noreferrer"
               >
                 Guidelines
               </a>
-              <a href="/landing#faqs" className="navbar-link text-gray-600">
+              <a href="https://cimamplify.com/#FAQs" className="navbar-link text-gray-600" target="_blank" rel="noopener noreferrer">
                 FAQs
               </a>
                 <Button
