@@ -190,7 +190,7 @@ export default function BuyerRegisterPage() {
   const handleGoogleLogin = () => {
     // Get API URL from localStorage or use default
 
-    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+    const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
     console.log("Register page - Redirecting to Google OAuth:", `${apiUrl}/buyers/google`)
 
     // Redirect to Google OAuth endpoint
@@ -216,7 +216,7 @@ export default function BuyerRegisterPage() {
         {/* Right side - Registration form */}
         <div className="w-full md:w-2/3 bg-white  flex items-center justify-center p-8">
           <div className="w-full max-w-md space-y-3">
-            <h1 className="text-3xl font-bold mb-8 text-center">
+            <h1 className="text-3xl font-bold mb-0 text-center">
               Buyer Registration
             </h1>
 

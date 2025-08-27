@@ -265,7 +265,7 @@ export default function VerifyEmailSuccessPage() {
                         </li>
                         <li className="flex items-start">
                           <Star className="w-5 h-5 text-amber-400 mr-3 mt-0.5 flex-shrink-0" />
-                          Select "Create a new filter" and enter emails or domains you want to whitelist. To add any emails from Building Wings, add @cimamplify.com in the From section.
+                          Select "Create a new filter" and enter emails or domains you want to whitelist. To add any emails from Building Wings, Add @amp-ven.com in the From section. (amp-ven.com is the master domain of Amplify Ventures)
                         </li>
                         <li className="flex items-start">
                           <Star className="w-5 h-5 text-amber-400 mr-3 mt-0.5 flex-shrink-0" />
@@ -325,7 +325,7 @@ export default function VerifyEmailSuccessPage() {
                         </li>
                         <li className="flex items-start">
                           <Star className="w-5 h-5 text-amber-400 mr-3 mt-0.5 flex-shrink-0" />
-                          Enter the domain name or individual email addresses you want to add. To receive emails from CIM Amplify, enter @cimamplify.com
+                          Enter the domain name or individual email addresses you want to add. To receive emails from CIM Amplify, enter @amp-ven.com
                         </li>
                       </ul>
                     </div>
@@ -363,7 +363,7 @@ export default function VerifyEmailSuccessPage() {
                         </li>
                         <li className="flex items-start">
                           <Star className="w-5 h-5 text-amber-400 mr-3 mt-0.5 flex-shrink-0" />
-                          If you've followed these steps and are still not receiving emails, it's suggested you contact your IT Department and ask if they can whitelist @cimamplify.com
+                          If you've followed these steps and are still not receiving emails, it's suggested you contact your IT Department and ask if they can whitelist @amp-ven.com
                         </li>
                       </ul>
                     </div>
