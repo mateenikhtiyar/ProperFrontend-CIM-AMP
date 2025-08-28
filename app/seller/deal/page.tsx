@@ -457,7 +457,7 @@ const [showAllCountries, setShowAllCountries] = useState(false);
       try {
         const token = localStorage.getItem("token");
         const apiUrl =
-          localStorage.getItem("apiUrl") || "http://localhost:3001";
+          localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
         const response = await fetch(`${apiUrl}/sellers/profile`, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -492,7 +492,7 @@ const [showAllCountries, setShowAllCountries] = useState(false);
         setLoading(true);
         const token = localStorage.getItem("token");
         const apiUrl =
-          localStorage.getItem("apiUrl") || "http://localhost:3001";
+          localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
         if (!token) {
           router.push("/seller/login?error=no_token");
           return;
@@ -531,7 +531,7 @@ const [showAllCountries, setShowAllCountries] = useState(false);
   const fetchCompanyProfile = async (companyProfileId: string) => {
     try {
       setLoadingCompanyProfile(true);
-      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
+      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
       const response = await fetch(
         `${apiUrl}/company-profiles/public/${companyProfileId}`
       );
@@ -556,7 +556,7 @@ const [showAllCountries, setShowAllCountries] = useState(false);
     try {
       setLoadingBuyers(true);
       const token = localStorage.getItem("token");
-      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
+      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
       const response = await fetch(`${apiUrl}/deals/${dealId}/status-summary`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -691,7 +691,7 @@ const [showAllCountries, setShowAllCountries] = useState(false);
           setLoadingBuyers(true);
           const token = localStorage.getItem("token");
           const apiUrl =
-            localStorage.getItem("apiUrl") || "http://localhost:3001";
+            localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
           const response = await fetch(
             `${apiUrl}/deals/${dealId}/matching-buyers`,
             {
@@ -754,7 +754,7 @@ const [showAllCountries, setShowAllCountries] = useState(false);
 
   const getProfilePictureUrl = (path: string | null) => {
     if (!path) return null;
-    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
+    const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
     const formattedPath = path.replace(/\\/g, "/");
     return `${apiUrl}/${
       formattedPath.startsWith("/") ? formattedPath.slice(1) : formattedPath
@@ -841,7 +841,7 @@ const [showAllCountries, setShowAllCountries] = useState(false);
     }
     try {
       setSending(true);
-      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
+      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
       const token = localStorage.getItem("token");
       if (!token) {
         toast({
@@ -923,7 +923,7 @@ const [showAllCountries, setShowAllCountries] = useState(false);
         setLoadingBuyers(true);
         const token = localStorage.getItem("token");
         const apiUrl =
-          localStorage.getItem("apiUrl") || "http://localhost:3001";
+          localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
         const response = await fetch(
           `${apiUrl}/deals/${dealId}/matching-buyers`,
           {
