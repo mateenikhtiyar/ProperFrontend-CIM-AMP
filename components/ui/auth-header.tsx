@@ -407,7 +407,7 @@ export default function Header() {
             <a
               className="logo-container cursor-pointer"
               href="https://cimamplify.com"
-              target="_blank"
+              target="_self"
               rel="noopener noreferrer"
             >
               <Image
@@ -420,13 +420,13 @@ export default function Header() {
             </a>
 
             <nav className="hidden md:flex items-center gap-2">
-              <a href="https://cimamplify.com/#Benefits" className="navbar-link text-gray-600" target="_blank" rel="noopener noreferrer">
+              <a href="https://cimamplify.com/#Benefits" className="navbar-link text-gray-600" target="_self" rel="noopener noreferrer">
                 Benefits
               </a>
               <a
                 href="https://cimamplify.com/#How%20it%20Works"
                 className="navbar-link text-gray-600"
-                target="_blank"
+                target="_self"
                 rel="noopener noreferrer"
               >
                 How it Works
@@ -434,12 +434,12 @@ export default function Header() {
               <a
                 href="https://cimamplify.com/#Guidelines"
                 className="navbar-link text-gray-600"
-                target="_blank"
+                target="_self"
                 rel="noopener noreferrer"
               >
                 Guidelines
               </a>
-              <a href="https://cimamplify.com/#FAQs" className="navbar-link text-gray-600" target="_blank" rel="noopener noreferrer">
+              <a href="https://cimamplify.com/#FAQs" className="navbar-link text-gray-600" target="_self" rel="noopener noreferrer">
                 FAQs
               </a>
                 <Button

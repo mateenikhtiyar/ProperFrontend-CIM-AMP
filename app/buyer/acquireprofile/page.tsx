@@ -115,7 +115,7 @@ const BUSINESS_MODELS = [
   "Asset Heavy",
 ];
 
-const DEFAULT_API_URL = "https://api.cimamplify.com";
+const DEFAULT_API_URL = "http://localhost:3001";
 
 export default function AcquireProfilePage() {
   const router = useRouter();
@@ -420,76 +420,71 @@ export default function AcquireProfilePage() {
   };
 
   // Validate individual fields
-  const validateField = (field: string, value: any): string | null => {
-    switch (field) {
-      case "companyName":
-        return !value?.trim() ? "Company name is required" : null;
-      case "website":
-        try {
-          const websiteUrl = new URL(value.startsWith("http") ? value : `https://${value}`);
-          if (!websiteUrl.hostname.includes(".")) {
-            return "Please enter a valid website URL (e.g., example.com)";
-          }
-        } catch (e) {
+const validateField = (field: string, value: any): string | null => {
+  switch (field) {
+    case "companyName":
+      return !value?.trim() ? "Company name is required" : null;
+    case "website":
+      try {
+        const websiteUrl = new URL(value.startsWith("http") ? value : `https://${value}`);
+        if (!websiteUrl.hostname.includes(".")) {
           return "Please enter a valid website URL (e.g., example.com)";
         }
-        return null;
-      case "companyType":
-        return !value ? "Please select a company type" : null;
-      case "capitalEntity": // <-- NEW CASE
-        return !value ? "Please select capital availability" : null;
-      case "contact.name":
-        return !value?.trim() ? "Contact name is required" : null;
-      case "contact.email":
-        if (!value?.trim()) return "Contact email is required";
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return !emailRegex.test(value) ? "Please enter a valid email address (e.g., name@example.com)" : null;
-      case "contact.phone":
-        if (!value?.trim()) return "Contact phone is required";
-        const phoneRegex = /^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/;
-        return !phoneRegex.test(value) ? "Please enter a valid phone number (e.g., 123-456-7890)" : null;
-      case "agreements.feeAgreement":
-        return value ? null : "You must accept the fee agreement";
-      case "dealsCompletedLast5Years":
-        return value === undefined || value === "" ? "This field is required" : null;
-      case "averageDealSize":
-        return value === undefined || value === "" ? "This field is required" : null;
-      case "targetCriteria.revenueMin":
-        return value === undefined || value === "" ? "Minimum revenue is required" : null;
-      case "targetCriteria.revenueMax":
-        return value === undefined || value === "" ? "Maximum revenue is required" : null;
-      case "targetCriteria.ebitdaMin":
-        return value === undefined || value === "" ? "Minimum EBITDA is required" : null;
-      case "targetCriteria.ebitdaMax":
-        return value === undefined || value === "" ? "Maximum EBITDA is required" : null;
-      case "targetCriteria.transactionSizeMin":
-        return value === undefined || value === "" ? "Minimum transaction size is required" : null;
-      case "targetCriteria.transactionSizeMax":
-        return value === undefined || value === "" ? "Maximum transaction size is required" : null;
-      case "targetCriteria.revenueGrowth":
-        return value === undefined || value === "" ? "Minimum 3 Year Average Revenue Growth is required" : null;
-      case "targetCriteria.countries":
-        return value.length === 0 ? "Please select at least one country" : null;
-      case "targetCriteria.industrySectors":
-        return value.length === 0 ? "Please select at least one industry sector" : null;
-      case "targetCriteria.revenueMin":
-      case "targetCriteria.revenueMax":
-      case "targetCriteria.ebitdaMin":
-      case "targetCriteria.ebitdaMax":
-      case "targetCriteria.transactionSizeMin":
-      case "targetCriteria.transactionSizeMax":
-      case "targetCriteria.revenueGrowth":
-      case "targetCriteria.minStakePercent":
-      case "targetCriteria.minYearsInBusiness":
-        return value === undefined || value === "" ? "This field is required" : null;
-      case "targetCriteria.preferredBusinessModels":
-        return value.length === 0 ? "Please select at least one business model" : null;
-      case "targetCriteria.description":
-        return !value?.trim() ? "Description is required" : null;
-      default:
-        return null;
-    }
-  };
+      } catch (e) {
+        return "Please enter a valid website URL (e.g., example.com)";
+      }
+      return null;
+    case "companyType":
+      return !value ? "Please select a company type" : null;
+    case "capitalEntity":
+      return !value ? "Please select capital availability" : null;
+    case "contact.name":
+      return !value?.trim() ? "Contact name is required" : null;
+    case "contact.email":
+      if (!value?.trim()) return "Contact email is required";
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return !emailRegex.test(value) ? "Please enter a valid email address (e.g., name@example.com)" : null;
+    case "contact.phone":
+      if (!value?.trim()) return "Contact phone is required";
+      const phoneRegex = /^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/;
+      return !phoneRegex.test(value) ? "Please enter a valid phone number (e.g., 123-456-7890)" : null;
+    case "agreements.feeAgreement":
+      return value ? null : "You must accept the fee agreement";
+    case "dealsCompletedLast5Years":
+      return value === undefined || value === "" ? "This field is required" : null;
+    case "averageDealSize":
+      return value === undefined || value === "" ? "This field is required" : null;
+    case "targetCriteria.revenueMin":
+      return value === undefined || value === "" ? "Minimum revenue is required" : null;
+    case "targetCriteria.revenueMax":
+      return value === undefined || value === "" ? "Maximum revenue is required" : null;
+    case "targetCriteria.ebitdaMin":
+      return value === undefined || value === "" ? "Minimum EBITDA is required" : null;
+    case "targetCriteria.ebitdaMax":
+      return value === undefined || value === "" ? "Maximum EBITDA is required" : null;
+    case "targetCriteria.transactionSizeMin":
+      return value === undefined || value === "" ? "Minimum transaction size is required" : null;
+    case "targetCriteria.transactionSizeMax":
+      return value === undefined || value === "" ? "Maximum transaction size is required" : null;
+    case "targetCriteria.revenueGrowth":
+      return value === undefined || value === "" ? "Minimum 3 Year Average Revenue Growth is required" : null;
+    case "targetCriteria.minYearsInBusiness":
+      return value === undefined || value === "" ? "Minimum years in business is required" : null;
+    case "targetCriteria.minStakePercent":
+      return value === undefined || value === "" ? "Minimum stake percentage is required" : null;
+    case "targetCriteria.countries":
+      return value.length === 0 ? "Please select at least one country" : null;
+    case "targetCriteria.industrySectors":
+      return value.length === 0 ? "Please select at least one industry sector" : null;
+    case "targetCriteria.preferredBusinessModels":
+      return value.length === 0 ? "Please select at least one business model" : null;
+    case "targetCriteria.description":
+      return !value?.trim() ? "Description is required" : null;
+    default:
+      return null;
+  }
+};
+
 
   // Handle form field changes
   const handleChange = (field: string, value: any) => {
@@ -864,6 +859,82 @@ export default function AcquireProfilePage() {
     }));
   };
 
+  const scrollToFirstError = (errors: Record<string, string>) => {
+  // Define field priority order (top to bottom of form)
+  const fieldPriority = [
+    "companyName",
+    "website", 
+    "companyType",
+    "capitalEntity",
+    "contacts[0].name",
+    "contacts[0].email", 
+    "contacts[0].phone",
+    "contacts[1].name",
+    "contacts[1].email",
+    "contacts[1].phone", 
+    "contacts[2].name",
+    "contacts[2].email",
+    "contacts[2].phone",
+    "dealsCompletedLast5Years",
+    "averageDealSize",
+    "targetCriteria.countries",
+    "targetCriteria.industrySectors", 
+    "targetCriteria.revenueMin",
+    "targetCriteria.revenueMax",
+    "targetCriteria.ebitdaMin",
+    "targetCriteria.ebitdaMax",
+    "targetCriteria.transactionSizeMin",
+    "targetCriteria.transactionSizeMax",
+    "targetCriteria.revenueGrowth",
+    "targetCriteria.minYearsInBusiness",
+    "targetCriteria.preferredBusinessModels",
+    "targetCriteria.description",
+    "agreements.feeAgreementAccepted"
+  ];
+  
+  // Find the first field with an error based on priority
+  const firstErrorField = fieldPriority.find(field => errors[field] && errors[field] !== "");
+  
+  if (firstErrorField) {
+    // Generate element ID from field name
+    let elementId = firstErrorField;
+    
+    // Handle special cases for element IDs
+    if (firstErrorField.includes("contacts[")) {
+      const match = firstErrorField.match(/contacts\[(\d+)\]\.(\w+)/);
+      if (match) {
+        const [, index, fieldName] = match;
+        elementId = `contact-${fieldName}-${index}`;
+      }
+    } else if (firstErrorField.startsWith("targetCriteria.")) {
+      elementId = firstErrorField.replace("targetCriteria.", "");
+    } else if (firstErrorField === "agreements.feeAgreementAccepted") {
+      elementId = "feeAgreement";
+    }
+    
+    console.log(`Scrolling to field: ${firstErrorField} with element ID: ${elementId}`);
+    
+    const element = document.getElementById(elementId);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "center" });
+      // Focus the element after a short delay
+      setTimeout(() => {
+        element.focus();
+        // If it's a checkbox or radio, highlight its container
+        if (element.type === 'checkbox' || element.type === 'radio') {
+          element.classList.add('ring-2', 'ring-red-500');
+          setTimeout(() => {
+            element.classList.remove('ring-2', 'ring-red-500');
+          }, 3000);
+        }
+      }, 500);
+    } else {
+      console.warn(`Element with ID ${elementId} not found`);
+    }
+  }
+};
+
+
   const toggleSectorExpansion = (sectorId: string) => {
     setExpandedSectors((prev) => ({
       ...prev,
@@ -974,140 +1045,163 @@ export default function AcquireProfilePage() {
 
   // Form validation
   const validateForm = () => {
-    const errors: Record<string, string> = {};
-    errors["companyName"] = validateField("companyName", formData.companyName) || "";
-    errors["website"] = validateField("website", formData.website) || "";
-    errors["companyType"] = validateField("companyType", formData.companyType) || "";
-    errors["capitalEntity"] = validateField("capitalEntity", formData.capitalEntity) || ""; // <-- NEW LINE
-    errors["dealsCompletedLast5Years"] =
-      validateField("dealsCompletedLast5Years", formData.dealsCompletedLast5Years) || "";
-    errors["averageDealSize"] = validateField("averageDealSize", formData.averageDealSize) || "";
-    if (formData.contacts.length === 0) {
-      errors["contacts"] = "At least one contact is required";
-    } else {
-      const emailCount: Record<string, number> = {};
-      formData.contacts.forEach((contact, index) => {
-        const nameError = validateField("contact.name", contact.name);
-        const emailError = validateField("contact.email", contact.email);
-        const phoneError = validateField("contact.phone", contact.phone);
-        errors[`contacts[${index}].name`] = nameError || "";
-        errors[`contacts[${index}].email`] = emailError || "";
-        errors[`contacts[${index}].phone`] = phoneError || "";
-        const email = contact.email?.trim().toLowerCase();
-        if (email) {
-          emailCount[email] = (emailCount[email] || 0) + 1;
-        }
-      });
-      formData.contacts.forEach((contact, index) => {
-        const email = contact.email?.trim().toLowerCase();
-        if (email && emailCount[email] > 1) {
-          errors[`contacts[${index}].email`] = "Duplicate email is not allowed";
-        }
-      });
-    }
-    errors["agreements.feeAgreementAccepted"] =
-      validateField("agreements.feeAgreement", formData.agreements.feeAgreementAccepted) || "";
-    if (
-      formData.targetCriteria.revenueMin !== undefined &&
-      formData.targetCriteria.revenueMax !== undefined &&
-      formData.targetCriteria.revenueMin > formData.targetCriteria.revenueMax
-    ) {
-      errors["targetCriteria.revenueMin"] = "Minimum revenue cannot be greater than maximum revenue";
-      errors["targetCriteria.revenueMax"] = "Maximum revenue cannot be less than minimum revenue";
-    }
-    if (
-      formData.targetCriteria.ebitdaMin !== undefined &&
-      formData.targetCriteria.ebitdaMax !== undefined &&
-      formData.targetCriteria.ebitdaMin > formData.targetCriteria.ebitdaMax
-    ) {
-      errors["targetCriteria.ebitdaMin"] = "Minimum EBITDA cannot be greater than maximum EBITDA";
-      errors["targetCriteria.ebitdaMax"] = "Maximum EBITDA cannot be less than minimum EBITDA";
-    }
-    if (
-      formData.targetCriteria.transactionSizeMin !== undefined &&
-      formData.targetCriteria.transactionSizeMax !== undefined &&
-      formData.targetCriteria.transactionSizeMin > formData.targetCriteria.transactionSizeMax
-    ) {
-      errors["targetCriteria.transactionSizeMin"] =
-        "Minimum transaction size cannot be greater than maximum transaction size";
-      errors["targetCriteria.transactionSizeMax"] =
-        "Maximum transaction size cannot be less than minimum transaction size";
-    }
-    errors["targetCriteria.revenueGrowth"] =
-      validateField("targetCriteria.revenueGrowth", formData.targetCriteria.revenueGrowth) || "";
-    setFieldErrors(errors);
-    return Object.values(errors).some((error) => error !== "") ? "Please correct the errors in the form" : null;
-  };
+  const errors: Record<string, string> = {};
+  
+  // Basic company info
+  errors["companyName"] = validateField("companyName", formData.companyName) || "";
+  errors["website"] = validateField("website", formData.website) || "";
+  errors["companyType"] = validateField("companyType", formData.companyType) || "";
+  errors["capitalEntity"] = validateField("capitalEntity", formData.capitalEntity) || "";
+  errors["dealsCompletedLast5Years"] = validateField("dealsCompletedLast5Years", formData.dealsCompletedLast5Years) || "";
+  errors["averageDealSize"] = validateField("averageDealSize", formData.averageDealSize) || "";
+  
+  // Contact validation
+  if (formData.contacts.length === 0) {
+    errors["contacts"] = "At least one contact is required";
+  } else {
+    const emailCount: Record<string, number> = {};
+    formData.contacts.forEach((contact, index) => {
+      const nameError = validateField("contact.name", contact.name);
+      const emailError = validateField("contact.email", contact.email);
+      const phoneError = validateField("contact.phone", contact.phone);
+      errors[`contacts[${index}].name`] = nameError || "";
+      errors[`contacts[${index}].email`] = emailError || "";
+      errors[`contacts[${index}].phone`] = phoneError || "";
+      
+      const email = contact.email?.trim().toLowerCase();
+      if (email) {
+        emailCount[email] = (emailCount[email] || 0) + 1;
+      }
+    });
+    
+    formData.contacts.forEach((contact, index) => {
+      const email = contact.email?.trim().toLowerCase();
+      if (email && emailCount[email] > 1) {
+        errors[`contacts[${index}].email`] = "Duplicate email is not allowed";
+      }
+    });
+  }
+  
+  // Target criteria validation
+  errors["targetCriteria.revenueMin"] = validateField("targetCriteria.revenueMin", formData.targetCriteria.revenueMin) || "";
+  errors["targetCriteria.revenueMax"] = validateField("targetCriteria.revenueMax", formData.targetCriteria.revenueMax) || "";
+  errors["targetCriteria.ebitdaMin"] = validateField("targetCriteria.ebitdaMin", formData.targetCriteria.ebitdaMin) || "";
+  errors["targetCriteria.ebitdaMax"] = validateField("targetCriteria.ebitdaMax", formData.targetCriteria.ebitdaMax) || "";
+  errors["targetCriteria.transactionSizeMin"] = validateField("targetCriteria.transactionSizeMin", formData.targetCriteria.transactionSizeMin) || "";
+  errors["targetCriteria.transactionSizeMax"] = validateField("targetCriteria.transactionSizeMax", formData.targetCriteria.transactionSizeMax) || "";
+  errors["targetCriteria.revenueGrowth"] = validateField("targetCriteria.revenueGrowth", formData.targetCriteria.revenueGrowth) || "";
+  errors["targetCriteria.minYearsInBusiness"] = validateField("targetCriteria.minYearsInBusiness", formData.targetCriteria.minYearsInBusiness) || "";
+  errors["targetCriteria.countries"] = validateField("targetCriteria.countries", formData.targetCriteria.countries) || "";
+  errors["targetCriteria.industrySectors"] = validateField("targetCriteria.industrySectors", formData.targetCriteria.industrySectors) || "";
+  errors["targetCriteria.preferredBusinessModels"] = validateField("targetCriteria.preferredBusinessModels", formData.targetCriteria.preferredBusinessModels) || "";
+  errors["targetCriteria.description"] = validateField("targetCriteria.description", formData.targetCriteria.description) || "";
+  
+  // Range validations
+  if (
+    formData.targetCriteria.revenueMin !== undefined &&
+    formData.targetCriteria.revenueMax !== undefined &&
+    formData.targetCriteria.revenueMin > formData.targetCriteria.revenueMax
+  ) {
+    errors["targetCriteria.revenueMin"] = "Minimum revenue cannot be greater than maximum revenue";
+    errors["targetCriteria.revenueMax"] = "Maximum revenue cannot be less than minimum revenue";
+  }
+  
+  if (
+    formData.targetCriteria.ebitdaMin !== undefined &&
+    formData.targetCriteria.ebitdaMax !== undefined &&
+    formData.targetCriteria.ebitdaMin > formData.targetCriteria.ebitdaMax
+  ) {
+    errors["targetCriteria.ebitdaMin"] = "Minimum EBITDA cannot be greater than maximum EBITDA";
+    errors["targetCriteria.ebitdaMax"] = "Maximum EBITDA cannot be less than minimum EBITDA";
+  }
+  
+  if (
+    formData.targetCriteria.transactionSizeMin !== undefined &&
+    formData.targetCriteria.transactionSizeMax !== undefined &&
+    formData.targetCriteria.transactionSizeMin > formData.targetCriteria.transactionSizeMax
+  ) {
+    errors["targetCriteria.transactionSizeMin"] = "Minimum transaction size cannot be greater than maximum transaction size";
+    errors["targetCriteria.transactionSizeMax"] = "Maximum transaction size cannot be less than minimum transaction size";
+  }
+  
+  // Agreement validation
+  errors["agreements.feeAgreementAccepted"] = validateField("agreements.feeAgreement", formData.agreements.feeAgreementAccepted) || "";
+  
+  setFieldErrors(errors);
+  return Object.values(errors).some((error) => error !== "") ? "Please correct the errors in the form" : null;
+};
+
 
   // Handle form submission
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!authToken || !buyerId) {
-      toast({
-        title: "Authentication Required",
-        description: "Please log in again to submit your profile.",
-        variant: "destructive",
-      });
-      router.push("/buyer/login");
-      return;
-    }
-    const errorMessage = validateForm();
-    if (errorMessage) {
-      toast({
-        title: "Validation Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
-      setTimeout(() => {
-        const firstErrorField = Object.keys(fieldErrors).find((key) => fieldErrors[key]);
-        if (firstErrorField) {
-          const elementId = firstErrorField.replace(/\[|\]|\./g, "-");
-          const element = document.getElementById(elementId);
-          if (element) {
-            element.scrollIntoView({ behavior: "smooth", block: "center" });
-            element.focus();
-          }
-        }
-      }, 100);
-      return;
-    }
-    setIsSubmitting(true);
-    setSubmitStatus("idle");
-    setErrorMessage("");
-    try {
-      const profileData = {
-        companyName: formData.companyName,
-        website: formData.website,
-        selectedCurrency: formData.selectedCurrency,
-        contacts: formData.contacts,
-        companyType: formData.companyType,
-        capitalEntity: formData.capitalEntity,
-        dealsCompletedLast5Years: formData.dealsCompletedLast5Years,
-        averageDealSize: formData.averageDealSize,
-        preferences: {
-          stopSendingDeals: formData.preferences.stopSendingDeals,
-          doNotSendMarketedDeals: formData.preferences.doNotSendMarketedDeals,
-          allowBuyerLikeDeals: formData.preferences.allowBuyerLikeDeals,
-        },
-        targetCriteria: {
-          countries: formData.targetCriteria.countries,
-          industrySectors: formData.targetCriteria.industrySectors,
-          revenueMin: formData.targetCriteria.revenueMin,
-          revenueMax: formData.targetCriteria.revenueMax,
-          ebitdaMin: formData.targetCriteria.ebitdaMin,
-          ebitdaMax: formData.targetCriteria.ebitdaMax,
-          transactionSizeMin: formData.targetCriteria.transactionSizeMin,
-          transactionSizeMax: formData.targetCriteria.transactionSizeMax,
-          revenueGrowth: formData.targetCriteria.revenueGrowth,
-          minStakePercent: formData.targetCriteria.minStakePercent,
-          minYearsInBusiness: formData.targetCriteria.minYearsInBusiness,
-          preferredBusinessModels: formData.targetCriteria.preferredBusinessModels,
-          description: formData.targetCriteria.description,
-        },
-        agreements: {
-          feeAgreementAccepted: formData.agreements.feeAgreementAccepted,
-        },
-      };
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  
+  if (!authToken || !buyerId) {
+    toast({
+      title: "Authentication Required",
+      description: "Please log in again to submit your profile.",
+      variant: "destructive",
+    });
+    router.push("/buyer/login");
+    return;
+  }
+  
+  const errorMessage = validateForm();
+  if (errorMessage) {
+    toast({
+      title: "Validation Error", 
+      description: errorMessage,
+      variant: "destructive",
+    });
+    
+    // Navigate to first error field
+    setTimeout(() => {
+      scrollToFirstError(fieldErrors);
+    }, 100);
+    return;
+  }
+  
+  // Rest of your existing submit logic...
+  setIsSubmitting(true);
+  setSubmitStatus("idle");
+  setErrorMessage("");
+  
+  try {
+    // Your existing submission code remains the same
+    const profileData = {
+      companyName: formData.companyName,
+      website: formData.website,
+      selectedCurrency: formData.selectedCurrency,
+      contacts: formData.contacts,
+      companyType: formData.companyType,
+      capitalEntity: formData.capitalEntity,
+      dealsCompletedLast5Years: formData.dealsCompletedLast5Years,
+      averageDealSize: formData.averageDealSize,
+      preferences: {
+        stopSendingDeals: formData.preferences.stopSendingDeals,
+        doNotSendMarketedDeals: formData.preferences.doNotSendMarketedDeals,
+        allowBuyerLikeDeals: formData.preferences.allowBuyerLikeDeals,
+      },
+      targetCriteria: {
+        countries: formData.targetCriteria.countries,
+        industrySectors: formData.targetCriteria.industrySectors,
+        revenueMin: formData.targetCriteria.revenueMin,
+        revenueMax: formData.targetCriteria.revenueMax,
+        ebitdaMin: formData.targetCriteria.ebitdaMin,
+        ebitdaMax: formData.targetCriteria.ebitdaMax,
+        transactionSizeMin: formData.targetCriteria.transactionSizeMin,
+        transactionSizeMax: formData.targetCriteria.transactionSizeMax,
+        revenueGrowth: formData.targetCriteria.revenueGrowth,
+        minStakePercent: formData.targetCriteria.minStakePercent,
+        minYearsInBusiness: formData.targetCriteria.minYearsInBusiness,
+        preferredBusinessModels: formData.targetCriteria.preferredBusinessModels,
+        description: formData.targetCriteria.description,
+      },
+      agreements: {
+        feeAgreementAccepted: formData.agreements.feeAgreementAccepted,
+      },
+    };
+    
       const cleanProfileData = JSON.parse(
         JSON.stringify(profileData, (key, value) => (value === undefined ? null : value))
       );
@@ -1685,6 +1779,11 @@ export default function AcquireProfilePage() {
       }))}
       searchTerm={countrySearchTerm}
     />
+    {fieldErrors["targetCriteria.countries"] && (
+  <p className="text-red-500 text-sm mt-1">
+    {fieldErrors["targetCriteria.countries"]}
+  </p>
+)}
   </div>
 </div>
               {/* industry sector */}
@@ -1701,6 +1800,11 @@ export default function AcquireProfilePage() {
                       value={industrySearchTerm}
                       onChange={(e) => setIndustrySearchTerm(e.target.value)}
                     />
+                    {fieldErrors["targetCriteria.industrySectors"] && (
+  <p className="text-red-500 text-sm mt-1">
+    {fieldErrors["targetCriteria.industrySectors"]}
+  </p>
+)}
                   </div>
 
                   {/* {formData.targetCriteria.industrySectors.length > 0 && (
@@ -2157,23 +2261,31 @@ export default function AcquireProfilePage() {
                   Minimum Years in Business
                   <span className="text-red-500">*</span>
                 </Label>
-                <Input
-                  id="minYearsInBusiness"
-                  type="number"
-                  className={`border-[#d0d5dd] ${
-                    fieldErrors["targetCriteria.minYearsInBusiness"]
-                      ? "border-red-500 focus-visible:ring-red-500"
-                      : ""
-                  }`}
-                  value={formData.targetCriteria.minYearsInBusiness ?? ""}
-                  onChange={(e) =>
-                    handleNestedChange(
-                      "targetCriteria",
-                      "minYearsInBusiness",
-                      e.target.value === "" ? undefined : Number(e.target.value)
-                    )
-                  }
-                />
+               <Input
+  id="minYearsInBusiness"
+  type="number"
+  className={`border-[#d0d5dd] ${
+    fieldErrors["targetCriteria.minYearsInBusiness"]
+      ? "border-red-500 focus-visible:ring-red-500"
+      : ""
+  }`}
+  value={formData.targetCriteria.minYearsInBusiness ?? ""}
+  onChange={(e) =>
+    handleNestedChange(
+      "targetCriteria",
+      "minYearsInBusiness",
+      e.target.value === "" ? undefined : Number(e.target.value)
+    )
+  }
+  required
+/>
+{fieldErrors["targetCriteria.minYearsInBusiness"] && (
+  <p className="text-red-500 text-sm mt-1">
+    {fieldErrors["targetCriteria.minYearsInBusiness"]}
+  </p>
+)}
+
+                
               </div>
             </div>
             {/* Preferred Business Models */}
@@ -2198,6 +2310,12 @@ export default function AcquireProfilePage() {
                     >
                       {model}
                     </Label>
+                    {fieldErrors["targetCriteria.preferredBusinessModels"] && (
+  <p className="text-red-500 text-sm mt-1">
+    {fieldErrors["targetCriteria.preferredBusinessModels"]}
+  </p>
+)}
+
                   </div>
                 ))}
               </div>
@@ -2220,7 +2338,13 @@ export default function AcquireProfilePage() {
                   )
                 }
               />
+              {fieldErrors["targetCriteria.description"] && (
+  <p className="text-red-500 text-sm mt-1">
+    {fieldErrors["targetCriteria.description"]}
+  </p>
+)}
             </div>
+
           </div>
           {/* General Preferences */}
           <div className="bg-white rounded-lg p-6 shadow-sm mb-6">
