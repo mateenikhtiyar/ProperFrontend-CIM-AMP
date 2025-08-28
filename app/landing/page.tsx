@@ -795,7 +795,7 @@ export default function Component() {
               </ul>
               <a
                 href="https://cimamplify.com/Advisor%20Registration"
-                target="_blank"
+                target="_self"
                 rel="noopener noreferrer"
                 className="mt-6 bg-teal-500 hover:bg-primary transition-colors text-white rounded px-6 py-3 inline-block text-center font-medium"
               >
@@ -895,7 +895,7 @@ export default function Component() {
               </div>
               <a
                 href="https://cimamplify.com/Advisor%20Registration"
-                target="_blank"
+                target="_self"
                 rel="noopener noreferrer"
                 className="bg-teal-500 hover:bg-primary transition-colors text-white rounded px-6 py-3 inline-block text-center font-medium"
               >
@@ -992,7 +992,7 @@ export default function Component() {
             <div className="flex gap-4 text-center justify-center">
               <a
                 href="https://cimamplify.com/Advisor%20Registration"
-                target="_blank"
+                target="_self"
                 rel="noopener noreferrer"
                 className="bg-teal-500 hover:bg-primary transition-colors text-white rounded px-6 py-3 inline-block text-center font-medium"
               >
