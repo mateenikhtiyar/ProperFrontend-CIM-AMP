@@ -507,7 +507,7 @@ export default function SelectRolePage() {
           <div className="flex flex-col w-full max-w-md space-y- gap-4 pt-7">
             <a
               href="https://cimamplify.com/Advisor%20Registration"
-              target="_blank"
+              target="_self"
               rel="noopener noreferrer"
               className="bg-[#3aafa9] hover:bg-white text-white hover:text-[#2a9d8f] hover:border-[#2a9d8f] border font-medium py-4 px-6 rounded-full text-center transition-colors"
             >
