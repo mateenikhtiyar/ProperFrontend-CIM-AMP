@@ -982,7 +982,7 @@ export default function DealManagementDashboard() {
           activeDealsArray.map(async (deal) => {
             try {
               const sellerRes = await fetch(
-                `${apiUrl}/sellers/public/${deal.seller}`
+                `${apiUrl}sellers/public/${deal.seller}`
               );
               if (sellerRes.ok) {
                 const sellerProfile = await sellerRes.json();
@@ -996,10 +996,9 @@ export default function DealManagementDashboard() {
           })
         );
         setActiveDeals(activeDealsWithSellers);
-
         // Fetch off-market deals
         const offMarketResponse = await fetch(
-          `${apiUrl}/deals/admin/completed/all`,
+          `${apiUrl}deals/admin/completed/all`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
