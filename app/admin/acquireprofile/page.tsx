@@ -216,28 +216,37 @@ if (urlProfileId) {
     // fallback: fetchUserProfile(); // (optional, for buyer)
   }
 }, [searchParams, router]);
- useEffect(() => {
+useEffect(() => {
   const fetchData = async () => {
     try {
       // Fetch geography data
       const geo = await getGeoData();
       setGeoData(geo);
 
-      // Fetch industry data
+      // Fetch industry data  
       const industry = await getIndustryData();
       setIndustryData(industry);
 
-      // Only fetch user profile if NOT in admin edit mode
-      if (authToken && !isAdminEdit) {
-        await fetchUserProfile();
-      }
     } catch (error) {
-      // ...
+      console.error("Error fetching initial data:", error);
     }
   };
 
   fetchData();
-}, [authToken, isAdminEdit]);
+}, []);
+useEffect(() => {
+  const fetchProfileData = async () => {
+    if (!authToken || !geoData || !industryData) return;
+
+    if (isAdminEdit && profileId) {
+      await fetchAdminProfile(profileId);
+    } else {
+      await fetchUserProfile();
+    }
+  };
+
+  fetchProfileData();
+}, [authToken, geoData, industryData, isAdminEdit, profileId]);
   useEffect(() => {
   if (isAdminEdit && profileId && authToken && apiUrl) {
     fetchAdminProfile(profileId);
@@ -248,7 +257,6 @@ useEffect(() => {
   if (isAdminEdit && profileId && authToken && apiUrl) {
     fetchAdminProfile(profileId);
   }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
 }, [isAdminEdit, profileId, authToken, apiUrl]);
 const fetchAdminProfile = async (id: string) => {
   try {
@@ -261,16 +269,80 @@ const fetchAdminProfile = async (id: string) => {
     });
     if (!res.ok) throw new Error("Failed to fetch company profile");
     const data = await res.json();
-    setFormData({
+    
+    const updatedFormData = {
       ...formData,
       ...data,
-      website: data.buyer.website || data.website,
+      website: data.buyer?.website || data.website,
       selectedCurrency: data.selectedCurrency || "USD",
       contacts: data.contacts && data.contacts.length > 0 ? data.contacts : [{ name: "", email: "", phone: "" }],
       preferences: { ...formData.preferences, ...(data.preferences || {}) },
       targetCriteria: { ...formData.targetCriteria, ...(data.targetCriteria || {}) },
       agreements: { ...formData.agreements, ...(data.agreements || {}) },
-    });
+    };
+    
+    setFormData(updatedFormData);
+
+    // FIXED: Synchronize geography selections
+    if (data.targetCriteria?.countries?.length > 0 && geoData) {
+      const newGeoSelection = { 
+        continents: {},
+        regions: {},
+        subRegions: {}
+      };
+
+      geoData.continents.forEach((continent) => {
+        if (data.targetCriteria.countries.includes(continent.name)) {
+          newGeoSelection.continents[continent.id] = true;
+        }
+
+        continent.regions.forEach((region) => {
+          if (data.targetCriteria.countries.includes(region.name)) {
+            newGeoSelection.regions[region.id] = true;
+          }
+
+          if (region.subRegions) {
+            region.subRegions.forEach((subRegion) => {
+              if (data.targetCriteria.countries.includes(subRegion.name)) {
+                newGeoSelection.subRegions[subRegion.id] = true;
+              }
+            });
+          }
+        });
+      });
+
+      setGeoSelection(newGeoSelection);
+    }
+
+    // FIXED: Synchronize industry selections
+    if (data.targetCriteria?.industrySectors?.length > 0 && industryData) {
+      const newIndustrySelection = {
+        sectors: {},
+        industryGroups: {},
+        industries: {}
+      };
+
+      industryData.sectors.forEach((sector) => {
+        if (data.targetCriteria.industrySectors.includes(sector.name)) {
+          newIndustrySelection.sectors[sector.id] = true;
+        }
+
+        sector.industryGroups.forEach((group) => {
+          if (data.targetCriteria.industrySectors.includes(group.name)) {
+            newIndustrySelection.industryGroups[group.id] = true;
+          }
+
+          group.industries.forEach((industry) => {
+            if (data.targetCriteria.industrySectors.includes(industry.name)) {
+              newIndustrySelection.industries[industry.id] = true;
+            }
+          });
+        });
+      });
+
+      setIndustrySelection(newIndustrySelection);
+    }
+
   } catch (err) {
     toast({
       title: "Error",
@@ -280,161 +352,155 @@ const fetchAdminProfile = async (id: string) => {
   }
 };
   // Fetch user's existing profile data
-  const fetchUserProfile = async () => {
-    if (!authToken) return;
+ // 1. REPLACE the existing fetchUserProfile function with this complete version:
+const fetchUserProfile = async () => {
+  if (!authToken) return;
 
-    let buyerDetails = null;
-    try {
-      const buyerRes = await fetch(`${apiUrl}/buyers/me`, {
-        headers: { Authorization: `Bearer ${authToken}` },
-      });
-      if (buyerRes.ok) {
-        buyerDetails = await buyerRes.json();
-        console.log("Fetched buyerDetails:", buyerDetails);
-      }
-    } catch (err) {
-      // handle error
-    }
-
-    const response = await fetch(`${apiUrl}/company-profiles/my-profile`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${authToken}`,
-      },
+  let buyerDetails = null;
+  try {
+    const buyerRes = await fetch(`${apiUrl}/buyers/me`, {
+      headers: { Authorization: `Bearer ${authToken}` },
     });
-
-    if (!response.ok) {
-      if (response.status === 404) {
-        setFormData((prev) => {
-          const newForm = {
-            ...prev,
-            companyName: buyerDetails?.companyName || "",
-            website: buyerDetails?.website || "",
-            contacts: [
-              {
-                name: buyerDetails?.fullName || "",
-                email: buyerDetails?.email || "",
-                phone: buyerDetails?.phone || "",
-              },
-            ],
-          };
-          console.log("Setting formData from buyerDetails (404):", newForm);
-          return newForm;
-        });
-        return;
-      }
-      // ...handle other errors
+    if (buyerRes.ok) {
+      buyerDetails = await buyerRes.json();
+      console.log("Fetched buyerDetails:", buyerDetails);
     }
+  } catch (err) {
+    // handle error
+  }
 
-    const profileData = await response.json();
-    console.log("Existing profile loaded:", profileData);
+  const response = await fetch(`${apiUrl}/company-profiles/my-profile`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${authToken}`,
+    },
+  });
 
-    // Update form data with the fetched profile
-    if (profileData) {
-      const updatedProfile = {
-        ...formData,
-        ...profileData,
-        website: buyerDetails.website || profileData.website,
-        contacts: [
-          {
-            name: buyerDetails?.fullName || "",
-            email: buyerDetails?.email || "",
-            phone: buyerDetails?.phone || "",
-          },
-        ],
-        companyName: profileData.companyName || buyerDetails?.companyName || "",
-        preferences: {
-          ...formData.preferences,
-          ...(profileData.preferences || {}),
+  if (!response.ok) {
+    if (response.status === 404) {
+      setFormData((prev) => {
+        const newForm = {
+          ...prev,
+          companyName: buyerDetails?.companyName || "",
+          website: buyerDetails?.website || "",
+          contacts: [
+            {
+              name: buyerDetails?.fullName || "",
+              email: buyerDetails?.email || "",
+              phone: buyerDetails?.phone || "",
+            },
+          ],
+        };
+        console.log("Setting formData from buyerDetails (404):", newForm);
+        return newForm;
+      });
+      return;
+    }
+    // ...handle other errors
+  }
+
+  const profileData = await response.json();
+  console.log("Existing profile loaded:", profileData);
+
+  // Update form data with the fetched profile
+  if (profileData) {
+    const updatedProfile = {
+      ...formData,
+      ...profileData,
+      website: buyerDetails.website || profileData.website,
+      contacts: [
+        {
+          name: buyerDetails?.fullName || "",
+          email: buyerDetails?.email || "",
+          phone: buyerDetails?.phone || "",
         },
-        targetCriteria: {
-          ...formData.targetCriteria,
-          ...(profileData.targetCriteria || {}),
-        },
-        agreements: {
-          ...formData.agreements,
-          ...(profileData.agreements || {}),
-        },
-        selectedCurrency: profileData.selectedCurrency || "USD",
-        capitalEntity: profileData.capitalEntity || undefined,
-      };
-      console.log("Setting formData from profileData:", updatedProfile);
-      setFormData(updatedProfile);
+      ],
+      companyName: profileData.companyName || buyerDetails?.companyName || "",
+      preferences: {
+        ...formData.preferences,
+        ...(profileData.preferences || {}),
+      },
+      targetCriteria: {
+        ...formData.targetCriteria,
+        ...(profileData.targetCriteria || {}),
+      },
+      agreements: {
+        ...formData.agreements,
+        ...(profileData.agreements || {}),
+      },
+      selectedCurrency: profileData.selectedCurrency || "USD",
+      capitalEntity: profileData.capitalEntity || undefined,
+    };
+    console.log("Setting formData from profileData:", updatedProfile);
+    setFormData(updatedProfile);
 
-      // Update geography selections
-      if (profileData.targetCriteria?.countries?.length > 0 && geoData) {
-        const newGeoSelection = { ...geoSelection };
+    // Update geography selections
+    if (profileData.targetCriteria?.countries?.length > 0 && geoData) {
+      const newGeoSelection = { ...geoSelection };
 
-        // Mark selected countries in the hierarchical selection
-        geoData.continents.forEach((continent) => {
-          if (profileData.targetCriteria.countries.includes(continent.name)) {
-            newGeoSelection.continents[continent.id] = true;
+      // Mark selected countries in the hierarchical selection
+      geoData.continents.forEach((continent) => {
+        if (profileData.targetCriteria.countries.includes(continent.name)) {
+          newGeoSelection.continents[continent.id] = true;
+        }
+
+        continent.regions.forEach((region) => {
+          if (profileData.targetCriteria.countries.includes(region.name)) {
+            newGeoSelection.regions[region.id] = true;
           }
 
-          continent.regions.forEach((region) => {
-            if (profileData.targetCriteria.countries.includes(region.name)) {
-              newGeoSelection.regions[region.id] = true;
-            }
-
-            if (region.subRegions) {
-              region.subRegions.forEach((subRegion) => {
-                if (
-                  profileData.targetCriteria.countries.includes(subRegion.name)
-                ) {
-                  newGeoSelection.subRegions[subRegion.id] = true;
-                }
-              });
-            }
-          });
-        });
-
-        setGeoSelection(newGeoSelection);
-      }
-
-      // Update industry selections
-      if (
-        profileData.targetCriteria?.industrySectors?.length > 0 &&
-        industryData
-      ) {
-        const newIndustrySelection = { ...industrySelection };
-
-        // Mark selected industries in the hierarchical selection
-        industryData.sectors.forEach((sector) => {
-          if (
-            profileData.targetCriteria.industrySectors.includes(sector.name)
-          ) {
-            newIndustrySelection.sectors[sector.id] = true;
-          }
-
-          sector.industryGroups.forEach((group) => {
-            if (
-              profileData.targetCriteria.industrySectors.includes(group.name)
-            ) {
-              newIndustrySelection.industryGroups[group.id] = true;
-            }
-
-            group.industries.forEach((industry) => {
+          if (region.subRegions) {
+            region.subRegions.forEach((subRegion) => {
               if (
-                profileData.targetCriteria.industrySectors.includes(
-                  industry.name
-                )
+                profileData.targetCriteria.countries.includes(subRegion.name)
               ) {
-                newIndustrySelection.industries[industry.id] = true;
+                newGeoSelection.subRegions[subRegion.id] = true;
               }
             });
+          }
+        });
+      });
+
+      setGeoSelection(newGeoSelection);
+    }
+
+    // FIXED: Update industry selections with proper state initialization
+    if (profileData.targetCriteria?.industrySectors?.length > 0 && industryData) {
+      const newIndustrySelection = {
+        sectors: {},
+        industryGroups: {},
+        industries: {}
+      };
+
+      // Mark selected industries in the hierarchical selection
+      industryData.sectors.forEach((sector) => {
+        if (profileData.targetCriteria.industrySectors.includes(sector.name)) {
+          newIndustrySelection.sectors[sector.id] = true;
+        }
+
+        sector.industryGroups.forEach((group) => {
+          if (profileData.targetCriteria.industrySectors.includes(group.name)) {
+            newIndustrySelection.industryGroups[group.id] = true;
+          }
+
+          group.industries.forEach((industry) => {
+            if (profileData.targetCriteria.industrySectors.includes(industry.name)) {
+              newIndustrySelection.industries[industry.id] = true;
+            }
           });
         });
-
-        setIndustrySelection(newIndustrySelection);
-      }
-
-      toast({
-        title: "Profile Loaded",
-        description: "Your existing profile has been loaded.",
       });
+
+      setIndustrySelection(newIndustrySelection);
     }
-  };
+
+    toast({
+      title: "Profile Loaded",
+      description: "Your existing profile has been loaded.",
+    });
+  }
+};
 
   // Form state
   const [formData, setFormData] = useState<
@@ -477,78 +543,74 @@ const fetchAdminProfile = async (id: string) => {
 
   // --- 1. Update validateField function to handle these fields ---
   // Add a function to validate individual fields (after the validateForm function)
-  const validateField = (field: string, value: any): string | null => {
-    switch (field) {
-      case "companyName":
-        return !value?.trim() ? "Company name is required" : null;
-      case "website":
-        try {
-          const websiteUrl = new URL(
-            value.startsWith("http") ? value : `https://${value}`
-          );
-          if (!websiteUrl.hostname.includes(".")) {
-            return "Please enter a valid website URL (e.g., example.com)";
-          }
-        } catch (e) {
+const validateField = (field: string, value: any): string | null => {
+  switch (field) {
+    case "companyName":
+      return !value?.trim() ? "Company name is required" : null;
+    case "website":
+      try {
+        const websiteUrl = new URL(
+          value.startsWith("http") ? value : `https://${value}`
+        );
+        if (!websiteUrl.hostname.includes(".")) {
           return "Please enter a valid website URL (e.g., example.com)";
         }
-        return null;
-      case "companyType":
-        return !value ? "Please select a company type" : null;
-      case "capitalEntity": // <-- NEW CASE
-        return !value ? "Please select capital availability" : null; // Check if value is falsy (undefined, null, empty string)
-      case "contact.name":
-        return !value?.trim() ? "Contact name is required" : null;
-      case "contact.email":
-        if (!value?.trim()) return "Contact email is required";
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return !emailRegex.test(value)
-          ? "Please enter a valid email address (e.g., name@example.com)"
-          : null;
-      case "contact.phone":
-        if (!value?.trim()) return "Contact phone is required";
-        const phoneRegex =
-          /^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/;
-        return !phoneRegex.test(value)
-          ? "Please enter a valid phone number (e.g., 123-456-7890)"
-          : null;
-      case "agreements.termsAndConditions":
-        return value ? null : "You must accept the terms and conditions";
-      case "agreements.nda":
-        return value ? null : "You must accept the NDA";
-      case "agreements.feeAgreement":
-        return value ? null : "You must accept the fee agreement";
-      case "dealsCompletedLast5Years":
-        // Accept 0 as valid
-        return value === undefined || value === ""
-          ? "This field is required"
-          : null;
-      case "averageDealSize":
-        return value === undefined || value === ""
-          ? "This field is required"
-          : null;
-      case "targetCriteria.countries":
-        return value.length === 0 ? "Please select at least one country" : null;
-      case "targetCriteria.industrySectors":
-        return value.length === 0 ? "Please select at least one industry sector" : null;
-      case "targetCriteria.revenueMin":
-      case "targetCriteria.revenueMax":
-      case "targetCriteria.ebitdaMin":
-      case "targetCriteria.ebitdaMax":
-      case "targetCriteria.transactionSizeMin":
-      case "targetCriteria.transactionSizeMax":
-      case "targetCriteria.revenueGrowth":
-      case "targetCriteria.minStakePercent":
-      case "targetCriteria.minYearsInBusiness":
-        return value === undefined || value === "" ? "This field is required" : null;
-      case "targetCriteria.preferredBusinessModels":
-        return value.length === 0 ? "Please select at least one business model" : null;
-      case "targetCriteria.description":
-        return !value?.trim() ? "Description is required" : null;
-      default:
-        return null;
-    }
-  };
+      } catch (e) {
+        return "Please enter a valid website URL (e.g., example.com)";
+      }
+      return null;
+    case "companyType":
+      return !value ? "Please select a company type" : null;
+    case "capitalEntity":
+      return !value ? "Please select capital availability" : null;
+    case "contact.name":
+      return !value?.trim() ? "Contact name is required" : null;
+    case "contact.email":
+      if (!value?.trim()) return "Contact email is required";
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return !emailRegex.test(value)
+        ? "Please enter a valid email address (e.g., name@example.com)"
+        : null;
+    case "contact.phone":
+      if (!value?.trim()) return "Contact phone is required";
+      const phoneRegex =
+        /^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/;
+      return !phoneRegex.test(value)
+        ? "Please enter a valid phone number (e.g., 123-456-7890)"
+        : null;
+    // REMOVE THESE CASES - only keep feeAgreement
+    case "agreements.feeAgreement":
+      return value ? null : "You must accept the fee agreement";
+    case "dealsCompletedLast5Years":
+      return value === undefined || value === ""
+        ? "This field is required"
+        : null;
+    case "averageDealSize":
+      return value === undefined || value === ""
+        ? "This field is required"
+        : null;
+    case "targetCriteria.countries":
+      return value.length === 0 ? "Please select at least one country" : null;
+    case "targetCriteria.industrySectors":
+      return value.length === 0 ? "Please select at least one industry sector" : null;
+    case "targetCriteria.revenueMin":
+    case "targetCriteria.revenueMax":
+    case "targetCriteria.ebitdaMin":
+    case "targetCriteria.ebitdaMax":
+    case "targetCriteria.transactionSizeMin":
+    case "targetCriteria.transactionSizeMax":
+    case "targetCriteria.revenueGrowth":
+    case "targetCriteria.minStakePercent":
+    case "targetCriteria.minYearsInBusiness":
+      return value === undefined || value === "" ? "This field is required" : null;
+    case "targetCriteria.preferredBusinessModels":
+      return value.length === 0 ? "Please select at least one business model" : null;
+    case "targetCriteria.description":
+      return !value?.trim() ? "Description is required" : null;
+    default:
+      return null;
+  }
+};
 
   // --- 2. Update validateForm to include these fields ---
   // Handle form field changes
@@ -1339,143 +1401,141 @@ const fetchAdminProfile = async (id: string) => {
 
   // Handle form submission
   // Update the handleSubmit function to scroll to the first error
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+ // Handle form submission
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    // Check for token
-    if (!authToken) {
-      toast({
-        title: "Authentication Required",
-        description: "Please log in again to submit your profile.",
-        variant: "destructive",
-      });
-      router.push("/buyer/login");
-      return;
-    }
+  // Check for token
+  if (!authToken) {
+    toast({
+      title: "Authentication Required",
+      description: "Please log in again to submit your profile.",
+      variant: "destructive",
+    });
+    router.push("/buyer/login");
+    return;
+  }
 
-    // Validate and get errors
-    const errors: Record<string, string> = {};
-    // Run validation and collect errors
-    errors["companyName"] =
-      validateField("companyName", formData.companyName) || "";
-    errors["website"] = validateField("website", formData.website) || "";
-    errors["companyType"] =
-      validateField("companyType", formData.companyType) || "";
-    errors["capitalEntity"] =
-      validateField("capitalEntity", formData.capitalEntity) || "";
-    errors["dealsCompletedLast5Years"] =
-      validateField(
-        "dealsCompletedLast5Years",
-        formData.dealsCompletedLast5Years
-      ) || "";
-    errors["averageDealSize"] =
-      validateField("averageDealSize", formData.averageDealSize) || "";
-    errors["targetCriteria.countries"] =
-      validateField("targetCriteria.countries", formData.targetCriteria.countries) || "";
-    errors["targetCriteria.industrySectors"] =
-      validateField("targetCriteria.industrySectors", formData.targetCriteria.industrySectors) || "";
-    errors["targetCriteria.revenueMin"] =
-      validateField("targetCriteria.revenueMin", formData.targetCriteria.revenueMin) || "";
-    errors["targetCriteria.revenueMax"] =
-      validateField("targetCriteria.revenueMax", formData.targetCriteria.revenueMax) || "";
-    errors["targetCriteria.ebitdaMin"] =
-      validateField("targetCriteria.ebitdaMin", formData.targetCriteria.ebitdaMin) || "";
-    errors["targetCriteria.ebitdaMax"] =
-      validateField("targetCriteria.ebitdaMax", formData.targetCriteria.ebitdaMax) || "";
-    errors["targetCriteria.transactionSizeMin"] =
-      validateField("targetCriteria.transactionSizeMin", formData.targetCriteria.transactionSizeMin) || "";
-    errors["targetCriteria.transactionSizeMax"] =
-      validateField("targetCriteria.transactionSizeMax", formData.targetCriteria.transactionSizeMax) || "";
-    errors["targetCriteria.revenueGrowth"] =
-      validateField("targetCriteria.revenueGrowth", formData.targetCriteria.revenueGrowth) || "";
-    errors["targetCriteria.minStakePercent"] =
-      validateField("targetCriteria.minStakePercent", formData.targetCriteria.minStakePercent) || "";
-    errors["targetCriteria.minYearsInBusiness"] =
-      validateField("targetCriteria.minYearsInBusiness", formData.targetCriteria.minYearsInBusiness) || "";
-    errors["targetCriteria.preferredBusinessModels"] =
-      validateField("targetCriteria.preferredBusinessModels", formData.targetCriteria.preferredBusinessModels) || "";
-    errors["targetCriteria.description"] =
-      validateField("targetCriteria.description", formData.targetCriteria.description) || "";
-    errors["contacts"] =
-      formData.contacts.length === 0 ? "At least one contact is required" : "";
-    errors["agreements.termsAndConditionsAccepted"] =
-      validateField(
-        "agreements.termsAndConditions",
-        formData.agreements.termsAndConditionsAccepted
-      ) || "";
-    errors["agreements.ndaAccepted"] =
-      validateField("agreements.nda", formData.agreements.ndaAccepted) || "";
-    errors["agreements.feeAgreementAccepted"] =
-      validateField(
-        "agreements.feeAgreement",
-        formData.agreements.feeAgreementAccepted
-      ) || "";
+  // Validate and get errors
+  const errors: Record<string, string> = {};
+  
+  // Basic field validation
+  errors["companyName"] = validateField("companyName", formData.companyName) || "";
+  errors["website"] = validateField("website", formData.website) || "";
+  errors["companyType"] = validateField("companyType", formData.companyType) || "";
+  errors["capitalEntity"] = validateField("capitalEntity", formData.capitalEntity) || "";
+  errors["dealsCompletedLast5Years"] = validateField("dealsCompletedLast5Years", formData.dealsCompletedLast5Years) || "";
+  errors["averageDealSize"] = validateField("averageDealSize", formData.averageDealSize) || "";
+  errors["targetCriteria.countries"] = validateField("targetCriteria.countries", formData.targetCriteria.countries) || "";
+  errors["targetCriteria.industrySectors"] = validateField("targetCriteria.industrySectors", formData.targetCriteria.industrySectors) || "";
+  errors["targetCriteria.revenueMin"] = validateField("targetCriteria.revenueMin", formData.targetCriteria.revenueMin) || "";
+  errors["targetCriteria.revenueMax"] = validateField("targetCriteria.revenueMax", formData.targetCriteria.revenueMax) || "";
+  errors["targetCriteria.ebitdaMin"] = validateField("targetCriteria.ebitdaMin", formData.targetCriteria.ebitdaMin) || "";
+  errors["targetCriteria.ebitdaMax"] = validateField("targetCriteria.ebitdaMax", formData.targetCriteria.ebitdaMax) || "";
+  errors["targetCriteria.transactionSizeMin"] = validateField("targetCriteria.transactionSizeMin", formData.targetCriteria.transactionSizeMin) || "";
+  errors["targetCriteria.transactionSizeMax"] = validateField("targetCriteria.transactionSizeMax", formData.targetCriteria.transactionSizeMax) || "";
+  errors["targetCriteria.revenueGrowth"] = validateField("targetCriteria.revenueGrowth", formData.targetCriteria.revenueGrowth) || "";
+  errors["targetCriteria.minStakePercent"] = validateField("targetCriteria.minStakePercent", formData.targetCriteria.minStakePercent) || "";
+  errors["targetCriteria.minYearsInBusiness"] = validateField("targetCriteria.minYearsInBusiness", formData.targetCriteria.minYearsInBusiness) || "";
+  errors["targetCriteria.preferredBusinessModels"] = validateField("targetCriteria.preferredBusinessModels", formData.targetCriteria.preferredBusinessModels) || "";
+  errors["targetCriteria.description"] = validateField("targetCriteria.description", formData.targetCriteria.description) || "";
 
-    // Number range validations
-    if (
-      formData.targetCriteria.revenueMin !== undefined &&
-      formData.targetCriteria.revenueMax !== undefined &&
-      formData.targetCriteria.revenueMin > formData.targetCriteria.revenueMax
-    ) {
-      errors["targetCriteria.revenueMin"] =
-        "Minimum revenue cannot be greater than maximum revenue";
-      errors["targetCriteria.revenueMax"] =
-        "Maximum revenue cannot be less than minimum revenue";
-    }
+  // Contact validation
+  if (formData.contacts.length === 0) {
+    errors["contacts"] = "At least one contact is required";
+  } else {
+    const emailCount: Record<string, number> = {};
 
-    if (
-      formData.targetCriteria.ebitdaMin !== undefined &&
-      formData.targetCriteria.ebitdaMax !== undefined &&
-      formData.targetCriteria.ebitdaMin > formData.targetCriteria.ebitdaMax
-    ) {
-      errors["targetCriteria.ebitdaMin"] =
-        "Minimum EBITDA cannot be greater than maximum EBITDA";
-      errors["targetCriteria.ebitdaMax"] =
-        "Maximum EBITDA cannot be less than minimum EBITDA";
-    }
+    // Step 1: Validate fields and count emails
+    formData.contacts.forEach((contact, index) => {
+      const nameError = validateField("contact.name", contact.name);
+      const emailError = validateField("contact.email", contact.email);
+      const phoneError = validateField("contact.phone", contact.phone);
 
-    if (
-      formData.targetCriteria.transactionSizeMin !== undefined &&
-      formData.targetCriteria.transactionSizeMax !== undefined &&
-      formData.targetCriteria.transactionSizeMin >
-        formData.targetCriteria.transactionSizeMax
-    ) {
-      errors["targetCriteria.transactionSizeMin"] =
-        "Minimum transaction size cannot be greater than maximum transaction size";
-      errors["targetCriteria.transactionSizeMax"] =
-        "Maximum transaction size cannot be less than minimum transaction size";
-    }
+      errors[`contacts[${index}].name`] = nameError || "";
+      errors[`contacts[${index}].email`] = emailError || "";
+      errors[`contacts[${index}].phone`] = phoneError || "";
 
-    setFieldErrors(errors);
+      const email = contact.email?.trim().toLowerCase();
+      if (email) {
+        emailCount[email] = (emailCount[email] || 0) + 1;
+      }
+    });
 
-    const hasErrors = Object.values(errors).some((error) => error !== "");
-    if (hasErrors) {
-      toast({
-        title: "Validation Error",
-        description: "Please correct the errors in the form before submitting.",
-        variant: "destructive",
-      });
+    // Step 2: Add duplicate email errors
+    formData.contacts.forEach((contact, index) => {
+      const email = contact.email?.trim().toLowerCase();
+      if (email && emailCount[email] > 1) {
+        errors[`contacts[${index}].email`] = "Duplicate email is not allowed";
+      }
+    });
+  }
 
-      // Scroll to the first error field after DOM updates
-      setTimeout(() => {
-        const firstErrorField = Object.keys(errors).find((key) => errors[key]);
-        if (firstErrorField) {
-          // Convert field name to id (replace . and [] with -)
-          const elementId = firstErrorField.replace(/\[|\]|\./g, "-");
-          const element = document.getElementById(elementId);
-          if (element) {
-            element.scrollIntoView({ behavior: "smooth", block: "center" });
-            element.focus();
-          }
+  // Agreements validation
+  errors["agreements.termsAndConditionsAccepted"] = validateField("agreements.termsAndConditions", formData.agreements.termsAndConditionsAccepted) || "";
+ 
+  // Number range validations
+  if (
+    formData.targetCriteria.revenueMin !== undefined &&
+    formData.targetCriteria.revenueMax !== undefined &&
+    formData.targetCriteria.revenueMin > formData.targetCriteria.revenueMax
+  ) {
+    errors["targetCriteria.revenueMin"] = "Minimum revenue cannot be greater than maximum revenue";
+    errors["targetCriteria.revenueMax"] = "Maximum revenue cannot be less than minimum revenue";
+  }
+
+  if (
+    formData.targetCriteria.ebitdaMin !== undefined &&
+    formData.targetCriteria.ebitdaMax !== undefined &&
+    formData.targetCriteria.ebitdaMin > formData.targetCriteria.ebitdaMax
+  ) {
+    errors["targetCriteria.ebitdaMin"] = "Minimum EBITDA cannot be greater than maximum EBITDA";
+    errors["targetCriteria.ebitdaMax"] = "Maximum EBITDA cannot be less than minimum EBITDA";
+  }
+
+  if (
+    formData.targetCriteria.transactionSizeMin !== undefined &&
+    formData.targetCriteria.transactionSizeMax !== undefined &&
+    formData.targetCriteria.transactionSizeMin > formData.targetCriteria.transactionSizeMax
+  ) {
+    errors["targetCriteria.transactionSizeMin"] = "Minimum transaction size cannot be greater than maximum transaction size";
+    errors["targetCriteria.transactionSizeMax"] = "Maximum transaction size cannot be less than minimum transaction size";
+  }
+
+  // Update the fieldErrors state
+  setFieldErrors(errors);
+
+  // Check if there are any errors - only non-empty error messages count
+  const hasErrors = Object.values(errors).some((error) => error !== "");
+  
+  if (hasErrors) {
+    console.log("Validation errors found:", errors);
+    toast({
+      title: "Validation Error",
+      description: "Please correct the errors in the form before submitting.",
+      variant: "destructive",
+    });
+
+    // Scroll to the first error field after DOM updates
+    setTimeout(() => {
+      const firstErrorField = Object.keys(errors).find((key) => errors[key]);
+      if (firstErrorField) {
+        const elementId = firstErrorField.replace(/\[|\]|\./g, "-");
+        const element = document.getElementById(elementId);
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "center" });
+          element.focus();
         }
-      }, 100);
+      }
+    }, 100);
 
-      return;
-    }
+    return; // Early return only if there are actual errors
+  }
 
-    setIsSubmitting(true);
-    setSubmitStatus("idle");
-    setErrorMessage("");
+  // Continue with submission if no errors
+  setIsSubmitting(true);
+  setSubmitStatus("idle");
+  setErrorMessage("");
 
   try {
     const profileData = {
@@ -1517,6 +1577,8 @@ const fetchAdminProfile = async (id: string) => {
     const cleanProfileData = JSON.parse(
       JSON.stringify(profileData, (key, value) => (value === undefined ? null : value))
     );
+
+    console.log("Submitting profile data:", cleanProfileData);
 
     let response;
     if (isAdminEdit && profileId) {
@@ -1566,6 +1628,7 @@ const fetchAdminProfile = async (id: string) => {
       }
     }, 1000);
   } catch (error: any) {
+    console.error("Submission error:", error);
     setSubmitStatus("error");
     setErrorMessage(
       error.message || "An error occurred while updating the profile."
