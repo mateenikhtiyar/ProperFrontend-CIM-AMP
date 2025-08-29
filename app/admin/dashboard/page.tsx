@@ -965,7 +965,7 @@ export default function DealManagementDashboard() {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
         // Fetch active deals
-        const activeResponse = await fetch(`${apiUrl}/deals/active-accepted`, {
+        const activeResponse = await fetch(`${apiUrl}deals/active-accepted`, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
