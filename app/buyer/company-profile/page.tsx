@@ -261,113 +261,145 @@ export default function CompanyProfilePage() {
 
     fetchData();
   }, [authToken, isClient]);
+ 
+
+useEffect(() => {
+  if (!buyerProfile) return;
+  
+  // Only populate if the first contact is completely empty
+  if (formData.contacts.length > 0) {
+    const firstContact = formData.contacts[0];
+    
+    if (!firstContact.name && !firstContact.email && !firstContact.phone) {
+      console.log("Populating contact with buyer profile data");
+      
+      setFormData(prevData => ({
+        ...prevData,
+        contacts: [
+          {
+            name: buyerProfile.fullName || "",
+            email: buyerProfile.email || "",
+            phone: buyerProfile.phone || ""
+          },
+          ...prevData.contacts.slice(1) // Keep any additional contacts
+        ]
+      }));
+    }
+  }
+}, [buyerProfile]); // Only depend on buyerProfile
 
   // Form state
-  const [formData, setFormData] = useState<
-    CompanyProfile & {
-      selectedCurrency: string;
-      capitalAvailability: string;
-      updatedAt?: string;
-    }
-  >({
-    companyName: "",
-    website: "",
-    updatedAt: undefined,
-    contacts: [{ name: "", email: "", phone: "" }],
-    companyType: "",
-    capitalEntity: "",
-    dealsCompletedLast5Years: undefined,
-    averageDealSize: undefined,
-    preferences: {
-      stopSendingDeals: false,
-      doNotSendMarketedDeals: false,
-      allowBuyerLikeDeals: false,
-    },
-    targetCriteria: {
-      countries: [],
-      industrySectors: [],
-      revenueMin: undefined,
-      revenueMax: undefined,
-      ebitdaMin: undefined,
-      ebitdaMax: undefined,
-      transactionSizeMin: undefined,
-      transactionSizeMax: undefined,
-      revenueGrowth: undefined,
-      minStakePercent: undefined,
-      minYearsInBusiness: undefined,
-      preferredBusinessModels: [],
-      description: "",
-    },
-    agreements: {
-      feeAgreementAccepted: false,
-    },
-    selectedCurrency: "USD",
-    capitalAvailability: "Need to raise",
-  });
+ const [formData, setFormData] = useState<
+  CompanyProfile & {
+    selectedCurrency: string;
+    capitalAvailability: string;
+    updatedAt?: string;
+  }
+>({
+  companyName: "",
+  website: "",
+  updatedAt: undefined,
+  contacts: [{ name: "", email: "", phone: "" }], // Always start with one empty contact
+  companyType: "",
+  capitalEntity: "",
+  dealsCompletedLast5Years: undefined,
+  averageDealSize: undefined,
+  preferences: {
+    stopSendingDeals: false,
+    doNotSendMarketedDeals: false,
+    allowBuyerLikeDeals: false,
+  },
+  targetCriteria: {
+    countries: [],
+    industrySectors: [],
+    revenueMin: undefined,
+    revenueMax: undefined,
+    ebitdaMin: undefined,
+    ebitdaMax: undefined,
+    transactionSizeMin: undefined,
+    transactionSizeMax: undefined,
+    revenueGrowth: undefined,
+    minStakePercent: undefined,
+    minYearsInBusiness: undefined,
+    preferredBusinessModels: [],
+    description: "",
+  },
+  agreements: {
+    feeAgreementAccepted: false,
+  },
+  selectedCurrency: "USD",
+  capitalAvailability: "Need to raise",
+});
 
   // Fetch user's existing profile data
-  const fetchUserProfile = async () => {
-    if (!authToken || !isClient) return;
+const fetchUserProfile = async () => {
+  if (!authToken || !isClient) return;
 
-    try {
-      setIsSubmitting(true);
+  try {
+    setIsSubmitting(true);
 
-      const response = await fetch(`${apiUrl}/company-profiles/my-profile`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
+    const response = await fetch(`${apiUrl}/company-profiles/my-profile`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${authToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        console.log("No existing profile found, showing empty form");
+        return;
+      }
+
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        `API Error: ${response.status} - ${JSON.stringify(errorData)}`
+      );
+    }
+
+    const profileData = await response.json();
+    console.log("Existing profile loaded:", profileData);
+
+    if (profileData && profileData._id) {
+      setProfileId(profileData._id);
+      console.log("Company Profile ID stored for updates:", profileData._id);
+    }
+
+    if (profileData) {
+      // Handle contacts - ensure we always have at least one contact
+      let contactsToUse = profileData.contacts && profileData.contacts.length > 0 
+        ? profileData.contacts 
+        : [{ name: "", email: "", phone: "" }];
+
+      const updatedProfile = {
+        ...formData,
+        ...profileData,
+        contacts: contactsToUse,
+        preferences: {
+          ...formData.preferences,
+          ...(profileData.preferences || {}),
         },
-      });
+        targetCriteria: {
+          ...formData.targetCriteria,
+          ...(profileData.targetCriteria || {}),
+        },
+        agreements: {
+          feeAgreementAccepted: (formData.agreements?.feeAgreementAccepted ?? false) || (profileData.agreements?.feeAgreementAccepted ?? false),
+        },
+        selectedCurrency: profileData.selectedCurrency || "USD",
+        capitalEntity:
+          profileData.capitalEntity ||
+          profileData.capitalAvailability ||
+          "Need to raise",
+        capitalAvailability:
+          profileData.capitalAvailability ||
+          profileData.capitalEntity ||
+          "Need to raise",
+        updatedAt: profileData.updatedAt,
+      };
 
-      if (!response.ok) {
-        if (response.status === 404) {
-          console.log("No existing profile found, showing empty form");
-          return;
-        }
-
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          `API Error: ${response.status} - ${JSON.stringify(errorData)}`
-        );
-      }
-
-      const profileData = await response.json();
-      console.log("Existing profile loaded:", profileData);
-
-      if (profileData && profileData._id) {
-        setProfileId(profileData._id);
-        console.log("Company Profile ID stored for updates:", profileData._id);
-      }
-
-      if (profileData) {
-        const updatedProfile = {
-          ...formData,
-          ...profileData,
-          preferences: {
-            ...formData.preferences,
-            ...(profileData.preferences || {}),
-          },
-          targetCriteria: {
-            ...formData.targetCriteria,
-            ...(profileData.targetCriteria || {}),
-          },
-          agreements: {
-            feeAgreementAccepted: (formData.agreements?.feeAgreementAccepted ?? false) || (profileData.agreements?.feeAgreementAccepted ?? false),
-          },
-          selectedCurrency: profileData.selectedCurrency || "USD",
-          capitalEntity:
-            profileData.capitalEntity ||
-            profileData.capitalAvailability ||
-            "Need to raise",
-          capitalAvailability:
-            profileData.capitalAvailability ||
-            profileData.capitalEntity ||
-            "Need to raise",
-          updatedAt: profileData.updatedAt,
-        };
-
-        setFormData(updatedProfile);
+      setFormData(updatedProfile);
 
         // Update geography selections
         if (profileData.targetCriteria?.countries?.length > 0 && geoData) {
@@ -442,6 +474,7 @@ export default function CompanyProfilePage() {
       setIsSubmitting(false);
     }
   };
+  
 
   // Fetch buyer profile
   const fetchBuyerProfile = async () => {
@@ -1965,142 +1998,135 @@ export default function CompanyProfilePage() {
                     </div>
                   </div>
                 </div>
-                <div className="mb-4 mt-4">
-                  <Label className="text-[#667085] text-sm mb-1.5 block">
-                    Contact Information{" "}
-                    <span className="text-red-500">*</span>
-                  </Label>
-                  <div className="border border-[#d0d5dd] rounded-md p-4">
-                    {formData.contacts.map((contact, index) => (
-                      <div key={index} className="mb-4">
-                        {index > 0 && (
-                          <div className="h-px bg-gray-200 my-4"></div>
-                        )}
-                        <div className="flex justify-between items-center mb-2">
-                          <h3 className="text-sm font-medium">
-                            Contact {index + 1}
-                          </h3>
-                          {index > 0 && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeContact(index)}
-                              className="text-red-500 hover:text-red-700 p-0 h-auto"
-                            >
-                              <Trash2 className="h-4 w-4 mr-1" />
-                              Remove
-                            </Button>
-                          )}
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div>
-                            <Label
-                              htmlFor={`contact-name-${index}`}
-                              className="text-[#667085] text-sm mb-1.5 block"
-                            >
-                              Name <span className="text-red-500">*</span>
-                            </Label>
-                            <Input
-                              id={`contact-name-${index}`}
-                              className={`border-[#d0d5dd] ${
-                                fieldErrors[`contacts[${index}].name`]
-                                  ? "border-red-500 focus-visible:ring-red-500"
-                                  : ""
-                              }`}
-                              value={contact.name}
-                              onChange={(e) =>
-                                handleContactChange(
-                                  index,
-                                  "name",
-                                  e.target.value
-                                )
-                              }
-                              required
-                            />
-                            {fieldErrors[`contacts[${index}].name`] && (
-                              <p className="text-red-500 text-sm mt-1">
-                                {fieldErrors[`contacts[${index}].name`]}
-                              </p>
-                            )}
-                          </div>
-                          <div>
-                            <Label
-                              htmlFor={`contact-email-${index}`}
-                              className="text-[#667085] text-sm mb-1.5 block"
-                            >
-                              Email <span className="text-red-500">*</span>
-                            </Label>
-                            <Input
-                              id={`contact-email-${index}`}
-                              type="email"
-                              className={`border-[#d0d5dd] ${
-                                fieldErrors[`contacts[${index}].email`]
-                                  ? "border-red-500 focus-visible:ring-red-500"
-                                  : ""
-                              }`}
-                              value={contact.email}
-                              onChange={(e) =>
-                                handleContactChange(
-                                  index,
-                                  "email",
-                                  e.target.value
-                                )
-                              }
-                              required
-                            />
-                            {fieldErrors[`contacts[${index}].email`] && (
-                              <p className="text-red-500 text-sm mt-1">
-                                {fieldErrors[`contacts[${index}].email`]}
-                              </p>
-                            )}
-                          </div>
-                          <div>
-                            <Label
-                              htmlFor={`contact-phone-${index}`}
-                              className="text-[#667085] text-sm mb-1.5 block"
-                            >
-                              Phone <span className="text-red-500">*</span>
-                            </Label>
-                            <Input
-                              id={`contact-phone-${index}`}
-                              className={`border-[#d0d5dd] ${
-                                fieldErrors[`contacts[${index}].phone`]
-                                  ? "border-red-500 focus-visible:ring-red-500"
-                                  : ""
-                              }`}
-                              value={contact.phone}
-                              onChange={(e) =>
-                                handleContactChange(
-                                  index,
-                                  "phone",
-                                  e.target.value
-                                )
-                              }
-                              required
-                            />
-                            {fieldErrors[`contacts[${index}].phone`] && (
-                              <p className="text-red-500 text-sm mt-1">
-                                {fieldErrors[`contacts[${index}].phone`]}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                    {/* {formData.contacts.length < 3 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        onClick={addContact}
-                        className="text-[#3aafa9] hover:text-[#3aafa9] hover:bg-[#f0f4f8] p-0 h-auto"
-                      >
-                        <PlusCircle className="h-4 w-4 mr-2" />
-                        Add More Contacts
-                      </Button>
-                    )} */}
-                  </div>
-                </div>
+              <div className="mb-4 mt-4">
+  <Label className="text-[#667085] text-sm mb-1.5 block">
+    Contact Information{" "}
+    <span className="text-red-500">*</span>
+  </Label>
+  <div className="border border-[#d0d5dd] rounded-md p-4">
+    {formData.contacts.map((contact, index) => (
+      <div key={index} className="mb-4">
+        {index > 0 && (
+          <div className="h-px bg-gray-200 my-4"></div>
+        )}
+        <div className="flex justify-between items-center mb-2">
+          <h3 className="text-sm font-medium">
+            Contact {index + 1}
+          </h3>
+          {index > 0 && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => removeContact(index)}
+              className="text-red-500 hover:text-red-700 p-0 h-auto"
+            >
+              <Trash2 className="h-4 w-4 mr-1" />
+              Remove
+            </Button>
+          )}
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <Label
+              htmlFor={`contact-name-${index}`}
+              className="text-[#667085] text-sm mb-1.5 block"
+            >
+              Name <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id={`contact-name-${index}`}
+              placeholder="Enter full name"
+              className={`border-[#d0d5dd] ${
+                fieldErrors[`contacts[${index}].name`]
+                  ? "border-red-500 focus-visible:ring-red-500"
+                  : ""
+              }`}
+              value={contact.name || ""}
+              onChange={(e) =>
+                handleContactChange(
+                  index,
+                  "name",
+                  e.target.value
+                )
+              }
+              required
+            />
+            {fieldErrors[`contacts[${index}].name`] && (
+              <p className="text-red-500 text-sm mt-1">
+                {fieldErrors[`contacts[${index}].name`]}
+              </p>
+            )}
+          </div>
+          <div>
+            <Label
+              htmlFor={`contact-email-${index}`}
+              className="text-[#667085] text-sm mb-1.5 block"
+            >
+              Email <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id={`contact-email-${index}`}
+              type="email"
+              placeholder="Enter email address"
+              className={`border-[#d0d5dd] ${
+                fieldErrors[`contacts[${index}].email`]
+                  ? "border-red-500 focus-visible:ring-red-500"
+                  : ""
+              }`}
+              value={contact.email || ""}
+              onChange={(e) =>
+                handleContactChange(
+                  index,
+                  "email",
+                  e.target.value
+                )
+              }
+              required
+            />
+            {fieldErrors[`contacts[${index}].email`] && (
+              <p className="text-red-500 text-sm mt-1">
+                {fieldErrors[`contacts[${index}].email`]}
+              </p>
+            )}
+          </div>
+          <div>
+            <Label
+              htmlFor={`contact-phone-${index}`}
+              className="text-[#667085] text-sm mb-1.5 block"
+            >
+              Phone <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id={`contact-phone-${index}`}
+              type="tel"
+              placeholder="Enter phone number"
+              className={`border-[#d0d5dd] ${
+                fieldErrors[`contacts[${index}].phone`]
+                  ? "border-red-500 focus-visible:ring-red-500"
+                  : ""
+              }`}
+              value={contact.phone || ""}
+              onChange={(e) =>
+                handleContactChange(
+                  index,
+                  "phone",
+                  e.target.value
+                )
+              }
+              required
+            />
+            {fieldErrors[`contacts[${index}].phone`] && (
+              <p className="text-red-500 text-sm mt-1">
+                {fieldErrors[`contacts[${index}].phone`]}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+</div>
               </div>
 
               {/* Target Criteria */}
@@ -2158,7 +2184,7 @@ export default function CompanyProfilePage() {
                                     <path
                                       fillRule="evenodd"
                                       d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                                      clipRule="evenodd"
+                                                                           clipRule="evenodd"
                                     />
                                   </svg>
                                 </button>
@@ -2763,41 +2789,69 @@ export default function CompanyProfilePage() {
                       Amplify Fees)
                     </Label>
                   </div>
-                  <div className="mt-4 text-sm text-[#667085] border-t pt-4">
-                    <p>
-                      The <Link
+                  {/* Removed duplicate Master Fee Agreement confirmation block */}
+                </div>
+              </div>
+
+              {/* Master Fee Agreement Section */}
+              {formData.agreements.feeAgreementAccepted ? (
+                <div className="mt-4 text-sm text-[#667085] border-t pt-4">
+                  <p>
+                    The <Link
+                      href="/buyer/masterfeeagreement"
+                      className="text-[#3aafa9] underline"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Master Fee Agreement
+                    </Link> was agreed to by {buyerProfile?.fullName || "(insert buyer's name)"} on {(() => {
+                      let dateStr = formData.agreementsAcceptedAt ?? formData.updatedAt;
+                      if (dateStr && !isNaN(Date.parse(dateStr))) {
+                        const date = new Date(dateStr);
+                        const time = date.toLocaleTimeString("en-US", {
+                          timeZone: "America/New_York",
+                          hour: "numeric",
+                          minute: "2-digit",
+                          hour12: true,
+                        });
+                        const day = date.toLocaleDateString("en-US", {
+                          timeZone: "America/New_York",
+                          weekday: "long",
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                        });
+                        return `${time}\n${day}\nEastern Time (ET)`;
+                      }
+                      return "(insert date and time of submission)";
+                    })()}
+                    .
+                  </p>
+                </div>
+              ) : (
+                <div className="mb-4">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="feeAgreementAccepted"
+                      checked={formData.agreements.feeAgreementAccepted}
+                      onChange={e => handleNestedChange("agreements", "feeAgreementAccepted", e.target.checked)}
+                      className="mr-2"
+                    />
+                    <label htmlFor="feeAgreementAccepted" className="text-gray-700">
+                      I have read and agree to the{' '}
+                      <a
                         href="/buyer/masterfeeagreement"
-                        className="text-[#3aafa9] underline"
+                        className="text-blue-600 underline"
                         target="_blank"
                         rel="noopener noreferrer"
                       >
                         Master Fee Agreement
-                      </Link> was agreed to by {buyerProfile?.fullName || "(insert buyer's name)"} on {(() => {
-                        let dateStr = formData.agreementsAcceptedAt ?? formData.updatedAt;
-                        if (dateStr && !isNaN(Date.parse(dateStr))) {
-                          const date = new Date(dateStr);
-                          const time = date.toLocaleTimeString("en-US", {
-                            timeZone: "America/New_York",
-                            hour: "numeric",
-                            minute: "2-digit",
-                            hour12: true,
-                          });
-                          const day = date.toLocaleDateString("en-US", {
-                            timeZone: "America/New_York",
-                            weekday: "long",
-                            day: "numeric",
-                            month: "long",
-                            year: "numeric",
-                          });
-                          return `${time}\n${day}\nEastern Time (ET)`;
-                        }
-                        return "(insert date and time of submission)";
-                      })()}
-                      .
-                    </p>
+                      </a>
+                    </label>
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* Submit Button */}
               <div className="flex justify-end">
