@@ -1018,7 +1018,7 @@ export default function DealManagementDashboard() {
           offMarketDealsArray.map(async (deal) => {
             try {
               const sellerRes = await fetch(
-                `${apiUrl}/sellers/public/${deal.seller}`
+                `${apiUrl}sellers/public/${deal.seller}`
               );
               if (sellerRes.ok) {
                 const sellerProfile = await sellerRes.json();
