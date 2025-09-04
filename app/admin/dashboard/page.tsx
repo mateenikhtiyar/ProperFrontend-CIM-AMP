@@ -456,7 +456,7 @@ function AdminEditDealForm({ deal, onClose, onSaved }) {
         businessModel: { ...form.businessModel },
         buyerFit: { ...form.buyerFit },
       };
-      const res = await fetch(`${apiUrl}/deals/${deal._id}`, {
+      const res = await fetch(`${apiUrl}deals/${deal._id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -791,7 +791,7 @@ export default function DealManagementDashboard() {
     try {
       const token = localStorage.getItem("token");
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      const response = await fetch(`${apiUrl}/deals/${dealId}/status-summary`, {
+      const response = await fetch(`${apiUrl}deals/${dealId}/status-summary`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -860,7 +860,7 @@ export default function DealManagementDashboard() {
           try {
             const token = localStorage.getItem("token");
             const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-            const response = await fetch(`${apiUrl}/deals/${selectedDealForOffMarketDialog._id}/close-deal`, {
+            const response = await fetch(`${apiUrl}deals/${selectedDealForOffMarketDialog._id}/close-deal`, {
               method: "POST",
               headers: {
                 Authorization: `Bearer ${token}`,
@@ -1180,7 +1180,7 @@ export default function DealManagementDashboard() {
       const token = localStorage.getItem("token");
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
       // Try DELETE first
-      let response = await fetch(`${apiUrl}/deals/${dealId}`, {
+      let response = await fetch(`${apiUrl}deals/${dealId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
