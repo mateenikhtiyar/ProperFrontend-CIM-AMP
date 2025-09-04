@@ -1096,7 +1096,7 @@ export default function DealManagementDashboard() {
       const token = localStorage.getItem("token");
       if (!token) throw new Error("No authentication token found");
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/deals/${deal._id}/status-summary`,
+        `${process.env.NEXT_PUBLIC_API_URL}deals/${deal._id}/status-summary`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
