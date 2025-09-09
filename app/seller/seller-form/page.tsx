@@ -973,101 +973,133 @@ export default function SellerFormPage() {
     }));
   };
 
-  const renderGeographySelection = () => {
-    const filteredGeoData = flatGeoData.filter(
-      (item) =>
-        !debouncedGeoSearch ||
-        item.name.toLowerCase().includes(debouncedGeoSearch.toLowerCase()) ||
-        item.path.toLowerCase().includes(debouncedGeoSearch.toLowerCase())
-    );
+ const renderGeographySelection = () => {
+  const filteredGeoData = flatGeoData.filter(
+    (item) =>
+      !debouncedGeoSearch ||
+      item.name.toLowerCase().includes(debouncedGeoSearch.toLowerCase()) ||
+      item.path.toLowerCase().includes(debouncedGeoSearch.toLowerCase())
+  );
 
-    const groupedData = filteredGeoData.reduce((acc, item) => {
-      const countryCode = item.countryCode || item.id;
-      if (!acc[countryCode]) {
-        acc[countryCode] = {
-          country: null,
-          states: [],
-          // Remove cities: cities: [],
-        };
+  const groupedData = filteredGeoData.reduce((acc, item) => {
+    const countryCode = item.countryCode || item.id;
+    if (!acc[countryCode]) {
+      acc[countryCode] = {
+        country: null,
+        states: [],
+      };
+    }
+
+    if (item.type === "country") {
+      acc[countryCode].country = item;
+    } else if (item.type === "state") {
+      acc[countryCode].states.push(item);
+    }
+
+    return acc;
+  }, {} as Record<string, { country: GeoItem | null; states: GeoItem[] }>);
+
+  // Priority countries (Canada, USA, Mexico)
+  const priorityCountryCodes = ['CA', 'US', 'MX'];
+  
+  // Separate priority and other countries
+  const priorityGroups = [];
+  const otherGroups = [];
+
+  Object.values(groupedData)
+    .filter((group) => group.country || group.states.length > 0)
+    .forEach((group) => {
+      if (!group.country) return;
+      
+      const countryCode = group.country.id;
+      if (priorityCountryCodes.includes(countryCode)) {
+        priorityGroups.push(group);
+      } else {
+        otherGroups.push(group);
       }
+    });
 
-      if (item.type === "country") {
-        acc[countryCode].country = item;
-      } else if (item.type === "state") {
-        acc[countryCode].states.push(item);
-      } // Do not handle cities
+  // Sort priority countries in the specified order (Canada, USA, Mexico)
+  priorityGroups.sort((a, b) => {
+    const aIndex = priorityCountryCodes.indexOf(a.country?.id || '');
+    const bIndex = priorityCountryCodes.indexOf(b.country?.id || '');
+    return aIndex - bIndex;
+  });
 
-      return acc;
-    }, {} as Record<string, { country: GeoItem | null; states: GeoItem[] }>);
+  // Sort other countries alphabetically
+  otherGroups.sort((a, b) => {
+    const aName = a.country?.name || '';
+    const bName = b.country?.name || '';
+    return aName.localeCompare(bName);
+  });
 
-    return (
-      <div className="space-y-2 font-poppins">
-        {Object.values(groupedData)
-          .filter((group) => group.country || group.states.length > 0)
-          .map((group, groupIndex) => {
-            if (!group.country) return null;
-            const country = group.country;
+  // Combine priority and other groups
+  const sortedGroups = [...priorityGroups, ...otherGroups];
 
-            const filteredStates = group.states;
+  return (
+    <div className="space-y-2 font-poppins">
+      {sortedGroups.map((group, groupIndex) => {
+        if (!group.country) return null;
+        const country = group.country;
+        const filteredStates = group.states;
 
-            return (
+        return (
+          <div
+            key={`country-${country.id}-${groupIndex}`}
+            className="border-b border-gray-100 pb-1"
+          >
+            <div className="flex items-center">
               <div
-                key={`country-${country.id}-${groupIndex}`}
-                className="border-b border-gray-100 pb-1"
+                className="flex items-center cursor-pointer flex-1"
+                onClick={() => toggleContinentExpansion(country.id)}
               >
-                <div className="flex items-center">
-                  <div
-                    className="flex items-center cursor-pointer flex-1"
-                    onClick={() => toggleContinentExpansion(country.id)}
-                  >
-                    {expandedContinents[country.id] ? (
-                      <ChevronDown className="h-4 w-4 mr-1 text-gray-500" />
-                    ) : (
-                      <ChevronRight className="h-4 w-4 mr-1 text-gray-500" />
-                    )}
-                    <Label className="text-[#344054] cursor-pointer font-medium">
-                      {country.name}
-                    </Label>
-                  </div>
-                </div>
-
-                {expandedContinents[country.id] &&
-                  filteredStates.length > 0 && (
-                    <div className="ml-6 mt-1 space-y-1">
-                      {filteredStates.map((state, stateIndex) => (
-                        <div
-                          key={`state-${state.id}-${stateIndex}`}
-                          className="pl-2"
-                        >
-                          <div className="flex items-center">
-                            <input
-                              type="radio"
-                              id={`geo-${state.id}`}
-                              name="geography"
-                              checked={geoSelection.selectedId === state.id}
-                              onChange={() =>
-                                selectGeography(state.id, state.path, "state")
-                              }
-                              className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9]"
-                            />
-                            <Label
-                              htmlFor={`geo-${state.id}`}
-                              className="text-[#344054] cursor-pointer"
-                            >
-                              {state.name}
-                            </Label>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                {expandedContinents[country.id] ? (
+                  <ChevronDown className="h-4 w-4 mr-1 text-gray-500" />
+                ) : (
+                  <ChevronRight className="h-4 w-4 mr-1 text-gray-500" />
+                )}
+                <Label className="text-[#344054] cursor-pointer font-medium">
+                  {country.name}
+                </Label>
               </div>
-            );
-          })}
-      </div>
-    );
-  };
+            </div>
 
+            {expandedContinents[country.id] &&
+              filteredStates.length > 0 && (
+                <div className="ml-6 mt-1 space-y-1">
+                  {filteredStates.map((state, stateIndex) => (
+                    <div
+                      key={`state-${state.id}-${stateIndex}`}
+                      className="pl-2"
+                    >
+                      <div className="flex items-center">
+                        <input
+                          type="radio"
+                          id={`geo-${state.id}`}
+                          name="geography"
+                          checked={geoSelection.selectedId === state.id}
+                          onChange={() =>
+                            selectGeography(state.id, state.path, "state")
+                          }
+                          className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9]"
+                        />
+                        <Label
+                          htmlFor={`geo-${state.id}`}
+                          className="text-[#344054] cursor-pointer"
+                        >
+                          {state.name}
+                        </Label>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
   const memoizedFilteredGeoData = useMemo(() => {
     return flatGeoData
       .filter(
