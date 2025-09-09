@@ -1157,101 +1157,283 @@ export default function EditDealPageFixed() {
   };
 
   // Replace the renderGeographySelection function with this optimized version
-  const renderGeographySelection = () => {
-    const filteredGeoData = flatGeoData.filter(
-      (item) =>
-        !debouncedGeoSearch ||
-        item.name.toLowerCase().includes(debouncedGeoSearch.toLowerCase()) ||
-        item.path.toLowerCase().includes(debouncedGeoSearch.toLowerCase())
-    );
+ // Replace the renderGeographySelection function with this updated version
+// Replace the renderGeographySelection function with this updated version
+const renderGeographySelection = () => {
+  const filteredGeoData = flatGeoData.filter(
+    (item) =>
+      !debouncedGeoSearch ||
+      item.name.toLowerCase().includes(debouncedGeoSearch.toLowerCase()) ||
+      item.path.toLowerCase().includes(debouncedGeoSearch.toLowerCase())
+  );
 
-    const groupedData = filteredGeoData.reduce((acc, item) => {
-      const countryCode = item.countryCode || item.id;
-      if (!acc[countryCode]) {
-        acc[countryCode] = {
-          country: null,
-          states: [],
-        };
+  const groupedData = filteredGeoData.reduce((acc, item) => {
+    const countryCode = item.countryCode || item.id;
+    if (!acc[countryCode]) {
+      acc[countryCode] = {
+        country: null,
+        states: [],
+      };
+    }
+
+    if (item.type === "country") {
+      acc[countryCode].country = item;
+    } else if (item.type === "state") {
+      acc[countryCode].states.push(item);
+    }
+
+    return acc;
+  }, {} as Record<string, { country: GeoItem | null; states: GeoItem[] }>);
+
+  // Define priority countries (Canada, USA, Mexico)
+  const priorityCountryCodes = ['CA', 'US', 'MX'];
+  const priorityCountryNames = ['Canada', 'United States', 'Mexico'];
+
+  // Separate priority countries from others
+  const priorityGroups: Array<{ country: GeoItem | null; states: GeoItem[] }> = [];
+  const otherGroups: Array<{ country: GeoItem | null; states: GeoItem[] }> = [];
+
+  Object.entries(groupedData)
+    .filter(([, group]) => group.country || group.states.length > 0)
+    .forEach(([countryCode, group]) => {
+      if (!group.country) return;
+
+      if (priorityCountryCodes.includes(countryCode) || 
+          priorityCountryNames.includes(group.country.name)) {
+        priorityGroups.push(group);
+      } else {
+        otherGroups.push(group);
+      }
+    });
+
+  // Sort priority groups by the predefined order
+  priorityGroups.sort((a, b) => {
+    if (!a.country || !b.country) return 0;
+    
+    const aIndex = priorityCountryCodes.indexOf(a.country.id) !== -1 
+      ? priorityCountryCodes.indexOf(a.country.id)
+      : priorityCountryNames.indexOf(a.country.name);
+    
+    const bIndex = priorityCountryCodes.indexOf(b.country.id) !== -1 
+      ? priorityCountryCodes.indexOf(b.country.id) 
+      : priorityCountryNames.indexOf(b.country.name);
+    
+    return aIndex - bIndex;
+  });
+
+  // Sort other groups alphabetically
+  otherGroups.sort((a, b) => {
+    if (!a.country || !b.country) return 0;
+    return a.country.name.localeCompare(b.country.name);
+  });
+
+  // Combine priority and other groups
+  const allGroups = [...priorityGroups, ...otherGroups];
+
+  return (
+    <div className="space-y-2 font-poppins">
+      {allGroups.map((group, groupIndex) => {
+        if (!group.country) return null;
+        const country = group.country;
+        const filteredStates = group.states;
+        const isPriority = priorityCountryCodes.includes(country.id) || 
+                          priorityCountryNames.includes(country.name);
+
+        return (
+          <div
+            key={`country-${country.id}-${groupIndex}`}
+            className="border-b border-gray-100 pb-1"
+          >
+            <div className="flex items-center">
+              <div
+                className="flex items-center cursor-pointer flex-1"
+                onClick={() => toggleContinentExpansion(country.id)}
+              >
+                {expandedContinents[country.id] ? (
+                  <ChevronDown className="h-4 w-4 mr-1 text-gray-500" />
+                ) : (
+                  <ChevronRight className="h-4 w-4 mr-1 text-gray-500" />
+                )}
+                <Label className="text-[#344054] cursor-pointer font-medium">
+                  {country.name}
+                </Label>
+              </div>
+            </div>
+
+            {expandedContinents[country.id] &&
+              filteredStates.length > 0 && (
+                <div className="ml-6 mt-1 space-y-1">
+                  {filteredStates.map((state, stateIndex) => (
+                    <div
+                      key={`state-${state.id}-${stateIndex}`}
+                      className="pl-2"
+                    >
+                      <div className="flex items-center">
+                        <input
+                          type="radio"
+                          id={`geo-${state.id}`}
+                          name="geography"
+                          checked={
+                            geoSelection.selectedId === state.id || 
+                            geoSelection.selectedName === state.path ||
+                            formData.geographySelections.includes(state.path)
+                          }
+                          onChange={() => selectGeography(state.id, state.path)}
+                          className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9]"
+                        />
+                        <Label
+                          htmlFor={`geo-${state.id}`}
+                          className="text-[#344054] cursor-pointer"
+                        >
+                          {state.name}
+                        </Label>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+// Also update the fetchInitialData useEffect to prioritize these countries in the initial data load
+useEffect(() => {
+  const fetchInitialData = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const userRole = localStorage.getItem("userRole");
+
+      if (!token || userRole !== "seller") {
+        router.push("/seller/login");
+        return;
       }
 
-      if (item.type === "country") {
-        acc[countryCode].country = item;
-      } else if (item.type === "state") {
-        acc[countryCode].states.push(item);
-      } // Do not handle cities
+      // Load all countries with priority sorting
+      const allCountries = Country.getAllCountries();
+      const geoData: GeoItem[] = [];
 
-      return acc;
-    }, {} as Record<string, { country: GeoItem | null; states: GeoItem }>);
+      // Define priority countries
+      const priorityCountryCodes = ['CA', 'US', 'MX'];
+      const priorityCountries = allCountries.filter(country => 
+        priorityCountryCodes.includes(country.isoCode)
+      );
+      const otherCountries = allCountries.filter(country => 
+        !priorityCountryCodes.includes(country.isoCode)
+      );
 
-    return (
-      <div className="space-y-2 font-poppins">
-        {Object.values(groupedData)
-          .filter((group) => group.country || group.states.length > 0)
-          .map((group, groupIndex) => {
-            if (!group.country) return null;
-            const country = group.country;
+      // Sort priority countries by defined order
+      priorityCountries.sort((a, b) => {
+        return priorityCountryCodes.indexOf(a.isoCode) - priorityCountryCodes.indexOf(b.isoCode);
+      });
 
-            const filteredStates = group.states;
+      // Sort other countries alphabetically
+      otherCountries.sort((a, b) => a.name.localeCompare(b.name));
 
-            return (
-              <div
-                key={`country-${country.id}-${groupIndex}`}
-                className="border-b border-gray-100 pb-1"
-              >
-                <div className="flex items-center">
-                  <div
-                    className="flex items-center cursor-pointer flex-1"
-                    onClick={() => toggleContinentExpansion(country.id)}
-                  >
-                    {expandedContinents[country.id] ? (
-                      <ChevronDown className="h-4 w-4 mr-1 text-gray-500" />
-                    ) : (
-                      <ChevronRight className="h-4 w-4 mr-1 text-gray-500" />
-                    )}
-                    <Label className="text-[#344054] cursor-pointer font-medium">
-                      {country.name}
-                    </Label>
-                  </div>
-                </div>
+      // Add priority countries first, then others
+      [...priorityCountries, ...otherCountries].forEach((country) => {
+        geoData.push({
+          id: country.isoCode,
+          name: country.name,
+          path: country.name,
+          type: "country",
+          countryCode: country.isoCode,
+        });
+      });
 
-                {expandedContinents[country.id] &&
-                  filteredStates.length > 0 && (
-                    <div className="ml-6 mt-1 space-y-1">
-                      {filteredStates.map((state, stateIndex) => (
-                        <div
-                          key={`state-${state.id}-${stateIndex}`}
-                          className="pl-2"
-                        >
-                          <div className="flex items-center">
-                           <input
-  type="radio"
-  id={`geo-${state.id}`}
-  name="geography"
-  checked={
-    geoSelection.selectedId === state.id || 
-    geoSelection.selectedName === state.path ||
-    formData.geographySelections.includes(state.path)
-  }
-  onChange={() => selectGeography(state.id, state.path)}
-  className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9]"
-/>
-                            <Label
-                              htmlFor={`geo-${state.id}`}
-                              className="text-[#344054] cursor-pointer"
-                            >
-                              {state.name}
-                            </Label>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-              </div>
-            );
-          })}
-      </div>
-    );
+      setFlatGeoData(geoData);
+
+      // Load industry data asynchronously
+      const industryResponse = await getIndustryData();
+      setIndustryData(industryResponse);
+      setFlatIndustryData(flattenIndustryData(industryResponse.sectors));
+
+      // Then fetch the existing deal data (for edit)
+      await fetchDealData();
+      
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load form data. Please refresh the page.",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+    }
   };
+
+  fetchInitialData();
+}, [router, dealId]);
+
+// Also update the fetchInitialData useEffect to prioritize these countries in the initial data load
+useEffect(() => {
+  const fetchInitialData = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const userRole = localStorage.getItem("userRole");
+
+      if (!token || userRole !== "seller") {
+        router.push("/seller/login");
+        return;
+      }
+
+      // Load all countries with priority sorting
+      const allCountries = Country.getAllCountries();
+      const geoData: GeoItem[] = [];
+
+      // Define priority countries
+      const priorityCountryCodes = ['CA', 'US', 'MX'];
+      const priorityCountries = allCountries.filter(country => 
+        priorityCountryCodes.includes(country.isoCode)
+      );
+      const otherCountries = allCountries.filter(country => 
+        !priorityCountryCodes.includes(country.isoCode)
+      );
+
+      // Sort priority countries by defined order
+      priorityCountries.sort((a, b) => {
+        return priorityCountryCodes.indexOf(a.isoCode) - priorityCountryCodes.indexOf(b.isoCode);
+      });
+
+      // Sort other countries alphabetically
+      otherCountries.sort((a, b) => a.name.localeCompare(b.name));
+
+      // Add priority countries first, then others
+      [...priorityCountries, ...otherCountries].forEach((country) => {
+        geoData.push({
+          id: country.isoCode,
+          name: country.name,
+          path: country.name,
+          type: "country",
+          countryCode: country.isoCode,
+        });
+      });
+
+      setFlatGeoData(geoData);
+
+      // Load industry data asynchronously
+      const industryResponse = await getIndustryData();
+      setIndustryData(industryResponse);
+      setFlatIndustryData(flattenIndustryData(industryResponse.sectors));
+
+      // Then fetch the existing deal data (for edit)
+      await fetchDealData();
+      
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load form data. Please refresh the page.",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+    }
+  };
+
+  fetchInitialData();
+}, [router, dealId]);
 
   // Handle file selection
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
