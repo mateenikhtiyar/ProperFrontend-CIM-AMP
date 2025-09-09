@@ -131,8 +131,6 @@ export default function BuyerRegisterPage() {
 
     if (!formData.website.trim()) {
       newErrors.website = "Company website is required";
-    } else if (!/^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/.test(formData.website)) {
-      newErrors.website = "Invalid website URL";
     }
 
     setErrors(newErrors);
