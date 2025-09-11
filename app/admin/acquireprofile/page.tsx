@@ -408,14 +408,16 @@ const fetchUserProfile = async () => {
     const updatedProfile = {
       ...formData,
       ...profileData,
-      website: buyerDetails.website || profileData.website,
-      contacts: [
-        {
-          name: buyerDetails?.fullName || "",
-          email: buyerDetails?.email || "",
-          phone: buyerDetails?.phone || "",
-        },
-      ],
+      website: buyerDetails?.website || profileData.website || "",
+      contacts: profileData.contacts && profileData.contacts.length > 0
+        ? profileData.contacts
+        : [
+            {
+              name: buyerDetails?.fullName || "",
+              email: buyerDetails?.email || "",
+              phone: buyerDetails?.phone || "",
+            },
+          ],
       companyName: profileData.companyName || buyerDetails?.companyName || "",
       preferences: {
         ...formData.preferences,
@@ -548,15 +550,10 @@ const validateField = (field: string, value: any): string | null => {
     case "companyName":
       return !value?.trim() ? "Company name is required" : null;
     case "website":
-      try {
-        const websiteUrl = new URL(
-          value.startsWith("http") ? value : `https://${value}`
-        );
-        if (!websiteUrl.hostname.includes(".")) {
-          return "Please enter a valid website URL (e.g., example.com)";
-        }
-      } catch (e) {
-        return "Please enter a valid website URL (e.g., example.com)";
+      // Remove strict URL validation, allow simple domains
+      if (!value?.trim()) return null; // Allow empty for optional fields
+      if (!value.includes(".")) {
+        return "Please enter a valid website (e.g., example.com)";
       }
       return null;
     case "companyType":
@@ -573,12 +570,11 @@ const validateField = (field: string, value: any): string | null => {
         : null;
     case "contact.phone":
       if (!value?.trim()) return "Contact phone is required";
-      const phoneRegex =
-        /^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/;
+      // Simplified phone regex to allow more formats without starting with +
+      const phoneRegex = /^\+?[0-9\s.\-()]{7,20}$/; // Allows optional +, spaces, dots, dashes, parentheses, 7-20 digits
       return !phoneRegex.test(value)
-        ? "Please enter a valid phone number (e.g., 123-456-7890)"
+        ? "Please enter a valid phone number"
         : null;
-    // REMOVE THESE CASES - only keep feeAgreement
     case "agreements.feeAgreement":
       return value ? null : "You must accept the fee agreement";
     case "dealsCompletedLast5Years":
@@ -600,7 +596,9 @@ const validateField = (field: string, value: any): string | null => {
     case "targetCriteria.transactionSizeMin":
     case "targetCriteria.transactionSizeMax":
     case "targetCriteria.revenueGrowth":
+      return value === undefined || value === "" ? "This field is required" : null;
     case "targetCriteria.minStakePercent":
+      return null; // This field is now optional
     case "targetCriteria.minYearsInBusiness":
       return value === undefined || value === "" ? "This field is required" : null;
     case "targetCriteria.preferredBusinessModels":
@@ -1348,8 +1346,6 @@ const validateField = (field: string, value: any): string | null => {
         "agreements.termsAndConditions",
         formData.agreements.termsAndConditionsAccepted
       ) || "";
-    errors["agreements.ndaAccepted"] =
-      validateField("agreements.nda", formData.agreements.ndaAccepted) || "";
     errors["agreements.feeAgreementAccepted"] =
       validateField(
         "agreements.feeAgreement",
@@ -1402,6 +1398,26 @@ const validateField = (field: string, value: any): string | null => {
   // Handle form submission
   // Update the handleSubmit function to scroll to the first error
  // Handle form submission
+const getExistingProfileId = async (currentBuyerId: string): Promise<string | null> => {
+  if (!authToken) return null;
+  try {
+    const response = await fetch(`${apiUrl}/company-profiles/my-profile`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${authToken}`,
+      },
+    });
+    if (response.ok) {
+      const profileData = await response.json();
+      return profileData._id;
+    }
+    return null;
+  } catch (error) {
+    console.error("Error checking for existing profile:", error);
+    return null;
+  }
+};
 const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
 
@@ -1473,6 +1489,7 @@ const handleSubmit = async (e: React.FormEvent) => {
 
   // Agreements validation
   errors["agreements.termsAndConditionsAccepted"] = validateField("agreements.termsAndConditions", formData.agreements.termsAndConditionsAccepted) || "";
+  errors["agreements.feeAgreementAccepted"] = validateField("agreements.feeAgreement", formData.agreements.feeAgreementAccepted) || "";
  
   // Number range validations
   if (
@@ -1592,15 +1609,26 @@ const handleSubmit = async (e: React.FormEvent) => {
         body: JSON.stringify(cleanProfileData),
       });
     } else {
-      // POST for buyer
-      response = await fetch(`${apiUrl}/company-profiles`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
-        },
-        body: JSON.stringify(cleanProfileData),
-      });
+      const existingProfileId = profileId || (await getExistingProfileId(buyerId));
+      if (existingProfileId) {
+        response = await fetch(`${apiUrl}/company-profiles/${existingProfileId}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`,
+          },
+          body: JSON.stringify(cleanProfileData),
+        });
+      } else {
+        response = await fetch(`${apiUrl}/company-profiles`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`,
+          },
+          body: JSON.stringify(cleanProfileData),
+        });
+      }
     }
 
     if (!response.ok) {
@@ -1963,7 +1991,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                 </Label>
                 <Input
                   id="website"
-                  placeholder="https://example.com"
+                  placeholder="example.com"
                   className={`border-[#d0d5dd] ${
                     fieldErrors["website"]
                       ? "border-red-500 focus-visible:ring-red-500"
@@ -1979,7 +2007,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                   </p>
                 )}
                 <p className="text-gray-500 text-xs mt-1">
-                  Enter a valid URL (e.g., example.com or https://example.com)
+                  Enter a valid website (e.g., example.com)
                 </p>
               </div>
             </div>

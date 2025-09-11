@@ -34,6 +34,10 @@ import {
   X,
   Download,
 } from "lucide-react";
+
+// Helper for required field star
+const RequiredStar = () => <span className="text-red-500">*</span>;
+
 // Remove these imports:
 // import { getGeoData, type Continent, type Region, type SubRegion, type GeoData } from "@/lib/geography-data"
 
@@ -1185,59 +1189,99 @@ const renderGeographySelection = () => {
     return acc;
   }, {} as Record<string, { country: GeoItem | null; states: GeoItem[] }>);
 
-  // Define priority countries (Canada, USA, Mexico)
+  // Priority countries (Canada, USA, Mexico)
   const priorityCountryCodes = ['CA', 'US', 'MX'];
-  const priorityCountryNames = ['Canada', 'United States', 'Mexico'];
+  
+  // US Minor Outlying Islands territories
+  const usMinorOutlyingIslands = [
+    'American Samoa',
+    'Baker Island', 
+    'Guam',
+    'Howland Island',
+    'Jarvis Island',
+    'Johnston Atoll',
+    'Kingman Reef',
+    'Midway Atoll',
+    'Navassa Island',
+    'Northern Mariana Islands',
+    'United States Virgin Islands',
+    'Palmyra Atoll'
+  ];
 
-  // Separate priority countries from others
-  const priorityGroups: Array<{ country: GeoItem | null; states: GeoItem[] }> = [];
-  const otherGroups: Array<{ country: GeoItem | null; states: GeoItem[] }> = [];
+  // Separate priority and other countries
+  const priorityGroups = [];
+  const otherGroups = [];
 
-  Object.entries(groupedData)
-    .filter(([, group]) => group.country || group.states.length > 0)
-    .forEach(([countryCode, group]) => {
+  Object.values(groupedData)
+    .filter((group) => group.country || group.states.length > 0)
+    .forEach((group) => {
       if (!group.country) return;
-
-      if (priorityCountryCodes.includes(countryCode) || 
-          priorityCountryNames.includes(group.country.name)) {
+      
+      const countryCode = group.country.id;
+      
+      // Skip Puerto Rico as a top-level country
+      if (group.country.name === 'Puerto Rico') {
+        return;
+      }
+      
+      // Special handling for US - remove US Minor Outlying Islands and keep Puerto Rico
+      if (countryCode === 'US') {
+        const usStates = group.states.filter(state => 
+          !usMinorOutlyingIslands.includes(state.name) && 
+          state.name !== 'United States Minor Outlying Islands'
+        );
+        group.states = usStates;
+      }
+      
+      if (priorityCountryCodes.includes(countryCode)) {
         priorityGroups.push(group);
       } else {
         otherGroups.push(group);
       }
     });
 
-  // Sort priority groups by the predefined order
+  // Add US Minor Outlying Islands as a separate top-level entry
+  const usMinorOutlyingIslandsGroup = {
+    country: {
+      id: 'UM',
+      name: 'United States Minor Outlying Islands',
+      path: 'United States Minor Outlying Islands',
+      type: 'country' as const,
+      countryCode: 'UM'
+    },
+    states: usMinorOutlyingIslands.map((island, index) => ({
+      id: `UM-${index}`,
+      name: island,
+      path: `United States Minor Outlying Islands > ${island}`,
+      type: 'state' as const,
+      countryCode: 'UM',
+      stateCode: index.toString()
+    }))
+  };
+
+  // Sort priority countries in the specified order (Canada, USA, Mexico)
   priorityGroups.sort((a, b) => {
-    if (!a.country || !b.country) return 0;
-    
-    const aIndex = priorityCountryCodes.indexOf(a.country.id) !== -1 
-      ? priorityCountryCodes.indexOf(a.country.id)
-      : priorityCountryNames.indexOf(a.country.name);
-    
-    const bIndex = priorityCountryCodes.indexOf(b.country.id) !== -1 
-      ? priorityCountryCodes.indexOf(b.country.id) 
-      : priorityCountryNames.indexOf(b.country.name);
-    
+    const aIndex = priorityCountryCodes.indexOf(a.country?.id || '');
+    const bIndex = priorityCountryCodes.indexOf(b.country?.id || '');
     return aIndex - bIndex;
   });
 
-  // Sort other groups alphabetically
+  // Sort other countries alphabetically
   otherGroups.sort((a, b) => {
-    if (!a.country || !b.country) return 0;
-    return a.country.name.localeCompare(b.country.name);
+    const aName = a.country?.name || '';
+    const bName = b.country?.name || '';
+    return aName.localeCompare(bName);
   });
 
-  // Combine priority and other groups
-  const allGroups = [...priorityGroups, ...otherGroups];
+  // Combine priority groups, US Minor Outlying Islands, and other groups
+  const sortedGroups = [...priorityGroups, usMinorOutlyingIslandsGroup, ...otherGroups];
 
   return (
     <div className="space-y-2 font-poppins">
-      {allGroups.map((group, groupIndex) => {
+      {sortedGroups.map((group, groupIndex) => {
         if (!group.country) return null;
         const country = group.country;
         const filteredStates = group.states;
-        const isPriority = priorityCountryCodes.includes(country.id) || 
-                          priorityCountryNames.includes(country.name);
 
         return (
           <div
@@ -1298,7 +1342,6 @@ const renderGeographySelection = () => {
     </div>
   );
 };
-
 // Also update the fetchInitialData useEffect to prioritize these countries in the initial data load
 useEffect(() => {
   const fetchInitialData = async () => {
@@ -1492,10 +1535,24 @@ useEffect(() => {
         throw new Error("Please select a geography");
       if (formData.industrySelections.length === 0)
         throw new Error("Please select at least one industry");
+      if (!formData.yearsInBusiness || formData.yearsInBusiness <= 0)
+        throw new Error("Years in business is required and must be greater than 0");
+      if (!formData.trailingRevenue || formData.trailingRevenue <= 0)
+        throw new Error("Trailing 12 Month Revenue is required and must be greater than 0");
+      if (formData.trailingEBITDA === null || formData.trailingEBITDA === undefined)
+        throw new Error("Trailing 12 Month EBITDA is required");
+      if (formData.revenueGrowth === null || formData.revenueGrowth === undefined)
+        throw new Error("Average 3 year revenue growth is required");
+      if (formData.businessModels.length === 0)
+        throw new Error("Please select at least one business model");
+      if (!formData.managementPreferences.trim())
+        throw new Error("Management preferences is required");
       if (formData.capitalAvailability.length === 0)
         throw new Error(
           "Please select at least one capital availability option"
         );
+      if (formData.companyType.length === 0)
+        throw new Error("Please select at least one company type");
 
       const token = localStorage.getItem("token");
       const sellerId = localStorage.getItem("userId");
@@ -1979,17 +2036,19 @@ useEffect(() => {
             </div>
           </div>
 
-          {/* Overview Section */}
-          <section>
-            <h2 className="text-xl font-semibold mb-6">Overview</h2>
+   
+        {/* Overview Section */}
+        <section>
+          <h2 className="text-xl font-semibold mb-2">Overview</h2>
+          <p className="text-sm text-gray-600 mb-6">Please do not include your company name or the name of your client on this form</p>
 
-            <div className="space-y-6">
+          <div className="space-y-6">
               <div>
                 <label
                   htmlFor="dealTitle"
                   className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Deal Title
+                  Deal Title <RequiredStar />
                 </label>
                 <Input
                   id="dealTitle"
@@ -1998,6 +2057,7 @@ useEffect(() => {
                   onChange={handleInputChange}
                   placeholder="Add title"
                   className="w-full"
+                  required
                 />
               </div>
 
@@ -2006,7 +2066,7 @@ useEffect(() => {
                   htmlFor="companyDescription"
                   className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Company Description
+                  Company Description <RequiredStar />
                 </label>
                 <Textarea
                   id="companyDescription"
@@ -2015,6 +2075,7 @@ useEffect(() => {
                   onChange={handleInputChange}
                   placeholder="Make sure to be very specific about what the company does"
                   className="w-full min-h-[100px]"
+                  required
                 />
               </div>
 
@@ -2022,7 +2083,7 @@ useEffect(() => {
                 {/* Geography Selector */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Company Location
+                    Company Location <RequiredStar />
                   </label>
                   <div className="border border-[#d0d5dd] rounded-md p-4 h-80 flex flex-col">
                     <div className="relative mb-4">
@@ -2035,7 +2096,7 @@ useEffect(() => {
                       />
                     </div>
 
-                    {/* {formData.geographySelections.length > 0 && (
+                    {formData.geographySelections.length > 0 && (
                       <div className="mb-4">
                         <div className="text-sm text-[#667085] mb-1">
                           Selected{" "}
@@ -2071,7 +2132,7 @@ useEffect(() => {
                           )}
                         </div>
                       </div>
-                    )} */}
+                    )}
 
                     <div className="flex-1 overflow-y-auto">
                       {renderGeographySelection()}
@@ -2082,7 +2143,7 @@ useEffect(() => {
                 {/* Industry Selector */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Industry Selector
+                    Industry Selector <RequiredStar />
                   </label>
                   <div className="border border-[#d0d5dd] rounded-md p-4 h-80 flex flex-col">
                     <div className="relative mb-4">
@@ -2095,7 +2156,7 @@ useEffect(() => {
                       />
                     </div>
 
-                    {/* {formData.selectedIndustryDisplay && (
+                    {formData.selectedIndustryDisplay && (
                       <div className="mb-4">
                         <div className="text-sm text-[#667085] mb-1">
                           Selected{" "}
@@ -2137,7 +2198,7 @@ useEffect(() => {
                           </span>
                         </div>
                       </div>
-                    )} */}
+                    )}
 
                     <div className="flex-1 overflow-y-auto">
                       {renderIndustrySelection()}
@@ -2151,7 +2212,7 @@ useEffect(() => {
                   htmlFor="yearsInBusiness"
                   className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Number of years in business
+                  Number of years in business <RequiredStar />
                 </label>
                 <Input
                   id="yearsInBusiness"
@@ -2160,11 +2221,12 @@ useEffect(() => {
                   value={formData.yearsInBusiness ?? ""}
                   onChange={(e) => handleNumberChange(e, "yearsInBusiness")}
                   className="w-full"
+                  required
                 />
               </div>
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Business Models
+                  Business Models <RequiredStar />
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="flex items-center">
@@ -2253,7 +2315,7 @@ useEffect(() => {
                   htmlFor="managementPreferences"
                   className="block text-sm font-medium text-gray-700 mb-3"
                 >
-                  Management Preferences
+                  Management Preferences <RequiredStar />
                 </label>
                 <textarea
                   id="managementPreferences"
@@ -2270,9 +2332,11 @@ useEffect(() => {
           </section>
 
           {/* Financials Section */}
-          <section className="bg-[#f9f9f9] p-6 rounded-lg">
-            <h2 className="text-xl font-semibold mb-6">Financials</h2>
+        <section className="bg-[#f9f9f9] p-6 rounded-lg">
+          <h2 className="text-xl font-semibold mb-2">Financials <RequiredStar /></h2>
+          <p className="text-sm text-gray-600 mb-6">Please use full numbers (e.g., 5,000,000 not 5M)</p>
 
+        
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
@@ -2280,7 +2344,7 @@ useEffect(() => {
                     htmlFor="trailingRevenue"
                     className="block text-sm font-medium text-gray-700 mb-1"
                   >
-                    Trailing 12 Month Revenue
+                    Trailing 12 Month Revenue <RequiredStar />
                   </label>
                   <div className="flex">
                     <Input
@@ -2303,6 +2367,7 @@ useEffect(() => {
                         }
                       }}
                       className="w-full"
+                      required
                     />
                   </div>
                 </div>
@@ -2340,7 +2405,7 @@ useEffect(() => {
                     htmlFor="trailingEBITDA"
                     className="block text-sm font-medium text-gray-700 mb-1"
                   >
-                    Trailing 12 Month EBITDA(0 covers negative)
+                    Trailing 12 Month EBITDA(0 covers negative) <RequiredStar />
                   </label>
                   <Input
                     id="trailingEBITDA"
@@ -2363,6 +2428,7 @@ useEffect(() => {
                       }
                     }}
                     className="w-full"
+                    required
                   />
                 </div>
 
@@ -2371,7 +2437,7 @@ useEffect(() => {
                     htmlFor="revenueGrowth"
                     className="block text-sm font-medium text-gray-700 mb-1"
                   >
-                    Average 3 year revenue growth in %(0 covers negative)
+                    Average 3 year revenue growth in %(0 covers negative) <RequiredStar />
                   </label>
                   <Input
                     id="revenueGrowth"
@@ -2394,6 +2460,7 @@ useEffect(() => {
                       }
                     }}
                     className="w-full"
+                    required
                   />
                 </div>
               </div>
@@ -2402,7 +2469,7 @@ useEffect(() => {
 
           {/* Optional Financial Information */}
           <section className="bg-[#f9f9f9] p-6 rounded-lg">
-            <h2 className="text-xl font-semibold mb-6">Optional Information</h2>
+            <h2 className="text-xl font-semibold mb-6">Optional Financial Information</h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div>
@@ -2528,7 +2595,7 @@ useEffect(() => {
           {/* Buyer Fit / Ability to Close */}
           <section className="bg-[#f9f9f9] p-6 rounded-lg">
             <h2 className="text-xl font-semibold mb-6">
-              Buyer Fit / Ability to Close
+              Buyer Fit / Ability to Close <RequiredStar />
             </h2>
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -2584,7 +2651,7 @@ useEffect(() => {
             {/* Company Type - spans full width on md+ */}
             <div className="md:col-span-2 w-full">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Company Type
+                Company Type <RequiredStar />
               </label>
               <Popover>
                 <PopoverTrigger asChild>

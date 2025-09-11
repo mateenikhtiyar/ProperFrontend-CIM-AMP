@@ -778,6 +778,7 @@ export default function DealManagementDashboard() {
   const [buyerActivity, setBuyerActivity] = useState<any[]>([]);
   const [selectedWinningBuyer, setSelectedWinningBuyer] = useState<string>("");
   const [buyerActivityLoading, setBuyerActivityLoading] = useState(false);
+  const [isSubmittingOffMarket, setIsSubmittingOffMarket] = useState(false);
 
   // --- Utility copied from seller dashboard ---
   const formatWithCommas = (value: string | number) => {
@@ -896,6 +897,7 @@ export default function DealManagementDashboard() {
       // Optionally show error
       return;
     }
+    setIsSubmittingOffMarket(true); // Set loading state to true
     try {
       const token = localStorage.getItem("token");
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -926,6 +928,8 @@ export default function DealManagementDashboard() {
       setSelectedWinningBuyer("");
     } catch (error) {
       setOffMarketDialogOpen(false);
+    } finally {
+      setIsSubmittingOffMarket(false); // Set loading state to false
     }
   };
 
@@ -2144,7 +2148,9 @@ export default function DealManagementDashboard() {
             )}
             {offMarketData.buyerFromCIM !== null && (
               <div className="flex justify-end pt-4">
-                <Button onClick={handleAdminOffMarketSubmit} className="bg-teal-500 hover:bg-teal-600">Submit</Button>
+                <Button onClick={handleAdminOffMarketSubmit} className="bg-teal-500 hover:bg-teal-600" disabled={isSubmittingOffMarket}>
+                  {isSubmittingOffMarket ? "Submitting..." : "Submit"}
+                </Button>
               </div>
             )}
           </div>

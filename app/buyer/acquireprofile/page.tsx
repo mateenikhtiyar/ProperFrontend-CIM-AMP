@@ -425,13 +425,10 @@ const validateField = (field: string, value: any): string | null => {
     case "companyName":
       return !value?.trim() ? "Company name is required" : null;
     case "website":
-      try {
-        const websiteUrl = new URL(value.startsWith("http") ? value : `https://${value}`);
-        if (!websiteUrl.hostname.includes(".")) {
-          return "Please enter a valid website URL (e.g., example.com)";
-        }
-      } catch (e) {
-        return "Please enter a valid website URL (e.g., example.com)";
+      // Remove strict URL validation, allow simple domains
+      if (!value?.trim()) return null; // Allow empty for optional fields
+      if (!value.includes(".")) {
+        return "Please enter a valid website (e.g., example.com)";
       }
       return null;
     case "companyType":
@@ -446,8 +443,11 @@ const validateField = (field: string, value: any): string | null => {
       return !emailRegex.test(value) ? "Please enter a valid email address (e.g., name@example.com)" : null;
     case "contact.phone":
       if (!value?.trim()) return "Contact phone is required";
-      const phoneRegex = /^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/;
-      return !phoneRegex.test(value) ? "Please enter a valid phone number (e.g., 123-456-7890)" : null;
+      // Simplified phone regex to allow more formats without starting with +
+      const phoneRegex = /^\+?[0-9\s.\-()]{7,20}$/; // Allows optional +, spaces, dots, dashes, parentheses, 7-20 digits
+      return !phoneRegex.test(value)
+        ? "Please enter a valid phone number"
+        : null;
     case "agreements.feeAgreement":
       return value ? null : "You must accept the fee agreement";
     case "dealsCompletedLast5Years":
@@ -471,7 +471,7 @@ const validateField = (field: string, value: any): string | null => {
     case "targetCriteria.minYearsInBusiness":
       return value === undefined || value === "" ? "Minimum years in business is required" : null;
     case "targetCriteria.minStakePercent":
-      return value === undefined || value === "" ? "Minimum stake percentage is required" : null;
+      return null; // This field is now optional
     case "targetCriteria.countries":
       return value.length === 0 ? "Please select at least one country" : null;
     case "targetCriteria.industrySectors":
@@ -1091,6 +1091,7 @@ const validateField = (field: string, value: any): string | null => {
   errors["targetCriteria.transactionSizeMax"] = validateField("targetCriteria.transactionSizeMax", formData.targetCriteria.transactionSizeMax) || "";
   errors["targetCriteria.revenueGrowth"] = validateField("targetCriteria.revenueGrowth", formData.targetCriteria.revenueGrowth) || "";
   errors["targetCriteria.minYearsInBusiness"] = validateField("targetCriteria.minYearsInBusiness", formData.targetCriteria.minYearsInBusiness) || "";
+  errors["targetCriteria.minStakePercent"] = validateField("targetCriteria.minStakePercent", formData.targetCriteria.minStakePercent) || "";
   errors["targetCriteria.countries"] = validateField("targetCriteria.countries", formData.targetCriteria.countries) || "";
   errors["targetCriteria.industrySectors"] = validateField("targetCriteria.industrySectors", formData.targetCriteria.industrySectors) || "";
   errors["targetCriteria.preferredBusinessModels"] = validateField("targetCriteria.preferredBusinessModels", formData.targetCriteria.preferredBusinessModels) || "";
@@ -1492,17 +1493,23 @@ const handleSubmit = async (e: React.FormEvent) => {
                 </Label>
                 <Input
                   id="website"
-                  placeholder="https://example.com"
-                  className={`border-[#d0d5dd] ${fieldErrors["website"] ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                  placeholder="example.com"
+                  className={`border-[#d0d5dd] ${
+                    fieldErrors["website"]
+                      ? "border-red-500 focus-visible:ring-red-500"
+                      : ""
+                  }`}
                   value={formData.website}
                   onChange={(e) => handleChange("website", e.target.value)}
                   required
                 />
                 {fieldErrors["website"] && (
-                  <p className="text-red-500 text-sm mt-1">{fieldErrors["website"]}</p>
+                  <p className="text-red-500 text-sm mt-1">
+                    {fieldErrors["website"]}
+                  </p>
                 )}
                 <p className="text-gray-500 text-xs mt-1">
-                  Enter a valid URL (e.g., example.com or https://example.com)
+                  Enter a valid website (e.g., example.com)
                 </p>
               </div>
             </div>
@@ -1582,12 +1589,19 @@ const handleSubmit = async (e: React.FormEvent) => {
                 <Input
                   id="dealsCompletedLast5Years"
                   type="number"
-                  className={`border-[#d0d5dd] ${fieldErrors["dealsCompletedLast5Years"] ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                  min={0}
+                  className={`border-[#d0d5dd] ${
+                    fieldErrors["dealsCompletedLast5Years"]
+                      ? "border-red-500 focus-visible:ring-red-500"
+                      : ""
+                  }`}
                   value={formData.dealsCompletedLast5Years ?? ""}
                   onChange={(e) =>
                     handleChange(
                       "dealsCompletedLast5Years",
-                      e.target.value === "" ? undefined : Number(e.target.value)
+                      e.target.value === ""
+                        ? undefined
+                        : Number(e.target.value)
                     )
                   }
                   required
@@ -1853,6 +1867,11 @@ const handleSubmit = async (e: React.FormEvent) => {
             </div>
 
             <div className="space-y-6">
+              {/* Financials Section */}
+        <section className="bg-[#F9F9F9] p-6 rounded-lg">
+          <h2 className="text-xl font-semibold mb-2">Financials</h2>
+          <p className="text-sm text-gray-600 mb-6">Please use full numbers (e.g., 5,000,000 not 5M)</p>
+            </section>
               <div>
                 <div className="flex justify-between items-center mb-1.5">
                   <Label className="text-[#667085] text-sm">
@@ -2274,7 +2293,9 @@ const handleSubmit = async (e: React.FormEvent) => {
     handleNestedChange(
       "targetCriteria",
       "minYearsInBusiness",
-      e.target.value === "" ? undefined : Number(e.target.value)
+      e.target.value === ""
+        ? undefined
+        : Number(e.target.value)
     )
   }
   required

@@ -10,6 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+// Helper for required field star
+const RequiredStar = () => <span className="text-red-500">*</span>;
 import {
   Popover,
   PopoverContent,
@@ -973,7 +975,7 @@ export default function SellerFormPage() {
     }));
   };
 
- const renderGeographySelection = () => {
+const renderGeographySelection = () => {
   const filteredGeoData = flatGeoData.filter(
     (item) =>
       !debouncedGeoSearch ||
@@ -1002,6 +1004,22 @@ export default function SellerFormPage() {
   // Priority countries (Canada, USA, Mexico)
   const priorityCountryCodes = ['CA', 'US', 'MX'];
   
+  // US Minor Outlying Islands territories
+  const usMinorOutlyingIslands = [
+    'American Samoa',
+    'Baker Island', 
+    'Guam',
+    'Howland Island',
+    'Jarvis Island',
+    'Johnston Atoll',
+    'Kingman Reef',
+    'Midway Atoll',
+    'Navassa Island',
+    'Northern Mariana Islands',
+    'United States Virgin Islands',
+    'Palmyra Atoll'
+  ];
+
   // Separate priority and other countries
   const priorityGroups = [];
   const otherGroups = [];
@@ -1012,12 +1030,46 @@ export default function SellerFormPage() {
       if (!group.country) return;
       
       const countryCode = group.country.id;
+      
+      // Skip Puerto Rico as a top-level country
+      if (group.country.name === 'Puerto Rico') {
+        return;
+      }
+      
+      // Special handling for US - remove US Minor Outlying Islands and keep Puerto Rico
+      if (countryCode === 'US') {
+        const usStates = group.states.filter(state => 
+          !usMinorOutlyingIslands.includes(state.name) && 
+          state.name !== 'United States Minor Outlying Islands'
+        );
+        group.states = usStates;
+      }
+      
       if (priorityCountryCodes.includes(countryCode)) {
         priorityGroups.push(group);
       } else {
         otherGroups.push(group);
       }
     });
+
+  // Add US Minor Outlying Islands as a separate top-level entry
+  const usMinorOutlyingIslandsGroup = {
+    country: {
+      id: 'UM',
+      name: 'United States Minor Outlying Islands',
+      path: 'United States Minor Outlying Islands',
+      type: 'country' as const,
+      countryCode: 'UM'
+    },
+    states: usMinorOutlyingIslands.map((island, index) => ({
+      id: `UM-${index}`,
+      name: island,
+      path: `United States Minor Outlying Islands > ${island}`,
+      type: 'state' as const,
+      countryCode: 'UM',
+      stateCode: index.toString()
+    }))
+  };
 
   // Sort priority countries in the specified order (Canada, USA, Mexico)
   priorityGroups.sort((a, b) => {
@@ -1033,8 +1085,8 @@ export default function SellerFormPage() {
     return aName.localeCompare(bName);
   });
 
-  // Combine priority and other groups
-  const sortedGroups = [...priorityGroups, ...otherGroups];
+  // Combine priority groups, US Minor Outlying Islands, and other groups
+  const sortedGroups = [...priorityGroups, usMinorOutlyingIslandsGroup, ...otherGroups];
 
   return (
     <div className="space-y-2 font-poppins">
@@ -1375,8 +1427,18 @@ export default function SellerFormPage() {
         throw new Error("Please select at least one industry");
       if (!formData.yearsInBusiness || formData.yearsInBusiness < 0)
         throw new Error("Years in business must be a positive number");
-      if (!formData.companyType || formData.companyType.length === 0)
-        throw new Error("Please select a buyer type");
+      if (!formData.trailingRevenue || formData.trailingRevenue <= 0) {
+        errors.trailingRevenue = "Trailing 12 Month Revenue is required and must be greater than 0.";
+      }
+      if (formData.trailingEBITDA === null || formData.trailingEBITDA === undefined) {
+        errors.trailingEBITDA = "Trailing 12 Month EBITDA is required.";
+      }
+      if (formData.revenueGrowth === null || formData.revenueGrowth === undefined) {
+        errors.revenueGrowth = "Average 3 year revenue growth is required.";
+      }
+      if (!formData.companyType || formData.companyType.length === 0) {
+        errors.companyType = "This field is required.";
+      }
 
       if (formData.businessModels.length === 0) {
         errors.businessModels = "Please select at least one business model.";
@@ -1692,7 +1754,10 @@ export default function SellerFormPage() {
 
         {/* Overview Section */}
         <section>
-          <h2 className="text-xl font-semibold mb-6">Overview</h2>
+     
+          <h2 className="text-xl font-semibold mb-2">Overview</h2>
+          <p className="text-sm text-gray-600 mb-6">Please do not include your company name or the name of your client on this form</p>
+
 
           <div className="space-y-6">
             <div>
@@ -1700,7 +1765,7 @@ export default function SellerFormPage() {
                 htmlFor="dealTitle"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
-                Deal Title
+                Deal Title <RequiredStar />
               </label>
               <Input
                 id="dealTitle"
@@ -1717,7 +1782,7 @@ export default function SellerFormPage() {
                 htmlFor="companyDescription"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
-                Company Description
+                Company Description <RequiredStar />
               </label>
               <Textarea
                 id="companyDescription"
@@ -1733,7 +1798,7 @@ export default function SellerFormPage() {
               {/* Geography Selector */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Company Location
+                  Company Location <RequiredStar />
                 </label>
                 <div className="border border-[#d0d5dd] rounded-md p-4 h-80 flex flex-col">
                   <div className="relative mb-4">
@@ -1746,7 +1811,7 @@ export default function SellerFormPage() {
                     />
                   </div>
 
-                  {/* {formData.geographySelections.length > 0 && (
+                  {formData.geographySelections.length > 0 && (
                     <div className="mb-4">
                       <div className="text-sm text-[#667085] mb-1">
                         Selected{" "}
@@ -1780,7 +1845,7 @@ export default function SellerFormPage() {
                         ))}
                       </div>
                     </div>
-                  )} */}
+                  )}
 
                   <div className="flex-1 overflow-y-auto">
                     {renderGeographySelection()}
@@ -1791,7 +1856,7 @@ export default function SellerFormPage() {
               {/* Industry Selector */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Industry Selector
+                  Industry Selector <RequiredStar />
                 </label>
                 <div className="border border-[#d0d5dd] rounded-md p-4 h-80 flex flex-col">
                   <div className="relative mb-4">
@@ -1803,7 +1868,7 @@ export default function SellerFormPage() {
                       onChange={(e) => setIndustrySearchTerm(e.target.value)}
                     />
                   </div>
-{/* 
+
                   {formData.selectedIndustryDisplay && (
                     <div className="mb-4">
                       <div className="text-sm text-[#667085] mb-1">
@@ -1847,7 +1912,7 @@ export default function SellerFormPage() {
                         </span>
                       </div>
                     </div>
-                  )} */}
+                  )}
 
                   <div className="flex-1 overflow-y-auto">
                     {renderIndustrySelection()}
@@ -1861,7 +1926,12 @@ export default function SellerFormPage() {
                 htmlFor="yearsInBusiness"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
-                Number of years in business
+                Number of years in business <RequiredStar />
+{fieldErrors.dealTitle && <span className="text-red-500 text-xs">{fieldErrors.dealTitle}</span>}
+{fieldErrors.companyDescription && <span className="text-red-500 text-xs">{fieldErrors.companyDescription}</span>}
+{fieldErrors.geographySelections && <span className="text-red-500 text-xs">{fieldErrors.geographySelections}</span>}
+{fieldErrors.industrySelections && <span className="text-red-500 text-xs">{fieldErrors.industrySelections}</span>}
+{fieldErrors.yearsInBusiness && <span className="text-red-500 text-xs">{fieldErrors.yearsInBusiness}</span>}
               </label>
               <Input
                 id="yearsInBusiness"
@@ -1981,7 +2051,8 @@ export default function SellerFormPage() {
 
         {/* Financials Section */}
         <section className="bg-[#f9f9f9] p-6 rounded-lg">
-          <h2 className="text-xl font-semibold mb-6">Financials</h2>
+                    <h2 className="text-xl font-semibold mb-2">Financials <RequiredStar /></h2>
+          <p className="text-sm text-gray-600 mb-6">Please use full numbers (e.g., 5,000,000 not 5M)</p>
 
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1990,12 +2061,13 @@ export default function SellerFormPage() {
                   htmlFor="trailingRevenue"
                   className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Trailing 12 Month Revenue
+                  Trailing 12 Month Revenue <RequiredStar />
                 </label>
                 <div className="flex">
                   <Input
                     id="trailingRevenue"
                     type="text"
+                    required
                     value={
                       formData.trailingRevenue === 0
                         ? ""
@@ -2026,6 +2098,11 @@ export default function SellerFormPage() {
                     className="w-full"
                   />
                 </div>
+                {fieldErrors.trailingRevenue && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {fieldErrors.trailingRevenue}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -2061,11 +2138,12 @@ export default function SellerFormPage() {
                   htmlFor="trailingEBITDA"
                   className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Trailing 12 Month EBITDA(0 covers negative)
+                  Trailing 12 Month EBITDA(0 covers negative) <RequiredStar />
                 </label>
                 <Input
                   id="trailingEBITDA"
                   type="text"
+                  required
                   value={
                     formData.trailingEBITDA === 0
                       ? ""
@@ -2108,11 +2186,12 @@ export default function SellerFormPage() {
                   htmlFor="revenueGrowth"
                   className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Average 3 year revenue growth in %(0 covers negative)
+                  Average 3 year revenue growth in %(0 covers negative) <RequiredStar />
                 </label>
                 <Input
                   id="revenueGrowth"
                   type="text"
+                  required
                   value={
                     typeof formData.revenueGrowth === 'number'
                       ? formatNumberWithCommas(formData.revenueGrowth)
@@ -2131,6 +2210,11 @@ export default function SellerFormPage() {
                   }}
                   className="w-full"
                 />
+                {fieldErrors.revenueGrowth && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {fieldErrors.revenueGrowth}
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -2506,6 +2590,7 @@ export default function SellerFormPage() {
                 }}
                 className="w-full"
               />
+              {fieldErrors.minPriorAcquisitions && <span className="text-red-500 text-xs">{fieldErrors.minPriorAcquisitions}</span>}
             </div>
 
 
@@ -2537,6 +2622,7 @@ export default function SellerFormPage() {
                 }}
                 className="w-full"
               />
+              {fieldErrors.minTransactionSize && <span className="text-red-500 text-xs">{fieldErrors.minTransactionSize}</span>}
             </div>
           </div>
         </section>
