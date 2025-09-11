@@ -131,6 +131,8 @@ export default function BuyerRegisterPage() {
 
     if (!formData.website.trim()) {
       newErrors.website = "Company website is required";
+    } else if (!/^[\da-z\.-]+\.[a-z\.]{2,6}([\/\w \.-]*)*\/?$/.test(formData.website)) {
+      newErrors.website = "Please enter a valid website (e.g., example.com)";
     }
 
     setErrors(newErrors);
@@ -196,11 +198,11 @@ export default function BuyerRegisterPage() {
   };
 
   return (
-    <div className="">
+    <div className="min-h-screen flex flex-col">
       <Header />
-      <div className="flex h-screen bg-gradient-to-b from-[#C7D7D7] to-[#8C9EA8] overflow-hidden">
+      <div className="flex-1 flex bg-gradient-to-b from-[#C7D7D7] to-[#8C9EA8]">
         {/* Left side with illustration */}
-        <div className="hidden md:flex md:w-1/2 items-center justify-center relative">
+        <div className="hidden lg:flex lg:w-1/2 items-center justify-center relative">
           <Image
             src="/Bg.svg"
             alt="Financial illustration with handshake and growth chart"
@@ -212,9 +214,9 @@ export default function BuyerRegisterPage() {
         </div>
 
         {/* Right side - Registration form */}
-        <div className="w-full md:w-2/3 bg-white  flex items-center justify-center p-8">
-          <div className="w-full max-w-md space-y-3">
-            <h1 className="text-3xl font-bold mb-0 text-center">
+        <div className="w-full lg:w-1/2 bg-white flex items-center justify-center p-4 sm:p-6 lg:p-8 overflow-y-auto">
+          <div className="w-full max-w-md space-y-4 my-8">
+            <h1 className="text-2xl sm:text-3xl font-bold text-center">
               Buyer Registration
             </h1>
 
@@ -226,7 +228,7 @@ export default function BuyerRegisterPage() {
 
             {/* Google signup button */}
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label
                   htmlFor="email"
@@ -241,7 +243,7 @@ export default function BuyerRegisterPage() {
                   value={formData.email}
                   onChange={handleChange}
                   placeholder="Enter your email"
-                  className={`${errors.email ? "border-red-300" : ""} py-5`}
+                  className={`${errors.email ? "border-red-300" : ""} h-12`}
                   required
                 />
                 {errors.email && (
@@ -262,7 +264,7 @@ export default function BuyerRegisterPage() {
                   value={formData.fullName}
                   onChange={handleChange}
                   placeholder="Enter your full name"
-                  className={`${errors.fullName ? "border-red-300" : ""} py-5`}
+                  className={`${errors.fullName ? "border-red-300" : ""} h-12`}
                   required
                 />
                 {errors.fullName && (
@@ -283,7 +285,7 @@ export default function BuyerRegisterPage() {
                   value={formData.companyName}
                   onChange={handleChange}
                   placeholder="Enter your company name"
-                  className={`${errors.companyName ? "border-red-300" : ""} py-5`}
+                  className={`${errors.companyName ? "border-red-300" : ""} h-12`}
                   required
                 />
                 {errors.companyName && (
@@ -306,7 +308,7 @@ export default function BuyerRegisterPage() {
                   value={formData.website}
                   onChange={handleChange}
                   placeholder="Enter your company website"
-                  className={`${errors.website ? "border-red-300" : ""} py-5`}
+                  className={`${errors.website ? "border-red-300" : ""} h-12`}
                   required
                 />
                 {errors.website && (
@@ -329,7 +331,7 @@ export default function BuyerRegisterPage() {
                   value={formData.phone}
                   onChange={handleChange}
                   placeholder="+1 403 555-1212"
-                  className={`${errors.phone ? "border-red-300" : ""} py-5`}
+                  className={`${errors.phone ? "border-red-300" : ""} h-12`}
                 />
                 {errors.phone && (
                   <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
@@ -351,7 +353,7 @@ export default function BuyerRegisterPage() {
                     value={formData.password}
                     onChange={handleChange}
                     placeholder="Enter your password"
-                    className={`${errors.password ? "border-red-300 pr-10" : "pr-10"} py-5`}
+                    className={`${errors.password ? "border-red-300 pr-10" : "pr-10"} h-12`}
                     required
                   />
                   <button
@@ -386,7 +388,7 @@ export default function BuyerRegisterPage() {
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     placeholder="Confirm your password"
-                    className={`${errors.confirmPassword ? "border-red-300 pr-10" : "pr-10"} py-5`}
+                    className={`${errors.confirmPassword ? "border-red-300 pr-10" : "pr-10"} h-12`}
                     required
                   />
                   <button
@@ -410,7 +412,7 @@ export default function BuyerRegisterPage() {
 
               <Button
                 type="submit"
-                className="w-full bg-[#3aafa9] hover:bg-[#2a9d8f] text-white py-6 rounded-3xl mt-6"
+                className="w-full bg-[#3aafa9] hover:bg-[#2a9d8f] text-white h-12 rounded-lg mt-6"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (
