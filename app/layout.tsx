@@ -1,18 +1,18 @@
 import type React from "react"
 import "@/app/globals.css"
-import { Inter } from "next/font/google"
-import { Poppins } from "next/font/google"
+// import { Inter } from "next/font/google"
+// import { Poppins } from "next/font/google"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/contexts/auth-context"
 import { DevToolsNotice } from "@/components/dev-tools-notice"
 
-const inter = Inter({ subsets: ["latin"] })
+// const inter = Inter({ subsets: ["latin"] })
 
-const poppins = Poppins({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-poppins",
-})
+// const poppins = Poppins({
+//   subsets: ["latin"],
+//   weight: ["400", "500", "600", "700"],
+//   variable: "--font-poppins",
+// })
 
 export const metadata = {
   title: "CIM Amplify",
@@ -27,7 +27,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${poppins.variable} font-poppins`} suppressHydrationWarning>
+      <body className={`font-sans`} suppressHydrationWarning>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
           <AuthProvider>{children}</AuthProvider>
           <DevToolsNotice />

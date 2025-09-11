@@ -92,6 +92,7 @@ interface BuyerProfile {
   companyName: string;
   role: string;
   profilePicture: string | null;
+  phone?: string; // Add this line
 }
 
 export default function CompanyProfilePage() {
@@ -325,6 +326,8 @@ useEffect(() => {
     description: "",
   },
   agreements: {
+    termsAndConditionsAccepted: false,
+    ndaAccepted: false,
     feeAgreementAccepted: false,
   },
   selectedCurrency: "USD",
@@ -385,7 +388,8 @@ const fetchUserProfile = async () => {
           ...(profileData.targetCriteria || {}),
         },
         agreements: {
-          feeAgreementAccepted: (formData.agreements?.feeAgreementAccepted ?? false) || (profileData.agreements?.feeAgreementAccepted ?? false),
+          ...formData.agreements,
+          ...(profileData.agreements || {}),
         },
         selectedCurrency: profileData.selectedCurrency || "USD",
         capitalEntity:
@@ -519,15 +523,10 @@ const fetchUserProfile = async () => {
       case "companyName":
         return !value?.trim() ? "Company name is required" : null;
       case "website":
-        try {
-          const websiteUrl = new URL(
-            value.startsWith("http") ? value : `https://${value}`
-          );
-          if (!websiteUrl.hostname.includes(".")) {
-            return "Please enter a valid website URL (e.g., example.com)";
-          }
-        } catch (e) {
-          return "Please enter a valid website URL (e.g., example.com)";
+        // Remove strict URL validation, allow simple domains
+        if (!value?.trim()) return null; // Allow empty for optional fields
+        if (!value.includes(".")) {
+          return "Please enter a valid website (e.g., example.com)";
         }
         return null;
       case "companyType":
@@ -544,15 +543,17 @@ const fetchUserProfile = async () => {
           : null;
       case "contact.phone":
         if (!value?.trim()) return "Contact phone is required";
-        const phoneRegex =
-          /^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/;
+        // Simplified phone regex to allow more formats without starting with +
+        const phoneRegex = /^\+?[0-9\s.\-()]{7,20}$/; // Allows optional +, spaces, dots, dashes, parentheses, 7-20 digits
         return !phoneRegex.test(value)
-          ? "Please enter a valid phone number (e.g., 123-456-7890)"
+          ? "Please enter a valid phone number"
           : null;
       case "agreements.feeAgreement":
         return value ? null : "You must accept the fee agreement";
-      case "agreements.feeAgreement":
-        return value ? null : "You must accept the fee agreement";
+      case "dealsCompletedLast5Years":
+        return value === undefined || value === "" ? "This field is required" : null;
+      case "averageDealSize":
+        return value === undefined || value === "" ? "This field is required" : null;
       case "targetCriteria.revenueMin":
         return value === undefined || value === "" ? "Minimum revenue is required" : null;
       case "targetCriteria.revenueMax":
@@ -567,6 +568,18 @@ const fetchUserProfile = async () => {
         return value === undefined || value === "" ? "Maximum transaction size is required" : null;
       case "targetCriteria.revenueGrowth":
         return value === undefined || value === "" ? "Minimum 3 Year Average Revenue Growth is required" : null;
+      case "targetCriteria.minYearsInBusiness":
+        return value === undefined || value === "" ? "Minimum years in business is required" : null;
+      case "targetCriteria.minStakePercent":
+        return value === undefined || value === "" ? "Minimum stake percentage is required" : null;
+      case "targetCriteria.countries":
+        return value.length === 0 ? "Please select at least one country" : null;
+      case "targetCriteria.industrySectors":
+        return value.length === 0 ? "Please select at least one industry sector" : null;
+      case "targetCriteria.preferredBusinessModels":
+        return value.length === 0 ? "Please select at least one business model" : null;
+      case "targetCriteria.description":
+        return !value?.trim() ? "Description is required" : null;
       default:
         return null;
     }
@@ -588,16 +601,25 @@ const fetchUserProfile = async () => {
 
   // Handle nested field changes
   const handleNestedChange = (parent: string, field: string, value: any) => {
-    setFormData((prev) => ({
-      ...prev,
-      [parent]: {
-        ...(typeof prev[parent as keyof CompanyProfile] === "object" &&
-        prev[parent as keyof CompanyProfile] !== null
-          ? (prev[parent as keyof CompanyProfile] as Record<string, any>)
-          : {}),
-        [field]: value,
-      },
-    }));
+    setFormData((prev) => {
+      const newState = {
+        ...prev,
+        [parent]: {
+          ...(typeof prev[parent as keyof CompanyProfile] === "object" &&
+          prev[parent as keyof CompanyProfile] !== null
+            ? (prev[parent as keyof CompanyProfile] as Record<string, any>)
+            : {}),
+          [field]: value,
+        },
+      };
+
+      // If feeAgreementAccepted is being set to true, set agreementsAcceptedAt
+      if (parent === "agreements" && field === "feeAgreementAccepted" && value === true) {
+        newState.agreements.agreementsAcceptedAt = new Date().toISOString();
+      }
+
+      return newState;
+    });
 
     const error = validateField(`${parent}.${field}`, value);
     setFieldErrors((prev) => ({
@@ -1339,7 +1361,10 @@ const fetchUserProfile = async () => {
       delete (updateData as any).updatedAt;
       delete (updateData as any).__v;
       delete (updateData as any).buyer;
-      delete (updateData as any).agreementsAcceptedAt; // <-- Prevent sending this field
+      // Remove agreementsAcceptedAt from the nested agreements object
+      if (updateData.agreements && (updateData.agreements as any).agreementsAcceptedAt) {
+        delete (updateData.agreements as any).agreementsAcceptedAt;
+      }
 
       console.log(
         "Company Profile - Update data:",
@@ -1806,7 +1831,7 @@ const fetchUserProfile = async () => {
                     </Label>
                     <Input
                       id="website"
-                      placeholder="https://example.com"
+                      placeholder="example.com"
                       className={`border-[#d0d5dd] ${
                         fieldErrors["website"]
                           ? "border-red-500 focus-visible:ring-red-500"
@@ -1822,8 +1847,7 @@ const fetchUserProfile = async () => {
                       </p>
                     )}
                     <p className="text-gray-500 text-xs mt-1">
-                      Enter a valid URL (e.g., example.com or
-                      https://example.com)
+                      Enter a valid website (e.g., example.com)
                     </p>
                   </div>
                 </div>
@@ -2138,7 +2162,7 @@ const fetchUserProfile = async () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                   <div>
                     <Label className="text-[#667085] text-sm mb-1.5 block">
-                      Geographies
+                      Geographies <span className="text-red-500">*</span>
                     </Label>
                     <div className="border border-[#d0d5dd] rounded-md p-4 h-80 flex flex-col">
                       {/* Search bar for geographies */}
@@ -2202,12 +2226,17 @@ const fetchUserProfile = async () => {
                         }))}
                         searchTerm={countrySearchTerm}
                       />
+                      {fieldErrors["targetCriteria.countries"] && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {fieldErrors["targetCriteria.countries"]}
+                        </p>
+                      )}
                     </div>
                   </div>
 
                   <div>
                     <Label className="text-[#667085] text-sm mb-1.5 block">
-                      Industry Sectors
+                      Industry Sectors <span className="text-red-500">*</span>
                     </Label>
                     <div className="border border-[#d0d5dd] rounded-md p-4 h-80 flex flex-col">
                       <div className="relative mb-4">
@@ -2263,11 +2292,21 @@ const fetchUserProfile = async () => {
                       <div className="flex-1 overflow-y-auto">
                         {renderIndustrySelection()}
                       </div>
+                      {fieldErrors["targetCriteria.industrySectors"] && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {fieldErrors["targetCriteria.industrySectors"]}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
 
                 <div className="space-y-6">
+                   {/* Financials Section */}
+        <section className="bg-[#F9F9F9] p-6 rounded-lg">
+          <h2 className="text-xl font-semibold mb-2">Financials</h2>
+          <p className="text-sm text-gray-600 mb-6">Please use full numbers (e.g., 5,000,000 not 5M)</p>
+            </section>
                   <div>
                     <div className="flex justify-between items-center mb-1.5">
                       <Label className="text-[#667085] text-sm">
@@ -2472,7 +2511,6 @@ const fetchUserProfile = async () => {
                           </div>
                           <Input
                             id="ebitdaMax"
-                            required
                             type="text"
                             className={`border-[#d0d5dd] ${
                               formData.selectedCurrency.length > 2
@@ -2583,7 +2621,6 @@ const fetchUserProfile = async () => {
                           </div>
                           <Input
                             id="transactionSizeMax"
-                            required
                             type="text"
                             className={`border-[#d0d5dd] ${
                               formData.selectedCurrency.length > 2
@@ -2647,8 +2684,7 @@ const fetchUserProfile = async () => {
                       htmlFor="minYearsInBusiness"
                       className="text-[#667085] text-sm mb-1.5 block"
                     >
-                      Minimum Years in Business
-                      <span className="text-red-500">*</span>
+                      Minimum Years in Business <span className="text-red-500">*</span>
                     </Label>
                     <Input
                       id="minYearsInBusiness"
@@ -2668,15 +2704,22 @@ const fetchUserProfile = async () => {
                             : Number(e.target.value)
                         )
                       }
+                      required
                     />
+                    {fieldErrors["targetCriteria.minYearsInBusiness"] && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {fieldErrors["targetCriteria.minYearsInBusiness"]}
+                      </p>
+                    )}
                   </div>
+               
                 </div>
               </div>
 
               {/* Preferred Business Models */}
               <div className="bg-white rounded-lg p-6 shadow-sm mb-6">
                 <h2 className="text-[#2f2b43] text-lg font-medium mb-4">
-                  Preferred Business Models
+                  Preferred Business Models <span className="text-red-500">*</span>
                 </h2>
                 <div className="flex flex-wrap gap-6">
                   {BUSINESS_MODELS.map((model) => (
@@ -2698,12 +2741,17 @@ const fetchUserProfile = async () => {
                     </div>
                   ))}
                 </div>
+                {fieldErrors["targetCriteria.preferredBusinessModels"] && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {fieldErrors["targetCriteria.preferredBusinessModels"]}
+                  </p>
+                )}
               </div>
 
               {/* Description of Ideal Target(s) */}
               <div className="bg-white rounded-lg p-6 shadow-sm mb-6">
                 <h2 className="text-[#2f2b43] text-lg font-medium mb-4">
-                  Description of Ideal Target(s)
+                  Description of Ideal Target(s) <span className="text-red-500">*</span>
                 </h2>
                 <Textarea
                   placeholder="Add additional information about company types you are pursuing especially specific industries and activities."
@@ -2716,7 +2764,13 @@ const fetchUserProfile = async () => {
                       e.target.value
                     )
                   }
+                  required
                 />
+                {fieldErrors["targetCriteria.description"] && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {fieldErrors["targetCriteria.description"]}
+                  </p>
+                )}
               </div>
 
               {/* General Preferences */}
