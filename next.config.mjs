@@ -1,4 +1,6 @@
 /** @type {import('next').NextConfig} */
+import nextBundleAnalyzer from '@next/bundle-analyzer';
+
 const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
@@ -9,6 +11,8 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-}
-
-export default nextConfig
+};
+const withBundleAnalyzer = nextBundleAnalyzer({
+  enabled: process.env.ANALYZE === 'true',
+})
+export default withBundleAnalyzer(nextConfig);

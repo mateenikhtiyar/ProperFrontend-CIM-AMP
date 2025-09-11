@@ -55,6 +55,48 @@ interface Document {
   uploadedAt: string;
 }
 
+interface CompanyProfileData {
+  _id: string;
+  companyName: string;
+  website: string;
+  selectedCurrency: string;
+  contacts: Array<{ name: string; email: string; phone: string }>;
+  companyType: string;
+  capitalEntity?: string;
+  dealsCompletedLast5Years?: number;
+  averageDealSize?: number;
+  preferences?: {
+    stopSendingDeals: boolean;
+    doNotSendMarketedDeals: boolean;
+    allowBuyerLikeDeals: boolean;
+  };
+  targetCriteria?: {
+    countries: string[];
+    industrySectors: string[];
+    revenueMin?: number;
+    revenueMax?: number;
+    ebitdaMin?: number;
+    ebitdaMax?: number;
+    transactionSizeMin?: number;
+    transactionSizeMax?: number;
+    revenueGrowth?: number;
+    minStakePercent?: number;
+    minYearsInBusiness?: number;
+    preferredBusinessModels?: string[];
+    description?: string;
+  };
+  agreements?: {
+    termsAndConditionsAccepted: boolean;
+    ndaAccepted: boolean;
+    feeAgreementAccepted: boolean;
+    agreementsAcceptedAt?: string; // Assuming this is set when agreements are accepted
+  };
+  buyer: string; // Buyer ID
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
+}
+
 interface BuyerProfile {
   _id: string;
   fullName: string;
@@ -91,6 +133,7 @@ export default function DealsPage() {
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [showProfileIncompleteWarning, setShowProfileIncompleteWarning] = useState(false);
   const [phoneNumber, setphoneNumber] = useState<{
     phone: string;
     email: string;
@@ -252,6 +295,59 @@ export default function DealsPage() {
     if (businessModel.assetLight) models.push("Asset Light");
     if (businessModel.assetHeavy) models.push("Asset Heavy");
     return models.join(", ") || "Not specified";
+  };
+
+  // Helper to determine if the company profile is complete
+  const isProfileComplete = (profile: CompanyProfileData | null): boolean => {
+    if (!profile) return false;
+
+    // Check essential top-level fields
+    if (
+      !profile.companyName ||
+      !profile.website ||
+      profile.contacts.length === 0 ||
+      !profile.companyType ||
+      !profile.capitalEntity ||
+      profile.dealsCompletedLast5Years === undefined ||
+      profile.averageDealSize === undefined
+    ) {
+      return false;
+    }
+
+    // Check contacts completeness
+    const contactsComplete = profile.contacts.every(
+      (contact) => contact.name && contact.email && contact.phone
+    );
+    if (!contactsComplete) return false;
+
+    // Check targetCriteria fields
+    if (
+      !profile.targetCriteria ||
+      profile.targetCriteria.countries.length === 0 ||
+      profile.targetCriteria.industrySectors.length === 0 ||
+      profile.targetCriteria.revenueMin === undefined ||
+      profile.targetCriteria.revenueMax === undefined ||
+      profile.targetCriteria.ebitdaMin === undefined ||
+      profile.targetCriteria.ebitdaMax === undefined ||
+      profile.targetCriteria.transactionSizeMin === undefined ||
+      profile.targetCriteria.transactionSizeMax === undefined ||
+      profile.targetCriteria.revenueGrowth === undefined ||
+      profile.targetCriteria.minYearsInBusiness === undefined ||
+      !profile.targetCriteria.preferredBusinessModels || profile.targetCriteria.preferredBusinessModels.length === 0 ||
+      !profile.targetCriteria.description
+    ) {
+      return false;
+    }
+
+    // Check agreements
+    if (
+      !profile.agreements ||
+      !profile.agreements.feeAgreementAccepted
+    ) {
+      return false;
+    }
+
+    return true;
   };
 
   // Update deal status via API
@@ -514,15 +610,19 @@ export default function DealsPage() {
       });
 
       if (!response || !response.ok) {
-        console.log("Profile check failed or not supported");
+        console.log("Profile check failed or no profile found (e.g., 404)");
+        setShowProfileIncompleteWarning(true); // Treat as incomplete if API call fails or no profile found
         return;
       }
 
-      const data = await response.json();
+      const data: CompanyProfileData = await response.json();
+      console.log("Data received for profile completeness check:", data); // Add this line
 
-      if (data && (data.exists === false || data.profileExists === false)) {
-        console.log("No profile found, redirecting to profile page");
-        router.push("/buyer/acquireprofile");
+      if (!isProfileComplete(data)) {
+        console.log("Profile incomplete, showing warning");
+        setShowProfileIncompleteWarning(true);
+      } else {
+        setShowProfileIncompleteWarning(false);
       }
     } catch (error) {
       console.error("Error checking profile:", error);
@@ -995,6 +1095,36 @@ export default function DealsPage() {
                   >
                     Dismiss
                   </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {showProfileIncompleteWarning && (
+            <div className="mb-6 rounded-md bg-yellow-50 p-4 text-yellow-800 border border-yellow-200">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg
+                    className="h-5 w-5 text-yellow-400"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm font-medium">
+                    You will not be receiving deals because you haven't completed your company profile yet. Please complete your company profile on first priority.
+                  </p>
+                  <Link href="/buyer/acquireprofile">
+                    <Button className="text-sm underline mt-1">
+                      Complete Profile
+                    </Button>
+                  </Link>
                 </div>
               </div>
             </div>
