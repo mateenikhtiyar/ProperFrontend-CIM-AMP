@@ -2,16 +2,9 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { Textarea } from "@/components/ui/textarea";
-import { FileText, Download } from "lucide-react";
+import { FileText, Download, Search, X, LogOut, Building2, Handshake, ShoppingCart, Tag, Eye } from "lucide-react";
 import Image from "next/image";
-import {Tag , ShoppingCart, Eye, Handshake} from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,14 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import Link from "next/link";
-import { Users, Building2, Clock, LogOut, Search, X } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogFooter,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 
 interface DocumentInfo {
@@ -37,6 +23,7 @@ interface DocumentInfo {
   mimetype: string;
   uploadedAt: string;
 }
+
 interface SellerProfile {
   _id: string;
   fullName: string;
@@ -78,9 +65,12 @@ interface Deal {
   financialDetails?: FinancialDetails;
   documents?: DocumentInfo[];
   rewardLevel?: string;
-  closedWithBuyer?: string; // New field for buyer ID
-  closedWithBuyerCompany?: string; // New field for buyer company
-  closedWithBuyerEmail?: string; // New field for buyer email
+  closedWithBuyer?: string;
+  closedWithBuyerCompany?: string;
+  closedWithBuyerEmail?: string;
+  businessModel?: BusinessModel;
+  managementPreferences?: string;
+  buyerFit?: BuyerFit;
 }
 
 interface Buyer {
@@ -112,17 +102,63 @@ interface BuyersActivity {
   };
 }
 
-const BuyersActivityPopup = ({
-  isOpen,
-  onClose,
-  buyersActivity,
-  dealTitle,
-}: {
+interface AdminProfile {
+  _id: string;
+  fullName: string;
+  email: string;
+  role: string;
+  profilePicture?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface BusinessModel {
+  recurringRevenue: boolean;
+  projectBased: boolean;
+  assetLight: boolean;
+  assetHeavy: boolean;
+}
+
+interface BuyerFit {
+  capitalAvailability: string[];
+  minPriorAcquisitions: number;
+  minTransactionSize: number;
+}
+
+interface AdminEditDealFormData {
+  _id: string;
+  title: string;
+  companyDescription: string;
+  industrySector: string;
+  geographySelection: string;
+  yearsInBusiness: number;
+  companyType: string[];
+  financialDetails: FinancialDetails;
+  businessModel: BusinessModel;
+  managementPreferences: string;
+  buyerFit: BuyerFit;
+  documents: File[];
+  visibility: string;
+  status: string;
+}
+
+const COMPANY_TYPE_OPTIONS = [
+  "Buy Side Mandate",
+  "Entrepreneurship through Acquisition",
+  "Family Office",
+  "Holding Company",
+  "Independent Sponsor",
+  "Private Equity",
+  "Single Acquisition Search",
+  "Strategic Operating Company",
+];
+
+const BuyersActivityPopup: React.FC<{
   isOpen: boolean;
   onClose: () => void;
   buyersActivity: BuyersActivity;
   dealTitle: string;
-}) => {
+}> = ({ isOpen, onClose, buyersActivity, dealTitle }) => {
   const [selectedBuyer, setSelectedBuyer] = useState<Buyer | null>(null);
 
   if (!isOpen) return null;
@@ -299,42 +335,34 @@ const BuyersActivityPopup = ({
   );
 };
 
-// --- AdminEditDealForm component (adapted from seller/edit-deal/page.tsx) ---
-
-function formatNumberWithCommas(num) {
+function formatNumberWithCommas(num: any): string {
   if (num === undefined || num === null) return "";
   return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
-const COMPANY_TYPE_OPTIONS = [
-  "Buy Side Mandate",
-  "Entrepreneurship through Acquisition",
-  "Family Office",
-  "Holding Company",
-  "Independent Sponsor",
-  "Private Equity",
-  "Single Acquisition Search",
-  "Strategic Operating Company",
-];
-
-function AdminEditDealForm({ deal, onClose, onSaved }) {
-  const [form, setForm] = useState(null);
+const AdminEditDealForm: React.FC<{
+  deal: Deal;
+  onClose: () => void;
+  onSaved: () => void;
+}> = ({ deal, onClose, onSaved }) => {
+  const [form, setForm] = useState<AdminEditDealFormData | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [fileError, setFileError] = useState(null);
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [existingDocuments, setExistingDocuments] = useState([]);
-  const fileInputRef = useRef(null);
+  const [error, setError] = useState<string | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [existingDocuments, setExistingDocuments] = useState<DocumentInfo[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!deal) return;
     setForm({
+      _id: deal._id,
       title: deal.title || "",
       companyDescription: deal.companyDescription || "",
       industrySector: deal.industrySector || "",
       geographySelection: deal.geographySelection || "",
       yearsInBusiness: deal.yearsInBusiness || 0,
-      companyType: Array.isArray(deal.companyType) ? deal.companyType : (deal.companyType ? [deal.companyType] : []),
+      companyType: Array.isArray(deal.companyType) ? deal.companyType : deal.companyType ? [deal.companyType] : [],
       financialDetails: {
         trailingRevenueCurrency: deal.financialDetails?.trailingRevenueCurrency || "USD($)",
         trailingRevenueAmount: deal.financialDetails?.trailingRevenueAmount || 0,
@@ -365,36 +393,59 @@ function AdminEditDealForm({ deal, onClose, onSaved }) {
     setExistingDocuments(deal.documents || []);
   }, [deal]);
 
-  const handleInputChange = (e) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    setForm((prev) => (prev ? { ...prev, [name]: value } : null));
   };
-  const handleNumberChange = (e, field, nested) => {
+
+  const handleNumberChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    field: keyof FinancialDetails | keyof BuyerFit | "yearsInBusiness",
+    nested?: "financialDetails" | "buyerFit"
+  ) => {
     const value = e.target.value === "" ? undefined : Number.parseFloat(e.target.value);
-    if (nested) {
-      setForm((prev) => ({ ...prev, [nested]: { ...prev[nested], [field]: value } }));
-    } else {
-      setForm((prev) => ({ ...prev, [field]: value }));
+    if (nested && form) {
+      setForm({
+        ...form,
+        [nested]: { ...form[nested], [field]: value },
+      });
+    } else if (form) {
+      setForm({ ...form, [field]: value });
     }
   };
-  const handleCheckboxChange = (checked, field, nested) => {
-    if (nested) {
-      setForm((prev) => ({ ...prev, [nested]: { ...prev[nested], [field]: checked } }));
-    } else {
-      setForm((prev) => ({ ...prev, [field]: checked }));
+
+  const handleCheckboxChange = (
+    checked: boolean,
+    field: keyof BusinessModel | keyof BuyerFit,
+    nested?: "businessModel" | "buyerFit"
+  ) => {
+    if (nested && form) {
+      setForm({
+        ...form,
+        [nested]: { ...form[nested], [field]: checked },
+      });
+    } else if (form) {
+      setForm({ ...form, [field]: checked });
     }
   };
-  const handleMultiSelectChange = (option) => {
+
+  const handleMultiSelectChange = (option: string) => {
     setForm((prev) => {
+      if (!prev) return null;
       const currentValues = Array.isArray(prev.companyType) ? prev.companyType : [];
       const isChecked = currentValues.includes(option);
-      const newValues = isChecked ? currentValues.filter((v) => v !== option) : [...currentValues, option];
+      const newValues = isChecked
+        ? currentValues.filter((v) => v !== option)
+        : [...currentValues, option];
       return { ...prev, companyType: newValues };
     });
   };
-  const handleFileChange = (e) => {
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      const newFiles = [];
+      const newFiles: File[] = [];
       let hasError = false;
       for (let i = 0; i < e.target.files.length; i++) {
         const file = e.target.files[i];
@@ -405,29 +456,34 @@ function AdminEditDealForm({ deal, onClose, onSaved }) {
         }
         newFiles.push(file);
       }
-      if (!hasError) {
+      if (!hasError && form) {
         setSelectedFile(e.target.files[0]);
         setFileError(null);
-        setForm((prev) => ({ ...prev, documents: [...(prev.documents || []), ...newFiles] }));
+        setForm({ ...form, documents: [...form.documents, ...newFiles] });
       }
     }
   };
-  const handleDocumentDelete = async (doc) => {
+
+  const handleDocumentDelete = async (doc: DocumentInfo) => {
     try {
       const token = localStorage.getItem("token");
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
       const docIndex = existingDocuments.findIndex((d) => d.filename === doc.filename);
-      const response = await fetch(`${apiUrl}/deals/${deal._id}/documents/${docIndex}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await fetch(
+        `${apiUrl}/deals/${deal._id}/documents/${docIndex}`,
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       if (!response.ok) throw new Error("Failed to delete document");
       setExistingDocuments(existingDocuments.filter((d) => d.filename !== doc.filename));
-    } catch (error) {
+    } catch (error: any) {
       setError(error.message);
     }
   };
-  const handleDocumentDownload = (doc) => {
+
+  const handleDocumentDownload = (doc: DocumentInfo) => {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL;
     const link = document.createElement("a");
     link.href = `${apiUrl}/uploads/deal-documents/${doc.filename}`;
@@ -437,24 +493,35 @@ function AdminEditDealForm({ deal, onClose, onSaved }) {
     link.click();
     document.body.removeChild(link);
   };
-  const handleNewDocumentDelete = (indexToRemove) => {
-    setForm((prev) => ({ ...prev, documents: prev.documents.filter((_, index) => index !== indexToRemove) }));
-    if (form.documents.length === 1) setSelectedFile(null);
+
+  const handleNewDocumentDelete = (indexToRemove: number) => {
+    setForm((prev) =>
+      prev ? { ...prev, documents: prev.documents.filter((_, index) => index !== indexToRemove) } : null
+    );
+    if (form && form.documents.length === 1) setSelectedFile(null);
   };
-  const handleSubmit = async (e) => {
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!form) return;
     setLoading(true);
     setError(null);
     try {
       const token = localStorage.getItem("token");
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      // Prepare payload
-      const payload = {
-        ...form,
-        companyType: Array.isArray(form.companyType) ? form.companyType : [],
+      const payload: Omit<AdminEditDealFormData, "documents" | "_id"> = {
+        title: form.title,
+        companyDescription: form.companyDescription,
+        industrySector: form.industrySector,
+        geographySelection: form.geographySelection,
+        yearsInBusiness: form.yearsInBusiness,
+        companyType: form.companyType,
         financialDetails: { ...form.financialDetails },
         businessModel: { ...form.businessModel },
+        managementPreferences: form.managementPreferences,
         buyerFit: { ...form.buyerFit },
+        visibility: form.visibility,
+        status: form.status,
       };
       const res = await fetch(`${apiUrl}/deals/${deal._id}`, {
         method: "PATCH",
@@ -468,49 +535,85 @@ function AdminEditDealForm({ deal, onClose, onSaved }) {
         const errorData = await res.json().catch(() => ({}));
         throw new Error(errorData.message || "Failed to update deal");
       }
-      // Upload new documents if any
       if (form.documents && form.documents.length > 0) {
         const uploadFormData = new FormData();
         Array.from(form.documents).forEach((file) => {
-          uploadFormData.append("files", file);
+          uploadFormData.append("files", file as Blob);
         });
-        const uploadResponse = await fetch(`${apiUrl}/deals/${deal._id}/upload-documents`, {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
-          body: uploadFormData,
-        });
+        const uploadResponse = await fetch(
+          `${apiUrl}/deals/${deal._id}/upload-documents`,
+          {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` },
+            body: uploadFormData,
+          }
+        );
         if (!uploadResponse.ok) throw new Error("Failed to upload documents");
       }
-      if (onSaved) onSaved();
-    } catch (err) {
+      onSaved();
+    } catch (err: any) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
   };
-  if (!form) return <div>Loading...</div>;
+
+  if (!form) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-gray-600 text-lg">Loading form...</div>
+      </div>
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <Label>Title</Label>
-          <Input name="title" value={form.title} onChange={handleInputChange} required />
+          <Input
+            name="title"
+            value={form.title}
+            onChange={handleInputChange}
+            required
+          />
         </div>
         <div>
           <Label>Company Description</Label>
-          <Textarea name="companyDescription" value={form.companyDescription} onChange={handleInputChange} required />
+          <Textarea
+            name="companyDescription"
+            value={form.companyDescription}
+            onChange={handleInputChange}
+            required
+          />
         </div>
         <div>
           <Label>Industry Sector</Label>
-          <Input name="industrySector" value={form.industrySector} onChange={handleInputChange} required />
+          <Input
+            name="industrySector"
+            value={form.industrySector}
+            onChange={handleInputChange}
+            required
+          />
         </div>
         <div>
           <Label>Geography</Label>
-          <Input name="geographySelection" value={form.geographySelection} onChange={handleInputChange} required />
+          <Input
+            name="geographySelection"
+            value={form.geographySelection}
+            onChange={handleInputChange}
+            required
+          />
         </div>
         <div>
           <Label>Years in Business</Label>
-          <Input type="number" name="yearsInBusiness" value={form.yearsInBusiness} onChange={(e) => handleNumberChange(e, "yearsInBusiness")} required />
+          <Input
+            type="number"
+            name="yearsInBusiness"
+            value={form.yearsInBusiness}
+            onChange={(e) => handleNumberChange(e, "yearsInBusiness")}
+            required
+          />
         </div>
         <div>
           <Label>Company Type</Label>
@@ -533,10 +636,18 @@ function AdminEditDealForm({ deal, onClose, onSaved }) {
           <Label>Trailing 12-Month Revenue</Label>
           <Input
             type="text"
-            value={form.financialDetails.trailingRevenueAmount ? formatNumberWithCommas(form.financialDetails.trailingRevenueAmount) : ""}
+            value={
+              form.financialDetails.trailingRevenueAmount
+                ? formatNumberWithCommas(form.financialDetails.trailingRevenueAmount)
+                : ""
+            }
             onChange={(e) => {
               const rawValue = e.target.value.replace(/,/g, "");
-              handleNumberChange({ target: { value: rawValue } }, "trailingRevenueAmount", "financialDetails");
+              handleNumberChange(
+                { target: { value: rawValue } } as React.ChangeEvent<HTMLInputElement>,
+                "trailingRevenueAmount",
+                "financialDetails"
+              );
             }}
           />
         </div>
@@ -544,10 +655,18 @@ function AdminEditDealForm({ deal, onClose, onSaved }) {
           <Label>Trailing 12-Month EBITDA</Label>
           <Input
             type="text"
-            value={form.financialDetails.trailingEBITDAAmount ? formatNumberWithCommas(form.financialDetails.trailingEBITDAAmount) : ""}
+            value={
+              form.financialDetails.trailingEBITDAAmount
+                ? formatNumberWithCommas(form.financialDetails.trailingEBITDAAmount)
+                : ""
+            }
             onChange={(e) => {
               const rawValue = e.target.value.replace(/,/g, "");
-              handleNumberChange({ target: { value: rawValue } }, "trailingEBITDAAmount", "financialDetails");
+              handleNumberChange(
+                { target: { value: rawValue } } as React.ChangeEvent<HTMLInputElement>,
+                "trailingEBITDAAmount",
+                "financialDetails"
+              );
             }}
           />
         </div>
@@ -555,10 +674,18 @@ function AdminEditDealForm({ deal, onClose, onSaved }) {
           <Label>Average 3-Year Revenue Growth (%)</Label>
           <Input
             type="text"
-            value={form.financialDetails.avgRevenueGrowth ? formatNumberWithCommas(form.financialDetails.avgRevenueGrowth) : ""}
+            value={
+              form.financialDetails.avgRevenueGrowth
+                ? formatNumberWithCommas(form.financialDetails.avgRevenueGrowth)
+                : ""
+            }
             onChange={(e) => {
               const rawValue = e.target.value.replace(/,/g, "");
-              handleNumberChange({ target: { value: rawValue } }, "avgRevenueGrowth", "financialDetails");
+              handleNumberChange(
+                { target: { value: rawValue } } as React.ChangeEvent<HTMLInputElement>,
+                "avgRevenueGrowth",
+                "financialDetails"
+              );
             }}
           />
         </div>
@@ -566,10 +693,18 @@ function AdminEditDealForm({ deal, onClose, onSaved }) {
           <Label>Net Income</Label>
           <Input
             type="text"
-            value={form.financialDetails.netIncome ? formatNumberWithCommas(form.financialDetails.netIncome) : ""}
+            value={
+              form.financialDetails.netIncome
+                ? formatNumberWithCommas(form.financialDetails.netIncome)
+                : ""
+            }
             onChange={(e) => {
               const rawValue = e.target.value.replace(/,/g, "");
-              handleNumberChange({ target: { value: rawValue } }, "netIncome", "financialDetails");
+              handleNumberChange(
+                { target: { value: rawValue } } as React.ChangeEvent<HTMLInputElement>,
+                "netIncome",
+                "financialDetails"
+              );
             }}
           />
         </div>
@@ -577,10 +712,18 @@ function AdminEditDealForm({ deal, onClose, onSaved }) {
           <Label>Asking Price</Label>
           <Input
             type="text"
-            value={form.financialDetails.askingPrice ? formatNumberWithCommas(form.financialDetails.askingPrice) : ""}
+            value={
+              form.financialDetails.askingPrice
+                ? formatNumberWithCommas(form.financialDetails.askingPrice)
+                : ""
+            }
             onChange={(e) => {
               const rawValue = e.target.value.replace(/,/g, "");
-              handleNumberChange({ target: { value: rawValue } }, "askingPrice", "financialDetails");
+              handleNumberChange(
+                { target: { value: rawValue } } as React.ChangeEvent<HTMLInputElement>,
+                "askingPrice",
+                "financialDetails"
+              );
             }}
           />
         </div>
@@ -588,10 +731,18 @@ function AdminEditDealForm({ deal, onClose, onSaved }) {
           <Label>T12 Free Cash Flow</Label>
           <Input
             type="text"
-            value={form.financialDetails.t12FreeCashFlow ? formatNumberWithCommas(form.financialDetails.t12FreeCashFlow) : ""}
+            value={
+              form.financialDetails.t12FreeCashFlow
+                ? formatNumberWithCommas(form.financialDetails.t12FreeCashFlow)
+                : ""
+            }
             onChange={(e) => {
               const rawValue = e.target.value.replace(/,/g, "");
-              handleNumberChange({ target: { value: rawValue } }, "t12FreeCashFlow", "financialDetails");
+              handleNumberChange(
+                { target: { value: rawValue } } as React.ChangeEvent<HTMLInputElement>,
+                "t12FreeCashFlow",
+                "financialDetails"
+              );
             }}
           />
         </div>
@@ -599,10 +750,18 @@ function AdminEditDealForm({ deal, onClose, onSaved }) {
           <Label>T12 Net Income</Label>
           <Input
             type="text"
-            value={form.financialDetails.t12NetIncome ? formatNumberWithCommas(form.financialDetails.t12NetIncome) : ""}
+            value={
+              form.financialDetails.t12NetIncome
+                ? formatNumberWithCommas(form.financialDetails.t12NetIncome)
+                : ""
+            }
             onChange={(e) => {
               const rawValue = e.target.value.replace(/,/g, "");
-              handleNumberChange({ target: { value: rawValue } }, "t12NetIncome", "financialDetails");
+              handleNumberChange(
+                { target: { value: rawValue } } as React.ChangeEvent<HTMLInputElement>,
+                "t12NetIncome",
+                "financialDetails"
+              );
             }}
           />
         </div>
@@ -611,46 +770,52 @@ function AdminEditDealForm({ deal, onClose, onSaved }) {
         <div>
           <Label>Business Models</Label>
           <div className="flex flex-wrap gap-2">
-            {[
-              { key: "recurringRevenue", label: "Recurring Revenue" },
-              { key: "projectBased", label: "Project Based" },
-              { key: "assetLight", label: "Asset Light" },
-              { key: "assetHeavy", label: "Asset Heavy" },
-            ].map((bm) => (
-              <label key={bm.key} className="flex items-center gap-1">
-                <input
-                  type="checkbox"
-                  checked={form.businessModel[bm.key]}
-                  onChange={(e) => handleCheckboxChange(e.target.checked, bm.key, "businessModel")}
-                />
-                {bm.label}
-              </label>
-            ))}
+            {[ "recurringRevenue", "projectBased", "assetLight", "assetHeavy" ].map(
+              (key) => (
+                <label key={key} className="flex items-center gap-1">
+                  <input
+                    type="checkbox"
+                    checked={form.businessModel[key as keyof BusinessModel]}
+                    onChange={(e) =>
+                      handleCheckboxChange(e.target.checked, key as keyof BusinessModel, "businessModel")
+                    }
+                  />
+                  {key}
+                </label>
+              )
+            )}
           </div>
         </div>
         <div>
           <Label>Management Preferences</Label>
-          <Textarea name="managementPreferences" value={form.managementPreferences} onChange={handleInputChange} />
+          <Textarea
+            name="managementPreferences"
+            value={form.managementPreferences}
+            onChange={handleInputChange}
+          />
         </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <Label>Capital Availability</Label>
           <div className="flex flex-wrap gap-2">
-            {[
-              "Ready to deploy immediately",
-              "Need to raise",
-            ].map((option) => (
+            {["Ready to deploy immediately", "Need to raise"].map((option) => (
               <label key={option} className="flex items-center gap-1">
                 <input
                   type="checkbox"
                   checked={form.buyerFit.capitalAvailability.includes(option)}
                   onChange={() => {
                     setForm((prev) => {
+                      if (!prev) return null;
                       const current = prev.buyerFit.capitalAvailability || [];
                       const isChecked = current.includes(option);
-                      const newValues = isChecked ? current.filter((v) => v !== option) : [...current, option];
-                      return { ...prev, buyerFit: { ...prev.buyerFit, capitalAvailability: newValues } };
+                      const newValues = isChecked
+                        ? current.filter((v) => v !== option)
+                        : [...current, option];
+                      return {
+                        ...prev,
+                        buyerFit: { ...prev.buyerFit, capitalAvailability: newValues },
+                      };
                     });
                   }}
                 />
@@ -664,7 +829,9 @@ function AdminEditDealForm({ deal, onClose, onSaved }) {
           <Input
             type="number"
             value={form.buyerFit.minPriorAcquisitions}
-            onChange={(e) => handleNumberChange(e, "minPriorAcquisitions", "buyerFit")}
+            onChange={(e) =>
+              handleNumberChange(e, "minPriorAcquisitions", "buyerFit")
+            }
           />
         </div>
         <div>
@@ -672,69 +839,109 @@ function AdminEditDealForm({ deal, onClose, onSaved }) {
           <Input
             type="number"
             value={form.buyerFit.minTransactionSize}
-            onChange={(e) => handleNumberChange(e, "minTransactionSize", "buyerFit")}
+            onChange={(e) =>
+              handleNumberChange(e, "minTransactionSize", "buyerFit")
+            }
           />
         </div>
       </div>
-      {/* Documents Section */}
       <div>
         <Label>Documents</Label>
-        {(existingDocuments.length > 0 || (form.documents && form.documents.length > 0)) && (
+        {(existingDocuments.length > 0 || form.documents.length > 0) && (
           <ul className="space-y-2 mb-2">
-            {existingDocuments.map((doc, idx) => (
-              <li key={doc.filename} className="flex items-center justify-between border rounded-md p-3 bg-blue-50">
+            {existingDocuments.map((doc) => (
+              <li
+                key={doc.filename}
+                className="flex items-center justify-between border rounded-md p-3 bg-blue-50"
+              >
                 <div className="flex items-center">
                   <FileText className="h-5 w-5 mr-2 text-blue-600" />
                   <span className="text-sm text-gray-700">{doc.originalName}</span>
                   <span className="text-xs text-blue-600 ml-2">(Existing)</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Button variant="secondary" size="sm" onClick={() => handleDocumentDownload(doc)}>
-                    <Download className="h-4 w-4 mr-1" />Download
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => handleDocumentDownload(doc)}
+                  >
+                    <Download className="h-4 w-4 mr-1" />
+                    Download
                   </Button>
-                  <Button variant="destructive" size="sm" onClick={() => handleDocumentDelete(doc)}>
-                    <X className="h-4 w-4 mr-1" />Delete
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => handleDocumentDelete(doc)}
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    Delete
                   </Button>
                 </div>
               </li>
             ))}
-            {form.documents && form.documents.map((file, idx) => (
-              <li key={"new-" + idx} className="flex items-center justify-between border rounded-md p-3 bg-green-50">
+            {form.documents.map((file, idx) => (
+              <li
+                key={"new-" + idx}
+                className="flex items-center justify-between border rounded-md p-3 bg-green-50"
+              >
                 <div className="flex items-center">
                   <FileText className="h-5 w-5 mr-2 text-green-600" />
                   <span className="text-sm text-gray-700">{file.name}</span>
                   <span className="text-xs text-green-600 ml-2">(New)</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <span className="text-xs text-gray-500">{(file.size / 1024 / 1024).toFixed(2)} MB</span>
-                  <Button variant="destructive" size="sm" onClick={() => handleNewDocumentDelete(idx)}>
-                    <X className="h-4 w-4 mr-1" />Remove
+                  <span className="text-xs text-gray-500">
+                    {(file.size / 1024 / 1024).toFixed(2)} MB
+                  </span>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => handleNewDocumentDelete(idx)}
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    Remove
                   </Button>
                 </div>
               </li>
             ))}
           </ul>
         )}
-        <Input type="file" multiple onChange={handleFileChange} ref={fileInputRef} />
+        <Input
+          type="file"
+          multiple
+          onChange={handleFileChange}
+          ref={fileInputRef}
+        />
         {fileError && <p className="text-red-500 text-sm mt-1">{fileError}</p>}
-        <p className="text-sm text-gray-500 mt-1">You can upload multiple files. Max size: 10MB per file.</p>
+        <p className="text-sm text-gray-500 mt-1">
+          You can upload multiple files. Max size: 10MB per file.
+        </p>
       </div>
       {error && <div className="text-red-500 mt-2">{error}</div>}
       <div className="flex justify-end gap-2 mt-6">
-        <Button type="button" variant="outline" onClick={onClose} disabled={loading}>Cancel</Button>
-        <Button type="submit" className="bg-teal-500 text-white" disabled={loading}>{loading ? "Saving..." : "Save"}</Button>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onClose}
+          disabled={loading}
+        >
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          className="bg-teal-500 text-white"
+          disabled={loading}
+        >
+          {loading ? "Saving..." : "Save"}
+        </Button>
       </div>
     </form>
   );
-}
+};
 
 export default function DealManagementDashboard() {
   const [editDeal, setEditDeal] = useState<Deal | null>(null);
-  const [editForm, setEditForm] = useState<any>(null);
-  const [editLoading, setEditLoading] = useState(false);
-  const [editError, setEditError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
   const [activeTab, setActiveTab] = useState("active");
   const [activeDeals, setActiveDeals] = useState<Deal[]>([]);
   const [offMarketDeals, setOffMarketDeals] = useState<Deal[]>([]);
@@ -742,8 +949,7 @@ export default function DealManagementDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [activityError, setActivityError] = useState<string | null>(null);
   const [showBuyersActivity, setShowBuyersActivity] = useState(false);
-  const [selectedDealForActivity, setSelectedDealForActivity] =
-    useState<Deal | null>(null);
+  const [selectedDealForActivity, setSelectedDealForActivity] = useState<Deal | null>(null);
   const [buyersActivity, setBuyersActivity] = useState<BuyersActivity>({
     active: [],
     pending: [],
@@ -758,15 +964,14 @@ export default function DealManagementDashboard() {
   const [activeCurrentPage, setActiveCurrentPage] = useState(1);
   const [offMarketCurrentPage, setOffMarketCurrentPage] = useState(1);
   const dealsPerPage = 5;
+  const [activeTotalDeals, setActiveTotalDeals] = useState(0);
+  const [offMarketTotalDeals, setOffMarketTotalDeals] = useState(0);
   const [deleteDealId, setDeleteDealId] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-  // Add state for Off Market dialog
   const [offMarketDeal, setOffMarketDeal] = useState<Deal | null>(null);
   const [offMarketLoading, setOffMarketLoading] = useState(false);
   const [offMarketError, setOffMarketError] = useState<string | null>(null);
-
-  // --- Off Market Multi-Step Dialog State (copied from seller dashboard) ---
   const [offMarketDialogOpen, setOffMarketDialogOpen] = useState(false);
   const [currentDialogStep, setCurrentDialogStep] = useState(1);
   const [selectedDealForOffMarketDialog, setSelectedDealForOffMarketDialog] = useState<Deal | null>(null);
@@ -776,18 +981,20 @@ export default function DealManagementDashboard() {
     buyerFromCIM: null as boolean | null,
   });
   const [buyerActivity, setBuyerActivity] = useState<any[]>([]);
-  const [selectedWinningBuyer, setSelectedWinningBuyer] = useState<string>("");
+  const [selectedWinningBuyer, setSelectedWinningBuyer] = useState("");
   const [buyerActivityLoading, setBuyerActivityLoading] = useState(false);
   const [isSubmittingOffMarket, setIsSubmittingOffMarket] = useState(false);
 
-  // --- Utility copied from seller dashboard ---
-  const formatWithCommas = (value: string | number) => {
+  const router = useRouter();
+  const { logout } = useAuth();
+  const [adminProfile, setAdminProfile] = useState<AdminProfile | null>(null);
+
+  const formatWithCommas = (value: string | number): string => {
     const num = typeof value === "string" ? Number(value.replace(/,/g, "")) : value;
     if (isNaN(num)) return "";
     return num.toLocaleString();
   };
 
-  // --- Fetch buyer activity for CIM Amplify step ---
   const fetchDealStatusSummary = async (dealId: string) => {
     try {
       const token = localStorage.getItem("token");
@@ -827,6 +1034,7 @@ export default function DealManagementDashboard() {
                 invitationStatus: invitationStatus,
               };
             }
+            return null;
           } catch (error) {
             return null;
           }
@@ -842,7 +1050,6 @@ export default function DealManagementDashboard() {
     return [];
   };
 
-  // --- Off Market Dialog Handlers ---
   const handleAdminOffMarketClick = (deal: Deal) => {
     setSelectedDealForOffMarketDialog(deal);
     setCurrentDialogStep(1);
@@ -856,23 +1063,28 @@ export default function DealManagementDashboard() {
     setOffMarketData((prev) => ({ ...prev, [key]: value }));
     if (key === "dealSold") {
       if (value === false) {
-        // Mark deal as off-market (same as seller dashboard)
         if (selectedDealForOffMarketDialog) {
           try {
             const token = localStorage.getItem("token");
             const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-            const response = await fetch(`${apiUrl}/deals/${selectedDealForOffMarketDialog._id}/close-deal`, {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${token}`,
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({}),
-            });
+            const response = await fetch(
+              `${apiUrl}/deals/${selectedDealForOffMarketDialog._id}/close-deal`,
+              {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({}),
+              }
+            );
             if (!response.ok) {
-              // Optionally show error
+              setOffMarketDialogOpen(false);
+              return;
             }
-            setActiveDeals((prev) => prev.filter((d) => d._id !== selectedDealForOffMarketDialog._id));
+            setActiveDeals((prev) =>
+              prev.filter((d) => d._id !== selectedDealForOffMarketDialog._id)
+            );
             setOffMarketDeals((prev) => [selectedDealForOffMarketDialog, ...prev]);
             setOffMarketDialogOpen(false);
           } catch (error) {
@@ -889,36 +1101,39 @@ export default function DealManagementDashboard() {
 
   const handleAdminOffMarketSubmit = async () => {
     if (!selectedDealForOffMarketDialog || !offMarketData.transactionValue) {
-      // Optionally show error
       return;
     }
-    // If buyerFromCIM is true, require a selected buyer
     if (offMarketData.buyerFromCIM === true && !selectedWinningBuyer) {
-      // Optionally show error
       return;
     }
-    setIsSubmittingOffMarket(true); // Set loading state to true
+    setIsSubmittingOffMarket(true);
     try {
       const token = localStorage.getItem("token");
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      // Use POST /deals/:id/close for admin (now allowed)
       const body = {
         finalSalePrice: Number.parseFloat(offMarketData.transactionValue),
-        ...(offMarketData.buyerFromCIM === true && selectedWinningBuyer ? { winningBuyerId: selectedWinningBuyer } : {}),
+        ...(offMarketData.buyerFromCIM === true && selectedWinningBuyer
+          ? { winningBuyerId: selectedWinningBuyer }
+          : {}),
       };
-      const closeResponse = await fetch(`${apiUrl}/deals/${selectedDealForOffMarketDialog._id}/close`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(body),
-      });
+      const closeResponse = await fetch(
+        `${apiUrl}/deals/${selectedDealForOffMarketDialog._id}/close`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(body),
+        }
+      );
       if (!closeResponse.ok) {
         setOffMarketDialogOpen(false);
         return;
       }
-      setActiveDeals((prev) => prev.filter((d) => d._id !== selectedDealForOffMarketDialog._id));
+      setActiveDeals((prev) =>
+        prev.filter((d) => d._id !== selectedDealForOffMarketDialog._id)
+      );
       setOffMarketDeals((prev) => [selectedDealForOffMarketDialog, ...prev]);
       setOffMarketDialogOpen(false);
       setCurrentDialogStep(1);
@@ -929,24 +1144,24 @@ export default function DealManagementDashboard() {
     } catch (error) {
       setOffMarketDialogOpen(false);
     } finally {
-      setIsSubmittingOffMarket(false); // Set loading state to false
+      setIsSubmittingOffMarket(false);
     }
   };
 
-  // --- Buyer activity fetch for CIM step ---
   useEffect(() => {
-    if (offMarketDialogOpen && selectedDealForOffMarketDialog && offMarketData.buyerFromCIM === true) {
+    if (
+      offMarketDialogOpen &&
+      selectedDealForOffMarketDialog &&
+      offMarketData.buyerFromCIM === true
+    ) {
       setBuyerActivity([]);
       setBuyerActivityLoading(true);
-      fetchDealStatusSummary(selectedDealForOffMarketDialog._id).finally(() => setBuyerActivityLoading(false));
+      fetchDealStatusSummary(selectedDealForOffMarketDialog._id).finally(() =>
+        setBuyerActivityLoading(false)
+      );
     }
   }, [offMarketDialogOpen, selectedDealForOffMarketDialog, offMarketData.buyerFromCIM]);
 
-  const router = useRouter();
-  const { logout } = useAuth();
-
-  // Add admin profile state
-  const [adminProfile, setAdminProfile] = useState<AdminProfile | null>(null);
   useEffect(() => {
     const fetchAdminProfile = async () => {
       const token = localStorage.getItem("token");
@@ -961,125 +1176,97 @@ export default function DealManagementDashboard() {
     fetchAdminProfile();
   }, []);
 
-  // Replace your setActiveDeals and setOffMarketDeals with this logic:
-  useEffect(() => {
-    const fetchDeals = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+  const fetchDeals = async (
+    page: number,
+    limit: number,
+    status: "active" | "offMarket",
+    searchTerm: string = ""
+  ) => {
+    try {
+      const token = localStorage.getItem("token");
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      let endpoint = status === "active"
+        ? `${apiUrl}/deals/admin?page=${page}&limit=${limit}&search=${searchTerm}&buyerResponse=accepted`
+        : `${apiUrl}/deals/admin?page=${page}&limit=${limit}&search=${searchTerm}&status=completed`;
 
-        // Fetch active deals
-        const activeResponse = await fetch(`${apiUrl}/deals/active-accepted`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
-        if (!activeResponse.ok) throw new Error("Failed to fetch active deals");
-        const activeData = await activeResponse.json();
-        const activeDealsArray = Array.isArray(activeData)
-          ? activeData
-          : [activeData];
+      const response = await fetch(endpoint, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
 
-        // Fetch seller profiles for active deals
-        const activeDealsWithSellers = await Promise.all(
-          activeDealsArray.map(async (deal) => {
-            try {
-              const sellerRes = await fetch(
-                `${apiUrl}/sellers/public/${deal.seller}`
-              );
-              if (sellerRes.ok) {
-                const sellerProfile = await sellerRes.json();
-                console.log("Seller profile for deal", deal._id, sellerProfile); // <-- Add this
-                return { ...deal, sellerProfile };
-              }
-              return deal;
-            } catch {
-              return deal;
+      if (!response.ok) throw new Error(`Failed to fetch ${status} deals`);
+      const data = await response.json();
+      const dealsArray = Array.isArray(data.data) ? data.data : [data.data];
+
+      const validDealsArray = dealsArray.filter((deal: Deal) => deal !== null && deal !== undefined);
+
+      const dealsWithSellers = await Promise.all(
+        validDealsArray.map(async (deal: Deal) => {
+          try {
+            const sellerRes = await fetch(`${apiUrl}/sellers/public/${deal.seller}`);
+            if (sellerRes.ok) {
+              const sellerProfile = await sellerRes.json();
+              return { ...deal, sellerProfile };
             }
-          })
-        );
-        setActiveDeals(activeDealsWithSellers);
-
-        // Fetch off-market deals
-        const offMarketResponse = await fetch(
-          `${apiUrl}/deals/admin/completed/all`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
+            return deal;
+          } catch {
+            return deal;
           }
-        );
-        if (!offMarketResponse.ok)
-          throw new Error("Failed to fetch off-market deals");
-        const offMarketData = await offMarketResponse.json();
-        const offMarketDealsArray = Array.isArray(offMarketData)
-          ? offMarketData
-          : [offMarketData];
+        })
+      );
 
-        // Fetch seller profiles for off-market deals
-        const offMarketDealsWithSellers = await Promise.all(
-          offMarketDealsArray.map(async (deal) => {
-            try {
-              const sellerRes = await fetch(
-                `${apiUrl}/sellers/public/${deal.seller}`
-              );
-              if (sellerRes.ok) {
-                const sellerProfile = await sellerRes.json();
-                return { ...deal, sellerProfile };
-              }
-              return deal;
-            } catch {
-              return deal;
-            }
-          })
-        );
-        setOffMarketDeals(offMarketDealsWithSellers);
-
-        setError(null);
-      } catch (error: any) {
-        setActiveDeals([]);
-        setOffMarketDeals([]);
-        setError(error.message);
-        console.error("Error fetching deals:", error);
-      } finally {
-        setLoading(false);
+      if (status === "active") {
+        setActiveDeals(dealsWithSellers);
+        setActiveTotalDeals(data.total);
+      } else {
+        setOffMarketDeals(dealsWithSellers);
+        setOffMarketTotalDeals(data.total);
       }
-    };
+      setError(null);
+    } catch (error: any) {
+      if (status === "active") {
+        setActiveDeals([]);
+        setActiveTotalDeals(0);
+      } else {
+        setOffMarketDeals([]);
+        setOffMarketTotalDeals(0);
+      }
+      setError(error.message);
+      console.error(`Error fetching ${status} deals:`, error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchDeals();
-  }, []);
+  useEffect(() => {
+    fetchDeals(activeCurrentPage, dealsPerPage, "active", searchTerm);
+    fetchDeals(offMarketCurrentPage, dealsPerPage, "offMarket", searchTerm);
+  }, [activeCurrentPage, offMarketCurrentPage, searchTerm]);
 
   useEffect(() => {
     if (activeTab === "active") {
       setActiveCurrentPage(1);
+      fetchDeals(1, dealsPerPage, "active", searchTerm);
     } else if (activeTab === "offMarket") {
       setOffMarketCurrentPage(1);
+      fetchDeals(1, dealsPerPage, "offMarket", searchTerm);
     }
-  }, [activeTab, searchTerm]);
+  }, [activeTab]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
-    setActiveCurrentPage(1);
-    setOffMarketCurrentPage(1);
   };
 
   const handleLogout = () => {
     logout();
     router.push("/admin/login");
   };
+
   const handleEditDeal = (deal: Deal) => {
     setEditDeal(deal);
-    setEditForm({
-      ...deal,
-      ...(deal.financialDetails || {}),
-    });
-    setEditError(null);
-  };
-  const handleViewDealDetails = (deal: Deal) => {
-    setSelectedDeal(deal);
-    router.push(`/admin/deals/${deal._id}`);
+    setError(null);
   };
 
   const handleActivityClick = async (deal: Deal) => {
@@ -1142,49 +1329,12 @@ export default function DealManagementDashboard() {
     }
   };
 
-  const handleDownloadDocument = async (
-    dealId: string,
-    filename: string,
-    originalName: string
-  ) => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) throw new Error("No authentication token found");
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/deals/${dealId}/document/${filename}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to download document");
-      }
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = originalName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-    } catch (error: any) {
-      console.error("Error downloading document:", error);
-      alert(`Failed to download document: ${error.message}`);
-    }
-  };
-
   const handleDeleteDeal = async (dealId: string) => {
-    console.log("handleDeleteDeal called for deal:", dealId);
     setDeleteLoading(true);
     setDeleteError(null);
     try {
       const token = localStorage.getItem("token");
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      // Try DELETE first
       let response = await fetch(`${apiUrl}/deals/${dealId}`, {
         method: "DELETE",
         headers: {
@@ -1192,10 +1342,7 @@ export default function DealManagementDashboard() {
           "Content-Type": "application/json",
         },
       });
-      console.log("Delete API response:", response.status);
-      // If forbidden, try with dummy userId in body (for admin)
       if (response.status === 403 || response.status === 400) {
-        // Try POST or PATCH if your backend expects it, or pass userId in body
         const userId = localStorage.getItem("userId") || "admin";
         response = await fetch(`${apiUrl}/deals/${dealId}`, {
           method: "DELETE",
@@ -1205,37 +1352,26 @@ export default function DealManagementDashboard() {
           },
           body: JSON.stringify({ userId }),
         });
-        console.log("Delete API retry response:", response.status);
       }
       if (!response.ok) {
-        let errorData;
-        try {
-          errorData = await response.json();
-        } catch {
-          errorData = {};
-        }
-        console.error("Delete API error:", errorData);
+        const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || "Failed to delete deal");
       }
-      // Remove from UI
-      setActiveDeals((prev) => prev.filter((d) => d._id !== dealId));
-      setOffMarketDeals((prev) => prev.filter((d) => d._id !== dealId));
+      fetchDeals(activeCurrentPage, dealsPerPage, "active", searchTerm);
+      fetchDeals(offMarketCurrentPage, dealsPerPage, "offMarket", searchTerm);
       setDeleteDealId(null);
     } catch (error: any) {
       setDeleteError(error.message);
-      console.error("handleDeleteDeal error:", error);
     } finally {
       setDeleteLoading(false);
     }
   };
 
-  // Handler to open Off Market dialog
   const handleOffMarketClick = (deal: Deal) => {
     setOffMarketDeal(deal);
     setOffMarketError(null);
   };
 
-  // Handler to confirm Off Market
   const handleConfirmOffMarket = async () => {
     if (!offMarketDeal) return;
     setOffMarketLoading(true);
@@ -1252,13 +1388,11 @@ export default function DealManagementDashboard() {
         body: JSON.stringify({ status: "completed" }),
       });
       if (!res.ok) {
-        let errorData;
-        try { errorData = await res.json(); } catch { errorData = {}; }
+        const errorData = await res.json().catch(() => ({}));
         throw new Error(errorData.message || "Failed to mark deal as off market");
       }
-      // Move deal to Off Market tab
-      setActiveDeals((prev) => prev.filter((d) => d._id !== offMarketDeal._id));
-      setOffMarketDeals((prev) => [offMarketDeal, ...prev]);
+      fetchDeals(activeCurrentPage, dealsPerPage, "active", searchTerm);
+      fetchDeals(offMarketCurrentPage, dealsPerPage, "offMarket", searchTerm);
       setOffMarketDeal(null);
     } catch (error: any) {
       setOffMarketError(error.message);
@@ -1267,65 +1401,25 @@ export default function DealManagementDashboard() {
     }
   };
 
-  // Filter out completed deals from activeDeals before using in Active tab
-  const filteredActiveDeals = activeDeals.filter(
-    (deal) => deal.status !== "completed"
-  );
-
   const getTabCount = (tab: string) => {
     if (tab === "active") {
-      return filteredActiveDeals.length;
+      return activeTotalDeals;
     } else if (tab === "offMarket") {
-      return offMarketDeals.length;
+      return offMarketTotalDeals;
     }
     return 0;
   };
 
-  // Filtered deals for each tab
-  const filteredActive = filteredActiveDeals.filter(
-    (deal) =>
-      (deal.title || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (deal.industrySector || "")
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      (deal.geographySelection || "")
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      (deal.companyDescription || "")
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase())
-  );
-  const filteredOffMarket = offMarketDeals.filter(
-    (deal) =>
-      (deal.title || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (deal.industrySector || "")
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      (deal.geographySelection || "")
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      (deal.companyDescription || "")
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase())
-  );
+  const activeTotalPages = Math.ceil(activeTotalDeals / dealsPerPage);
+  const offMarketTotalPages = Math.ceil(offMarketTotalDeals / dealsPerPage);
+  const currentActiveDeals = activeDeals;
+  const currentOffMarketDeals = offMarketDeals;
 
-  // Pagination logic for each tab
-  const activeTotalPages = Math.ceil(filteredActive.length / dealsPerPage);
-  const offMarketTotalPages = Math.ceil(
-    filteredOffMarket.length / dealsPerPage
-  );
-  const activeStartIndex = (activeCurrentPage - 1) * dealsPerPage;
-  const activeEndIndex = activeStartIndex + dealsPerPage;
-  const offMarketStartIndex = (offMarketCurrentPage - 1) * dealsPerPage;
-  const offMarketEndIndex = offMarketStartIndex + dealsPerPage;
-  const currentActiveDeals = filteredActive.slice(
-    activeStartIndex,
-    activeEndIndex
-  );
-  const currentOffMarketDeals = filteredOffMarket.slice(
-    offMarketStartIndex,
-    offMarketEndIndex
-  );
+  function getProfileImageSrc(src?: string | null) {
+    if (!src) return undefined;
+    if (src.startsWith("data:")) return src;
+    return src + `?cb=${Date.now()}`;
+  }
 
   if (loading) {
     return (
@@ -1333,24 +1427,39 @@ export default function DealManagementDashboard() {
         <div className="w-64 bg-white border-r border-gray-200 p-6 flex flex-col">
           <div className="mb-8">
             <Link href="/seller/dashboard">
-              <Image src="/logo.svg" alt="CIM Amplify Logo" width={150} height={50} className="h-auto" />
+              <Image
+                src="/logo.svg"
+                alt="CIM Amplify Logo"
+                width={150}
+                height={50}
+                className="h-auto"
+              />
             </Link>
           </div>
           <nav className="flex-1 flex flex-col gap-4">
             <Link href="/admin/dashboard">
-              <Button variant="ghost" className="w-full justify-start gap-3 font-normal bg-teal-100 text-teal-700 hover:bg-teal-200">
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-3 font-normal bg-teal-100 text-teal-700 hover:bg-teal-200"
+              >
                 <Handshake className="h-5 w-5" />
-                <span>  Deals</span>
+                <span>Deals</span>
               </Button>
             </Link>
             <Link href="/admin/buyers">
-              <Button variant="ghost" className="w-full justify-start gap-3 font-normal">
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-3 font-normal"
+              >
                 <Tag className="h-5 w-5" />
                 <span>Buyers</span>
               </Button>
             </Link>
             <Link href="/admin/sellers">
-              <Button variant="ghost" className="w-full justify-start gap-3 font-normal">
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-3 font-normal"
+              >
                 <ShoppingCart className="h-5 w-5" />
                 <span>Sellers</span>
               </Button>
@@ -1358,7 +1467,7 @@ export default function DealManagementDashboard() {
             <Button
               variant="ghost"
               className="w-full justify-start gap-3 font-normal"
-              onClick={() => router.push('/admin/viewprofile')}
+              onClick={() => router.push("/admin/viewprofile")}
             >
               <Eye className="h-5 w-5" />
               <span>View Profile</span>
@@ -1381,69 +1490,6 @@ export default function DealManagementDashboard() {
         </div>
       </div>
     );
-  }
-
-  if (error) {
-    return (
-      <div className="flex min-h-screen bg-gray-50">
-        <div className="w-64 bg-white border-r border-gray-200 p-6 flex flex-col">
-          <div className="mb-8">
-            <Link href="/seller/dashboard">
-              <Image src="/logo.svg" alt="CIM Amplify Logo" width={150} height={50} className="h-auto" />
-            </Link>
-          </div>
-          <nav className="flex-1 flex flex-col gap-4">
-            <Link href="/admin/dashboard">
-              <Button variant="ghost" className="w-full justify-start gap-3 font-normal bg-teal-100 text-teal-700 hover:bg-teal-200">
-                <Handshake className="h-5 w-5" />
-                <span>  Deals</span>
-              </Button>
-            </Link>
-            <Link href="/admin/buyers">
-              <Button variant="ghost" className="w-full justify-start gap-3 font-normal">
-                <Tag className="h-5 w-5" />
-                <span>Buyers</span>
-              </Button>
-            </Link>
-            <Link href="/admin/sellers">
-              <Button variant="ghost" className="w-full justify-start gap-3 font-normal">
-                <ShoppingCart className="h-5 w-5" />
-                <span>Sellers</span>
-              </Button>
-            </Link>
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-3 font-normal"
-              onClick={() => router.push('/admin/viewprofile')}
-            >
-              <Eye className="h-5 w-5" />
-              <span>View Profile</span>
-            </Button>
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-3 font-normal text-red-600 hover:text-red-700 hover:bg-red-50"
-              onClick={handleLogout}
-            >
-              <LogOut className="h-5 w-5" />
-              <span>Sign Out</span>
-            </Button>
-          </nav>
-        </div>
-        <div className="flex-1 flex items-center justify-center">
-          <div className="flex flex-col items-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#3aafa9] mb-4"></div>
-            <span className="text-gray-600 text-lg">Loading deals...</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Helper to get image src with cache busting only for real URLs
-  function getProfileImageSrc(src?: string | null) {
-    if (!src) return undefined;
-    if (src.startsWith('data:')) return src;
-    return src + `?cb=${Date.now()}`;
   }
 
   return (
@@ -1451,24 +1497,39 @@ export default function DealManagementDashboard() {
       <div className="w-64 bg-white border-r border-gray-200 p-6 flex flex-col">
         <div className="mb-8">
           <Link href="/seller/dashboard">
-            <Image src="/logo.svg" alt="CIM Amplify Logo" width={150} height={50} className="h-auto" />
+            <Image
+              src="/logo.svg"
+              alt="CIM Amplify Logo"
+              width={150}
+              height={50}
+              className="h-auto"
+            />
           </Link>
         </div>
         <nav className="flex-1 flex flex-col gap-4">
           <Link href="/admin/dashboard">
-            <Button variant="ghost" className="w-full justify-start gap-3 font-normal bg-teal-100 text-teal-700 hover:bg-teal-200">
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3 font-normal bg-teal-100 text-teal-700 hover:bg-teal-200"
+            >
               <Handshake className="h-5 w-5" />
-              <span>  Deals</span>
+              <span>Deals</span>
             </Button>
           </Link>
           <Link href="/admin/buyers">
-            <Button variant="ghost" className="w-full justify-start gap-3 font-normal">
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3 font-normal"
+            >
               <Tag className="h-5 w-5" />
               <span>Buyers</span>
             </Button>
           </Link>
           <Link href="/admin/sellers">
-            <Button variant="ghost" className="w-full justify-start gap-3 font-normal">
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3 font-normal"
+            >
               <ShoppingCart className="h-5 w-5" />
               <span>Sellers</span>
             </Button>
@@ -1476,7 +1537,7 @@ export default function DealManagementDashboard() {
           <Button
             variant="ghost"
             className="w-full justify-start gap-3 font-normal"
-            onClick={() => router.push('/admin/viewprofile')}
+            onClick={() => router.push("/admin/viewprofile")}
           >
             <Eye className="h-5 w-5" />
             <span>View Profile</span>
@@ -1508,7 +1569,9 @@ export default function DealManagementDashboard() {
             </div>
             <div className="flex items-center gap-3">
               <div className="text-right">
-                <div className="font-medium flex items-center">{adminProfile?.fullName || "Admin"}</div>
+                <div className="font-medium flex items-center">
+                  {adminProfile?.fullName || "Admin"}
+                </div>
               </div>
               <div className="relative h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center text-white font-medium overflow-hidden">
                 {adminProfile?.profilePicture ? (
@@ -1527,6 +1590,7 @@ export default function DealManagementDashboard() {
         </header>
 
         <div className="p-6">
+          {error && <div className="text-red-500 mb-4">{error}</div>}
           <Tabs
             value={activeTab}
             onValueChange={setActiveTab}
@@ -1534,169 +1598,146 @@ export default function DealManagementDashboard() {
           >
             <TabsList className="grid w-full grid-cols-2 mb-6">
               <TabsTrigger value="active">
-                Active Deals{" "}
-                <Badge className="ml-2">{getTabCount("active")}</Badge>
+                Active Deals <Badge className="ml-2">{getTabCount("active")}</Badge>
               </TabsTrigger>
               <TabsTrigger value="offMarket">
-                Off Market Deals{" "}
-                <Badge className="ml-2">{getTabCount("offMarket")}</Badge>
+                Off Market Deals <Badge className="ml-2">{getTabCount("offMarket")}</Badge>
               </TabsTrigger>
             </TabsList>
             <TabsContent value="active">
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 {currentActiveDeals.map((deal) => (
-                  <div
-                    key={deal._id}
-                    className="rounded-lg border border-gray-200 bg-white shadow-sm cursor-pointer hover:shadow-md transition-shadow"
-                  >
-                    <div className="flex items-center justify-between border-b border-gray-200 p-4">
-                      <h3 className="text-lg font-medium text-teal-500">
-                        {deal.title}
-                      </h3>
-                      {deal.rewardLevel && (
-                        <span
-                          className={`ml-2 px-3 py-1 rounded-full text-xs font-semibold bg-[#e0f7fa] text-[#00796b]`}
-                        >
-                          {deal.rewardLevel}
-                        </span>
-                      )}
-                    </div>
-                    <div className="p-4">
-                      <h4>Seller Information</h4>
-                      {deal.sellerProfile ? (
-                        <div className="flex items-center gap-3 mb-2">
-                          <div>
-                            <div className="text-gray-500 text-xs mr-1">
-                              <span className="">Seller Name:</span> &nbsp;
-                              {deal.sellerProfile.fullName}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              <span className="mr-1">Seller Email:</span>
-                              {deal.sellerProfile.email}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              <span className="mr-1">Company Name:</span>
-                              {deal.sellerProfile.companyName}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              <span className="mr-1">Phone Number:</span>
-                              {deal.sellerProfile.phoneNumber}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              <span className="mr-1">Website:</span>
-                              {deal.sellerProfile.website}
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="mb-2 text-sm text-gray-500 italic">
-                          Seller information is not available.
-                        </div>
-                      )}
-                      <h4 className="mb-2 font-medium text-gray-800">
-                        Overview
-                      </h4>
-                      <div className="mb-4 space-y-1 text-sm text-gray-600">
-                        <p>Industry: {deal.industrySector}</p>
-                        <p>Location: {deal.geographySelection}</p>
-                        {/* <p>Number of Years in Business: {deal.yearsInBusiness}</p> */}
-                        {/* <p>Business Model: {Array.isArray(deal.companyType) ? deal.companyType.join(', ') : deal.companyType || 'N/A'}</p> */}
-                        <p>Company Description: {deal.companyDescription}</p>
-                      </div>
-
-                      <h4 className="mb-2 font-medium text-gray-800">
-                        Financial
-                      </h4>
-                      <div className="mb-4 grid grid-cols-2 gap-2 text-sm text-gray-600">
-                        <p>
-                          Currency:{" "}
-                          {deal.financialDetails?.trailingRevenueCurrency}
-                        </p>
-                        <p>
-                          Trailing 12-Month Revenue:{" "}
-                          {deal.financialDetails?.trailingRevenueCurrency?.replace(
-                            "USD($)",
-                            "$"
-                          ) || "$"}
-                          {deal.financialDetails?.trailingRevenueAmount?.toLocaleString() ||
-                            "N/A"}
-                        </p>
-                        <p>
-                          Trailing 12-Month EBITDA:{" "}
-                          {deal.financialDetails?.trailingEBITDACurrency?.replace(
-                            "USD($)",
-                            "$"
-                          ) || "$"}
-                          {deal.financialDetails?.trailingEBITDAAmount?.toLocaleString() ||
-                            "N/A"}
-                        </p>
-                        {/* <p>T12 Free Cash Flow: ${deal.financialDetails?.t12FreeCashFlow?.toLocaleString() || 'N/A'}</p> */}
-                        <p>
-                          T12 Net Income: $
-                          {deal.financialDetails?.t12NetIncome?.toLocaleString() ||
-                            "N/A"}
-                        </p>
-                        {/* <p>
-                          Average 3-Year Revenue Growth: {deal.financialDetails?.avgRevenueGrowth || 'N/A'}%
-                        </p> */}
-                        {/* <p>Net Income: ${deal.financialDetails?.netIncome?.toLocaleString() || 'N/A'}</p> */}
-                        {/* <p>Asking Price: ${deal.financialDetails?.askingPrice?.toLocaleString() || 'N/A'}</p> */}
-                        {deal.financialDetails?.finalSalePrice && (
-                          <p>
-                            Final Sale Price: $
-                            {deal.financialDetails?.finalSalePrice?.toLocaleString()}
-                          </p>
+                  deal && (
+                    <div
+                      key={deal._id}
+                      className="rounded-lg border border-gray-200 bg-white shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex items-center justify-between border-b border-gray-200 p-4">
+                        <h3 className="text-lg font-medium text-teal-500">
+                          {deal.title}
+                        </h3>
+                        {deal.rewardLevel && (
+                          <span
+                            className="ml-2 px-3 py-1 rounded-full text-xs font-semibold bg-[#e0f7fa] text-[#00796b]"
+                          >
+                            {deal.rewardLevel}
+                          </span>
                         )}
                       </div>
-
-                   
-                      <div className="flex justify-end">
-                        <Button
-                          className="bg-teal-500 hover:bg-teal-600 px-8 py-2"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleActivityClick(deal);
-                          }}
-                        >
-                          Activity
-                        </Button>
-                        <Button
-                          className="bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 hover:text-black px-4 py-2 ml-3"
-                          style={{ minWidth: 110 }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleAdminOffMarketClick(deal);
-                          }}
-                          disabled={offMarketLoading && offMarketDeal?._id === deal._id}
-                        >
-                          Off Market
-                        </Button>
-                        <Button
-                          variant="outline"
-                          className="px-4 py-2 mr-2 ml-3"
-                          onClick={() => handleEditDeal(deal)}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          className="bg-red-500 hover:bg-red-600 px-4 py-2 ml-2 text-white"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            console.log(
-                              "Delete button clicked for deal:",
-                              deal._id
-                            );
-                            setDeleteDealId(deal._id);
-                          }}
-                        >
-                          Delete
-                        </Button>
+                      <div className="p-4">
+                        <h4>Seller Information</h4>
+                        {deal.sellerProfile ? (
+                          <div className="flex items-center gap-3 mb-2">
+                            <div>
+                              <div className="text-gray-500 text-xs mr-1">
+                                <span>Seller Name:</span> &nbsp;
+                                {deal.sellerProfile.fullName}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                <span className="mr-1">Seller Email:</span>
+                                {deal.sellerProfile.email}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                <span className="mr-1">Company Name:</span>
+                                {deal.sellerProfile.companyName}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                <span className="mr-1">Phone Number:</span>
+                                {deal.sellerProfile.phoneNumber}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                <span className="mr-1">Website:</span>
+                                {deal.sellerProfile.website}
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="mb-2 text-sm text-gray-500 italic">
+                            Seller information is not available.
+                          </div>
+                        )}
+                        <h4 className="mb-2 font-medium text-gray-800">Overview</h4>
+                        <div className="mb-4 space-y-1 text-sm text-gray-600">
+                          <p>Industry: {deal.industrySector}</p>
+                          <p>Location: {deal.geographySelection}</p>
+                          <p>Company Description: {deal.companyDescription}</p>
+                        </div>
+                        <h4 className="mb-2 font-medium text-gray-800">Financial</h4>
+                        <div className="mb-4 grid grid-cols-2 gap-2 text-sm text-gray-600">
+                          <p>
+                            Currency: {deal.financialDetails?.trailingRevenueCurrency}
+                          </p>
+                          <p>
+                            Trailing 12-Month Revenue:{" "}
+                            {deal.financialDetails?.trailingRevenueCurrency?.replace(
+                              "USD($)",
+                              "$"
+                            ) || "$"}
+                            {deal.financialDetails?.trailingRevenueAmount?.toLocaleString() || "N/A"}
+                          </p>
+                          <p>
+                            Trailing 12-Month EBITDA:{" "}
+                            {deal.financialDetails?.trailingEBITDACurrency?.replace(
+                              "USD($)",
+                              "$"
+                            ) || "$"}
+                            {deal.financialDetails?.trailingEBITDAAmount?.toLocaleString() || "N/A"}
+                          </p>
+                          <p>
+                            T12 Net Income: $
+                            {deal.financialDetails?.t12NetIncome?.toLocaleString() || "N/A"}
+                          </p>
+                          {deal.financialDetails?.finalSalePrice && (
+                            <p>
+                              Final Sale Price: $
+                              {deal.financialDetails?.finalSalePrice?.toLocaleString()}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex justify-end">
+                          <Button
+                            className="bg-teal-500 hover:bg-teal-600 px-8 py-2"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleActivityClick(deal);
+                            }}
+                          >
+                            Activity
+                          </Button>
+                          <Button
+                            className="bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 hover:text-black px-4 py-2 ml-3"
+                            style={{ minWidth: 110 }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAdminOffMarketClick(deal);
+                            }}
+                            disabled={offMarketLoading && offMarketDeal?._id === deal._id}
+                          >
+                            Off Market
+                          </Button>
+                          <Button
+                            variant="outline"
+                            className="px-4 py-2 mr-2 ml-3"
+                            onClick={() => handleEditDeal(deal)}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            className="bg-red-500 hover:bg-red-600 px-4 py-2 ml-2 text-white"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteDealId(deal._id);
+                            }}
+                          >
+                            Delete
+                          </Button>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )
                 ))}
               </div>
-              {filteredActive.length === 0 && (
+              {currentActiveDeals.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-12">
                   <Building2 className="h-12 w-12 text-gray-400 mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">
@@ -1709,7 +1750,6 @@ export default function DealManagementDashboard() {
                   </p>
                 </div>
               )}
-              {/* Pagination for Active Deals */}
               {activeTotalPages > 1 && (
                 <div className="flex justify-center items-center gap-1 mt-6">
                   <Button
@@ -1720,26 +1760,21 @@ export default function DealManagementDashboard() {
                   >
                     Prev
                   </Button>
-                  {Array.from(
-                    { length: activeTotalPages },
-                    (_, i) => i + 1
-                  ).map((page) => (
-                    <Button
-                      key={page}
-                      variant={
-                        activeCurrentPage === page ? "default" : "outline"
-                      }
-                      size="sm"
-                      onClick={() => setActiveCurrentPage(page)}
-                      className={
-                        activeCurrentPage === page
-                          ? "bg-[#3aafa9] text-white"
-                          : ""
-                      }
-                    >
-                      {page}
-                    </Button>
-                  ))}
+                  {Array.from({ length: activeTotalPages }, (_, i) => i + 1).map(
+                    (page) => (
+                      <Button
+                        key={page}
+                        variant={activeCurrentPage === page ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setActiveCurrentPage(page)}
+                        className={
+                          activeCurrentPage === page ? "bg-[#3aafa9] text-white" : ""
+                        }
+                      >
+                        {page}
+                      </Button>
+                    )
+                  )}
                   <Button
                     variant="outline"
                     size="sm"
@@ -1754,136 +1789,135 @@ export default function DealManagementDashboard() {
             <TabsContent value="offMarket">
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 {currentOffMarketDeals.map((deal) => (
-                  <div
-                    key={deal._id}
-                    className="rounded-lg border border-gray-200 bg-white shadow-sm cursor-pointer hover:shadow-md transition-shadow"
-                  >
-                    <div className="flex items-center justify-between border-b border-gray-200 p-4">
-                      <h3 className="text-lg font-medium text-teal-500">
-                        {deal.title}
-                      </h3>
-                      {deal.rewardLevel && (
-                        <span
-                          className={`ml-2 px-3 py-1 rounded-full text-xs font-semibold bg-[#e0f7fa] text-[#00796b]`}
-                        >
-                          {deal.rewardLevel}
-                        </span>
-                      )}
-                    </div>
-                    <div className="p-4">
-                      <h4>Seller Information</h4>
-                      {deal.sellerProfile ? (
-                        <div className="flex items-center gap-3 mb-2">
-                          <div>
-                            <div className="text-gray-500 text-xs mr-1">
-                              <span className="">Seller Name:</span> &nbsp;
-                              {deal.sellerProfile.fullName}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              <span className="mr-1">Seller Email:</span>
-                              {deal.sellerProfile.email}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              <span className="mr-1">Company Name:</span>
-                              {deal.sellerProfile.companyName}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              <span className="mr-1">Phone Number:</span>
-                              {deal.sellerProfile.phoneNumber}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              <span className="mr-1">Website:</span>
-                              {deal.sellerProfile.website}
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="mb-2 text-sm text-gray-500 italic">
-                          Seller information is not available.
-                        </div>
-                      )}
-
-                      <h4 className="mb-2 font-medium text-gray-800">
-                        Overview
-                      </h4>
-                      <div className="mb-4 space-y-1 text-sm text-gray-600">
-                        <p>Industry: {deal.industrySector}</p>
-                        <p>Location: {deal.geographySelection}</p>
-
-                        <p>Company Description: {deal.companyDescription}</p>
-                      </div>
-                      <h4 className="mb-2 font-medium text-gray-800">
-                        Financial
-                      </h4>
-                      <div className="mb-4 grid grid-cols-2 gap-2 text-sm text-gray-600">
-                        <p>
-                          Currency: {deal.financialDetails?.trailingRevenueCurrency}
-                        </p>
-                        <p>
-                          Trailing 12-Month Revenue: {deal.financialDetails?.trailingRevenueCurrency?.replace("USD($)", "$") || "$"}
-                          {deal.financialDetails?.trailingRevenueAmount?.toLocaleString() || "N/A"}
-                        </p>
-                        <p>
-                          Trailing 12-Month EBITDA: {deal.financialDetails?.trailingEBITDACurrency?.replace("USD($)", "$") || "$"}
-                          {deal.financialDetails?.trailingEBITDAAmount?.toLocaleString() || "N/A"}
-                        </p>
-                        <p>
-                          T12 Net Income: $
-                          {deal.financialDetails?.t12NetIncome?.toLocaleString() || "N/A"}
-                        </p>
-                        {/* Transaction Value (Final Sale Price) */}
-                        {deal.financialDetails?.finalSalePrice && (
-                          <p className="col-span-2">
-                            <span className="font-semibold">Transaction Value:</span> $
-                            {deal.financialDetails.finalSalePrice.toLocaleString()}
-                          </p>
+                  deal && (
+                    <div
+                      key={deal._id}
+                      className="rounded-lg border border-gray-200 bg-white shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex items-center justify-between border-b border-gray-200 p-4">
+                        <h3 className="text-lg font-medium text-teal-500">
+                          {deal.title}
+                        </h3>
+                        {deal.rewardLevel && (
+                          <span
+                            className="ml-2 px-3 py-1 rounded-full text-xs font-semibold bg-[#e0f7fa] text-[#00796b]"
+                          >
+                            {deal.rewardLevel}
+                          </span>
                         )}
                       </div>
-                      {/* Closed Buyer Info */}
-                      {(deal.closedWithBuyer || deal.closedWithBuyerCompany || deal.closedWithBuyerEmail) && (
-                        <div className="mb-4 text-sm text-gray-700 border border-gray-100 rounded p-2 bg-gray-50">
-                          <div className="font-semibold mb-1">Closed Buyer</div>
-                          {deal.closedWithBuyerCompany && (
-                            <div>Company: {deal.closedWithBuyerCompany}</div>
-                          )}
-                          {deal.closedWithBuyerEmail && (
-                            <div>Email: {deal.closedWithBuyerEmail}</div>
-                          )}
-                          {deal.closedWithBuyer && !deal.closedWithBuyerCompany && !deal.closedWithBuyerEmail && (
-                            <div>Buyer ID: {deal.closedWithBuyer}</div>
+                      <div className="p-4">
+                        <h4>Seller Information</h4>
+                        {deal.sellerProfile ? (
+                          <div className="flex items-center gap-3 mb-2">
+                            <div>
+                              <div className="text-gray-500 text-xs mr-1">
+                                <span>Seller Name:</span> &nbsp;
+                                {deal.sellerProfile.fullName}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                <span className="mr-1">Seller Email:</span>
+                                {deal.sellerProfile.email}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                <span className="mr-1">Company Name:</span>
+                                {deal.sellerProfile.companyName}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                <span className="mr-1">Phone Number:</span>
+                                {deal.sellerProfile.phoneNumber}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                <span className="mr-1">Website:</span>
+                                {deal.sellerProfile.website}
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="mb-2 text-sm text-gray-500 italic">
+                            Seller information is not available.
+                          </div>
+                        )}
+                        <h4 className="mb-2 font-medium text-gray-800">Overview</h4>
+                        <div className="mb-4 space-y-1 text-sm text-gray-600">
+                          <p>Industry: {deal.industrySector}</p>
+                          <p>Location: {deal.geographySelection}</p>
+                          <p>Company Description: {deal.companyDescription}</p>
+                        </div>
+                        <h4 className="mb-2 font-medium text-gray-800">Financial</h4>
+                        <div className="mb-4 grid grid-cols-2 gap-2 text-sm text-gray-600">
+                          <p>
+                            Currency: {deal.financialDetails?.trailingRevenueCurrency}
+                          </p>
+                          <p>
+                            Trailing 12-Month Revenue:{" "}
+                            {deal.financialDetails?.trailingRevenueCurrency?.replace(
+                              "USD($)",
+                              "$"
+                            ) || "$"}
+                            {deal.financialDetails?.trailingRevenueAmount?.toLocaleString() || "N/A"}
+                          </p>
+                          <p>
+                            Trailing 12-Month EBITDA:{" "}
+                            {deal.financialDetails?.trailingEBITDACurrency?.replace(
+                              "USD($)",
+                              "$"
+                            ) || "$"}
+                            {deal.financialDetails?.trailingEBITDAAmount?.toLocaleString() || "N/A"}
+                          </p>
+                          <p>
+                            T12 Net Income: $
+                            {deal.financialDetails?.t12NetIncome?.toLocaleString() || "N/A"}
+                          </p>
+                          {deal.financialDetails?.finalSalePrice && (
+                            <p className="col-span-2">
+                              <span className="font-semibold">Transaction Value:</span> $
+                              {deal.financialDetails.finalSalePrice.toLocaleString()}
+                            </p>
                           )}
                         </div>
-                      )}
-           
-                      <div className="flex justify-end">
-                        <Button
-                          className="bg-teal-500 hover:bg-teal-600 px-8 py-2"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleActivityClick(deal);
-                          }}
-                        >
-                          Activity
-                        </Button>
-                        <Button
-                          className="bg-red-500 hover:bg-red-600 px-4 py-2 ml-2 text-white"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            console.log(
-                              "Delete button clicked for deal:",
-                              deal._id
-                            );
-                            setDeleteDealId(deal._id);
-                          }}
-                        >
-                          Delete
-                        </Button>
+                        {(deal.closedWithBuyer || deal.closedWithBuyerCompany || deal.closedWithBuyerEmail) && (
+                          <div className="mb-4 text-sm text-gray-700 border border-gray-100 rounded p-2 bg-gray-50">
+                            <div className="font-semibold mb-1">Closed Buyer</div>
+                            {deal.closedWithBuyerCompany && (
+                              <div>Company: {deal.closedWithBuyerCompany}</div>
+                            )}
+                            {deal.closedWithBuyerEmail && (
+                              <div>Email: {deal.closedWithBuyerEmail}</div>
+                            )}
+                            {deal.closedWithBuyer &&
+                              !deal.closedWithBuyerCompany &&
+                              !deal.closedWithBuyerEmail && (
+                                <div>Buyer ID: {deal.closedWithBuyer}</div>
+                              )}
+                          </div>
+                        )}
+                        <div className="flex justify-end">
+                          <Button
+                            className="bg-teal-500 hover:bg-teal-600 px-8 py-2"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleActivityClick(deal);
+                            }}
+                          >
+                            Activity
+                          </Button>
+                          <Button
+                            className="bg-red-500 hover:bg-red-600 px-4 py-2 ml-2 text-white"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteDealId(deal._id);
+                            }}
+                          >
+                            Delete
+                          </Button>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )
                 ))}
               </div>
-              {filteredOffMarket.length === 0 && (
+              {currentOffMarketDeals.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-12">
                   <Building2 className="h-12 w-12 text-gray-400 mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">
@@ -1896,15 +1930,12 @@ export default function DealManagementDashboard() {
                   </p>
                 </div>
               )}
-              {/* Pagination for Off Market Deals */}
               {offMarketTotalPages > 1 && (
                 <div className="flex justify-center items-center gap-1 mt-6">
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() =>
-                      setOffMarketCurrentPage(offMarketCurrentPage - 1)
-                    }
+                    onClick={() => setOffMarketCurrentPage(offMarketCurrentPage - 1)}
                     disabled={offMarketCurrentPage === 1}
                   >
                     Prev
@@ -1932,9 +1963,7 @@ export default function DealManagementDashboard() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() =>
-                      setOffMarketCurrentPage(offMarketCurrentPage + 1)
-                    }
+                    onClick={() => setOffMarketCurrentPage(offMarketCurrentPage + 1)}
                     disabled={offMarketCurrentPage === offMarketTotalPages}
                   >
                     Next
@@ -1952,213 +1981,233 @@ export default function DealManagementDashboard() {
           dealTitle={selectedDealForActivity?.title || ""}
         />
       </div>
+
       {editDeal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg w-full max-w-5xl p-8 overflow-y-auto max-h-[90vh]">
-            {/* Use the same form structure as seller/edit-deal/page.tsx, but for admin */}
-            {/* --- Admin Deal Edit Form --- */}
             <h2 className="text-2xl font-bold mb-4">Edit Deal</h2>
             <AdminEditDealForm
               deal={editDeal}
               onClose={() => setEditDeal(null)}
               onSaved={() => {
                 setEditDeal(null);
-                window.location.reload();
+                fetchDeals(activeCurrentPage, dealsPerPage, "active", searchTerm);
+                fetchDeals(offMarketCurrentPage, dealsPerPage, "offMarket", searchTerm);
               }}
             />
           </div>
         </div>
       )}
+
       {deleteDealId && (
-  <Dialog open={!!deleteDealId} onOpenChange={() => setDeleteDealId(null)}>
-    <DialogContent>
-      <DialogHeader>
-        <DialogTitle>Confirm Delete</DialogTitle>
-      </DialogHeader>
-      <div className="py-4 text-gray-700">
-        Are you sure you want to delete this deal? This action cannot be undone.
-      </div>
-      {deleteError && <div className="text-red-500 mb-2">{deleteError}</div>}
-      <DialogFooter>
-        <Button variant="outline" onClick={() => setDeleteDealId(null)} disabled={deleteLoading}>
-          Cancel
-        </Button>
-        <Button
-          className="bg-red-500 text-white"
-          onClick={() => {
-            console.log('Delete confirmed for deal:', deleteDealId);
-            handleDeleteDeal(deleteDealId);
+        <Dialog open={!!deleteDealId} onOpenChange={() => setDeleteDealId(null)}>
+          <DialogContent>
+            <DialogHeader>
+            <DialogTitle>Confirm Delete</DialogTitle>
+            </DialogHeader>
+            <div className="py-4 text-gray-700">
+              Are you sure you want to delete this deal? This action cannot be undone.
+            </div>
+            {deleteError && <div className="text-red-500 mb-4">{deleteError}</div>}
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setDeleteDealId(null)}
+                disabled={deleteLoading}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="bg-red-500 hover:bg-red-600 text-white"
+                onClick={() => handleDeleteDeal(deleteDealId)}
+                disabled={deleteLoading}
+              >
+                {deleteLoading ? "Deleting..." : "Delete"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {offMarketDeal && (
+        <Dialog open={!!offMarketDeal} onOpenChange={() => setOffMarketDeal(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Mark Deal as Off Market</DialogTitle>
+            </DialogHeader>
+            <div className="py-4 text-gray-700">
+              Are you sure you want to mark this deal as off market?
+            </div>
+            {offMarketError && <div className="text-red-500 mb-4">{offMarketError}</div>}
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setOffMarketDeal(null)}
+                disabled={offMarketLoading}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="bg-teal-500 hover:bg-teal-600 text-white"
+                onClick={handleConfirmOffMarket}
+                disabled={offMarketLoading}
+              >
+                {offMarketLoading ? "Processing..." : "Confirm"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {selectedDealForOffMarketDialog && (
+        <Dialog
+          open={offMarketDialogOpen}
+          onOpenChange={() => {
+            setOffMarketDialogOpen(false);
+            setCurrentDialogStep(1);
+            setSelectedDealForOffMarketDialog(null);
+            setOffMarketData({ dealSold: null, transactionValue: "", buyerFromCIM: null });
+            setBuyerActivity([]);
+            setSelectedWinningBuyer("");
           }}
-          disabled={deleteLoading}
         >
-          {deleteLoading ? 'Deleting...' : 'Delete'}
-        </Button>
-      </DialogFooter>
-    </DialogContent>
-  </Dialog>
-)}
-{offMarketDeal && (
-  <Dialog open={!!offMarketDeal} onOpenChange={() => setOffMarketDeal(null)}>
-    <DialogContent>
-      <DialogHeader>
-        <DialogTitle>Mark Deal as Off Market</DialogTitle>
-      </DialogHeader>
-      <div className="py-4 text-gray-700">
-        Are you sure you want to mark <span className="font-semibold">{offMarketDeal.title}</span> as Off Market? This will move the deal to Off Market tab and mark it as completed.
-      </div>
-      {offMarketError && <div className="text-red-500 mb-2">{offMarketError}</div>}
-      <DialogFooter>
-        <Button variant="outline" onClick={() => setOffMarketDeal(null)} disabled={offMarketLoading}>
-          Cancel
-        </Button>
-        <Button
-          className="bg-teal-500 hover:bg-teal-600 text-white"
-          onClick={handleConfirmOffMarket}
-          disabled={offMarketLoading}
-        >
-          {offMarketLoading ? 'Processing...' : 'Confirm Off Market'}
-        </Button>
-      </DialogFooter>
-    </DialogContent>
-  </Dialog>
-)}
-{offMarketDialogOpen && (
-  <Dialog open={offMarketDialogOpen} onOpenChange={setOffMarketDialogOpen}>
-    <DialogContent className="sm:max-w-md">
-      {currentDialogStep === 1 ? (
-        <>
-          <DialogHeader>
-            <DialogTitle className="text-center text-lg font-medium">Did the deal sell?</DialogTitle>
-          </DialogHeader>
-          <div className="flex justify-center gap-4 mt-6">
-            <Button
-              variant={offMarketData.dealSold === false ? "default" : "outline"}
-              onClick={() => handleAdminDialogResponse("dealSold", false)}
-              className={
-                offMarketData.dealSold === false
-                  ? "px-8 bg-red-500 text-white hover:bg-red-600 border-red-500"
-                  : "px-8 bg-white text-red-500 border border-red-500 hover:bg-red-50"
-              }
-            >
-              No
-            </Button>
-            <Button
-              variant={offMarketData.dealSold === true ? "default" : "outline"}
-              onClick={() => handleAdminDialogResponse("dealSold", true)}
-              className={
-                offMarketData.dealSold === true
-                  ? "px-8 bg-teal-500 text-white hover:bg-teal-600 border-teal-500"
-                  : "px-8 bg-white text-teal-500 border border-teal-500 hover:bg-teal-50"
-              }
-            >
-              Yes
-            </Button>
-          </div>
-        </>
-      ) : currentDialogStep === 2 ? (
-        <>
-          <DialogHeader>
-            <DialogTitle className="text-center text-lg font-medium">What was the transaction value?</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 mt-4">
-            <Input
-              value={offMarketData.transactionValue && offMarketData.transactionValue !== "0" ? formatWithCommas(offMarketData.transactionValue) : ""}
-              onChange={(e) => {
-                const rawValue = e.target.value.replace(/,/g, "");
-                setOffMarketData((prev) => ({ ...prev, transactionValue: rawValue }));
-              }}
-              placeholder="Enter transaction value"
-              className="w-full"
-            />
-            <div className="flex justify-center">
-              <Button
-                onClick={() => setCurrentDialogStep(3)}
-                className="px-8 bg-teal-500 hover:bg-teal-600"
-                disabled={!offMarketData.transactionValue}
-              >
-                Next
-              </Button>
-            </div>
-          </div>
-        </>
-      ) : (
-        <>
-          <DialogHeader>
-            <DialogTitle className="text-center text-teal-500 text-lg font-medium">Did the buyer come from CIM Amplify?</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-6 mt-4">
-            <div className="flex gap-4">
-              <Button
-                variant={offMarketData.buyerFromCIM === false ? "default" : "outline"}
-                onClick={() => setOffMarketData((prev) => ({ ...prev, buyerFromCIM: false }))}
-                className={
-                  offMarketData.buyerFromCIM === false
-                    ? "flex-1 bg-red-500 text-white hover:bg-red-600 border-red-500"
-                    : "flex-1 bg-white text-red-500 border border-red-500 hover:bg-red-50"
-                }
-              >
-                No
-              </Button>
-              <Button
-                variant={offMarketData.buyerFromCIM === true ? "default" : "outline"}
-                onClick={() => setOffMarketData((prev) => ({ ...prev, buyerFromCIM: true }))}
-                className={
-                  offMarketData.buyerFromCIM === true
-                    ? "flex-1 bg-teal-500 text-white hover:bg-teal-600 border-teal-500"
-                    : "flex-1 bg-white text-teal-500 border border-teal-500 hover:bg-teal-50"
-                }
-              >
-                Yes
-              </Button>
-            </div>
-            {offMarketData.buyerFromCIM === true && (
-              <div>
-                <Label className="text-base font-medium mb-3 block">Select the buyer:</Label>
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {buyerActivityLoading ? (
-                    <div className="text-center text-gray-500 py-4">Loading buyer activity...</div>
-                  ) : buyerActivity.length > 0 ? (
-                    buyerActivity.filter(Boolean).map((buyer) => (
-                      <div
-                        key={buyer.buyerId}
-                        className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer ${selectedWinningBuyer === buyer.buyerId ? "border-teal-500 bg-teal-50" : "border-gray-200"}`}
-                        onClick={() => setSelectedWinningBuyer(buyer.buyerId)}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center overflow-hidden">
-                            <img
-                              src="/placeholder.svg?height=40&width=40"
-                              alt={buyer.buyerName || "Buyer"}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          <div>
-                            <div className="font-medium text-sm">{buyer.buyerName || "Unknown Buyer"}</div>
-                            <div className="text-xs text-gray-500">{buyer.companyName || "Unknown Company"}</div>
-                          </div>
-                        </div>
-                        <div className={`px-2 py-1 rounded-full text-xs font-medium ${buyer.status === "active" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>{buyer.status || "Unknown"}</div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-center text-amber-600 text-sm mt-2">We did not present any buyers.  Please click No</div>
-                  )}
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>
+                {currentDialogStep === 1
+                  ? "Mark Deal as Off Market"
+                  : "Provide Transaction Details"}
+              </DialogTitle>
+            </DialogHeader>
+            {currentDialogStep === 1 && (
+              <div className="space-y-4 py-4">
+                <p className="text-gray-700">
+                  Was the deal sold? This will help us categorize it appropriately.
+                </p>
+                <div className="flex gap-4">
+                  <Button
+                    className={`flex-1 ${
+                      offMarketData.dealSold === true
+                        ? "bg-teal-500 text-white"
+                        : "bg-gray-100 text-gray-700"
+                    }`}
+                    onClick={() => handleAdminDialogResponse("dealSold", true)}
+                  >
+                    Yes
+                  </Button>
+                  <Button
+                    className={`flex-1 ${
+                      offMarketData.dealSold === false
+                        ? "bg-teal-500 text-white"
+                        : "bg-gray-100 text-gray-700"
+                    }`}
+                    onClick={() => handleAdminDialogResponse("dealSold", false)}
+                  >
+                    No
+                  </Button>
                 </div>
               </div>
             )}
-            {offMarketData.buyerFromCIM !== null && (
-              <div className="flex justify-end pt-4">
-                <Button onClick={handleAdminOffMarketSubmit} className="bg-teal-500 hover:bg-teal-600" disabled={isSubmittingOffMarket}>
-                  {isSubmittingOffMarket ? "Submitting..." : "Submit"}
-                </Button>
+            {currentDialogStep === 2 && (
+              <div className="space-y-4 py-4">
+                <div>
+                  <Label htmlFor="transactionValue">Transaction Value</Label>
+                  <Input
+                    id="transactionValue"
+                    type="text"
+                    value={formatWithCommas(offMarketData.transactionValue)}
+                    onChange={(e) =>
+                      setOffMarketData((prev) => ({
+                        ...prev,
+                        transactionValue: e.target.value.replace(/[^0-9]/g, ""),
+                      }))
+                    }
+                    placeholder="Enter transaction value"
+                    className="mt-1"
+                  />
+                </div>
+                <p className="text-gray-700">
+                  Was the buyer sourced through CIM Amplify?
+                </p>
+                <div className="flex gap-4">
+                  <Button
+                    className={`flex-1 ${
+                      offMarketData.buyerFromCIM === true
+                        ? "bg-teal-500 text-white"
+                        : "bg-gray-100 text-gray-700"
+                    }`}
+                    onClick={() => setOffMarketData((prev) => ({ ...prev, buyerFromCIM: true }))}
+                  >
+                    Yes
+                  </Button>
+                  <Button
+                    className={`flex-1 ${
+                      offMarketData.buyerFromCIM === false
+                        ? "bg-teal-500 text-white"
+                        : "bg-gray-100 text-gray-700"
+                    }`}
+                    onClick={() => setOffMarketData((prev) => ({ ...prev, buyerFromCIM: false }))}
+                  >
+                    No
+                  </Button>
+                </div>
+                {offMarketData.buyerFromCIM === true && (
+                  <div className="mt-4">
+                    <Label htmlFor="winningBuyer">Select Winning Buyer</Label>
+                    {buyerActivityLoading ? (
+                      <div className="text-gray-500 text-sm">Loading buyers...</div>
+                    ) : (
+                      <select
+                        id="winningBuyer"
+                        value={selectedWinningBuyer}
+                        onChange={(e) => setSelectedWinningBuyer(e.target.value)}
+                        className="w-full mt-1 rounded-md border border-gray-300 p-2 text-sm"
+                      >
+                        <option value="">Select a buyer</option>
+                        {buyerActivity.map((buyer) => (
+                          <option key={buyer.buyerId} value={buyer.buyerId}>
+                            {buyer.buyerName} ({buyer.buyerEmail})
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                )}
               </div>
             )}
-          </div>
-        </>
+            {offMarketError && <div className="text-red-500 mb-4">{offMarketError}</div>}
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setOffMarketDialogOpen(false);
+                  setCurrentDialogStep(1);
+                  setSelectedDealForOffMarketDialog(null);
+                  setOffMarketData({ dealSold: null, transactionValue: "", buyerFromCIM: null });
+                  setBuyerActivity([]);
+                  setSelectedWinningBuyer("");
+                }}
+                disabled={isSubmittingOffMarket}
+              >
+                Cancel
+              </Button>
+              {currentDialogStep === 2 && (
+                <Button
+                  className="bg-teal-500 hover:bg-teal-600 text-white"
+                  onClick={handleAdminOffMarketSubmit}
+                  disabled={
+                    isSubmittingOffMarket ||
+                    !offMarketData.transactionValue ||
+                    (offMarketData.buyerFromCIM === true && !selectedWinningBuyer)
+                  }
+                >
+                  {isSubmittingOffMarket ? "Submitting..." : "Submit"}
+                </Button>
+              )}
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       )}
-    </DialogContent>
-  </Dialog>
-)}
     </div>
   );
 }
