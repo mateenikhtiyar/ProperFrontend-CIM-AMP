@@ -87,21 +87,25 @@ export default function BuyersManagementDashboard() {
   // Define buyersPerPage before useEffect hooks
   const buyersPerPage = 10;
 
-  useEffect(() => {
-    const fetchAdminProfile = async () => {
+useEffect(() => {
+  const fetchAdminProfile = async () => {
+    try {
       const token = localStorage.getItem("token");
       const res = await fetch("https://api.cimamplify.com/admin/profile", {
         headers: { Authorization: `Bearer ${token}` },
       });
+
       if (res.ok) {
         const data = await res.json();
         setAdminProfile(data);
-      } catch (err: any) {
-        setError(err.message);
       }
-    };
-    fetchAdminProfile();
-  }, []);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
+  fetchAdminProfile();
+}, []);
 
   useEffect(() => {
     const fetchBuyers = async () => {
