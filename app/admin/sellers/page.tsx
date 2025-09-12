@@ -113,6 +113,7 @@ export default function SellersManagementDashboard() {
       setError(null);
       try {
         const token = localStorage.getItem("token");
+
         if (!token) throw new Error("No authentication token found");
         const apiUrl = process.env.NEXT_PUBLIC_API_URL;
         const queryParams = new URLSearchParams({
@@ -123,6 +124,7 @@ export default function SellersManagementDashboard() {
           ...(activeSort ? { sortBy: `activeDealsCount:desc` } : {}),
         });
         const res = await fetch(`${apiUrl}/admin/sellers?${queryParams}`, {
+
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -155,6 +157,7 @@ export default function SellersManagementDashboard() {
 
   useEffect(() => {
     const fetchDealCounts = async () => {
+
       const token = localStorage.getItem("token");
       if (!token) return;
       const sellersWithCounts = await Promise.all(
@@ -166,6 +169,7 @@ export default function SellersManagementDashboard() {
           try {
             const apiUrl = process.env.NEXT_PUBLIC_API_URL;
             const activeRes = await fetch(`${apiUrl}/deals/admin/seller/${sellerId}/deals?status=active`, {
+
               headers: { Authorization: `Bearer ${token}` },
             });
             if (activeRes.ok) {
@@ -173,6 +177,7 @@ export default function SellersManagementDashboard() {
               activeDealsCount = Array.isArray(activeDeals) ? activeDeals.length : 0;
             }
             const offMarketRes = await fetch(`${apiUrl}/deals/admin/seller/${sellerId}/deals?status=completed`, {
+
               headers: { Authorization: `Bearer ${token}` },
             });
             if (offMarketRes.ok) {
@@ -257,6 +262,7 @@ export default function SellersManagementDashboard() {
       if (!editSeller) throw new Error("No seller selected");
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
       const res = await fetch(`${apiUrl}/admin/sellers/${editSeller._id || editSeller.id}`, {
+
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -291,6 +297,7 @@ export default function SellersManagementDashboard() {
       if (!token) throw new Error("No authentication token found");
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
       const res = await fetch(`${apiUrl}/admin/sellers/${sellerId}`, {
+
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -344,6 +351,7 @@ export default function SellersManagementDashboard() {
       if (!token) throw new Error("No authentication token found");
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
       const res = await fetch(`${apiUrl}/deals/admin/seller/${seller._id || seller.id}/deals?status=${status}`, {
+
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error("Failed to fetch deals");
