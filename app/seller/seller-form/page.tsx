@@ -1755,8 +1755,8 @@ const renderGeographySelection = () => {
         {/* Overview Section */}
         <section>
      
-          <h2 className="text-xl font-semibold mb-2">Overview</h2>
-          <p className="text-sm text-gray-600 mb-6">Please do not include your company name or the name of your client on this form</p>
+          <h2 className="text-xl font-bold mb-2">Overview</h2>
+          <p className="text-sm font-semibold text-red-600 mb-6">Please do not include your company name or the name of your client on this form.</p>
 
 
           <div className="space-y-6">
