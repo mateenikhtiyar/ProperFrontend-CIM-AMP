@@ -1118,7 +1118,7 @@ export default function DealsPage() {
                 </div>
                 <div className="ml-3">
                   <p className="text-sm font-medium">
-                    You will not be receiving deals because you haven't completed your company profile yet. Please complete your company profile on first priority.
+                  You will not receive any deals until you complete your Company Overview.
                   </p>
                   <Link href="/buyer/acquireprofile">
                     <Button className="text-sm underline mt-1">
