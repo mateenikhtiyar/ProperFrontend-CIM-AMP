@@ -89,13 +89,11 @@ export default function BuyersManagementDashboard() {
 
   useEffect(() => {
     const fetchAdminProfile = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) throw new Error("No authentication token found");
-        const res = await fetch("http://localhost:3001/admin/profile", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) throw new Error("Failed to fetch admin profile");
+      const token = localStorage.getItem("token");
+      const res = await fetch("https://api.cimamplify.com/admin/profile", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
         const data = await res.json();
         setAdminProfile(data);
       } catch (err: any) {
@@ -121,6 +119,7 @@ export default function BuyersManagementDashboard() {
           ...(dealSort ? { dealSort: dealSort } : {}),
         });
         const res = await fetch(`${apiUrl}/admin/buyers?${queryParams}`, {
+
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -230,6 +229,7 @@ export default function BuyersManagementDashboard() {
       const token = localStorage.getItem("token");
       if (!token) throw new Error("No authentication token found");
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/buyers/${buyerId}`, {
+
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,

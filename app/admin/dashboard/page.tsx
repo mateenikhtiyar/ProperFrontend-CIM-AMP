@@ -523,7 +523,7 @@ const AdminEditDealForm: React.FC<{
         visibility: form.visibility,
         status: form.status,
       };
-      const res = await fetch(`${apiUrl}/deals/${deal._id}`, {
+      const res = await fetch(`${apiUrl}deals/${deal._id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -999,7 +999,7 @@ export default function DealManagementDashboard() {
     try {
       const token = localStorage.getItem("token");
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      const response = await fetch(`${apiUrl}/deals/${dealId}/status-summary`, {
+      const response = await fetch(`${apiUrl}deals/${dealId}/status-summary`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -1165,7 +1165,7 @@ export default function DealManagementDashboard() {
   useEffect(() => {
     const fetchAdminProfile = async () => {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:3001/admin/profile", {
+      const res = await fetch("https://api.cimamplify.com/admin/profile", {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -1188,7 +1188,6 @@ export default function DealManagementDashboard() {
       let endpoint = status === "active"
         ? `${apiUrl}/deals/admin?page=${page}&limit=${limit}&search=${searchTerm}&buyerResponse=accepted`
         : `${apiUrl}/deals/admin?page=${page}&limit=${limit}&search=${searchTerm}&status=completed`;
-
       const response = await fetch(endpoint, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -1209,6 +1208,8 @@ export default function DealManagementDashboard() {
             if (sellerRes.ok) {
               const sellerProfile = await sellerRes.json();
               return { ...deal, sellerProfile };
+
+
             }
             return deal;
           } catch {
@@ -1288,7 +1289,7 @@ export default function DealManagementDashboard() {
       const token = localStorage.getItem("token");
       if (!token) throw new Error("No authentication token found");
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/deals/${deal._id}/status-summary`,
+        `${process.env.NEXT_PUBLIC_API_URL}deals/${deal._id}/status-summary`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -1335,7 +1336,9 @@ export default function DealManagementDashboard() {
     try {
       const token = localStorage.getItem("token");
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
       let response = await fetch(`${apiUrl}/deals/${dealId}`, {
+
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
