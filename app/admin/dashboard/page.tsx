@@ -1186,8 +1186,8 @@ export default function DealManagementDashboard() {
       const token = localStorage.getItem("token");
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
       let endpoint = status === "active"
-        ? `${apiUrl}/deals/admin?page=${page}&limit=${limit}&search=${searchTerm}&buyerResponse=accepted`
-        : `${apiUrl}/deals/admin?page=${page}&limit=${limit}&search=${searchTerm}&status=completed`;
+        ? `${apiUrl}deals/admin?page=${page}&limit=${limit}&search=${searchTerm}&buyerResponse=accepted`
+        : `${apiUrl}deals/admin?page=${page}&limit=${limit}&search=${searchTerm}&status=completed`;
 
       const response = await fetch(endpoint, {
         headers: {
