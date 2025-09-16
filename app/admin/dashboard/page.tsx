@@ -163,11 +163,17 @@ const BuyersActivityPopup: React.FC<{
 
   if (!isOpen) return null;
 
+  const filteredRejectedBuyers = (buyersActivity.rejected || []).filter((buyer) =>
+    buyer.interactions?.some(
+      (interaction) => interaction.metadata?.status === "active"
+    )
+  );
+
   const buyerMap = new Map<string, Buyer>();
   [
     ...(buyersActivity.active || []).map((b) => ({ ...b, status: "active" })),
     ...(buyersActivity.pending || []).map((b) => ({ ...b, status: "pending" })),
-    ...(buyersActivity.rejected || []).map((b) => ({
+    ...filteredRejectedBuyers.map((b) => ({
       ...b,
       status: "rejected",
     })),
@@ -945,6 +951,7 @@ export default function DealManagementDashboard() {
   const [activeTab, setActiveTab] = useState("active");
   const [activeDeals, setActiveDeals] = useState<Deal[]>([]);
   const [offMarketDeals, setOffMarketDeals] = useState<Deal[]>([]);
+  const [allDeals, setAllDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activityError, setActivityError] = useState<string | null>(null);
@@ -963,9 +970,11 @@ export default function DealManagementDashboard() {
   });
   const [activeCurrentPage, setActiveCurrentPage] = useState(1);
   const [offMarketCurrentPage, setOffMarketCurrentPage] = useState(1);
+  const [allDealsCurrentPage, setAllDealsCurrentPage] = useState(1);
   const dealsPerPage = 5;
   const [activeTotalDeals, setActiveTotalDeals] = useState(0);
   const [offMarketTotalDeals, setOffMarketTotalDeals] = useState(0);
+  const [allDealsTotalDeals, setAllDealsTotalDeals] = useState(0);
   const [deleteDealId, setDeleteDealId] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -1165,7 +1174,7 @@ export default function DealManagementDashboard() {
   useEffect(() => {
     const fetchAdminProfile = async () => {
       const token = localStorage.getItem("token");
-      const res = await fetch("https://api.cimamplify.com/admin/profile", {
+      const res = await fetch("http://localhost:3001/admin/profile", {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -1179,16 +1188,24 @@ export default function DealManagementDashboard() {
   const fetchDeals = async (
     page: number,
     limit: number,
-    status: "active" | "offMarket",
+    status: "active" | "offMarket" | "allDeals",
     searchTerm: string = ""
   ) => {
     try {
       const token = localStorage.getItem("token");
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      let endpoint = status === "active"
-        ? `${apiUrl}/deals/admin?page=${page}&limit=${limit}&search=${searchTerm}&buyerResponse=accepted`
-        : `${apiUrl}/deals/admin?page=${page}&limit=${limit}&search=${searchTerm}&status=completed`;
+      let endpoint;
+      if (status === "active") {
+        endpoint = `${apiUrl}/deals/admin?page=${page}&limit=${limit}&search=${searchTerm}&buyerResponse=accepted`;
+      } else if (status === "offMarket") {
+        endpoint = `${apiUrl}/deals/admin?page=${page}&limit=${limit}&search=${searchTerm}&status=completed`;
+      } else if (status === "allDeals") {
+        endpoint = `${apiUrl}/deals/admin?page=${page}&limit=${limit}&search=${searchTerm}`;
+      }
 
+      if (!endpoint) {
+        throw new Error("Invalid deal status provided");
+      }
       const response = await fetch(endpoint, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -1220,18 +1237,24 @@ export default function DealManagementDashboard() {
       if (status === "active") {
         setActiveDeals(dealsWithSellers);
         setActiveTotalDeals(data.total);
-      } else {
+      } else if (status === "offMarket") {
         setOffMarketDeals(dealsWithSellers);
         setOffMarketTotalDeals(data.total);
+      } else if (status === "allDeals") {
+        setAllDeals(dealsWithSellers);
+        setAllDealsTotalDeals(data.total);
       }
       setError(null);
     } catch (error: any) {
       if (status === "active") {
         setActiveDeals([]);
         setActiveTotalDeals(0);
-      } else {
+      } else if (status === "offMarket") {
         setOffMarketDeals([]);
         setOffMarketTotalDeals(0);
+      } else if (status === "allDeals") {
+        setAllDeals([]);
+        setAllDealsTotalDeals(0);
       }
       setError(error.message);
       console.error(`Error fetching ${status} deals:`, error);
@@ -1243,7 +1266,8 @@ export default function DealManagementDashboard() {
   useEffect(() => {
     fetchDeals(activeCurrentPage, dealsPerPage, "active", searchTerm);
     fetchDeals(offMarketCurrentPage, dealsPerPage, "offMarket", searchTerm);
-  }, [activeCurrentPage, offMarketCurrentPage, searchTerm]);
+    fetchDeals(allDealsCurrentPage, dealsPerPage, "allDeals", searchTerm);
+  }, [activeCurrentPage, offMarketCurrentPage, allDealsCurrentPage, searchTerm]);
 
   useEffect(() => {
     if (activeTab === "active") {
@@ -1252,6 +1276,9 @@ export default function DealManagementDashboard() {
     } else if (activeTab === "offMarket") {
       setOffMarketCurrentPage(1);
       fetchDeals(1, dealsPerPage, "offMarket", searchTerm);
+    } else if (activeTab === "allDeals") {
+      setAllDealsCurrentPage(1);
+      fetchDeals(1, dealsPerPage, "allDeals", searchTerm);
     }
   }, [activeTab]);
 
@@ -1406,14 +1433,18 @@ export default function DealManagementDashboard() {
       return activeTotalDeals;
     } else if (tab === "offMarket") {
       return offMarketTotalDeals;
+    } else if (tab === "allDeals") {
+      return allDealsTotalDeals;
     }
     return 0;
   };
 
   const activeTotalPages = Math.ceil(activeTotalDeals / dealsPerPage);
   const offMarketTotalPages = Math.ceil(offMarketTotalDeals / dealsPerPage);
+  const allDealsTotalPages = Math.ceil(allDealsTotalDeals / dealsPerPage);
   const currentActiveDeals = activeDeals;
   const currentOffMarketDeals = offMarketDeals;
+  const currentAllDeals = allDeals;
 
   function getProfileImageSrc(src?: string | null) {
     if (!src) return undefined;
@@ -1596,12 +1627,15 @@ export default function DealManagementDashboard() {
             onValueChange={setActiveTab}
             className="w-full"
           >
-            <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsList className="grid w-full grid-cols-3 mb-6">
               <TabsTrigger value="active">
                 Active Deals <Badge className="ml-2">{getTabCount("active")}</Badge>
               </TabsTrigger>
               <TabsTrigger value="offMarket">
                 Off Market Deals <Badge className="ml-2">{getTabCount("offMarket")}</Badge>
+              </TabsTrigger>
+              <TabsTrigger value="allDeals">
+                All Deals <Badge className="ml-2">{getTabCount("allDeals")}</Badge>
               </TabsTrigger>
             </TabsList>
             <TabsContent value="active">
@@ -1965,6 +1999,207 @@ export default function DealManagementDashboard() {
                     size="sm"
                     onClick={() => setOffMarketCurrentPage(offMarketCurrentPage + 1)}
                     disabled={offMarketCurrentPage === offMarketTotalPages}
+                  >
+                    Next
+                  </Button>
+                </div>
+              )}
+            </TabsContent>
+            <TabsContent value="allDeals">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                {currentAllDeals.map((deal) => (
+                  deal && (
+                    <div
+                      key={deal._id}
+                      className="rounded-lg border border-gray-200 bg-white shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex items-center justify-between border-b border-gray-200 p-4">
+                        <h3 className="text-lg font-medium text-teal-500">
+                          {deal.title}
+                        </h3>
+                        {deal.rewardLevel && (
+                          <span
+                            className="ml-2 px-3 py-1 rounded-full text-xs font-semibold bg-[#e0f7fa] text-[#00796b]"
+                          >
+                            {deal.rewardLevel}
+                          </span>
+                        )}
+                      </div>
+                      <div className="p-4">
+                        <h4>Seller Information</h4>
+                        {deal.sellerProfile ? (
+                          <div className="flex items-center gap-3 mb-2">
+                            <div>
+                              <div className="text-gray-500 text-xs mr-1">
+                                <span>Seller Name:</span> &nbsp;
+                                {deal.sellerProfile.fullName}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                <span className="mr-1">Seller Email:</span>
+                                {deal.sellerProfile.email}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                <span className="mr-1">Company Name:</span>
+                                {deal.sellerProfile.companyName}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                <span className="mr-1">Phone Number:</span>
+                                {deal.sellerProfile.phoneNumber}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                <span className="mr-1">Website:</span>
+                                {deal.sellerProfile.website}
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="mb-2 text-sm text-gray-500 italic">
+                            Seller information is not available.
+                          </div>
+                        )}
+                        <h4 className="mb-2 font-medium text-gray-800">Overview</h4>
+                        <div className="mb-4 space-y-1 text-sm text-gray-600">
+                          <p>Industry: {deal.industrySector}</p>
+                          <p>Location: {deal.geographySelection}</p>
+                          <p>Company Description: {deal.companyDescription}</p>
+                        </div>
+                        <h4 className="mb-2 font-medium text-gray-800">Financial</h4>
+                        <div className="mb-4 grid grid-cols-2 gap-2 text-sm text-gray-600">
+                          <p>
+                            Currency: {deal.financialDetails?.trailingRevenueCurrency}
+                          </p>
+                          <p>
+                            Trailing 12-Month Revenue:{" "}
+                            {deal.financialDetails?.trailingRevenueCurrency?.replace(
+                              "USD($)",
+                              "$"
+                            ) || "$"}
+                            {deal.financialDetails?.trailingRevenueAmount?.toLocaleString() || "N/A"}
+                          </p>
+                          <p>
+                            Trailing 12-Month EBITDA:{" "}
+                            {deal.financialDetails?.trailingEBITDACurrency?.replace(
+                              "USD($)",
+                              "$"
+                            ) || "$"}
+                            {deal.financialDetails?.trailingEBITDAAmount?.toLocaleString() || "N/A"}
+                          </p>
+                          <p>
+                            T12 Net Income: $
+                            {deal.financialDetails?.t12NetIncome?.toLocaleString() || "N/A"}
+                          </p>
+                          {deal.financialDetails?.finalSalePrice && (
+                            <p className="col-span-2">
+                              <span className="font-semibold">Transaction Value:</span> $
+                              {deal.financialDetails.finalSalePrice.toLocaleString()}
+                            </p>
+                          )}
+                        </div>
+                        {(deal.closedWithBuyer || deal.closedWithBuyerCompany || deal.closedWithBuyerEmail) && (
+                          <div className="mb-4 text-sm text-gray-700 border border-gray-100 rounded p-2 bg-gray-50">
+                            <div className="font-semibold mb-1">Closed Buyer</div>
+                            {deal.closedWithBuyerCompany && (
+                              <div>Company: {deal.closedWithBuyerCompany}</div>
+                            )}
+                            {deal.closedWithBuyerEmail && (
+                              <div>Email: {deal.closedWithBuyerEmail}</div>
+                            )}
+                            {deal.closedWithBuyer &&
+                              !deal.closedWithBuyerCompany &&
+                              !deal.closedWithBuyerEmail && (
+                                <div>Buyer ID: {deal.closedWithBuyer}</div>
+                              )}
+                          </div>
+                        )}
+                        <div className="flex justify-end">
+                          <Button
+                            className="bg-teal-500 hover:bg-teal-600 px-8 py-2"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleActivityClick(deal);
+                            }}
+                          >
+                            Activity
+                          </Button>
+                          <Button
+                            className="bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 hover:text-black px-4 py-2 ml-3"
+                            style={{ minWidth: 110 }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAdminOffMarketClick(deal);
+                            }}
+                            disabled={offMarketLoading && offMarketDeal?._id === deal._id}
+                          >
+                            Off Market
+                          </Button>
+                          <Button
+                            variant="outline"
+                            className="px-4 py-2 mr-2 ml-3"
+                            onClick={() => handleEditDeal(deal)}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            className="bg-red-500 hover:bg-red-600 px-4 py-2 ml-2 text-white"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteDealId(deal._id);
+                            }}
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                ))}
+              </div>
+              {currentAllDeals.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <Building2 className="h-12 w-12 text-gray-400 mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    No deals found
+                  </h3>
+                  <p className="text-gray-500 text-center">
+                    {searchTerm
+                      ? `No deals match your search "${searchTerm}"`
+                      : `No all deals available`}
+                  </p>
+                </div>
+              )}
+              {allDealsTotalPages > 1 && (
+                <div className="flex justify-center items-center gap-1 mt-6">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setAllDealsCurrentPage(allDealsCurrentPage - 1)}
+                    disabled={allDealsCurrentPage === 1}
+                  >
+                    Prev
+                  </Button>
+                  {Array.from(
+                    { length: allDealsTotalPages },
+                    (_, i) => i + 1
+                  ).map((page) => (
+                    <Button
+                      key={page}
+                      variant={allDealsCurrentPage === page ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setAllDealsCurrentPage(page)}
+                      className={
+                        allDealsCurrentPage === page
+                          ? "bg-[#3aafa9] text-white"
+                          : ""
+                      }
+                    >
+                      {page}
+                    </Button>
+                  ))}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setAllDealsCurrentPage(allDealsCurrentPage + 1)}
+                    disabled={allDealsCurrentPage === allDealsTotalPages}
                   >
                     Next
                   </Button>
