@@ -257,7 +257,7 @@ export default function SellerLoginPage() {
             <p className="mt-6 text-center text-sm text-gray-600">
               Don't have an account?{" "}
               <Link
-                href="/seller/register1"
+                href="/seller/register"
                 className="text-[#3aafa9] hover:underline font-medium"
               >
                 signup
