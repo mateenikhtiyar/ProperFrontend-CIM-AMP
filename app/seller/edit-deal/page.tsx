@@ -34,14 +34,6 @@ import {
   X,
   Download,
 } from "lucide-react";
-
-// Helper for required field star
-const RequiredStar = () => <span className="text-red-500">*</span>;
-
-// Remove these imports:
-// import { getGeoData, type Continent, type Region, type SubRegion, type GeoData } from "@/lib/geography-data"
-
-// Add these imports instead:
 import { Country, State, City } from "country-state-city";
 import {
   getIndustryData,
@@ -52,8 +44,11 @@ import {
   type IndustryData,
 } from "@/lib/industry-data";
 import SellerProtectedRoute from "@/components/seller/protected-route";
+import FloatingChatbot from "@/components/seller/FloatingChatbot";
 
-// ✅ Define the exact enum values as constants to match backend schema
+// Helper for required field star
+const RequiredStar = () => <span className="text-red-500">*</span>;
+
 const CAPITAL_AVAILABILITY_OPTIONS = {
   READY: "Ready to deploy immediately",
   NEED: "Need to raise",
@@ -67,7 +62,7 @@ interface SellerFormData {
   companyDescription: string;
   geographySelections: string[];
   industrySelections: string[];
-  selectedIndustryDisplay?: string; // Add this field to track what user selected for display
+  selectedIndustryDisplay?: string; 
   yearsInBusiness: number;
   trailingRevenue: number;
   trailingEBITDA: number;
@@ -77,7 +72,7 @@ interface SellerFormData {
   askingPrice: number;
   businessModels: string[];
   managementPreferences: string;
-  capitalAvailability: CapitalAvailabilityType[]; // ✅ Use the exact type
+  capitalAvailability: CapitalAvailabilityType[];
   companyType: string[];
   minPriorAcquisitions: number;
   minTransactionSize: number;
@@ -86,7 +81,6 @@ interface SellerFormData {
   t12NetIncome?: number;
 }
 
-// Replace the existing GeoItem interface with:
 interface GeoItem {
   id: string;
   name: string;
@@ -96,7 +90,6 @@ interface GeoItem {
   stateCode?: string;
 }
 
-// Add new interfaces:
 interface CountryData {
   isoCode: string;
   name: string;
@@ -122,7 +115,6 @@ interface IndustryItem {
   path: string;
 }
 
-// Type for hierarchical selection
 interface GeographySelection {
   selectedId: string | null;
   selectedName: string | null;
@@ -198,7 +190,6 @@ interface Deal {
   seller: string;
 }
 
-// Format number with commas for display
 const formatNumberWithCommas = (num: number): string => {
   return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 };
@@ -221,12 +212,10 @@ export default function EditDealPageFixed() {
   const [fileError, setFileError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Document management state
   const [existingDocuments, setExistingDocuments] = useState<DealDocument[]>(
     []
   );
 
-  // Hierarchical selection state
   const [geoSelection, setGeoSelection] = useState<GeographySelection>({
     selectedId: null,
     selectedName: null,
@@ -242,7 +231,6 @@ export default function EditDealPageFixed() {
     }
   );
 
-  // UI state for expanded sections
   const [expandedContinents, setExpandedContinents] = useState<
     Record<string, boolean>
   >({});
@@ -270,7 +258,7 @@ export default function EditDealPageFixed() {
     askingPrice: 0,
     businessModels: [],
     managementPreferences: "",
-    capitalAvailability: [], // ✅ Initialize as empty array with correct type
+    capitalAvailability: [],
     companyType: [],
     minPriorAcquisitions: 0,
     minTransactionSize: 0,
@@ -279,22 +267,24 @@ export default function EditDealPageFixed() {
     t12NetIncome: 0,
   });
 
-  // Add to state
   const [dealData, setDealData] = useState<Deal | null>(null);
   const [flatGeoData, setFlatGeoData] = useState<GeoItem[]>([]);
 
-  // Add debounced search state
   const [debouncedGeoSearch, setDebouncedGeoSearch] = useState("");
   const [debouncedIndustrySearch, setDebouncedIndustrySearch] = useState("");
 
-  // Add new UI state for expanded sub-industries:
   const [expandedSubIndustries, setExpandedSubIndustries] = useState<
     Record<string, boolean>
   >({});
 
   const [geoRefresh, setGeoRefresh] = useState(0);
 
-  // Flatten industry data for searchable dropdown
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log("Form submitted!");
+    // TODO: Implement actual submission logic here
+  };
+
   const flattenIndustryData = (
     items: Sector[] | IndustryGroup[] | Industry[] | SubIndustry[],
     parentPath = "",
@@ -360,7 +350,6 @@ export default function EditDealPageFixed() {
 
     const dealData = await response.json();
 
-    // ✅ Fixed: Proper capitalAvailability parsing with normalization
     let capitalAvailabilityArray: CapitalAvailabilityType[] = [];
     if (Array.isArray(dealData.buyerFit?.capitalAvailability)) {
       capitalAvailabilityArray = dealData.buyerFit.capitalAvailability
@@ -377,7 +366,6 @@ export default function EditDealPageFixed() {
       }
     }
 
-    // ✅ Improved: Robust companyType parsing
     let companyTypeArray: string[] = [];
     if (Array.isArray(dealData.companyType)) {
       companyTypeArray = dealData.companyType.filter(Boolean);
@@ -432,29 +420,23 @@ export default function EditDealPageFixed() {
     setExistingDocuments(dealData.documents || []);
     setSelectedReward(dealData.visibility || "seed");
 
-    // ✅ NEW: Handle geography selection properly
     if (dealData.geographySelection) {
       const savedGeography = dealData.geographySelection;
       
-      // Parse the geography selection to get country and state
       const parts = savedGeography.split(' > ');
       if (parts.length > 1) {
         const countryName = parts[0];
         const stateName = parts[1];
         
-        // Find the country
         const country = Country.getAllCountries().find(c => c.name === countryName);
         if (country) {
-          // Load states for this country
           await loadStatesAndCities(country.isoCode);
           
-          // Set expanded state for the country
           setExpandedContinents(prev => ({
             ...prev,
             [country.isoCode]: true
           }));
           
-          // Find the state and set selection
           setTimeout(() => {
             const matchingGeoItem = flatGeoData.find(item => 
               item.path === savedGeography || 
@@ -467,7 +449,6 @@ export default function EditDealPageFixed() {
                 selectedName: savedGeography,
               });
             } else {
-              // Fallback: set by name only
               setGeoSelection({
                 selectedId: null,
                 selectedName: savedGeography,
@@ -476,7 +457,6 @@ export default function EditDealPageFixed() {
           }, 100);
         }
       } else {
-        // It's just a country selection
         setGeoSelection({
           selectedId: null,
           selectedName: savedGeography,
@@ -494,75 +474,6 @@ export default function EditDealPageFixed() {
     setIsLoading(false);
   }
 };
-
-  // Fetch geography and industry data
-  // useEffect(() => {
-  //   // Add debounce effect for geo search
-  //   useEffect(() => {
-  //     const timer = setTimeout(() => {
-  //       setDebouncedGeoSearch(geoSearchTerm)
-  //     }, 300)
-
-  //     return () => clearTimeout(timer)
-  //   }, [geoSearchTerm])
-
-  //   // Add debounce effect for industry search
-  //   useEffect(() => {
-  //     const timer = setTimeout(() => {
-  //       setDebouncedIndustrySearch(industrySearchTerm)
-  //     }, 300)
-
-  //     return () => clearTimeout(timer)
-  //   }, [industrySearchTerm])
-
-  //   // Replace the existing fetchInitialData function with:
-  //   const fetchInitialData = async () => {
-  //     try {
-  //       const token = localStorage.getItem("token")
-  //       const userRole = localStorage.getItem("userRole")
-
-  //       if (!token || userRole !== "seller") {
-  //         router.push("/seller/login")
-  //         return
-  //       }
-
-  //       // Load all countries initially but limit the visible ones
-  //       const allCountries = Country.getAllCountries()
-  //       const geoData: GeoItem[] = []
-
-  //       // Add all countries to enable search
-  //       allCountries.forEach((country) => {
-  //         geoData.push({
-  //           id: country.isoCode,
-  //           name: country.name,
-  //           path: country.name,
-  //           type: "country",
-  //           countryCode: country.isoCode,
-  //         })
-  //       })
-
-  //       setFlatGeoData(geoData)
-
-  //       // Load industry data asynchronously
-  //       const industryResponse = await getIndustryData()
-  //       setIndustryData(industryResponse)
-  //       setFlatIndustryData(flattenIndustryData(industryResponse.sectors))
-
-  //       // Then fetch the existing deal data (for edit)
-  //       await fetchDealData()
-  //     } catch (error) {
-  //       console.error("Error fetching data:", error)
-  //       toast({
-  //         title: "Error",
-  //         description: "Failed to load form data. Please refresh the page.",
-  //         variant: "destructive",
-  //       })
-  //       setIsLoading(false)
-  //     }
-  //   }
-
-  //   fetchInitialData()
-  // }, [router, dealId])
 
  const loadStatesAndCities = async (countryCode: string) => {
   const states = State.getStatesOfCountry(countryCode);
@@ -593,7 +504,6 @@ export default function EditDealPageFixed() {
   });
 };
 
-  // Handle text input changes
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -601,7 +511,6 @@ export default function EditDealPageFixed() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Update handleNumberChange to handle empty string
   const handleNumberChange = (
     e: React.ChangeEvent<HTMLInputElement>,
     fieldName: keyof SellerFormData
@@ -611,12 +520,10 @@ export default function EditDealPageFixed() {
     setFormData((prev) => ({ ...prev, [fieldName]: value }));
   };
 
-  // Handle select changes
   const handleSelectChange = (value: string, fieldName: string) => {
     setFormData((prev) => ({ ...prev, [fieldName]: value }));
   };
 
-  // Handle checkbox changes for business models and management preferences
   const handleCheckboxChange = (
     checked: boolean,
     value: string,
@@ -636,7 +543,6 @@ export default function EditDealPageFixed() {
     });
   };
 
-  // ✅ Fixed: Handle capital availability changes with exact enum values
   const handleCapitalAvailabilityChange = (
     checked: boolean,
     value: CapitalAvailabilityType
@@ -647,8 +553,8 @@ export default function EditDealPageFixed() {
         : [];
 
       const newValues = checked
-        ? [...new Set([...currentValues, value])] // add if checked
-        : currentValues.filter((v) => v !== value); // remove if unchecked
+        ? [...new Set([...currentValues, value])]
+        : currentValues.filter((v) => v !== value);
 
       return {
         ...prev,
@@ -657,7 +563,6 @@ export default function EditDealPageFixed() {
     });
   };
 
-  // Geography selection handlers
   const selectGeography = (id: string, name: string) => {
     setGeoSelection({
       selectedId: id,
@@ -686,19 +591,15 @@ export default function EditDealPageFixed() {
     clearGeographySelection();
   };
 
-  // Industry selection handlers
   const toggleSector = (sector: Sector) => {
     const newIndustrySelection = { ...industrySelection };
     const isSelected = !industrySelection.sectors[sector.id];
 
-    // Update sector selection
     newIndustrySelection.sectors[sector.id] = isSelected;
 
-    // Update all industry groups in this sector
     sector.industryGroups.forEach((group) => {
       newIndustrySelection.industryGroups[group.id] = isSelected;
 
-      // Update all industries in this group
       group.industries.forEach((industry) => {
         newIndustrySelection.industries[industry.id] = isSelected;
       });
@@ -712,15 +613,12 @@ export default function EditDealPageFixed() {
     const newIndustrySelection = { ...industrySelection };
     const isSelected = !industrySelection.industryGroups[group.id];
 
-    // Update industry group selection
     newIndustrySelection.industryGroups[group.id] = isSelected;
 
-    // Update all industries in this group
     group.industries.forEach((industry) => {
       newIndustrySelection.industries[industry.id] = isSelected;
     });
 
-    // Check if all groups in the sector are selected/deselected
     const allGroupsSelected = sector.industryGroups.every((g) =>
       g.id === group.id ? isSelected : newIndustrySelection.industryGroups[g.id]
     );
@@ -731,7 +629,6 @@ export default function EditDealPageFixed() {
         : !newIndustrySelection.industryGroups[g.id]
     );
 
-    // Update sector selection based on groups
     if (allGroupsSelected) {
       newIndustrySelection.sectors[sector.id] = true;
     } else if (allGroupsDeselected) {
@@ -750,10 +647,8 @@ export default function EditDealPageFixed() {
     const newIndustrySelection = { ...industrySelection };
     const isSelected = !industrySelection.industries[industry.id];
 
-    // Update industry selection
     newIndustrySelection.industries[industry.id] = isSelected;
 
-    // Check if all industries in the group are selected/deselected
     const allIndustriesSelected = group.industries.every((i) =>
       i.id === industry.id ? isSelected : newIndustrySelection.industries[i.id]
     );
@@ -764,14 +659,12 @@ export default function EditDealPageFixed() {
         : !newIndustrySelection.industries[i.id]
     );
 
-    // Update group selection based on industries
     if (allIndustriesSelected) {
       newIndustrySelection.industryGroups[group.id] = true;
     } else if (allIndustriesDeselected) {
       newIndustrySelection.industryGroups[group.id] = false;
     }
 
-    // Check if all groups in the sector are selected/deselected
     const allGroupsSelected = sector.industryGroups.every((g) =>
       g.id === group.id
         ? newIndustrySelection.industryGroups[g.id]
@@ -784,7 +677,6 @@ export default function EditDealPageFixed() {
         : !newIndustrySelection.industryGroups[g.id]
     );
 
-    // Update sector selection based on groups
     if (allGroupsSelected) {
       newIndustrySelection.sectors[sector.id] = true;
     } else if (allGroupsDeselected) {
@@ -795,7 +687,6 @@ export default function EditDealPageFixed() {
     updateIndustriesInFormData(newIndustrySelection);
   };
 
-  // Update the industries array in formData based on the hierarchical selection
   const updateIndustriesInFormData = (selection: IndustrySelection) => {
     if (!industryData) return;
 
@@ -804,7 +695,6 @@ export default function EditDealPageFixed() {
     industryData.sectors.forEach((sector) => {
       const sectorSelected = selection.sectors[sector.id];
 
-      // Check if all industry groups in this sector are selected
       const allGroupsSelected = sector.industryGroups.every((group) => {
         return group.industries.every(
           (industry) => selection.industries[industry.id]
@@ -812,23 +702,18 @@ export default function EditDealPageFixed() {
       });
 
       if (sectorSelected && allGroupsSelected) {
-        // If sector is selected and all its groups/industries are selected, send only the sector
         selectedIndustries.push(sector.name);
       } else {
-        // Otherwise, check individual groups and industries
         sector.industryGroups.forEach((group) => {
           const groupSelected = selection.industryGroups[group.id];
 
-          // Check if all industries in this group are selected
           const allIndustriesSelected = group.industries.every(
             (industry) => selection.industries[industry.id]
           );
 
           if (groupSelected && allIndustriesSelected) {
-            // If group is selected and all its industries are selected, send only the group
             selectedIndustries.push(group.name);
           } else {
-            // Otherwise, send only the selected industries
             group.industries.forEach((industry) => {
               if (selection.industries[industry.id]) {
                 selectedIndustries.push(industry.name);
@@ -851,13 +736,11 @@ export default function EditDealPageFixed() {
     const newIndustrySelection = { ...industrySelection };
     let found = false;
 
-    // Search through all levels to find and unselect the matching item
     industryData.sectors.forEach((sector) => {
       if (sector.name === industryToRemove) {
         newIndustrySelection.sectors[sector.id] = false;
         found = true;
 
-        // Unselect all children
         sector.industryGroups.forEach((group) => {
           newIndustrySelection.industryGroups[group.id] = false;
 
@@ -873,12 +756,10 @@ export default function EditDealPageFixed() {
             newIndustrySelection.industryGroups[group.id] = false;
             found = true;
 
-            // Unselect all children
             group.industries.forEach((industry) => {
               newIndustrySelection.industries[industry.id] = false;
             });
 
-            // Check if all groups in the sector are now deselected
             const allGroupsDeselected = sector.industryGroups.every(
               (g) => !newIndustrySelection.industryGroups[g.id]
             );
@@ -894,7 +775,6 @@ export default function EditDealPageFixed() {
                 newIndustrySelection.industries[industry.id] = false;
                 found = true;
 
-                // Check parent selections
                 const allIndustriesDeselected = group.industries.every(
                   (i) => !newIndustrySelection.industries[i.id]
                 );
@@ -921,7 +801,6 @@ export default function EditDealPageFixed() {
     updateIndustriesInFormData(newIndustrySelection);
   };
 
-  // Replace the existing toggleContinentExpansion function
   const toggleContinentExpansion = async (continentId: string) => {
     const isCurrentlyExpanded = expandedContinents[continentId];
     if (!isCurrentlyExpanded) {
@@ -930,7 +809,7 @@ export default function EditDealPageFixed() {
         ...prev,
         [continentId]: true,
       }));
-      setGeoRefresh((v) => v + 1); // Force re-render so new states/cities are included
+      setGeoRefresh((v) => v + 1);
     } else {
       setExpandedContinents((prev) => ({
         ...prev,
@@ -963,7 +842,6 @@ export default function EditDealPageFixed() {
     }));
   };
 
-  // Add toggle function for sub-industries:
   const toggleSubIndustryExpansion = (subIndustryId: string) => {
     setExpandedSubIndustries((prev) => ({
       ...prev,
@@ -971,7 +849,6 @@ export default function EditDealPageFixed() {
     }));
   };
 
-  // Filter industry data based on search term
   const filterIndustryData = () => {
     if (!industryData || !industrySearchTerm) return industryData;
 
@@ -1022,19 +899,15 @@ export default function EditDealPageFixed() {
     return { sectors: filteredSectors };
   };
 
-  // Add this function inside EditDealPageFixed, before renderIndustrySelection
   const handleIndustryRadioChange = (industryName: string) => {
     if (!industryData) return;
 
-    // Find the selected industry and get all its sub-industries
     const subIndustryNames: string[] = [];
-    let selectedIndustryType = "industry"; // track what type was selected
+    let selectedIndustryType = "industry";
 
-    // Search through all levels to find the selected item
     industryData.sectors.forEach((sector) => {
       if (sector.name === industryName) {
         selectedIndustryType = "sector";
-        // If a sector is selected, get all sub-industries from all its industry groups
         sector.industryGroups.forEach((group) => {
           group.industries.forEach((industry) => {
             industry.subIndustries.forEach((subIndustry) => {
@@ -1046,7 +919,6 @@ export default function EditDealPageFixed() {
         sector.industryGroups.forEach((group) => {
           if (group.name === industryName) {
             selectedIndustryType = "industryGroup";
-            // If an industry group is selected, get all sub-industries from all its industries
             group.industries.forEach((industry) => {
               industry.subIndustries.forEach((subIndustry) => {
                 subIndustryNames.push(subIndustry.name);
@@ -1056,7 +928,6 @@ export default function EditDealPageFixed() {
             group.industries.forEach((industry) => {
               if (industry.name === industryName) {
                 selectedIndustryType = "industry";
-                // If an industry is selected, get all its sub-industries
                 industry.subIndustries.forEach((subIndustry) => {
                   subIndustryNames.push(subIndustry.name);
                 });
@@ -1064,7 +935,6 @@ export default function EditDealPageFixed() {
                 industry.subIndustries.forEach((subIndustry) => {
                   if (subIndustry.name === industryName) {
                     selectedIndustryType = "subIndustry";
-                    // If a sub-industry is selected, just send that sub-industry
                     subIndustryNames.push(subIndustry.name);
                   }
                 });
@@ -1075,12 +945,11 @@ export default function EditDealPageFixed() {
       }
     });
 
-    // Update form data
     setFormData((prev) => ({
       ...prev,
       industrySelections:
-        subIndustryNames.length > 0 ? subIndustryNames : [industryName], // fallback to industry name if no sub-industries found
-      selectedIndustryDisplay: industryName, // keep track of what the user selected for display
+        subIndustryNames.length > 0 ? subIndustryNames : [industryName],
+      selectedIndustryDisplay: industryName,
     }));
 
     console.log(`Selected ${selectedIndustryType}: ${industryName}`);
@@ -1090,7 +959,6 @@ export default function EditDealPageFixed() {
     );
   };
 
-  // Replace renderIndustrySelection to use radio buttons
   const renderIndustrySelection = () => {
     const filteredData = filterIndustryData();
     if (!filteredData) return <div>Loading industry data...</div>;
@@ -1160,9 +1028,6 @@ export default function EditDealPageFixed() {
     );
   };
 
-  // Replace the renderGeographySelection function with this optimized version
- // Replace the renderGeographySelection function with this updated version
-// Replace the renderGeographySelection function with this updated version
 const renderGeographySelection = () => {
   const filteredGeoData = flatGeoData.filter(
     (item) =>
@@ -1189,10 +1054,8 @@ const renderGeographySelection = () => {
     return acc;
   }, {} as Record<string, { country: GeoItem | null; states: GeoItem[] }>);
 
-  // Priority countries (Canada, USA, Mexico)
   const priorityCountryCodes = ['CA', 'US', 'MX'];
   
-  // US Minor Outlying Islands territories
   const usMinorOutlyingIslands = [
     'American Samoa',
     'Baker Island', 
@@ -1208,7 +1071,6 @@ const renderGeographySelection = () => {
     'Palmyra Atoll'
   ];
 
-  // Separate priority and other countries
   const priorityGroups = [];
   const otherGroups = [];
 
@@ -1219,12 +1081,10 @@ const renderGeographySelection = () => {
       
       const countryCode = group.country.id;
       
-      // Skip Puerto Rico as a top-level country
       if (group.country.name === 'Puerto Rico') {
         return;
       }
       
-      // Special handling for US - remove US Minor Outlying Islands and keep Puerto Rico
       if (countryCode === 'US') {
         const usStates = group.states.filter(state => 
           !usMinorOutlyingIslands.includes(state.name) && 
@@ -1240,7 +1100,6 @@ const renderGeographySelection = () => {
       }
     });
 
-  // Add US Minor Outlying Islands as a separate top-level entry
   const usMinorOutlyingIslandsGroup = {
     country: {
       id: 'UM',
@@ -1259,21 +1118,18 @@ const renderGeographySelection = () => {
     }))
   };
 
-  // Sort priority countries in the specified order (Canada, USA, Mexico)
   priorityGroups.sort((a, b) => {
     const aIndex = priorityCountryCodes.indexOf(a.country?.id || '');
     const bIndex = priorityCountryCodes.indexOf(b.country?.id || '');
     return aIndex - bIndex;
   });
 
-  // Sort other countries alphabetically
   otherGroups.sort((a, b) => {
     const aName = a.country?.name || '';
     const bName = b.country?.name || '';
     return aName.localeCompare(bName);
   });
 
-  // Combine priority groups, US Minor Outlying Islands, and other groups
   const sortedGroups = [...priorityGroups, usMinorOutlyingIslandsGroup, ...otherGroups];
 
   return (
@@ -1342,7 +1198,6 @@ const renderGeographySelection = () => {
     </div>
   );
 };
-// Also update the fetchInitialData useEffect to prioritize these countries in the initial data load
 useEffect(() => {
   const fetchInitialData = async () => {
     try {
@@ -1354,11 +1209,9 @@ useEffect(() => {
         return;
       }
 
-      // Load all countries with priority sorting
       const allCountries = Country.getAllCountries();
       const geoData: GeoItem[] = [];
 
-      // Define priority countries
       const priorityCountryCodes = ['CA', 'US', 'MX'];
       const priorityCountries = allCountries.filter(country => 
         priorityCountryCodes.includes(country.isoCode)
@@ -1367,15 +1220,12 @@ useEffect(() => {
         !priorityCountryCodes.includes(country.isoCode)
       );
 
-      // Sort priority countries by defined order
       priorityCountries.sort((a, b) => {
         return priorityCountryCodes.indexOf(a.isoCode) - priorityCountryCodes.indexOf(b.isoCode);
       });
 
-      // Sort other countries alphabetically
       otherCountries.sort((a, b) => a.name.localeCompare(b.name));
 
-      // Add priority countries first, then others
       [...priorityCountries, ...otherCountries].forEach((country) => {
         geoData.push({
           id: country.isoCode,
@@ -1388,12 +1238,10 @@ useEffect(() => {
 
       setFlatGeoData(geoData);
 
-      // Load industry data asynchronously
       const industryResponse = await getIndustryData();
       setIndustryData(industryResponse);
       setFlatIndustryData(flattenIndustryData(industryResponse.sectors));
 
-      // Then fetch the existing deal data (for edit)
       await fetchDealData();
       
     } catch (error) {
@@ -1410,457 +1258,25 @@ useEffect(() => {
   fetchInitialData();
 }, [router, dealId]);
 
-// Also update the fetchInitialData useEffect to prioritize these countries in the initial data load
-useEffect(() => {
-  const fetchInitialData = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const userRole = localStorage.getItem("userRole");
-
-      if (!token || userRole !== "seller") {
-        router.push("/seller/login");
-        return;
-      }
-
-      // Load all countries with priority sorting
-      const allCountries = Country.getAllCountries();
-      const geoData: GeoItem[] = [];
-
-      // Define priority countries
-      const priorityCountryCodes = ['CA', 'US', 'MX'];
-      const priorityCountries = allCountries.filter(country => 
-        priorityCountryCodes.includes(country.isoCode)
-      );
-      const otherCountries = allCountries.filter(country => 
-        !priorityCountryCodes.includes(country.isoCode)
-      );
-
-      // Sort priority countries by defined order
-      priorityCountries.sort((a, b) => {
-        return priorityCountryCodes.indexOf(a.isoCode) - priorityCountryCodes.indexOf(b.isoCode);
-      });
-
-      // Sort other countries alphabetically
-      otherCountries.sort((a, b) => a.name.localeCompare(b.name));
-
-      // Add priority countries first, then others
-      [...priorityCountries, ...otherCountries].forEach((country) => {
-        geoData.push({
-          id: country.isoCode,
-          name: country.name,
-          path: country.name,
-          type: "country",
-          countryCode: country.isoCode,
-        });
-      });
-
-      setFlatGeoData(geoData);
-
-      // Load industry data asynchronously
-      const industryResponse = await getIndustryData();
-      setIndustryData(industryResponse);
-      setFlatIndustryData(flattenIndustryData(industryResponse.sectors));
-
-      // Then fetch the existing deal data (for edit)
-      await fetchDealData();
-      
-    } catch (error) {
-      console.error("Error fetching data:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load form data. Please refresh the page.",
-        variant: "destructive",
-      });
-      setIsLoading(false);
-    }
-  };
-
-  fetchInitialData();
-}, [router, dealId]);
-
-  // Handle file selection
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const newFiles: File[] = [];
-      let hasError = false;
-
-      // Check each file
-      for (let i = 0; i < e.target.files.length; i++) {
-        const file = e.target.files[i];
-
-        // Check file size (10MB limit)
-        if (file.size > 10 * 1024 * 1024) {
-          setFileError(`File ${file.name} exceeds 10MB limit`);
-          hasError = true;
-          break;
-        }
-
-        newFiles.push(file);
-      }
-
-      if (!hasError) {
-        setSelectedFile(e.target.files[0]); // Show first file name for UI
-        setFileError(null);
-
-        // Add to documents array
-        setFormData((prev) => ({
-          ...prev,
-          documents: [...prev.documents, ...newFiles],
-        }));
-      }
-    }
-  };
-
-  // Handle form submission
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!dealId) {
-      toast({
-        title: "Error",
-        description: "No deal ID provided",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsSaving(true);
-
-    try {
-      // Validate form
-      if (!formData.dealTitle.trim()) throw new Error("Deal title is required");
-      if (!formData.companyDescription.trim())
-        throw new Error("Company description is required");
-      if (formData.geographySelections.length === 0)
-        throw new Error("Please select a geography");
-      if (formData.industrySelections.length === 0)
-        throw new Error("Please select at least one industry");
-      if (!formData.yearsInBusiness || formData.yearsInBusiness <= 0)
-        throw new Error("Years in business is required and must be greater than 0");
-      if (!formData.trailingRevenue || formData.trailingRevenue <= 0)
-        throw new Error("Trailing 12 Month Revenue is required and must be greater than 0");
-      if (formData.trailingEBITDA === null || formData.trailingEBITDA === undefined)
-        throw new Error("Trailing 12 Month EBITDA is required");
-      if (formData.revenueGrowth === null || formData.revenueGrowth === undefined)
-        throw new Error("Average 3 year revenue growth is required");
-      if (formData.businessModels.length === 0)
-        throw new Error("Please select at least one business model");
-      if (!formData.managementPreferences.trim())
-        throw new Error("Management preferences is required");
-      if (formData.capitalAvailability.length === 0)
-        throw new Error(
-          "Please select at least one capital availability option"
-        );
-      if (formData.companyType.length === 0)
-        throw new Error("Please select at least one company type");
-
-      const token = localStorage.getItem("token");
-      const sellerId = localStorage.getItem("userId");
-      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
-
-      if (!token || !sellerId) throw new Error("Authentication required");
-
-      // Map business models to booleans
-      const businessModel = {
-        recurringRevenue: formData.businessModels.includes("recurring-revenue"),
-        projectBased: formData.businessModels.includes("project-based"),
-        assetLight: formData.businessModels.includes("asset-light"),
-        assetHeavy: formData.businessModels.includes("asset-heavy"),
-      };
-
-      // Use managementPreferences as a string
-      const managementPreferences = formData.managementPreferences;
-
-      // ✅ Ensure capitalAvailability is never empty and uses exact enum values
-      const validCapitalAvailability =
-        formData.capitalAvailability.length > 0
-          ? formData.capitalAvailability
-          : [CAPITAL_AVAILABILITY_OPTIONS.READY]; // Default fallback
-
-      const payload = {
-        title: formData.dealTitle,
-        companyDescription: formData.companyDescription,
-        visibility: selectedReward || "seed",
-        industrySector: formData.industrySelections[0] || "",
-        geographySelection: formData.geographySelections[0] || "",
-        yearsInBusiness: formData.yearsInBusiness,
-        companyType: Array.isArray(formData.companyType)
-          ? formData.companyType
-          : [],
-        financialDetails: {
-          trailingRevenueCurrency: formData.currency,
-          trailingRevenueAmount: formData.trailingRevenue,
-          trailingEBITDACurrency: formData.currency,
-          trailingEBITDAAmount: formData.trailingEBITDA,
-          avgRevenueGrowth: formData.revenueGrowth,
-          netIncome: formData.netIncome,
-          askingPrice: formData.askingPrice,
-          t12FreeCashFlow: formData.t12FreeCashFlow || 0,
-          t12NetIncome: formData.t12NetIncome || 0,
-        },
-        businessModel,
-        managementPreferences,
-        buyerFit: {
-          capitalAvailability: validCapitalAvailability, // ✅ Fixed: Always valid array with exact enum values
-          minPriorAcquisitions: formData.minPriorAcquisitions,
-          minTransactionSize: formData.minTransactionSize,
-        },
-        dealType: dealData?.dealType || "acquisition",
-        status: dealData?.status || "draft",
-      };
-
-      console.log("Updating deal payload:", JSON.stringify(payload, null, 2));
-
-      const response = await fetch(`${apiUrl}/deals/${dealId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error("API Error Response:", errorData);
-        throw new Error(`Failed to update deal: ${response.statusText}`);
-      }
-
-      // Handle document uploads if there are any new documents
-      if (formData.documents.length > 0) {
-        const uploadFormData = new FormData();
-
-        Array.from(formData.documents).forEach((file) => {
-          uploadFormData.append("files", file);
-        });
-
-        const uploadResponse = await fetch(
-          `${apiUrl}/deals/${dealId}/upload-documents`,
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-            body: uploadFormData,
-          }
-        );
-
-        if (!uploadResponse.ok) {
-          throw new Error(
-            `Failed to upload documents: ${uploadResponse.statusText}`
-          );
-        }
-      }
-
-      toast({
-        title: "Success",
-        description: "Your deal has been updated successfully.",
-      });
-
-      setTimeout(() => {
-        router.push("/seller/dashboard");
-      }, 2000);
-    } catch (error: any) {
-      console.error("Form submission error:", error);
-      toast({
-        title: "Update Failed",
-        description:
-          error.message || "Failed to update deal. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  // Handle document deletion
-  const handleDocumentDelete = async (doc: DealDocument) => {
-    if (!dealId) return;
-
-    try {
-      const token = localStorage.getItem("token");
-      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
-
-      const docIndex = existingDocuments.findIndex(
-        (d) => d.filename === doc.filename
-      );
-      const response = await fetch(
-        `${apiUrl}/deals/${dealId}/documents/${docIndex}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`Failed to delete document: ${response.statusText}`);
-      }
-
-      // Remove from existing documents
-      setExistingDocuments(
-        existingDocuments.filter((d) => d.filename !== doc.filename)
-      );
-
-      toast({
-        title: "Document deleted",
-        description: `${doc.originalName} has been deleted successfully.`,
-      });
-    } catch (error: any) {
-      console.error("Error deleting document:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to delete document",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Handle document download
-  const handleDocumentDownload = (doc: DealDocument) => {
-    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
-    const link = document.createElement("a");
-    link.href = `${apiUrl}/uploads/deal-documents/${doc.filename}`;
-    link.download = doc.originalName;
-    link.target = "_blank";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  // Handle new document deletion (remove from formData.documents)
-  const handleNewDocumentDelete = (indexToRemove: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      documents: prev.documents.filter((_, index) => index !== indexToRemove),
-    }));
-
-    // Clear selected file display if it was the last one
-    if (formData.documents.length === 1) {
-      setSelectedFile(null);
-    }
-
-    toast({
-      title: "Document removed",
-      description: "Document has been removed from upload queue.",
-    });
-  };
-
-  // Function to handle multi-select changes for company type
-  const handleMultiSelectChange = (option: string) => {
-    setFormData((prev) => {
-      const currentValues = Array.isArray(prev.companyType)
-        ? prev.companyType
-        : [];
-      const isChecked = currentValues.includes(option);
-
-      const newValues = isChecked
-        ? currentValues.filter((v) => v !== option) // remove if unchecked
-        : [...currentValues, option]; // add if checked
-
-      return {
-        ...prev,
-        companyType: newValues,
-      };
-    });
-  };
-
-  // Add debounce effect for geo search
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedGeoSearch(geoSearchTerm);
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [geoSearchTerm]);
-
-  // Add debounce effect for industry search
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedIndustrySearch(industrySearchTerm);
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [industrySearchTerm]);
-
-  // Fetch geography and industry data
-// Fetch geography and industry data
-useEffect(() => {
-  const fetchInitialData = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const userRole = localStorage.getItem("userRole");
-
-      if (!token || userRole !== "seller") {
-        router.push("/seller/login");
-        return;
-      }
-
-      // Load all countries initially
-      const allCountries = Country.getAllCountries();
-      const geoData: GeoItem[] = [];
-
-      // Add all countries to enable search
-      allCountries.forEach((country) => {
-        geoData.push({
-          id: country.isoCode,
-          name: country.name,
-          path: country.name,
-          type: "country",
-          countryCode: country.isoCode,
-        });
-      });
-
-      setFlatGeoData(geoData);
-
-      // Load industry data asynchronously
-      const industryResponse = await getIndustryData();
-      setIndustryData(industryResponse);
-      setFlatIndustryData(flattenIndustryData(industryResponse.sectors));
-
-      // Then fetch the existing deal data (for edit)
-      await fetchDealData();
-      
-    } catch (error) {
-      console.error("Error fetching data:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load form data. Please refresh the page.",
-        variant: "destructive",
-      });
-      setIsLoading(false);
-    }
-  };
-
-  fetchInitialData();
-}, [router, dealId]);
-
-// ✅ Handle geography selection after data is loaded
 useEffect(() => {
   const handleGeographySelection = async () => {
     if (dealData?.geographySelection && flatGeoData.length > 0) {
       const savedGeography = dealData.geographySelection;
       
-      // Parse the geography selection to get country and state
       const parts = savedGeography.split(' > ');
       if (parts.length > 1) {
         const countryName = parts[0];
         const stateName = parts[1];
         
-        // Find the country
         const country = Country.getAllCountries().find(c => c.name === countryName);
         if (country) {
-          // Load states for this country
           await loadStatesAndCities(country.isoCode);
           
-          // Set expanded state for the country
           setExpandedContinents(prev => ({
             ...prev,
             [country.isoCode]: true
           }));
           
-          // Use a small delay to ensure states are loaded
           setTimeout(() => {
             const stateId = `${country.isoCode}-${State.getStatesOfCountry(country.isoCode).find(s => s.name === stateName)?.isoCode}`;
             setGeoSelection({
@@ -2877,8 +2293,9 @@ useEffect(() => {
             </Button>
           </div>
         </form>
+        <Toaster />
+        <FloatingChatbot />
       </div>
-      <Toaster />
     </SellerProtectedRoute>
   );
 }
