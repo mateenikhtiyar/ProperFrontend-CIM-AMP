@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import FloatingChatbot from "@/components/seller/FloatingChatbot";
 // Helper for required field star
 const RequiredStar = () => <span className="text-red-500">*</span>;
 import {
@@ -2649,18 +2650,18 @@ const renderGeographySelection = () => {
         </section>
 
         {/* Submit Button */}
-        <div className="flex justify-center">
+        <div className="flex justify-end">
           <Button
             type="submit"
-            className="bg-[#3aafa9] hover:bg-[#2a9d8f] text-white px-8 py-2 rounded-md"
+            className="bg-[#3aafa9] hover:bg-[#2a9d8f] text-white font-bold py-3 px-6 rounded-lg"
             disabled={isLoading}
           >
-            {isLoading ? "Submitting..." : "Submit"}
+            {isLoading ? "Submitting..." : "Submit Deal"}
           </Button>
         </div>
+        <Toaster />
       </form>
-
-      <Toaster />
+      <FloatingChatbot />
     </div>
   );
 }

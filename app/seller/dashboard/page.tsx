@@ -15,6 +15,7 @@ import { useAuth } from "@/contexts/auth-context"
 import SellerProtectedRoute from "@/components/seller/protected-route"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
+import Classifier from "@/components/seller/Classifier";
 
 // Updated interfaces to match API structure
 interface SellerProfile {
