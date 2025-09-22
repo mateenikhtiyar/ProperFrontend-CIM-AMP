@@ -176,7 +176,7 @@ export default function SellerLoginPage() {
         {/* Right side - Login form */}
         <div className="w-full md:w-2/3 bg-white  flex items-center justify-center p-8">
           <div className="w-full max-w-md space-y-8">
-            <h1 className="text-3xl font-bold mb-8 text-center">Login</h1>
+            <h1 className="text-3xl font-bold mb-8 text-center">Advisor Login</h1>
 
             {error && (
               <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">
