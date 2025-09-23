@@ -49,7 +49,7 @@ export default function BuyerResetPasswordPage() {
 
     try {
       const response = await axios.patch(
-        `${process.env.NEXT_PUBLIC_API_URL}auth/${role}/reset-password`,
+        `${process.env.NEXT_PUBLIC_API_URL}/auth/${role}/reset-password`,
         {
           token,
           newPassword,

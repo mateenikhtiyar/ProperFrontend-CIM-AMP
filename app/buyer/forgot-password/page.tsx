@@ -24,7 +24,7 @@ export default function BuyerForgotPasswordPage() {
 
     try {
       const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}auth/buyer/forgot-password`,
+        `${process.env.NEXT_PUBLIC_API_URL}/auth/buyer/forgot-password`,
         { email }
       )
 
