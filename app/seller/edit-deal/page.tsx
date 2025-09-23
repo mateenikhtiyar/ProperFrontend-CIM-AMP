@@ -79,6 +79,7 @@ interface SellerFormData {
   documents: File[];
   t12FreeCashFlow?: number;
   t12NetIncome?: number;
+  isPublic?: boolean;
 }
 
 interface GeoItem {
@@ -265,6 +266,7 @@ export default function EditDealPageFixed() {
     documents: [],
     t12FreeCashFlow: 0,
     t12NetIncome: 0,
+    isPublic: false,
   });
 
   const [dealData, setDealData] = useState<Deal | null>(null);
@@ -281,8 +283,80 @@ export default function EditDealPageFixed() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Form submitted!");
-    // TODO: Implement actual submission logic here
+    if (!dealId) {
+      toast({ title: 'Missing deal ID', variant: 'destructive' });
+      return;
+    }
+    try {
+      setIsSaving(true);
+      const token = localStorage.getItem('token');
+      const apiUrl = localStorage.getItem('apiUrl') || 'http://localhost:3001';
+      if (!token) {
+        toast({ title: 'Authentication required', description: 'Please log in again.', variant: 'destructive' });
+        router.push('/seller/login');
+        return;
+      }
+
+      // Build Update payload (matches UpdateDealDto on backend)
+      const updatePayload: any = {
+        title: formData.dealTitle,
+        companyDescription: formData.companyDescription,
+        companyType: formData.companyType || [],
+        visibility: selectedReward || undefined,
+        industrySector:
+          (formData.industrySelections && formData.industrySelections[0]) ||
+          dealData?.industrySector || 'Other',
+        geographySelection:
+          (formData.geographySelections && formData.geographySelections[0]) ||
+          geoSelection.selectedName ||
+          dealData?.geographySelection || 'Global',
+        yearsInBusiness: formData.yearsInBusiness ?? dealData?.yearsInBusiness ?? 0,
+        financialDetails: {
+          trailingRevenueCurrency: formData.currency || 'USD($)',
+          trailingRevenueAmount: Number(formData.trailingRevenue) || 0,
+          trailingEBITDACurrency: formData.currency || 'USD($)',
+          trailingEBITDAAmount: Number(formData.trailingEBITDA) || 0,
+          avgRevenueGrowth: Number(formData.revenueGrowth) || 0,
+          netIncome: Number(formData.netIncome) || 0,
+          askingPrice: Number(formData.askingPrice) || 0,
+          t12FreeCashFlow: Number(formData.t12FreeCashFlow) || 0,
+          t12NetIncome: Number(formData.t12NetIncome) || 0,
+        },
+        businessModel: {
+          recurringRevenue: formData.businessModels.includes('recurring-revenue'),
+          projectBased: formData.businessModels.includes('project-based'),
+          assetLight: formData.businessModels.includes('asset-light'),
+          assetHeavy: formData.businessModels.includes('asset-heavy'),
+        },
+        managementPreferences: formData.managementPreferences || '',
+        buyerFit: {
+          capitalAvailability: formData.capitalAvailability || [],
+          minPriorAcquisitions: formData.minPriorAcquisitions || 0,
+          minTransactionSize: formData.minTransactionSize || 0,
+        },
+        isPublic: !!formData.isPublic,
+      };
+
+      const resp = await fetch(`${apiUrl}/deals/${dealId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(updatePayload),
+      });
+      if (!resp.ok) {
+        const txt = await resp.text();
+        throw new Error(txt || `Failed to update deal (${resp.status})`);
+      }
+      toast({ title: 'Deal updated', description: 'Your changes have been saved.' });
+      router.push('/seller/dashboard');
+    } catch (err: any) {
+      console.error('Update deal failed:', err);
+      toast({ title: 'Update failed', description: err.message || 'Please try again.', variant: 'destructive' });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const flattenIndustryData = (
@@ -414,6 +488,7 @@ export default function EditDealPageFixed() {
       documents: [],
       t12FreeCashFlow: dealData.financialDetails?.t12FreeCashFlow || 0,
       t12NetIncome: dealData.financialDetails?.t12NetIncome || 0,
+      isPublic: !!dealData.isPublic,
     });
 
     setDealData(dealData);
@@ -1493,6 +1568,32 @@ useEffect(() => {
                   className="w-full min-h-[100px]"
                   required
                 />
+              </div>
+
+              {/* Marketplace listing toggle - enhanced */}
+              <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 text-blue-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5"><path d="M3 3h18v2H3V3zm1 4h16l-1.5 12.5A2 2 0 0 1 16.51 21H7.49a2 2 0 0 1-1.99-1.5L4 7zm4 2v8h2V9H8zm6 0v8h2V9h-2z"/></svg>
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-semibold text-gray-900">List in Marketplace</label>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-white text-blue-700 border border-blue-200">Marketplace</span>
+                        <input
+                          aria-label="List in Marketplace"
+                          type="checkbox"
+                          checked={!!formData.isPublic}
+                          onChange={(e) => setFormData((prev) => ({ ...prev, isPublic: e.target.checked }))}
+                          className="h-4 w-4 accent-teal-500"
+                        />
+                      </div>
+                    </div>
+                    <p className="mt-1 text-xs text-blue-800">Make this deal discoverable to buyers browsing the Marketplace. Buyers can request access; you’ll choose to approve or deny.</p>
+                    <p className="mt-1 text-xs text-blue-700">Note: If you turn this off, outstanding marketplace requests will be declined automatically.</p>
+                  </div>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

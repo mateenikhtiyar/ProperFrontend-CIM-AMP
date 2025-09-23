@@ -70,7 +70,7 @@ const BUSINESS_MODELS = [
 ];
 
 // Default API URL
-const DEFAULT_API_URL = "https://api.cimamplify.com";
+const DEFAULT_API_URL = "http://localhost:3001";
 
 // Type for hierarchical selection
 interface HierarchicalSelection {
@@ -118,6 +118,9 @@ export default function MarketPlace() {
   // Add buyerProfile state
   const [buyerProfile, setBuyerProfile] = useState<BuyerProfile | null>(null);
 
+  // Track per-deal request loading state
+  const [requestLoading, setRequestLoading] = useState<Record<string, boolean>>({});
+
   // Hierarchical selection state
   const [geoSelection, setGeoSelection] = useState<HierarchicalSelection>({
     continents: {},
@@ -159,6 +162,10 @@ export default function MarketPlace() {
 
   // Add a new state for field-specific errors
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  // Marketplace deals state
+  const [deals, setDeals] = useState<any[]>([]);
+  const [dealsLoading, setDealsLoading] = useState(false);
 
   // Check if we're on the client side
   useEffect(() => {
@@ -250,6 +257,17 @@ export default function MarketPlace() {
         // After loading the reference data, fetch the user's profile
         await fetchUserProfile();
         await fetchBuyerProfile();
+
+        // Fetch marketplace deals
+        setDealsLoading(true);
+        const resp = await fetch(`${apiUrl}/deals/marketplace`, {
+          headers: { Authorization: `Bearer ${authToken}` },
+        });
+        if (resp.ok) {
+          const data = await resp.json();
+          setDeals(data || []);
+        }
+        setDealsLoading(false);
       } catch (error) {
         console.error("Error fetching data:", error);
         toast({
@@ -262,6 +280,28 @@ export default function MarketPlace() {
 
     fetchData();
   }, [authToken, isClient]);
+
+  const handleRequestAccess = async (dealId: string) => {
+    try {
+      if (!authToken) return;
+      setRequestLoading((p) => ({ ...p, [dealId]: true }));
+      const resp = await fetch(`${apiUrl}/deals/${dealId}/request-access`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+      if (!resp.ok) {
+        const txt = await resp.text();
+        throw new Error(txt || 'Failed to request access');
+      }
+      toast({ title: 'Request sent', description: 'The seller has been notified.' });
+      // Optimistically update card status to requested
+      setDeals((prev: any[]) => prev.map((d) => d._id === dealId ? { ...d, currentBuyerRequested: true, currentBuyerStatus: 'requested' } : d));
+    } catch (e: any) {
+      toast({ title: 'Request failed', description: e.message || 'Please try again.', variant: 'destructive' });
+    } finally {
+      setRequestLoading((p) => ({ ...p, [dealId]: false }));
+    }
+  };
 
   // Form state
   const [formData, setFormData] = useState<
@@ -458,7 +498,7 @@ export default function MarketPlace() {
         return;
       }
 
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
       const response = await fetch(`${apiUrl}/buyers/profile`, {
         headers: {
@@ -1611,7 +1651,7 @@ export default function MarketPlace() {
   const getProfilePictureUrl = (path: string | null) => {
     if (!path) return null;
 
-    const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
     if (path.startsWith("http://") || path.startsWith("https://")) {
       return path;
@@ -1764,8 +1804,78 @@ export default function MarketPlace() {
         </aside>
 
         {/* Main content */}
-        <main className="flex flex-1 justify-center items-center">
-          <h1 className="text-3xl font-bold text-gray-800">Coming Soon - Marketplace will feature deals that Advisors post for everyone to see.</h1>
+        <main className="flex-1 p-6 overflow-y-auto">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">Marketplace</h2>
+          </div>
+          {dealsLoading ? (
+            <div>Loading...</div>
+          ) : deals.length === 0 ? (
+            <div className="text-gray-600">No public deals available right now.</div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {deals.map((deal) => {
+                const status: string = deal.currentBuyerStatus || 'none';
+                const requested: boolean = !!deal.currentBuyerRequested;
+                const isLoading = !!requestLoading[deal._id];
+                const disabled = isLoading || status === 'requested' || status === 'pending' || status === 'accepted' || status === 'rejected' || requested;
+                const statusBadge = status === 'accepted'
+                  ? { text: 'Active', cls: 'bg-green-100 text-green-700' }
+                  : status === 'pending'
+                    ? { text: 'Requested', cls: 'bg-blue-100 text-blue-700' }
+                    : status === 'rejected'
+                      ? { text: 'Denied', cls: 'bg-red-100 text-red-700' }
+                      : requested
+                        ? { text: 'Requested', cls: 'bg-blue-100 text-blue-700' }
+                        : null;
+                return (
+                  <div key={deal._id} className="border rounded-lg p-4 bg-white shadow-sm">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-semibold text-gray-800 truncate">{deal.title}</h3>
+                      <div className="flex items-center gap-2">
+                        {deal.isFeatured ? (
+                          <span className="text-xs px-2 py-1 bg-yellow-100 text-yellow-800 rounded">Featured</span>
+                        ) : null}
+                        {statusBadge ? (
+                          <span className={`text-xs px-2 py-1 rounded ${statusBadge.cls}`}>{statusBadge.text}</span>
+                        ) : null}
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-600 line-clamp-4 mb-3">{deal.companyDescription}</p>
+                    <div className="text-xs text-gray-500 mb-3 grid grid-cols-2 gap-3">
+                      <div>
+                        <div className="text-gray-400">Industry</div>
+                        <div className="text-gray-800">{deal.industrySector}</div>
+                      </div>
+                      <div>
+                        <div className="text-gray-400">Location</div>
+                        <div className="text-gray-800">{deal.geographySelection}</div>
+                      </div>
+                      <div>
+                        <div className="text-gray-400">T12 Revenue</div>
+                        <div className="text-gray-800">{(deal.financialDetails?.trailingRevenueCurrency || '$')} {Number(deal.financialDetails?.trailingRevenueAmount || 0).toLocaleString()}</div>
+                      </div>
+                      <div>
+                        <div className="text-gray-400">T12 EBITDA</div>
+                        <div className="text-gray-800">{(deal.financialDetails?.trailingEBITDACurrency || '$')} {Number(deal.financialDetails?.trailingEBITDAAmount || 0).toLocaleString()}</div>
+                      </div>
+                      <div>
+                        <div className="text-gray-400">Years in Business</div>
+                        <div className="text-gray-800">{deal.yearsInBusiness ?? '—'}</div>
+                      </div>
+                    </div>
+                    <Button
+                      disabled={disabled}
+                      onClick={() => handleRequestAccess(deal._id)}
+                      className={`w-full ${disabled ? 'opacity-70 cursor-not-allowed' : ''}`}
+                    >
+                      {isLoading ? 'Sending…' : status === 'accepted' ? 'Active' : status === 'rejected' ? 'Denied' : (status === 'pending' || status === 'requested' || requested) ? 'Requested' : 'Request Access'}
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </main>
       </div>
     </div>
