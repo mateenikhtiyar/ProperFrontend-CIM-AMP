@@ -7,12 +7,7 @@ export default function Chatbot() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const exampleText =
-    "A leading window manufacturer known for its high-quality, energy-efficient windows, designed specifically for southern climates. With a focus on custom and factory-direct solutions, the Company excels in providing fast lead times, superior craftsmanship, and excellent customer service.";
 
-  const fillExample = () => {
-    setDescription(exampleText);
-  };
 
   const classifyCompany = async () => {
     if (!description || description.length < 20) {
@@ -65,18 +60,9 @@ export default function Chatbot() {
         🎯 M&A Industry Classifier
       </h1>
       <p className="text-center text-gray-500 mb-6 text-sm sm:text-base">
-        Automatically classify companies using our comprehensive M&A taxonomy
+      Copy and paste the company description below and our AI will suggest the industry you should choose in Industry Selector.
       </p>
 
-      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
-        <h4 className="font-semibold text-gray-700 mb-2">💡 Example</h4>
-        <p
-          className="italic text-gray-600 cursor-pointer hover:text-gray-800"
-          onClick={fillExample}
-        >
-          "{exampleText}"
-        </p>
-      </div>
 
       <div className="mb-4">
         <label
@@ -106,7 +92,7 @@ export default function Chatbot() {
             Analyzing...
           </>
         ) : (
-          "🚀 Classify Company"
+          "🚀 Classify Description"
         )}
       </button>
 

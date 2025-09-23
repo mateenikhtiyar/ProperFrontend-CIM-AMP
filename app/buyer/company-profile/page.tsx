@@ -69,7 +69,7 @@ const BUSINESS_MODELS = [
 ];
 
 // Default API URL
-const DEFAULT_API_URL = "https://api.cimamplify.com";
+const DEFAULT_API_URL = "http://localhost:3001";
 
 // Type for hierarchical selection
 interface HierarchicalSelection {
@@ -491,7 +491,7 @@ const fetchUserProfile = async () => {
         return;
       }
 
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
       const response = await fetch(`${apiUrl}/buyers/profile`, {
         headers: {
@@ -1303,14 +1303,8 @@ const fetchUserProfile = async () => {
       return;
     }
 
-    if (!profileId) {
-      toast({
-        title: "Profile Not Found",
-        description: "Please refresh the page and try again.",
-        variant: "destructive",
-      });
-      return;
-    }
+    // If no profile exists yet, create it instead of failing
+    // We gracefully POST to /company-profiles when profileId is missing
 
     const validationError = validateForm();
     if (validationError) {
@@ -1356,6 +1350,16 @@ const fetchUserProfile = async () => {
       console.log("Company Profile - Profile ID:", profileId);
 
       const updateData = { ...profileData };
+      // Normalize website to include protocol for backend IsUrl validation
+      const ensureProtocol = (url: string | undefined) => {
+        if (!url) return url;
+        const trimmed = url.trim();
+        if (/^https?:\/\//i.test(trimmed)) return trimmed;
+        return `https://${trimmed}`;
+      };
+      if (typeof (updateData as any).website === 'string') {
+        (updateData as any).website = ensureProtocol((updateData as any).website);
+      }
       delete (updateData as any)._id;
       delete (updateData as any).createdAt;
       delete (updateData as any).updatedAt;
@@ -1371,14 +1375,28 @@ const fetchUserProfile = async () => {
         JSON.stringify(updateData, null, 2)
       );
 
-      const response = await fetch(`${apiUrl}/company-profiles/${profileId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
-        },
-        body: JSON.stringify(updateData),
-      });
+      let response: Response;
+      if (!profileId) {
+        // Create new profile
+        response = await fetch(`${apiUrl}/company-profiles`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`,
+          },
+          body: JSON.stringify(updateData),
+        });
+      } else {
+        // Update existing profile
+        response = await fetch(`${apiUrl}/company-profiles/${profileId}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`,
+          },
+          body: JSON.stringify(updateData),
+        });
+      }
 
       console.log("Company Profile - Response status:", response.status);
 
@@ -1620,7 +1638,7 @@ const fetchUserProfile = async () => {
   const getProfilePictureUrl = (path: string | null) => {
     if (!path) return null;
 
-    const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
     if (path.startsWith("http://") || path.startsWith("https://")) {
       return path;
