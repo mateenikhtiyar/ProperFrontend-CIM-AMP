@@ -102,7 +102,7 @@ const fetchAdminProfile = async () => {
   setLoading(true);
   try {
     const token = localStorage.getItem("token");
-    const res = await fetch("http://localhost:3001/admin/profile", {
+    const res = await fetch("https://api.cimamplify.com//admin/profile", {
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
@@ -191,7 +191,7 @@ useEffect(() => {
         }
         // Send to backend
         const token = localStorage.getItem("token");
-        const res = await fetch("http://localhost:3001/admin/profile", {
+        const res = await fetch("https://api.cimamplify.com//admin/profile", {
           method: "PATCH",
           headers: {
             Authorization: `Bearer ${token}`,
