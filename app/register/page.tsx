@@ -130,7 +130,7 @@ export default function RegisterPage() {
 
     try {
       // Get API URL from localStorage or use default
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com/"
+      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
 
       console.log("Register page - Submitting registration to:", apiUrl)
 
@@ -226,7 +226,7 @@ export default function RegisterPage() {
   // Handle Google OAuth login
   const handleGoogleLogin = () => {
     // Get API URL from localStorage or use default
-    const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com/"
+    const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
     console.log("Register page - Redirecting to Google OAuth:", `${apiUrl}/buyers/google`)
 
     // Redirect to Google OAuth endpoint

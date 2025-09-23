@@ -290,7 +290,7 @@ export default function EditDealPageFixed() {
     try {
       setIsSaving(true);
       const token = localStorage.getItem('token');
-      const apiUrl = localStorage.getItem('apiUrl') || 'https://api.cimamplify.com/';
+      const apiUrl = localStorage.getItem('apiUrl') || 'https://api.cimamplify.com';
       if (!token) {
         toast({ title: 'Authentication required', description: 'Please log in again.', variant: 'destructive' });
         router.push('/seller/login');

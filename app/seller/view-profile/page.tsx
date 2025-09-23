@@ -90,7 +90,7 @@ export default function ViewProfilePage() {
 
     if (profilePicture.startsWith("http")) return profilePicture;
 
-    const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com/";
+    const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
     const formattedPath = profilePicture.replace(/\\/g, "/");
 
     return `${apiUrl}/${
@@ -215,7 +215,7 @@ export default function ViewProfilePage() {
         title: editValues.title?.trim() || "",
       };
 
-      const response = await fetch("https://api.cimamplify.com//sellers/me", {
+      const response = await fetch("https://api.cimamplify.com/sellers/me", {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -287,7 +287,7 @@ export default function ViewProfilePage() {
         password: passwordData.newPassword,
       };
 
-      const response = await fetch("https://api.cimamplify.com//sellers/me", {
+      const response = await fetch("https://api.cimamplify.com/sellers/me", {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -357,7 +357,7 @@ export default function ViewProfilePage() {
       const token = localStorage.getItem("token");
 
       // Get API URL from localStorage or use default
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com/";
+      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
 
       // Create form data with 'file' as the field name
       const formData = new FormData();
