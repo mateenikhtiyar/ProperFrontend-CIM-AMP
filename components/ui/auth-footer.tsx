@@ -109,7 +109,7 @@ export default function Footer() {
                 Buyer registration
               </div>
               <a
-                href="https://app.cimamplify.com/seller/register"
+                href="http://localhost:3000/seller/register"
                 target="_self"
                 rel="noopener noreferrer"
                 className="text-white hover:text-[#229273] block py-1 cursor-pointer transition-colors duration-300"
@@ -123,7 +123,7 @@ export default function Footer() {
                 Buyer Login
               </div>
               <a
-                href="https://app.cimamplify.com/seller/login"
+                href="http://localhost:3000/seller/login"
                 target="_self"
                 rel="noopener noreferrer"
                 className="text-white hover:text-[#229273] block py-1 cursor-pointer transition-colors duration-300"

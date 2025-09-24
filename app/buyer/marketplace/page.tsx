@@ -70,7 +70,7 @@ const BUSINESS_MODELS = [
 ];
 
 // Default API URL
-const DEFAULT_API_URL = "https://api.cimamplify.com";
+const DEFAULT_API_URL = "http://localhost:3001";
 
 // Type for hierarchical selection
 interface HierarchicalSelection {
@@ -172,10 +172,27 @@ export default function MarketPlace() {
     setIsClient(true);
   }, []);
 
-  // Format number with commas
-  const formatNumberWithCommas = (value: number | undefined) => {
-    if (value === undefined) return "";
-    return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  const formatCurrencyDisplay = (amount?: number | null, currency?: string) => {
+    if (amount === undefined || amount === null) return 'Not provided';
+    const value = Number(amount);
+    if (Number.isNaN(value)) return 'Not provided';
+    const label = currency || '$';
+    return `${label} ${value.toLocaleString()}`;
+  };
+
+  const formatPercentDisplay = (value?: number | null) => {
+    if (value === undefined || value === null) return 'Not provided';
+    return `${value}%`;
+  };
+
+  const getBusinessModelSummary = (businessModel: any) => {
+    if (!businessModel) return 'Not provided';
+    const labels: string[] = [];
+    if (businessModel.recurringRevenue) labels.push('Recurring Revenue');
+    if (businessModel.projectBased) labels.push('Project-Based');
+    if (businessModel.assetLight) labels.push('Asset Light');
+    if (businessModel.assetHeavy) labels.push('Asset Heavy');
+    return labels.length ? labels.join(', ') : 'Not provided';
   };
 
   // Check for token on mount and from URL parameters
@@ -498,7 +515,7 @@ export default function MarketPlace() {
         return;
       }
 
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
       const response = await fetch(`${apiUrl}/buyers/profile`, {
         headers: {
@@ -1441,6 +1458,7 @@ export default function MarketPlace() {
   // Render hierarchical geography selection
   const renderGeographySelection = () => {
     const allCountries = Country.getAllCountries();
+
     return (
       <div className="space-y-2 font-poppins">
         {allCountries.map((country) => (
@@ -1651,7 +1669,7 @@ export default function MarketPlace() {
   const getProfilePictureUrl = (path: string | null) => {
     if (!path) return null;
 
-    const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
     if (path.startsWith("http://") || path.startsWith("https://")) {
       return path;
@@ -1707,6 +1725,11 @@ export default function MarketPlace() {
     });
     setIndustrySelection(newIndustrySelection);
   }, [industryData, formData.targetCriteria.industrySectors]);
+
+  const visibleMarketplaceDeals = deals.filter((deal) => {
+    const status = (deal.currentBuyerStatus || 'none').toLowerCase();
+    return status === 'none' || status === 'requested';
+  });
 
   if (!isClient) {
     return <div>Loading...</div>;
@@ -1806,74 +1829,120 @@ export default function MarketPlace() {
         {/* Main content */}
         <main className="flex-1 p-6 overflow-y-auto">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold">Marketplace</h2>
+        
           </div>
           {dealsLoading ? (
             <div>Loading...</div>
-          ) : deals.length === 0 ? (
+          ) : visibleMarketplaceDeals.length === 0 ? (
             <div className="text-gray-600">No public deals available right now.</div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {deals.map((deal) => {
-                const status: string = deal.currentBuyerStatus || 'none';
-                const requested: boolean = !!deal.currentBuyerRequested;
+              {visibleMarketplaceDeals.map((deal) => {
+                const status = (deal.currentBuyerStatus || 'none').toLowerCase();
+                const isRequested = status === 'requested';
                 const isLoading = !!requestLoading[deal._id];
-                const disabled = isLoading || status === 'requested' || status === 'pending' || status === 'accepted' || status === 'rejected' || requested;
-                const statusBadge = status === 'accepted'
-                  ? { text: 'Active', cls: 'bg-green-100 text-green-700' }
-                  : status === 'pending'
-                    ? { text: 'Requested', cls: 'bg-blue-100 text-blue-700' }
-                    : status === 'rejected'
-                      ? { text: 'Denied', cls: 'bg-red-100 text-red-700' }
-                      : requested
-                        ? { text: 'Requested', cls: 'bg-blue-100 text-blue-700' }
-                        : null;
+                const buttonLabel = isLoading ? 'Sending…' : isRequested ? 'Request Sent' : 'Request Access';
                 return (
-                  <div key={deal._id} className="border rounded-lg p-4 bg-white shadow-sm">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-semibold text-gray-800 truncate">{deal.title}</h3>
+                  <div
+                    key={deal._id}
+                    className="border rounded-xl p-4 bg-white shadow-sm flex flex-col gap-4 transition hover:shadow-md"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <h3 className="font-semibold text-center text-gray-900 text-base leading-tight">Deal Overview</h3>
+                        <p className="text-sm text-gray-600 mt-1 line-clamp-3"><strong>Deal Description:</strong>
+                          {deal.companyDescription || 'Summary coming soon.'}
+                        </p>
+                      </div>
                       <div className="flex items-center gap-2">
                         {deal.isFeatured ? (
-                          <span className="text-xs px-2 py-1 bg-yellow-100 text-yellow-800 rounded">Featured</span>
+                          <span className="text-xs px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full flex-shrink-0">Featured</span>
                         ) : null}
-                        {statusBadge ? (
-                          <span className={`text-xs px-2 py-1 rounded ${statusBadge.cls}`}>{statusBadge.text}</span>
+                        {isRequested ? (
+                          <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full flex-shrink-0">Request Sent</span>
                         ) : null}
                       </div>
                     </div>
-                    <p className="text-sm text-gray-600 line-clamp-4 mb-3">{deal.companyDescription}</p>
-                    <div className="text-xs text-gray-500 mb-3 grid grid-cols-2 gap-3">
-                      <div>
-                        <div className="text-gray-400">Industry</div>
-                        <div className="text-gray-800">{deal.industrySector}</div>
+
+                    <div className="grid grid-cols-2 gap-3 text-sm text-gray-700">
+                      <div className="rounded-lg bg-gray-50 p-3">
+                        <div className="text-xs uppercase text-gray-500">Industry</div>
+                        <div className="font-medium text-gray-900">{deal.industrySector || 'Not provided'}</div>
                       </div>
-                      <div>
-                        <div className="text-gray-400">Location</div>
-                        <div className="text-gray-800">{deal.geographySelection}</div>
+                      <div className="rounded-lg bg-gray-50 p-3">
+                        <div className="text-xs uppercase text-gray-500">Geography</div>
+                        <div className="font-medium text-gray-900">{deal.geographySelection || 'Not provided'}</div>
                       </div>
-                      <div>
-                        <div className="text-gray-400">T12 Revenue</div>
-                        <div className="text-gray-800">{(deal.financialDetails?.trailingRevenueCurrency || '$')} {Number(deal.financialDetails?.trailingRevenueAmount || 0).toLocaleString()}</div>
+                      <div className="rounded-lg bg-gray-50 p-3">
+                        <div className="text-xs uppercase text-gray-500">Years in Business</div>
+                        <div className="font-medium text-gray-900">{deal.yearsInBusiness ?? 'Not provided'}</div>
                       </div>
-                      <div>
-                        <div className="text-gray-400">T12 EBITDA</div>
-                        <div className="text-gray-800">{(deal.financialDetails?.trailingEBITDACurrency || '$')} {Number(deal.financialDetails?.trailingEBITDAAmount || 0).toLocaleString()}</div>
-                      </div>
-                      <div>
-                        <div className="text-gray-400">Years in Business</div>
-                        <div className="text-gray-800">{deal.yearsInBusiness ?? '—'}</div>
+                      <div className="rounded-lg bg-gray-50 p-3">
+                        <div className="text-xs uppercase text-gray-500">Business Model</div>
+                        <div className="font-medium text-gray-900">{getBusinessModelSummary(deal.businessModel)}</div>
                       </div>
                     </div>
+
+                    <div className="grid grid-cols-2 gap-3 text-sm text-gray-700">
+                      <div className="rounded-lg bg-gray-50 p-3">
+                        <div className="text-xs uppercase text-gray-500">T12 Revenue</div>
+                        <div className="font-medium text-gray-900">
+                          {formatCurrencyDisplay(
+                            deal.financialDetails?.trailingRevenueAmount,
+                            deal.financialDetails?.trailingRevenueCurrency
+                          )}
+                        </div>
+                      </div>
+                      <div className="rounded-lg bg-gray-50 p-3">
+                        <div className="text-xs uppercase text-gray-500">T12 EBITDA</div>
+                        <div className="font-medium text-gray-900">
+                          {formatCurrencyDisplay(
+                            deal.financialDetails?.trailingEBITDAAmount,
+                            deal.financialDetails?.trailingEBITDACurrency
+                          )}
+                        </div>
+                      </div>
+                      <div className="rounded-lg bg-gray-50 p-3">
+                        <div className="text-xs uppercase text-gray-500">Net Income</div>
+                        <div className="font-medium text-gray-900">
+                          {formatCurrencyDisplay(
+                            deal.financialDetails?.netIncome,
+                            deal.financialDetails?.netIncomeCurrency
+                          )}
+                        </div>
+                      </div>
+                      <div className="rounded-lg bg-gray-50 p-3">
+                        <div className="text-xs uppercase text-gray-500">Asking Price</div>
+                        <div className="font-medium text-gray-900">
+                          {formatCurrencyDisplay(
+                            deal.financialDetails?.askingPrice,
+                            deal.financialDetails?.askingPriceCurrency
+                          )}
+                        </div>
+                      </div>
+                      <div className="rounded-lg bg-gray-50 p-3 col-span-2">
+                        <div className="text-xs uppercase text-gray-500">Avg. 3-Year Revenue Growth</div>
+                        <div className="font-medium text-gray-900">{formatPercentDisplay(deal.financialDetails?.avgRevenueGrowth)}</div>
+                      </div>
+                    </div>
+
+                    <div className="text-xs text-gray-500">
+                      {isRequested
+                        ? 'Request sent. We\'ll notify you when the seller responds.'
+                        : 'Seller details unlock after access is granted.'}
+                    </div>
+
                     <Button
-                      disabled={disabled}
+                      disabled={isLoading || isRequested}
                       onClick={() => handleRequestAccess(deal._id)}
-                      className={`w-full ${disabled ? 'opacity-70 cursor-not-allowed' : ''}`}
+                      className={`w-full ${isLoading ? 'opacity-70 cursor-wait' : isRequested ? 'opacity-70 cursor-not-allowed' : ''}`}
                     >
-                      {isLoading ? 'Sending…' : status === 'accepted' ? 'Active' : status === 'rejected' ? 'Denied' : (status === 'pending' || status === 'requested' || requested) ? 'Requested' : 'Request Access'}
+                      {buttonLabel}
                     </Button>
                   </div>
                 );
               })}
+
             </div>
           )}
         </main>
