@@ -91,7 +91,7 @@ interface Deal {
 // Helper function to get the complete profile picture URL
 function getProfilePictureUrl(path: string | null) {
   if (!path) return null
-  const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+  const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
   const formattedPath = path.replace(/\\/g, "/")
   return `${apiUrl}/${formattedPath.startsWith("/") ? formattedPath.slice(1) : formattedPath}`
 }
@@ -114,7 +114,7 @@ function DealCard({
   // Helper functions
   const handleDocumentUpload = async (dealId: string) => {
     const token = localStorage.getItem("token")
-    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+    const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
 
     const response = await fetch(`${apiUrl}/deals/${dealId}`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -166,7 +166,7 @@ function DealCard({
 
     try {
       const token = localStorage.getItem("token")
-      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
 
       const response = await fetch(`${apiUrl}/deals/${deal._id}/upload-documents`, {
         method: "POST",
@@ -204,7 +204,7 @@ function DealCard({
   }
 
   const downloadDocument = (doc: DealDocument) => {
-    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+    const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
 
     // Create a download link
     const link = document.createElement("a")
@@ -388,7 +388,7 @@ export default function SellerDashboardPage() {
     const fetchSellerProfile = async () => {
       try {
         const token = localStorage.getItem("token")
-        const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+        const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
 
         const response = await fetch(`${apiUrl}/sellers/profile`, {
           headers: {
@@ -421,7 +421,7 @@ export default function SellerDashboardPage() {
       try {
         setLoading(true)
         const token = localStorage.getItem("token")
-        const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+        const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
 
         if (!token) {
           router.push("/seller/login?error=no_token")
@@ -479,7 +479,7 @@ export default function SellerDashboardPage() {
     if (profileName.trim()) {
       try {
         const token = localStorage.getItem("token")
-        const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+        const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
 
         const response = await fetch(`${apiUrl}/sellers/${sellerProfile?._id}`, {
           method: "PATCH",
@@ -545,7 +545,7 @@ export default function SellerDashboardPage() {
         if (selectedDealForOffMarket) {
           try {
             const token = localStorage.getItem("token")
-            const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+            const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
             const response = await fetch(`${apiUrl}/deals/${selectedDealForOffMarket._id}/close-deal`, {
               method: "POST",
               headers: {
@@ -604,7 +604,7 @@ export default function SellerDashboardPage() {
 
     try {
       const token = localStorage.getItem("token")
-      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
 
       // Close the deal with the selected buyer
       const closeResponse = await fetch(`${apiUrl}/deals/${selectedDealForCompletion._id}/close`, {
@@ -666,7 +666,7 @@ export default function SellerDashboardPage() {
 
     try {
       const token = localStorage.getItem("token")
-      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
 
       // Prepare winningBuyerId: only send if buyerFromCIM is true
       const body: any = {
@@ -723,7 +723,7 @@ export default function SellerDashboardPage() {
 
     try {
       const token = localStorage.getItem("token")
-      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
 
       const body: any = {}
       if (offMarketData.transactionValue) {
@@ -764,7 +764,7 @@ export default function SellerDashboardPage() {
   const fetchDealStatusSummary = async (dealId: string) => {
     try {
       const token = localStorage.getItem("token")
-      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
+      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
 
       const response = await fetch(`${apiUrl}/deals/${dealId}/status-summary`, {
         headers: {
