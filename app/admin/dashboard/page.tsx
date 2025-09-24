@@ -57,6 +57,7 @@ interface Deal {
   dealType: string;
   status: string;
   visibility?: string;
+  isPublic?: boolean;
   industrySector: string;
   geographySelection: string;
   yearsInBusiness: number;
@@ -1174,7 +1175,7 @@ export default function DealManagementDashboard() {
   useEffect(() => {
     const fetchAdminProfile = async () => {
       const token = localStorage.getItem("token");
-      const res = await fetch("https://api.cimamplify.com/admin/profile", {
+      const res = await fetch("http://localhost:3001/admin/profile", {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -1647,9 +1648,16 @@ export default function DealManagementDashboard() {
                       className="rounded-lg border border-gray-200 bg-white shadow-sm cursor-pointer hover:shadow-md transition-shadow"
                     >
                       <div className="flex items-center justify-between border-b border-gray-200 p-4">
-                        <h3 className="text-lg font-medium text-teal-500">
-                          {deal.title}
-                        </h3>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-lg font-medium text-teal-500">
+                            {deal.title}
+                          </h3>
+                          {deal.isPublic && (
+                            <span className="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full border border-blue-200 bg-blue-50 text-blue-700">
+                              Marketplace
+                            </span>
+                          )}
+                        </div>
                         {deal.rewardLevel && (
                           <span
                             className="ml-2 px-3 py-1 rounded-full text-xs font-semibold bg-[#e0f7fa] text-[#00796b]"
@@ -1829,9 +1837,16 @@ export default function DealManagementDashboard() {
                       className="rounded-lg border border-gray-200 bg-white shadow-sm cursor-pointer hover:shadow-md transition-shadow"
                     >
                       <div className="flex items-center justify-between border-b border-gray-200 p-4">
-                        <h3 className="text-lg font-medium text-teal-500">
-                          {deal.title}
-                        </h3>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-lg font-medium text-teal-500">
+                            {deal.title}
+                          </h3>
+                          {deal.isPublic && (
+                            <span className="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full border border-blue-200 bg-blue-50 text-blue-700">
+                              Marketplace
+                            </span>
+                          )}
+                        </div>
                         {deal.rewardLevel && (
                           <span
                             className="ml-2 px-3 py-1 rounded-full text-xs font-semibold bg-[#e0f7fa] text-[#00796b]"
@@ -2014,9 +2029,16 @@ export default function DealManagementDashboard() {
                       className="rounded-lg border border-gray-200 bg-white shadow-sm cursor-pointer hover:shadow-md transition-shadow"
                     >
                       <div className="flex items-center justify-between border-b border-gray-200 p-4">
-                        <h3 className="text-lg font-medium text-teal-500">
-                          {deal.title}
-                        </h3>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-lg font-medium text-teal-500">
+                            {deal.title}
+                          </h3>
+                          {deal.isPublic && (
+                            <span className="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full border border-blue-200 bg-blue-50 text-blue-700">
+                              Marketplace
+                            </span>
+                          )}
+                        </div>
                         {deal.rewardLevel && (
                           <span
                             className="ml-2 px-3 py-1 rounded-full text-xs font-semibold bg-[#e0f7fa] text-[#00796b]"

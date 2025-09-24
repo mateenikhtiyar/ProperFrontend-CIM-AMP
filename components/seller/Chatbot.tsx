@@ -11,7 +11,7 @@ export default function Chatbot() {
 
   const classifyCompany = async () => {
     if (!description || description.length < 20) {
-      setError("Please provide a more detailed company description.");
+      setError("Please share at least two full sentences about the company.");
       return;
     }
 
@@ -26,14 +26,36 @@ export default function Chatbot() {
         body: JSON.stringify({ description }),
       });
 
+      const responseText = await res.text();
+
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || `API Error: ${res.status}`);
+        let message = "We couldn't reach our AI helper. Please try again shortly.";
+        try {
+          const errorData = JSON.parse(responseText);
+          if (errorData?.error) {
+            message = errorData.error;
+          }
+        } catch (parseError) {
+          // Ignore JSON parsing issues for error responses; show friendly message instead.
+        }
+        throw new Error(message);
       }
 
-      const data = await res.json();
+      let data: any;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        throw new Error(
+          "We couldn't read the AI reply. Please try again after checking the tips below."
+        );
+      }
+
       if (data.error) {
-        throw new Error(data.error);
+        throw new Error(
+          typeof data.error === "string"
+            ? data.error
+            : "The AI couldn't finish the classification. Please try again in a moment."
+        );
       }
 
       // Validate the response from the AI
@@ -48,7 +70,11 @@ export default function Chatbot() {
       setResult({ ...data, category, subcategory });
 
     } catch (err: any) {
-      setError(`Classification failed: ${err.message}`);
+      const friendlyMessage =
+        err instanceof Error && err.message
+          ? err.message
+          : "We couldn't finish that request. Please try again.";
+      setError(friendlyMessage);
     } finally {
       setLoading(false);
     }
@@ -62,7 +88,14 @@ export default function Chatbot() {
       <p className="text-center text-gray-500 mb-6 text-sm sm:text-base">
       Copy and paste the company description below and our AI will suggest the industry you should choose in Industry Selector.
       </p>
-
+      <div className="mb-4 rounded-lg border border-blue-100 bg-blue-50 p-3 text-sm text-blue-800">
+        <p className="font-semibold">Tips for a clear answer:</p>
+        <ul className="mt-2 space-y-1 list-disc list-inside">
+          <li>Write two or more full sentences and end each one with a period.</li>
+          <li>Describe what the company sells and who it serves.</li>
+          <li>Avoid extra spaces or blank lines between sentences.</li>
+        </ul>
+      </div>
 
       <div className="mb-4">
         <label
