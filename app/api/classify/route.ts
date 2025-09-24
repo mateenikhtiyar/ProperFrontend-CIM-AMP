@@ -1,6 +1,6 @@
 // app/api/classify/route.ts
 
-const DEFAULT_API_BASE = "http://localhost:3001";
+const DEFAULT_API_BASE = "https://api.cimamplify.com";
 
 export async function POST(req: Request) {
   try {
