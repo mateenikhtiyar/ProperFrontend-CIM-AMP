@@ -14,7 +14,6 @@ import {
   Clock3,
   XCircle,
   X,
-  Pencil,
   Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -441,7 +440,6 @@ const [showAllCountries, setShowAllCountries] = useState(false);
   const [matchedBuyers, setMatchedBuyers] = useState<MatchedBuyer[]>([]);
   const [selectedBuyers, setSelectedBuyers] = useState<string[]>([]);
   const [loadingBuyers, setLoadingBuyers] = useState(false);
-  const [editingBuyerId, setEditingBuyerId] = useState<string | null>(null);
   const [rowActionLoading, setRowActionLoading] = useState<Record<string, boolean>>({});
   const [sending, setSending] = useState(false);
   const [selectedBuyer, setSelectedBuyer] = useState<Buyer | null>(null);
@@ -465,7 +463,7 @@ const [showAllCountries, setShowAllCountries] = useState(false);
       try {
         const token = localStorage.getItem("token");
         const apiUrl =
-          localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+          localStorage.getItem("apiUrl") || "http://localhost:3001";
         const response = await fetch(`${apiUrl}/sellers/profile`, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -500,7 +498,7 @@ const [showAllCountries, setShowAllCountries] = useState(false);
         setLoading(true);
         const token = localStorage.getItem("token");
         const apiUrl =
-          localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+          localStorage.getItem("apiUrl") || "http://localhost:3001";
         if (!token) {
           router.push("/seller/login?error=no_token");
           return;
@@ -539,7 +537,7 @@ const [showAllCountries, setShowAllCountries] = useState(false);
   const fetchCompanyProfile = async (companyProfileId: string) => {
     try {
       setLoadingCompanyProfile(true);
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
       const response = await fetch(
         `${apiUrl}/company-profiles/public/${companyProfileId}`
       );
@@ -564,7 +562,7 @@ const [showAllCountries, setShowAllCountries] = useState(false);
     try {
       setLoadingBuyers(true);
       const token = localStorage.getItem("token");
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
       const response = await fetch(`${apiUrl}/deals/${dealId}/status-summary`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -701,7 +699,7 @@ const [showAllCountries, setShowAllCountries] = useState(false);
         try {
           const token = localStorage.getItem("token");
           const apiUrl =
-            localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+            localStorage.getItem("apiUrl") || "http://localhost:3001";
           const response = await fetch(
             `${apiUrl}/deals/${dealId}/matching-buyers`,
             {
@@ -764,7 +762,7 @@ const [showAllCountries, setShowAllCountries] = useState(false);
 
   const getProfilePictureUrl = (path: string | null) => {
     if (!path) return null;
-    const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
     const formattedPath = path.replace(/\\/g, "/");
     return `${apiUrl}/${
       formattedPath.startsWith("/") ? formattedPath.slice(1) : formattedPath
@@ -798,14 +796,17 @@ const [showAllCountries, setShowAllCountries] = useState(false);
       case "active":
       case "accepted":
       case "interested":
+      case "request accepted":
         return "bg-green-100 text-green-700";
       case "requested":
       case "pending":
       case "invited":
       case "viewed":
+      case "request pending":
         return "bg-blue-100 text-blue-700";
       case "rejected":
       case "passed":
+      case "request denied":
         return "bg-red-100 text-red-700";
       default:
         return "bg-gray-100 text-gray-700";
@@ -852,7 +853,7 @@ const [showAllCountries, setShowAllCountries] = useState(false);
     }
     try {
       setSending(true);
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
       const token = localStorage.getItem("token");
       if (!token) {
         toast({
@@ -934,7 +935,7 @@ const [showAllCountries, setShowAllCountries] = useState(false);
       try {
         const token = localStorage.getItem("token");
         const apiUrl =
-          localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+          localStorage.getItem("apiUrl") || "http://localhost:3001";
         const response = await fetch(
           `${apiUrl}/deals/${dealId}/matching-buyers`,
           {
@@ -964,14 +965,13 @@ const [showAllCountries, setShowAllCountries] = useState(false);
     try {
       setRowActionLoading((p) => ({ ...p, [buyerId]: true }));
       const token = localStorage.getItem('token');
-      const apiUrl = localStorage.getItem('apiUrl') || 'https://api.cimamplify.com';
+      const apiUrl = localStorage.getItem('apiUrl') || 'http://localhost:3001';
       const res = await fetch(`${apiUrl}/deals/${dealId}/approve-access`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ buyerId }),
       });
       if (!res.ok) throw new Error(await res.text());
-      toast({ title: 'Access approved', description: 'Moved to Active (your view), buyer sees it in Pending.' });
       await fetchStatusSummary();
     } catch (err: any) {
       toast({ title: 'Action failed', description: err.message || 'Please try again.', variant: 'destructive' });
@@ -984,7 +984,7 @@ const [showAllCountries, setShowAllCountries] = useState(false);
     try {
       setConfirmDenyLoading(true);
       const token = localStorage.getItem('token');
-      const apiUrl = localStorage.getItem('apiUrl') || 'https://api.cimamplify.com';
+      const apiUrl = localStorage.getItem('apiUrl') || 'http://localhost:3001';
       const res = await fetch(`${apiUrl}/deals/${dealId}/deny-access`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -1450,11 +1450,10 @@ const [showAllCountries, setShowAllCountries] = useState(false);
                             <div className="overflow-x-auto">
                               <table className="w-full table-fixed">
                                 <colgroup>
-                                  <col className="w-1/5" />
-                                  <col className="w-1/5" />
-                                  <col className="w-1/5" />
-                                  <col className="w-1/5" />
-                                  <col className="w-1/5" />
+                                  <col className="w-1/4" />
+                                  <col className="w-1/4" />
+                                  <col className="w-1/4" />
+                                  <col className="w-1/4" />
                                 </colgroup>
                                 <thead>
                                   <tr className="text-left border-b border-gray-200">
@@ -1462,7 +1461,6 @@ const [showAllCountries, setShowAllCountries] = useState(false);
                                     <th className="pb-3 font-medium text-gray-600">Company</th>
                                     <th className="pb-3 font-medium text-gray-600">Status</th>
                                     <th className="pb-3 font-medium text-gray-600">Date</th>
-                                    <th className="pb-3 font-medium text-gray-600">Action</th>
                                   </tr>
                                 </thead>
                                 <tbody>
@@ -1495,7 +1493,10 @@ const [showAllCountries, setShowAllCountries] = useState(false);
                                       </td>
                                       <td className="py-4 pr-4">
                                         {(() => {
-                                          const displayStatus = buyer.sellerApproved ? 'active' : (buyer.status || 'pending');
+                                          const isMarketplace = !!statusSummary?.deal?.isPublic;
+                                          const displayStatus = isMarketplace && buyer.sellerApproved
+                                            ? 'request accepted'
+                                            : (buyer.status || 'pending');
                                           return (
                                             <span
                                               className={`px-3 py-1 rounded-full text-xs capitalize whitespace-nowrap ${getStatusColor(displayStatus)}`}
@@ -1506,54 +1507,6 @@ const [showAllCountries, setShowAllCountries] = useState(false);
                                         })()}
                                       </td>
                                       <td className="py-4 text-sm whitespace-nowrap">{formatDate(buyer.invitedAt)}</td>
-                                      <td className="py-4 pr-4">
-                                        {editingBuyerId === (buyer.buyerId || buyer._id) ? (
-                                          <div className="flex items-center gap-2">
-                                            <Button
-                                              variant="outline"
-                                              className="border-blue-200 text-blue-600 hover:bg-blue-50"
-                                              onClick={async (e) => {
-                                                e.stopPropagation();
-                                                const id = buyer.buyerId || buyer._id;
-                                                await approveBuyerToPending(id);
-                                                setEditingBuyerId(null);
-                                              }}
-                                              disabled={!!rowActionLoading[buyer.buyerId || buyer._id]}
-                                            >
-                                              {rowActionLoading[buyer.buyerId || buyer._id] ? (
-                                                <span className="inline-flex items-center"><Loader2 className="h-4 w-4 animate-spin mr-1" />Saving…</span>
-                                              ) : (
-                                                'Move to Pending'
-                                              )}
-                                            </Button>
-                                            <Button
-                                              variant="outline"
-                                              className="border-red-200 text-red-600 hover:bg-red-50"
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                setConfirmDenyBuyer(buyer);
-                                              }}
-                                              disabled={!!rowActionLoading[buyer.buyerId || buyer._id]}
-                                            >
-                                              {rowActionLoading[buyer.buyerId || buyer._id] ? (
-                                                <span className="inline-flex items-center"><Loader2 className="h-4 w-4 animate-spin mr-1" />Saving…</span>
-                                              ) : (
-                                                'Deny'
-                                              )}
-                                            </Button>
-                                          </div>
-                                        ) : (
-                                          <Button
-                                            variant="ghost"
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              setEditingBuyerId(buyer.buyerId || buyer._id);
-                                            }}
-                                          >
-                                            <Pencil className="h-5 w-5 text-gray-700" />
-                                          </Button>
-                                        )}
-                                      </td>
                                     </tr>
                                   ))}
                                 </tbody>
@@ -1615,41 +1568,51 @@ const [showAllCountries, setShowAllCountries] = useState(false);
                                         </span>
                                       </td>
                                       <td className="py-4 pr-4">
-                                        <span
-                                          className={`px-3 py-1 rounded-full text-xs capitalize whitespace-nowrap ${getStatusColor(
-                                            buyer.status,
-                                          )}`}
-                                        >
-                                          {buyer.status}
-                                        </span>
+                                        {(() => {
+                                          const isMarketplace = !!statusSummary?.deal?.isPublic;
+                                          const label = isMarketplace && buyer.status === 'requested' ? 'request pending' : (buyer.status || 'pending');
+                                          return (
+                                            <span
+                                              className={`px-3 py-1 rounded-full text-xs capitalize whitespace-nowrap ${getStatusColor(label)}`}
+                                            >
+                                              {label}
+                                            </span>
+                                          );
+                                        })()}
                                       </td>
                                       <td className="py-4 text-sm whitespace-nowrap">{formatDate(buyer.invitedAt)}</td>
                                       <td className="py-4 pr-4 flex items-center gap-2">
-                                        <Button
-                                          className="bg-teal-500 hover:bg-teal-600"
-                                          onClick={async (e) => {
-                                            e.stopPropagation();
-                                            const id = buyer.buyerId || buyer._id;
-                                            await approveBuyerToPending(id);
-                                          }}
-                                          disabled={!!rowActionLoading[buyer.buyerId || buyer._id]}
-                                        >
-                                          {rowActionLoading[buyer.buyerId || buyer._id] ? (
-                                            <span className="inline-flex items-center"><Loader2 className="h-4 w-4 animate-spin mr-1" />Approving…</span>
-                                          ) : (
-                                            'Approve Access'
-                                          )}
-                                        </Button>
-                                        <Button
-                                          variant="outline"
-                                          className="border-red-200 text-red-600 hover:bg-red-50"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            setConfirmDenyBuyer(buyer);
-                                          }}
-                                        >
-                                          Deny
-                                        </Button>
+                                        {statusSummary?.deal?.isPublic && buyer.status === 'requested' ? (
+                                          <>
+                                            <Button
+                                              className="bg-teal-500 hover:bg-teal-600"
+                                              onClick={async (e) => {
+                                                e.stopPropagation();
+                                                const id = buyer.buyerId || buyer._id;
+                                                await approveBuyerToPending(id);
+                                              }}
+                                              disabled={!!rowActionLoading[buyer.buyerId || buyer._id]}
+                                            >
+                                              {rowActionLoading[buyer.buyerId || buyer._id] ? (
+                                                <span className="inline-flex items-center"><Loader2 className="h-4 w-4 animate-spin mr-1" />Approving…</span>
+                                              ) : (
+                                                'Approve Access'
+                                              )}
+                                            </Button>
+                                            <Button
+                                              variant="outline"
+                                              className="border-red-200 text-red-600 hover:bg-red-50"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setConfirmDenyBuyer(buyer);
+                                              }}
+                                            >
+                                              Deny
+                                            </Button>
+                                          </>
+                                        ) : (
+                                          <span className="text-gray-400 text-sm">n/a</span>
+                                        )}
                                       </td>
                                     </tr>
                                   ))}
@@ -2002,31 +1965,30 @@ const [showAllCountries, setShowAllCountries] = useState(false);
                                         </span>
                                       </td>
                                       <td className="py-4 pr-4">
-                                        <span
-                                          className={`px-3 py-1 rounded-full text-xs capitalize whitespace-nowrap ${getStatusColor(
-                                            buyer.status,
-                                          )}`}
-                                        >
-                                          {buyer.status}
-                                        </span>
+                                        {(() => {
+                                          const isMarketplaceDenial = !!statusSummary?.deal?.isPublic && buyer.decisionBy === 'seller';
+                                          if (isMarketplaceDenial) {
+                                            return <span className="text-gray-400 text-sm">n/a</span>;
+                                          }
+                                          const label = buyer.status || 'rejected';
+                                          return (
+                                            <span
+                                              className={`px-3 py-1 rounded-full text-xs capitalize whitespace-nowrap ${getStatusColor(label)}`}
+                                            >
+                                              {label}
+                                            </span>
+                                          );
+                                        })()}
                                       </td>
                                       <td className="py-4 text-sm whitespace-nowrap">{formatDate(buyer.invitedAt)}</td>
                                       <td className="py-4 pr-4">
-                                        <Button
-                                          variant="ghost"
-                                          onClick={async (e) => {
-                                            e.stopPropagation();
-                                            const id = buyer.buyerId || buyer._id;
-                                            await approveBuyerToPending(id);
-                                          }}
-                                          disabled={!!rowActionLoading[buyer.buyerId || buyer._id]}
-                                        >
-                                          {rowActionLoading[buyer.buyerId || buyer._id] ? (
-                                            <span className="inline-flex items-center"><Loader2 className="h-4 w-4 animate-spin mr-1" />Saving…</span>
-                                          ) : (
-                                            <Pencil className="h-5 w-5 text-gray-700" />
-                                          )}
-                                        </Button>
+                                        {(() => {
+                                          const isMarketplaceDenial = !!statusSummary?.deal?.isPublic && buyer.decisionBy === 'seller';
+                                          if (isMarketplaceDenial) {
+                                            return <span className="text-red-600 font-medium">Request Denied</span>;
+                                          }
+                                          return <span className="text-gray-400 text-sm">n/a</span>;
+                                        })()}
                                       </td>
                                     </tr>
                                   ))}

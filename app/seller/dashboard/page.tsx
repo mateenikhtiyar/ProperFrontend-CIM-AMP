@@ -91,7 +91,7 @@ interface Deal {
 // Helper function to get the complete profile picture URL
 function getProfilePictureUrl(path: string | null) {
   if (!path) return null
-  const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+  const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
   const formattedPath = path.replace(/\\/g, "/")
   return `${apiUrl}/${formattedPath.startsWith("/") ? formattedPath.slice(1) : formattedPath}`
 }
@@ -114,7 +114,7 @@ function DealCard({
   // Helper functions
   const handleDocumentUpload = async (dealId: string) => {
     const token = localStorage.getItem("token")
-    const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
 
     const response = await fetch(`${apiUrl}/deals/${dealId}`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -166,7 +166,7 @@ function DealCard({
 
     try {
       const token = localStorage.getItem("token")
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
 
       const response = await fetch(`${apiUrl}/deals/${deal._id}/upload-documents`, {
         method: "POST",
@@ -204,7 +204,7 @@ function DealCard({
   }
 
   const downloadDocument = (doc: DealDocument) => {
-    const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+    const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
 
     // Create a download link
     const link = document.createElement("a")
@@ -376,6 +376,7 @@ export default function SellerDashboardPage() {
   const [buyerActivity, setBuyerActivity] = useState<any[]>([])
   const [selectedWinningBuyer, setSelectedWinningBuyer] = useState<string>("")
   const [buyerActivityLoading, setBuyerActivityLoading] = useState(false)
+  const activeBuyerOptions = buyerActivity.filter((buyer) => buyer?.status === "active")
 
   const searchParams = useSearchParams()
   const { logout } = useAuth()
@@ -387,7 +388,7 @@ export default function SellerDashboardPage() {
     const fetchSellerProfile = async () => {
       try {
         const token = localStorage.getItem("token")
-        const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+        const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
 
         const response = await fetch(`${apiUrl}/sellers/profile`, {
           headers: {
@@ -420,7 +421,7 @@ export default function SellerDashboardPage() {
       try {
         setLoading(true)
         const token = localStorage.getItem("token")
-        const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+        const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
 
         if (!token) {
           router.push("/seller/login?error=no_token")
@@ -478,7 +479,7 @@ export default function SellerDashboardPage() {
     if (profileName.trim()) {
       try {
         const token = localStorage.getItem("token")
-        const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+        const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
 
         const response = await fetch(`${apiUrl}/sellers/${sellerProfile?._id}`, {
           method: "PATCH",
@@ -544,7 +545,7 @@ export default function SellerDashboardPage() {
         if (selectedDealForOffMarket) {
           try {
             const token = localStorage.getItem("token")
-            const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+            const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
             const response = await fetch(`${apiUrl}/deals/${selectedDealForOffMarket._id}/close-deal`, {
               method: "POST",
               headers: {
@@ -603,7 +604,7 @@ export default function SellerDashboardPage() {
 
     try {
       const token = localStorage.getItem("token")
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
 
       // Close the deal with the selected buyer
       const closeResponse = await fetch(`${apiUrl}/deals/${selectedDealForCompletion._id}/close`, {
@@ -665,7 +666,7 @@ export default function SellerDashboardPage() {
 
     try {
       const token = localStorage.getItem("token")
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
 
       // Prepare winningBuyerId: only send if buyerFromCIM is true
       const body: any = {
@@ -722,7 +723,7 @@ export default function SellerDashboardPage() {
 
     try {
       const token = localStorage.getItem("token")
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
 
       const body: any = {}
       if (offMarketData.transactionValue) {
@@ -763,7 +764,7 @@ export default function SellerDashboardPage() {
   const fetchDealStatusSummary = async (dealId: string) => {
     try {
       const token = localStorage.getItem("token")
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001"
 
       const response = await fetch(`${apiUrl}/deals/${dealId}/status-summary`, {
         headers: {
@@ -1156,35 +1157,36 @@ export default function SellerDashboardPage() {
                 <Label className="text-base font-medium mb-3 block">Select the buyer:</Label>
                 <div className="space-y-2 max-h-60 overflow-y-auto">
                   {buyerActivityLoading ? (
-                    <div className="text-center text-gray-500 py-4">Loading buyer activity...</div>
-                  ) : buyerActivity.filter((buyer) => buyer.status === "active").length > 0 ? (
-                    buyerActivity
-                      .filter((buyer) => buyer.status === "active")
-                      .map((buyer) => (
-                        <div
-                          key={buyer.buyerId}
-                          className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer ${
-                            selectedWinningBuyer === buyer.buyerId
-                              ? "border-teal-500 bg-teal-50"
-                              : "border-gray-200"
-                          }`}
-                          onClick={() => setSelectedWinningBuyer(buyer.buyerId)}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center overflow-hidden">
-                              <img
-                                src="/placeholder.svg?height=40&width=40"
-                                alt={buyer.buyerName || "Buyer"}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                            <div>
-                              <div className="font-medium text-sm">{buyer.buyerName || "Unknown Buyer"}</div>
-                              <div className="text-xs text-gray-500">{buyer.companyName || "Unknown Company"}</div>
-                            </div>
+                    <div className="flex flex-col items-center justify-center py-6 text-gray-500">
+                      <span className="mb-3 h-6 w-6 animate-spin rounded-full border-2 border-teal-500 border-t-transparent"></span>
+                      Matching this deal with potential buyers...
+                    </div>
+                  ) : activeBuyerOptions.length > 0 ? (
+                    activeBuyerOptions.map((buyer) => (
+                      <div
+                        key={buyer.buyerId}
+                        className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer ${
+                          selectedWinningBuyer === buyer.buyerId
+                            ? "border-teal-500 bg-teal-50"
+                            : "border-gray-200"
+                        }`}
+                        onClick={() => setSelectedWinningBuyer(buyer.buyerId)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center overflow-hidden">
+                            <img
+                              src="/placeholder.svg?height=40&width=40"
+                              alt={buyer.buyerName || "Buyer"}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <div>
+                            <div className="font-medium text-sm">{buyer.buyerName || "Unknown Buyer"}</div>
+                            <div className="text-xs text-gray-500">{buyer.companyName || "Unknown Company"}</div>
                           </div>
                         </div>
-                      ))
+                      </div>
+                    ))
                   ) : (
                     <div className="text-center text-gray-500 py-4">
                       No active buyers found. Please ensure there are interested buyers before completing the deal.
@@ -1237,8 +1239,13 @@ export default function SellerDashboardPage() {
               <div>
                 <Label className="text-base font-medium mb-3 block">Select Winning Buyer</Label>
                 <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {buyerActivity.length > 0 ? (
-                    buyerActivity.filter((buyer) => buyer.status === "active").map((buyer) => (
+                  {buyerActivityLoading ? (
+                    <div className="flex flex-col items-center justify-center py-6 text-gray-500">
+                      <span className="mb-3 h-6 w-6 animate-spin rounded-full border-2 border-green-500 border-t-transparent"></span>
+                      Matching this deal with potential buyers...
+                    </div>
+                  ) : activeBuyerOptions.length > 0 ? (
+                    activeBuyerOptions.map((buyer) => (
                       <div
                         key={buyer.buyerId}
                         className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer ${
@@ -1263,14 +1270,11 @@ export default function SellerDashboardPage() {
                       </div>
                     ))
                   ) : (
-                    <div className="text-center text-gray-500 py-4">Loading buyer activity...</div>
+                    <div className="text-center text-amber-600 text-sm py-4">
+                      No buyers found. Please ensure there are interested buyers before completing the deal.
+                    </div>
                   )}
                 </div>
-                {buyerActivity.length === 0 && (
-                  <div className="text-center text-amber-600 text-sm mt-2">
-                    No buyers found. Please ensure there are interested buyers before completing the deal.
-                  </div>
-                )}
               </div>
 
               {/* Submit buttons */}

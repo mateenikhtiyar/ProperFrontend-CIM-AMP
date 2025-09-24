@@ -290,7 +290,7 @@ export default function EditDealPageFixed() {
     try {
       setIsSaving(true);
       const token = localStorage.getItem('token');
-      const apiUrl = localStorage.getItem('apiUrl') || 'https://api.cimamplify.com';
+      const apiUrl = localStorage.getItem('apiUrl') || 'http://localhost:3001';
       if (!token) {
         toast({ title: 'Authentication required', description: 'Please log in again.', variant: 'destructive' });
         router.push('/seller/login');
@@ -409,7 +409,7 @@ export default function EditDealPageFixed() {
     try {
       setIsLoading(true);
       const token = localStorage.getItem("token");
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
     const response = await fetch(`${apiUrl}/deals/${dealId}`, {
       headers: {
@@ -1570,31 +1570,7 @@ useEffect(() => {
                 />
               </div>
 
-              {/* Marketplace listing toggle - enhanced */}
-              <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-                <div className="flex items-start gap-3">
-                  <div className="mt-0.5 text-blue-600">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5"><path d="M3 3h18v2H3V3zm1 4h16l-1.5 12.5A2 2 0 0 1 16.51 21H7.49a2 2 0 0 1-1.99-1.5L4 7zm4 2v8h2V9H8zm6 0v8h2V9h-2z"/></svg>
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <label className="text-sm font-semibold text-gray-900">List in Marketplace</label>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-white text-blue-700 border border-blue-200">Marketplace</span>
-                        <input
-                          aria-label="List in Marketplace"
-                          type="checkbox"
-                          checked={!!formData.isPublic}
-                          onChange={(e) => setFormData((prev) => ({ ...prev, isPublic: e.target.checked }))}
-                          className="h-4 w-4 accent-teal-500"
-                        />
-                      </div>
-                    </div>
-                    <p className="mt-1 text-xs text-blue-800">Make this deal discoverable to buyers browsing the Marketplace. Buyers can request access; you’ll choose to approve or deny.</p>
-                    <p className="mt-1 text-xs text-blue-700">Note: If you turn this off, outstanding marketplace requests will be declined automatically.</p>
-                  </div>
-                </div>
-              </div>
+             
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Geography Selector */}
@@ -2378,7 +2354,31 @@ useEffect(() => {
             </div>
           </section>
 
-          {/* Documents Section */}
+         {/* Marketplace listing toggle - enhanced */}
+              <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 text-blue-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5"><path d="M3 3h18v2H3V3zm1 4h16l-1.5 12.5A2 2 0 0 1 16.51 21H7.49a2 2 0 0 1-1.99-1.5L4 7zm4 2v8h2V9H8zm6 0v8h2V9h-2z"/></svg>
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-semibold text-gray-900">List in Marketplace</label>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-white text-blue-700 border border-blue-200">Marketplace</span>
+                        <input
+                          aria-label="List in Marketplace"
+                          type="checkbox"
+                          checked={!!formData.isPublic}
+                          onChange={(e) => setFormData((prev) => ({ ...prev, isPublic: e.target.checked }))}
+                          className="h-4 w-4 accent-teal-500"
+                        />
+                      </div>
+                    </div>
+              <p className="mt-1 text-xs text-blue-800">Marketplace allows all buyers on CIM Amplify to see this teaser. Buyers can request access; you’ll choose to approve or deny. We suggest that you still select and invite buyers that are perfectly matched on the next screen.</p>
+                  <p className="mt-1 text-xs text-blue-700">Note: If you turn this off later, outstanding marketplace requests will be declined automatically.</p>
+                  </div>
+                </div>
+              </div>
 
           {/* Submit Button */}
           <div className="flex justify-end">
