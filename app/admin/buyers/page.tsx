@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
-import { Tag, ShoppingCart, Handshake, Eye, LogOut, Search, Edit, Trash2, ArrowUp, ArrowDown } from "lucide-react";
+import { Tag, ShoppingCart, Handshake, Eye, LogOut, Search, Edit, Trash2 } from "lucide-react";
 import Link from "next/link";
 import {
   Dialog,
@@ -77,8 +77,10 @@ export default function BuyersManagementDashboard() {
   const [modalStatus, setModalStatus] = useState<"active" | "pending" | "rejected" | null>(null);
   const [modalBuyer, setModalBuyer] = useState<Buyer | null>(null);
   const [modalLoading, setModalLoading] = useState(false);
-  const [companySort, setCompanySort] = useState<"asc" | "desc" | null>(null);
-  const [dealSort, setDealSort] = useState<"active" | "pending" | "rejected" | null>(null);
+
+
+  const [showIncompleteOnly, setShowIncompleteOnly] = useState(false);
+  const [buyerCategory, setBuyerCategory] = useState<"all" | "active" | "pending" | "rejected">("all");
 
   const router = useRouter();
   const { logout } = useAuth();
@@ -113,14 +115,19 @@ export default function BuyersManagementDashboard() {
         const token = localStorage.getItem("token");
         if (!token) throw new Error("No authentication token found");
         const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+        
+        let endpoint = `${apiUrl}/admin/buyers`;
+        if (showIncompleteOnly) {
+          endpoint = `${apiUrl}/admin/buyers/incomplete-profiles`;
+        }
+        
         const queryParams = new URLSearchParams({
           page: currentPage.toString(),
           limit: buyersPerPage.toString(),
           search: searchTerm,
-          ...(companySort ? { sortBy: `companyName:${companySort}` } : {}),
-          ...(dealSort ? { dealSort: dealSort } : {}),
         });
-        const res = await fetch(`${apiUrl}/admin/buyers?${queryParams}`, {
+        
+        const res = await fetch(`${endpoint}?${queryParams}`, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -139,7 +146,7 @@ export default function BuyersManagementDashboard() {
       }
     };
     fetchBuyers();
-  }, [currentPage, searchTerm, companySort, dealSort, buyersPerPage]);
+  }, [currentPage, searchTerm, buyersPerPage, showIncompleteOnly]);
 
   useEffect(() => {
     const fetchDealCounts = async () => {
@@ -240,9 +247,7 @@ export default function BuyersManagementDashboard() {
       setCurrentPage(1); // Reset to first page
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
       const resFetch = await fetch(
-        `${apiUrl}/admin/buyers?page=1&limit=${buyersPerPage}&search=${searchTerm}${
-          companySort ? `&sortBy=companyName:${companySort}` : ""
-        }${dealSort ? `&dealSort=${dealSort}` : ""}`,
+        `${apiUrl}/admin/buyers?page=1&limit=${buyersPerPage}&search=${searchTerm}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -260,7 +265,25 @@ export default function BuyersManagementDashboard() {
   };
 
   const totalPages = Math.ceil(totalBuyers / buyersPerPage);
-  const currentBuyers = buyers;
+  
+  // Filter buyers based on category
+  const currentBuyers = buyers.filter(buyer => {
+    if (buyerCategory === "all") return true;
+    
+    const buyerId = String(buyer._id || buyer.id || "");
+    const dealCounts = buyerId && buyerDealCounts[buyerId] ? buyerDealCounts[buyerId] : { active: 0, pending: 0, rejected: 0 };
+    
+    switch (buyerCategory) {
+      case "active":
+        return dealCounts.active > 0;
+      case "pending":
+        return dealCounts.pending > 0;
+      case "rejected":
+        return dealCounts.rejected > 0;
+      default:
+        return true;
+    }
+  });
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -316,7 +339,13 @@ export default function BuyersManagementDashboard() {
       <div className="flex-1 flex flex-col">
         {/* Header */}
         <header className="bg-white border-b border-gray-200 p-3 px-6 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-800">All Buyers</h1>
+          <h1 className="text-2xl font-bold text-gray-800">
+            {showIncompleteOnly ? "Buyers with Incomplete Profiles" : 
+             buyerCategory === "all" ? "All Buyers" :
+             buyerCategory === "active" ? "Buyers with Active Deals" :
+             buyerCategory === "pending" ? "Buyers with Pending Deals" :
+             "Buyers with Rejected Deals"}
+          </h1>
           <div className="flex items-center gap-3">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
@@ -364,24 +393,48 @@ export default function BuyersManagementDashboard() {
                   onChange={handleSearch}
                 />
               </div>
+              <Button
+                variant={showIncompleteOnly ? "default" : "outline"}
+                onClick={() => setShowIncompleteOnly(!showIncompleteOnly)}
+                className={showIncompleteOnly ? "bg-[#3aafa9] hover:bg-[#359a94]" : ""}
+              >
+                {showIncompleteOnly ? "Show All Buyers" : "Incomplete Profile Buyers"}
+              </Button>
             </div>
             <div>
-              <label className="mr-2 text-sm font-medium text-gray-700">Sort by Deals:</label>
+              <label className="mr-2 text-sm font-medium text-gray-700">Categorize by Deals:</label>
               <select
-                value={dealSort || ""}
-                onChange={(e) =>
-                  setDealSort(
-                    e.target.value ? (e.target.value as "active" | "pending" | "rejected") : null
-                  )
-                }
+                value={buyerCategory}
+                onChange={(e) => setBuyerCategory(e.target.value as "all" | "active" | "pending" | "rejected")}
+                className="border border-gray-300 rounded px-2 py-1 text-sm mr-4"
+              >
+                <option value="all">All Buyers</option>
+                <option value="active">Active Deals Only</option>
+                <option value="pending">Pending Deals Only</option>
+                <option value="rejected">Rejected Deals Only</option>
+              </select>
+              <label className="mr-2 text-sm font-medium text-gray-700">Sort Order:</label>
+              <select
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value === "name-asc" || value === "name-desc") {
+                    const order = value.split("-")[1];
+                    const sorted = [...currentBuyers].sort((a, b) => {
+                      const aName = (a.companyProfile?.companyName || a.companyName || "").toLowerCase();
+                      const bName = (b.companyProfile?.companyName || b.companyName || "").toLowerCase();
+                      return order === "asc" ? aName.localeCompare(bName) : bName.localeCompare(aName);
+                    });
+                    setBuyers(sorted);
+                  }
+                }}
                 className="border border-gray-300 rounded px-2 py-1 text-sm"
               >
-                <option value="">None</option>
-                <option value="active">Active</option>
-                <option value="pending">Pending</option>
-                <option value="rejected">Rejected</option>
+                <option value="">Default</option>
+                <option value="name-asc">Company Name A-Z</option>
+                <option value="name-desc">Company Name Z-A</option>
               </select>
             </div>
+
           </div>
 
           {/* Buyers Table */}
@@ -395,27 +448,7 @@ export default function BuyersManagementDashboard() {
                 <table className="w-full min-w-full">
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">
-                        <span className="inline-flex items-center gap-1">
-                          Company
-                          <button
-                            type="button"
-                            className="ml-1 p-0.5 hover:bg-gray-200 rounded"
-                            title="Sort ascending"
-                            onClick={() => setCompanySort("asc")}
-                          >
-                            <ArrowUp className="h-3 w-3 text-gray-500" />
-                          </button>
-                          <button
-                            type="button"
-                            className="ml-0.5 p-0.5 hover:bg-gray-200 rounded"
-                            title="Sort descending"
-                            onClick={() => setCompanySort("desc")}
-                          >
-                            <ArrowDown className="h-3 w-3 text-gray-500" />
-                          </button>
-                        </span>
-                      </th>
+                      <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">Company</th>
                       <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">Full Name</th>
                       <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">Email</th>
                       <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm hidden sm:table-cell">
@@ -574,8 +607,11 @@ export default function BuyersManagementDashboard() {
                 </div>
               )}
               {totalBuyers === 0 && searchTerm === "" && !loading && (
-                <div className="py-12 text-center text-gray-500">No buyers available.</div>
+                <div className="py-12 text-center text-gray-500">
+                  {showIncompleteOnly ? "No buyers with incomplete profiles found." : "No buyers available."}
+                </div>
               )}
+
             </div>
           )}
         </div>
