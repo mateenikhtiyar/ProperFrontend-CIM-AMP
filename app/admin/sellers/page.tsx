@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
-import { ShoppingCart, Tag, Handshake, Eye, LogOut, Search, Edit, Trash2, AlertTriangle, ArrowUp, ArrowDown } from "lucide-react";
+import { ShoppingCart, Tag, Handshake, Eye, LogOut, Search, Edit, Trash2, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import {
   Dialog,
@@ -55,7 +55,9 @@ function getProfileImageSrc(src?: string | null) {
 
 export default function SellersManagementDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeSort, setActiveSort] = useState(false);
+  const [sortByActiveDeals, setSortByActiveDeals] = useState(false);
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+
   const [currentPage, setCurrentPage] = useState(1);
   const [sellers, setSellers] = useState<Seller[]>([]);
   const [loading, setLoading] = useState(true);
@@ -80,7 +82,7 @@ export default function SellersManagementDashboard() {
   const [modalStatus, setModalStatus] = useState<"active" | "completed" | null>(null);
   const [modalSeller, setModalSeller] = useState<Seller | null>(null);
   const [modalLoading, setModalLoading] = useState(false);
-  const [companySort, setCompanySort] = useState<"asc" | "desc" | null>(null);
+
 
   const router = useRouter();
   const { logout } = useAuth();
@@ -119,8 +121,6 @@ export default function SellersManagementDashboard() {
           page: currentPage.toString(),
           limit: sellersPerPage.toString(),
           search: searchTerm,
-          ...(companySort ? { sortBy: `companyName:${companySort}` } : {}),
-          ...(activeSort ? { sortBy: `activeDealsCount:desc` } : {}),
         });
         const res = await fetch(`${apiUrl}/admin/sellers?${queryParams}`, {
           headers: {
@@ -151,7 +151,42 @@ export default function SellersManagementDashboard() {
       }
     };
     fetchSellers();
-  }, [currentPage, searchTerm, companySort, activeSort, sellersPerPage]);
+  }, [currentPage, searchTerm, sortByActiveDeals, sellersPerPage]);
+
+  // Sort sellers based on active deals or general sorting
+  const sortedSellers = useMemo(() => {
+    return [...sellers].sort((a, b) => {
+      if (sortByActiveDeals) {
+        // Sort by active deals count
+        const aCount = a.activeDealsCount || 0;
+        const bCount = b.activeDealsCount || 0;
+        
+        if (aCount !== bCount) {
+          return sortOrder === "desc" ? bCount - aCount : aCount - bCount;
+        }
+      } else {
+        // Sort by company name
+        const aName = (a.companyName || '').toLowerCase();
+        const bName = (b.companyName || '').toLowerCase();
+        
+        if (aName !== bName) {
+          return sortOrder === "asc" ? aName.localeCompare(bName) : bName.localeCompare(aName);
+        }
+      }
+      
+      // Secondary sort by company name for stability (when sorting by active deals)
+      const aName = (a.companyName || '').toLowerCase();
+      const bName = (b.companyName || '').toLowerCase();
+      if (aName !== bName) {
+        return aName.localeCompare(bName);
+      }
+      
+      // Tertiary sort by _id for ultimate stability
+      const aId = a._id || a.id || '';
+      const bId = b._id || b.id || '';
+      return aId.toString().localeCompare(bId.toString());
+    });
+  }, [sellers, sortByActiveDeals, sortOrder]);
 
   useEffect(() => {
     const fetchDealCounts = async () => {
@@ -305,8 +340,6 @@ export default function SellersManagementDashboard() {
         page: "1",
         limit: sellersPerPage.toString(),
         search: searchTerm,
-        ...(companySort ? { sortBy: `companyName:${companySort}` } : {}),
-        ...(activeSort ? { sortBy: `activeDealsCount:desc` } : {}),
       });
       const resFetch = await fetch(`${apiUrl}/admin/sellers?${queryParams}`, {
         headers: {
@@ -359,7 +392,7 @@ export default function SellersManagementDashboard() {
 
   const totalPages = Math.ceil(totalSellers / sellersPerPage);
   const startIndex = (currentPage - 1) * sellersPerPage;
-  const currentSellers = sellers;
+  const currentSellers = sortedSellers;
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -476,25 +509,22 @@ export default function SellersManagementDashboard() {
                 />
               </div>
               <Button
-                variant={activeSort ? "default" : "outline"}
-                className={`px-4 py-2 text-sm rounded-lg ${
-                  activeSort ? "bg-[#3aafa9] text-white" : "border-gray-200"
-                }`}
-                onClick={() => setActiveSort((prev) => !prev)}
+                variant={sortByActiveDeals ? "default" : "outline"}
+                onClick={() => {
+                  setSortByActiveDeals(!sortByActiveDeals);
+                  if (!sortByActiveDeals) setSortOrder("desc");
+                }}
+                className={sortByActiveDeals ? "bg-[#3aafa9] hover:bg-[#359a94]" : ""}
               >
-                {activeSort ? "Sorted by Active Deals" : "Sort by Active Deals"}
+                {sortByActiveDeals ? "Sorted by Active Deals" : "Sort by Active Deals"}
               </Button>
-            </div>
-            <div>
-              <label className="mr-2 text-sm font-medium text-gray-700">Sort by Company:</label>
               <select
-                value={companySort || ""}
-                onChange={(e) => setCompanySort(e.target.value ? (e.target.value as "asc" | "desc") : null)}
-                className="border border-gray-300 rounded px-2 py-1 text-sm"
+                value={sortOrder}
+                onChange={(e) => setSortOrder(e.target.value as "asc" | "desc")}
+                className="border border-gray-300 rounded px-2 py-1 text-sm ml-2"
               >
-                <option value="">None</option>
-                <option value="asc">Ascending</option>
-                <option value="desc">Descending</option>
+                <option value="asc">A to Z</option>
+                <option value="desc">Z to A</option>
               </select>
             </div>
           </div>
@@ -510,27 +540,7 @@ export default function SellersManagementDashboard() {
                 <table className="w-full min-w-full">
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">
-                        <span className="inline-flex items-center gap-1">
-                          Company
-                          <button
-                            type="button"
-                            className="ml-1 p-0.5 hover:bg-gray-200 rounded"
-                            title="Sort ascending"
-                            onClick={() => setCompanySort("asc")}
-                          >
-                            <ArrowUp className="h-3 w-3 text-gray-500" />
-                          </button>
-                          <button
-                            type="button"
-                            className="ml-0.5 p-0.5 hover:bg-gray-200 rounded"
-                            title="Sort descending"
-                            onClick={() => setCompanySort("desc")}
-                          >
-                            <ArrowDown className="h-3 w-3 text-gray-500" />
-                          </button>
-                        </span>
-                      </th>
+                      <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">Company</th>
                       <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">Full Name</th>
                       <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">Email</th>
                       <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm hidden sm:table-cell">
