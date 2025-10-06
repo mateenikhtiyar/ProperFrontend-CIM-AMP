@@ -448,6 +448,7 @@ const [showAllCountries, setShowAllCountries] = useState(false);
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [loadingCompanyProfile, setLoadingCompanyProfile] = useState(false);
   const [showBuyersForNewDeal, setShowBuyersForNewDeal] = useState(false);
+  const [hasFetchedBuyers, setHasFetchedBuyers] = useState(false);
   const [selectAllDropdownOpen, setSelectAllDropdownOpen] = useState(false);
   const [confirmDenyBuyer, setConfirmDenyBuyer] = useState<Buyer | null>(null);
   const [confirmDenyLoading, setConfirmDenyLoading] = useState(false);
@@ -720,6 +721,7 @@ const [showAllCountries, setShowAllCountries] = useState(false);
           setMatchedBuyers([]);
         } finally {
           setLoadingBuyers(false);
+          setHasFetchedBuyers(true);
         }
       };
       fetchMatchingBuyers();
@@ -956,6 +958,7 @@ const [showAllCountries, setShowAllCountries] = useState(false);
         setMatchedBuyers([]);
       } finally {
         setLoadingBuyers(false);
+        setHasFetchedBuyers(true);
       }
     };
     await fetchMatchingBuyers();
@@ -1341,11 +1344,11 @@ const [showAllCountries, setShowAllCountries] = useState(false);
                     ))}
                   </div>
                 </div>
-              ) : (
+              ) : !loadingBuyers && hasFetchedBuyers && matchedBuyers.length === 0 ? (
                 <div className="bg-white rounded-lg shadow p-6 text-center text-gray-600 mb-6">
                   No buyers are matched for this deal
                 </div>
-              )}
+              ) : null}
             </div>
           )}
 

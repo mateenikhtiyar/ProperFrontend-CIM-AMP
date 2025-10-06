@@ -165,7 +165,7 @@ export default function MarketPlace() {
 
   // Marketplace deals state
   const [deals, setDeals] = useState<any[]>([]);
-  const [dealsLoading, setDealsLoading] = useState(false);
+  const [dealsLoading, setDealsLoading] = useState(true);
 
   // Check if we're on the client side
   useEffect(() => {
@@ -1902,24 +1902,28 @@ export default function MarketPlace() {
                           )}
                         </div>
                       </div>
-                      <div className="rounded-lg bg-gray-50 p-3">
-                        <div className="text-xs uppercase text-gray-500">Net Income</div>
-                        <div className="font-medium text-gray-900">
-                          {formatCurrencyDisplay(
-                            deal.financialDetails?.netIncome,
-                            deal.financialDetails?.netIncomeCurrency
-                          )}
+                      {deal.financialDetails?.netIncome !== 0 && (
+                        <div className="rounded-lg bg-gray-50 p-3">
+                          <div className="text-xs uppercase text-gray-500">Net Income</div>
+                          <div className="font-medium text-gray-900">
+                            {formatCurrencyDisplay(
+                              deal.financialDetails?.netIncome,
+                              deal.financialDetails?.netIncomeCurrency
+                            )}
+                          </div>
                         </div>
-                      </div>
-                      <div className="rounded-lg bg-gray-50 p-3">
-                        <div className="text-xs uppercase text-gray-500">Asking Price</div>
-                        <div className="font-medium text-gray-900">
-                          {formatCurrencyDisplay(
-                            deal.financialDetails?.askingPrice,
-                            deal.financialDetails?.askingPriceCurrency
-                          )}
+                      )}
+                      {deal.financialDetails?.askingPrice !== 0 && (
+                        <div className="rounded-lg bg-gray-50 p-3">
+                          <div className="text-xs uppercase text-gray-500">Asking Price</div>
+                          <div className="font-medium text-gray-900">
+                            {formatCurrencyDisplay(
+                              deal.financialDetails?.askingPrice,
+                              deal.financialDetails?.askingPriceCurrency
+                            )}
+                          </div>
                         </div>
-                      </div>
+                      )}
                       <div className="rounded-lg bg-gray-50 p-3 col-span-2">
                         <div className="text-xs uppercase text-gray-500">Avg. 3-Year Revenue Growth</div>
                         <div className="font-medium text-gray-900">{formatPercentDisplay(deal.financialDetails?.avgRevenueGrowth)}</div>
