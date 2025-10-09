@@ -14,7 +14,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -33,6 +32,10 @@ import {
   FileText,
   X,
   Download,
+  DollarSign,
+  Users,
+  Briefcase,
+  Info,
 } from "lucide-react";
 import { Country, State, City } from "country-state-city";
 import {
@@ -80,6 +83,7 @@ interface SellerFormData {
   t12FreeCashFlow?: number;
   t12NetIncome?: number;
   isPublic?: boolean;
+  hideGuidelines?: boolean;
 }
 
 interface GeoItem {
@@ -189,10 +193,32 @@ interface Deal {
   };
   invitationStatus?: Map<string, any>;
   seller: string;
+  hideGuidelines?: boolean;
 }
 
 const formatNumberWithCommas = (num: number): string => {
   return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+};
+
+const validateFinancials = (
+  revenue: number,
+  ebitda: number
+): { trailingRevenue?: string; trailingEBITDA?: string } => {
+  const errors: { trailingRevenue?: string; trailingEBITDA?: string } = {};
+  
+  if (revenue < 5000000) {
+    errors.trailingRevenue = "Revenue must be at least $5 million";
+  }
+  
+  if (ebitda < 1000000) {
+    errors.trailingEBITDA = "EBITDA must be at least $1 million";
+  }
+  
+  if (revenue > 0 && ebitda >= revenue) {
+    errors.trailingEBITDA = "EBITDA must be less than Revenue";
+  }
+  
+  return errors;
 };
 
 export default function EditDealPageFixed() {
@@ -216,6 +242,43 @@ export default function EditDealPageFixed() {
   const [existingDocuments, setExistingDocuments] = useState<DealDocument[]>(
     []
   );
+  
+  const [showGuidelines, setShowGuidelines] = useState(false);
+  const [sellerData, setSellerData] = useState<any>(null);
+  
+  const [dontShowAgain, setDontShowAgain] = useState(false);
+
+  const updateSellerPreferences = async () => {
+    if (!dontShowAgain) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      const sellerId = localStorage.getItem('userId');
+      const apiUrl = localStorage.getItem('apiUrl') || 'http://localhost:3001';
+      
+      const response = await fetch(`${apiUrl}/sellers/${sellerId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ hideGuidelines: true }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to update preferences: ${response.status}`);
+      }
+      
+      console.log('Seller preferences updated successfully');
+    } catch (error) {
+      console.error('Failed to update seller preferences:', error);
+      toast({
+        title: "Warning",
+        description: "Failed to save preference. Modal may appear again next time.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const [geoSelection, setGeoSelection] = useState<GeographySelection>({
     selectedId: null,
@@ -267,6 +330,7 @@ export default function EditDealPageFixed() {
     t12FreeCashFlow: 0,
     t12NetIncome: 0,
     isPublic: false,
+    hideGuidelines: false,
   });
 
   const [dealData, setDealData] = useState<Deal | null>(null);
@@ -280,6 +344,10 @@ export default function EditDealPageFixed() {
   >({});
 
   const [geoRefresh, setGeoRefresh] = useState(0);
+  const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
+  const [realtimeErrors, setRealtimeErrors] = useState<{
+    [key: string]: string;
+  }>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -287,6 +355,21 @@ export default function EditDealPageFixed() {
       toast({ title: 'Missing deal ID', variant: 'destructive' });
       return;
     }
+    
+    // Validate financials
+    const errors: { [key: string]: string } = {};
+    const financialErrors = validateFinancials(
+      formData.trailingRevenue,
+      formData.trailingEBITDA
+    );
+    Object.assign(errors, financialErrors);
+    
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      toast({ title: 'Validation Error', description: 'Please fix the errors below.', variant: 'destructive' });
+      return;
+    }
+    
     try {
       setIsSaving(true);
       const token = localStorage.getItem('token');
@@ -335,6 +418,7 @@ export default function EditDealPageFixed() {
           minTransactionSize: formData.minTransactionSize || 0,
         },
         isPublic: !!formData.isPublic,
+        hideGuidelines: formData.hideGuidelines,
       };
 
       const resp = await fetch(`${apiUrl}/deals/${dealId}`, {
@@ -489,11 +573,29 @@ export default function EditDealPageFixed() {
       t12FreeCashFlow: dealData.financialDetails?.t12FreeCashFlow || 0,
       t12NetIncome: dealData.financialDetails?.t12NetIncome || 0,
       isPublic: !!dealData.isPublic,
+      hideGuidelines: !!dealData.hideGuidelines,
     });
 
     setDealData(dealData);
     setExistingDocuments(dealData.documents || []);
     setSelectedReward(dealData.visibility || "seed");
+    
+    // Fetch seller data to check hideGuidelines preference
+    try {
+      const sellerResponse = await fetch(`${apiUrl}/sellers/profile`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (sellerResponse.ok) {
+        const seller = await sellerResponse.json();
+        setSellerData(seller);
+        setShowGuidelines(!seller.hideGuidelines);
+      }
+    } catch (error) {
+      console.error('Error fetching seller data:', error);
+      setShowGuidelines(true);
+    }
 
     if (dealData.geographySelection) {
       const savedGeography = dealData.geographySelection;
@@ -614,6 +716,23 @@ export default function EditDealPageFixed() {
       return {
         ...prev,
         [fieldName]: newValues,
+      };
+    });
+  };
+
+  const handleMultiSelectChange = (
+    option: string,
+    fieldName: string
+  ) => {
+    setFormData((prev) => {
+      const arr = Array.isArray((prev as any)[fieldName])
+        ? (prev as any)[fieldName]
+        : [];
+      return {
+        ...prev,
+        [fieldName]: arr.includes(option)
+          ? arr.filter((v: string) => v !== option)
+          : [...arr, option],
       };
     });
   };
@@ -1146,8 +1265,8 @@ const renderGeographySelection = () => {
     'Palmyra Atoll'
   ];
 
-  const priorityGroups = [];
-  const otherGroups = [];
+  const priorityGroups: { country: GeoItem | null; states: GeoItem[] }[] = [];
+  const otherGroups: { country: GeoItem | null; states: GeoItem[] }[] = [];
 
   Object.values(groupedData)
     .filter((group) => group.country || group.states.length > 0)
@@ -1238,7 +1357,7 @@ const renderGeographySelection = () => {
             {expandedContinents[country.id] &&
               filteredStates.length > 0 && (
                 <div className="ml-6 mt-1 space-y-1">
-                  {filteredStates.map((state, stateIndex) => (
+                  {filteredStates.map((state: GeoItem, stateIndex: number) => (
                     <div
                       key={`state-${state.id}-${stateIndex}`}
                       className="pl-2"
@@ -1331,6 +1450,7 @@ useEffect(() => {
   };
 
   fetchInitialData();
+
 }, [router, dealId]);
 
 useEffect(() => {
@@ -1375,477 +1495,593 @@ useEffect(() => {
   }
 
   return (
-    <SellerProtectedRoute>
-      <div className="container mx-auto py-8 px-4 max-w-5xl bg-white">
-        {/* Header with back button */}
-        <div className="flex items-center mb-6">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="mr-4"
-            onClick={() => router.push("/seller/dashboard")}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-2xl font-bold">Edit Deal</h1>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Seller Rewards */}
-          <div className="bg-[#f0f7fa] p-6 rounded-lg">
-            <h2 className="text-lg font-semibold mb-4">
-              Seller Rewards - Choose Reward Level
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Seed Option */}
-              <Card
-                className={`cursor-pointer border-4 ${
-                  selectedReward === "seed"
-                    ? "border-[#3aafa9]"
-                    : "border-gray-200"
-                } overflow-hidden`}
-                onClick={() => setSelectedReward("seed")}
-              >
-                <div className="flex flex-col h-full">
-                  <div className="p-4">
-                    <div className="flex justify-between overflow-hidden">
-                      <h3 className="font-semibold text-[#3aafa9]">Seed</h3>
-                      <Image
-                        width={100}
-                        height={100}
-                        src="/seed.svg"
-                        alt="seed"
-                        className="w-20 h-20"
-                      />
-                    </div>
-                    <p className="text-sm mt-2 text-gray-600">
-                      This deal will be made widely available on other deal
-                      platforms. Most of our buyers refuse deals from this level
-                      - you will get very few buyer matches.
-                    </p>
-                  </div>
-                  <div className="mt-auto">
-                    <div className="flex justify-between items-center">
-                      <div className="p-4">
-                        <div className="bg-[#3aafa9] text-white text-xs rounded-md px-3 py-3 inline-block">
-                          <span className="text-[#F4E040]">$10</span> Amazon
-                          Gift Card for posting with us
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-
-              {/* Bloom Option */}
-              <Card
-                className={`cursor-pointer border-4 ${
-                  selectedReward === "bloom"
-                    ? "border-[#3aafa9]"
-                    : "border-gray-200"
-                } overflow-hidden`}
-                onClick={() => setSelectedReward("bloom")}
-              >
-                <div className="flex flex-col h-full">
-                  <div className="p-4">
-                    <div className=" flex justify-between overflow-hidden">
-                      <h3 className="font-semibold  text-[#3aafa9]">Bloom</h3>
-
-                      <Image
-                        width={100}
-                        height={100}
-                        src="/bloom.svg"
-                        alt="bloom"
-                        className="w-20 h-20 "
-                      />
-                    </div>{" "}
-                    <p className="text-sm mt-2 text-gray-600">
-                      Give CIM Amplify a two week head start! This deal will be
-                      posted exclusively on CIM Amplify for two weeks and no
-                      other deal sites including your own website. Feel free to
-                      market directly to buyers you do not choose on CIM
-                      Amplify.
-                    </p>
-                  </div>
-                  <div className="mt-auto">
-                    <div className="flex justify-between items-center">
-                      <div className="p-4">
-                        <div className="bg-[#3aafa9] text-white text-xs rounded-md px-3 py-3 inline-block">
-                          <span className="text-[#F4E040]">$25</span> Amazon
-                          Gift Card for posting with us PLUS $5,000 if acquired
-                          via CIM Amplify
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-
-              {/* Fruit Option */}
-              <Card
-                className={`cursor-pointer border-4 ${
-                  selectedReward === "fruit"
-                    ? "border-[#3aafa9]"
-                    : "border-gray-200"
-                } overflow-hidden`}
-                onClick={() => setSelectedReward("fruit")}
-              >
-                <div className="flex flex-col h-full">
-                  <div className="p-4">
-                    <div className=" flex justify-between overflow-hidden">
-                      <h3 className="font-semibold  text-[#3aafa9]">Fruit</h3>
-
-                      <Image
-                        width={100}
-                        height={100}
-                        src="/fruit.svg"
-                        alt="Fruit"
-                        className="w-20 h-20 "
-                      />
-                    </div>
-
-                    <p className="text-sm mt-2 text-gray-600">
-                      This deal will be posted exclusively on CIM Amplify and no
-                      other deal sites including your own website. Feel free to
-                      market directly to buyers you do not choose on CIM
-                      Amplify.
-                    </p>
-                  </div>
-                  <div className="mt-auto">
-                    <div className="flex justify-between items-center">
-                      <div className="p-4">
-                        <div className="bg-[#3aafa9] text-white text-xs rounded-md px-3 py-3 inline-block">
-                          <span className="text-[#F4E040]">$50</span> Amazon
-                          Gift Card for posting with us PLUS $10,000 if acquired
-                          via CIM Amplify
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            </div>
+    <>
+      <SellerProtectedRoute>
+        <div className="container mx-auto py-8 px-4 max-w-5xl bg-white">
+          {/* Header with back button */}
+          <div className="flex items-center mb-6">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="mr-4"
+              onClick={() => router.push("/seller/dashboard")}
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <h1 className="text-2xl font-bold">Edit Deal</h1>
           </div>
 
-   
-        {/* Overview Section */}
-        <section>
-        <h2 className="text-xl font-bold mb-2">Overview</h2>
-        <p className="text-sm font-semibold text-red-600 mb-6">Please do not include your company name or the name of your client on this form.</p>
-
-          <div className="space-y-6">
-              <div>
-                <label
-                  htmlFor="dealTitle"
-                  className="block text-sm font-medium text-gray-700 mb-1"
+          <form onSubmit={handleSubmit} className="space-y-8">
+            {/* Seller Rewards */}
+            <div className="bg-[#f0f7fa] p-6 rounded-lg">
+              <h2 className="text-lg font-semibold mb-4">
+                Seller Rewards - Choose Reward Level
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Seed Option */}
+                <div
+                  className={`cursor-pointer border-4 rounded-lg overflow-hidden ${
+                    selectedReward === "seed"
+                      ? "border-[#3aafa9]"
+                      : "border-gray-200"
+                  }`}
+                  onClick={() => setSelectedReward("seed")}
                 >
-                  Deal Title <RequiredStar />
-                </label>
-                <Input
-                  id="dealTitle"
-                  name="dealTitle"
-                  value={formData.dealTitle}
-                  onChange={handleInputChange}
-                  placeholder="Add title"
-                  className="w-full"
-                  required
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="companyDescription"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Company Description <RequiredStar />
-                </label>
-                <Textarea
-                  id="companyDescription"
-                  name="companyDescription"
-                  value={formData.companyDescription}
-                  onChange={handleInputChange}
-                  placeholder="Make sure to be very specific about what the company does"
-                  className="w-full min-h-[100px]"
-                  required
-                />
-              </div>
-
-             
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Geography Selector */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Company Location <RequiredStar />
-                  </label>
-                  <div className="border border-[#d0d5dd] rounded-md p-4 h-80 flex flex-col">
-                    <div className="relative mb-4">
-                      <Search className="absolute left-2 top-2.5 h-4 w-4 text-[#667085]" />
-                      <Input
-                        placeholder="Search "
-                        className="pl-8 border-[#d0d5dd]"
-                        value={geoSearchTerm}
-                        onChange={(e) => setGeoSearchTerm(e.target.value)}
-                      />
+                  <div className="flex flex-col h-full bg-white">
+                    <div className="p-4">
+                      <div className="flex justify-between overflow-hidden">
+                        <h3 className="font-semibold text-[#3aafa9]">Seed</h3>
+                        <Image
+                          width={100}
+                          height={100}
+                          src="/seed.svg"
+                          alt="seed"
+                          className="w-20 h-20"
+                        />
+                      </div>
+                      <p className="text-sm mt-2 text-gray-600">
+                        This deal will be made widely available on other deal
+                        platforms. Most of our buyers refuse deals from this level
+                        - you will get very few buyer matches.
+                      </p>
                     </div>
-
-                    {formData.geographySelections.length > 0 && (
-                      <div className="mb-4">
-                        <div className="text-sm text-[#667085] mb-1">
-                          Selected{" "}
-                        </div>
-                        <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
-                          {formData.geographySelections.map(
-                            (country, index) => (
-                              <span
-                                key={`selected-country-${index}`}
-                                className="bg-gray-100 text-[#344054] text-xs rounded-full px-2 py-0.5 flex items-center group"
-                              >
-                                {country}
-                                <button
-                                  type="button"
-                                  onClick={() => removeCountry(country)}
-                                  className="ml-1 text-gray-400 hover:text-gray-600 focus:outline-none"
-                                >
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    className="h-3 w-3"
-                                    viewBox="0 0 20 20"
-                                    fill="currentColor"
-                                  >
-                                    <path
-                                      fillRule="evenodd"
-                                      d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                                      clipRule="evenodd"
-                                    />
-                                  </svg>
-                                </button>
-                              </span>
-                            )
-                          )}
+                    <div className="mt-auto">
+                      <div className="flex justify-between items-center">
+                        <div className="p-4">
+                          <div className="bg-[#3aafa9] text-white text-xs rounded-md px-3 py-3 inline-block">
+                            <span className="text-[#F4E040]">$10</span> Amazon
+                            Gift Card for posting with us
+                          </div>
                         </div>
                       </div>
-                    )}
-
-                    <div className="flex-1 overflow-y-auto">
-                      {renderGeographySelection()}
                     </div>
                   </div>
                 </div>
 
-                {/* Industry Selector */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Industry Selector <RequiredStar />
-                  </label>
-                  <div className="border border-[#d0d5dd] rounded-md p-4 h-80 flex flex-col">
-                    <div className="relative mb-4">
-                      <Search className="absolute left-2 top-2.5 h-4 w-4 text-[#667085]" />
-                      <Input
-                        placeholder="Search "
-                        className="pl-8 border-[#d0d5dd]"
-                        value={industrySearchTerm}
-                        onChange={(e) => setIndustrySearchTerm(e.target.value)}
-                      />
-                    </div>
+                {/* Bloom Option */}
+                <div
+                  className={`cursor-pointer border-4 rounded-lg overflow-hidden ${
+                    selectedReward === "bloom"
+                      ? "border-[#3aafa9]"
+                      : "border-gray-200"
+                  }`}
+                  onClick={() => setSelectedReward("bloom")}
+                >
+                  <div className="flex flex-col h-full bg-white">
+                    <div className="p-4">
+                      <div className="flex justify-between overflow-hidden">
+                        <h3 className="font-semibold text-[#3aafa9]">Bloom</h3>
 
-                    {formData.selectedIndustryDisplay && (
-                      <div className="mb-4">
-                        <div className="text-sm text-[#667085] mb-1">
-                          Selected{" "}
-                        </div>
-                        <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
-                          <span
-                            key="selected-industry-display"
-                            className="bg-gray-100 text-[#344054] text-xs rounded-full px-2 py-0.5 flex items-center group"
-                          >
-                            {formData.selectedIndustryDisplay}
-                            <span className="ml-1 text-gray-400 text-xs">
-                              ({formData.industrySelections.length}{" "}
-                              sub-industries)
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setFormData((prev) => ({
-                                  ...prev,
-                                  industrySelections: [],
-                                  selectedIndustryDisplay: undefined,
-                                }));
-                              }}
-                              className="ml-1 text-gray-400 hover:text-gray-600 focus:outline-none"
-                            >
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="h-3 w-3"
-                                viewBox="0 0 20 20"
-                                fill="currentColor"
-                              >
-                                <path
-                                  fillRule="evenodd"
-                                  d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                                  clipRule="evenodd"
-                                />
-                              </svg>
-                            </button>
-                          </span>
+                        <Image
+                          width={100}
+                          height={100}
+                          src="/bloom.svg"
+                          alt="bloom"
+                          className="w-20 h-20"
+                        />
+                      </div>
+                      <p className="text-sm mt-2 text-gray-600">
+                        Give CIM Amplify a two week head start! This deal will be
+                        posted exclusively on CIM Amplify for two weeks and no
+                        other deal sites including your own website. Feel free to
+                        market directly to buyers you do not choose on CIM
+                        Amplify.
+                      </p>
+                    </div>
+                    <div className="mt-auto">
+                      <div className="flex justify-between items-center">
+                        <div className="p-4">
+                          <div className="bg-[#3aafa9] text-white text-xs rounded-md px-3 py-3 inline-block">
+                            <span className="text-[#F4E040]">$25</span> Amazon
+                            Gift Card for posting with us PLUS $5,000 if acquired
+                            via CIM Amplify
+                          </div>
                         </div>
                       </div>
-                    )}
-
-                    <div className="flex-1 overflow-y-auto">
-                      {renderIndustrySelection()}
                     </div>
                   </div>
                 </div>
-              </div>
 
-              <div>
-                <label
-                  htmlFor="yearsInBusiness"
-                  className="block text-sm font-medium text-gray-700 mb-1"
+                {/* Fruit Option */}
+                <div
+                  className={`cursor-pointer border-4 rounded-lg overflow-hidden ${
+                    selectedReward === "fruit"
+                      ? "border-[#3aafa9]"
+                      : "border-gray-200"
+                  }`}
+                  onClick={() => setSelectedReward("fruit")}
                 >
-                  Number of years in business <RequiredStar />
-                </label>
-                <Input
-                  id="yearsInBusiness"
-                  type="number"
-                  min="0"
-                  value={formData.yearsInBusiness ?? ""}
-                  onChange={(e) => handleNumberChange(e, "yearsInBusiness")}
-                  className="w-full"
-                  required
-                />
-              </div>
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Business Models <RequiredStar />
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="flex items-center">
-                    <Checkbox
-                      id="recurring-revenue"
-                      checked={formData.businessModels.includes(
-                        "recurring-revenue"
-                      )}
-                      onCheckedChange={(checked) =>
-                        handleCheckboxChange(
-                          Boolean(checked),
-                          "recurring-revenue",
-                          "businessModels"
-                        )
-                      }
-                      className="mr-2 border-[#d0d5dd]"
-                    />
-                    <Label
-                      htmlFor="recurring-revenue"
-                      className="cursor-pointer"
-                    >
-                      Recurring Revenue
-                    </Label>
-                  </div>
+                  <div className="flex flex-col h-full bg-white">
+                    <div className="p-4">
+                      <div className="flex justify-between overflow-hidden">
+                        <h3 className="font-semibold text-[#3aafa9]">Fruit</h3>
 
-                  <div className="flex items-center">
-                    <Checkbox
-                      id="project-based"
-                      checked={formData.businessModels.includes(
-                        "project-based"
-                      )}
-                      onCheckedChange={(checked) =>
-                        handleCheckboxChange(
-                          Boolean(checked),
-                          "project-based",
-                          "businessModels"
-                        )
-                      }
-                      className="mr-2 border-[#d0d5dd]"
-                    />
-                    <Label htmlFor="project-based" className="cursor-pointer">
-                      Project Based
-                    </Label>
-                  </div>
+                        <Image
+                          width={100}
+                          height={100}
+                          src="/fruit.svg"
+                          alt="Fruit"
+                          className="w-20 h-20"
+                        />
+                      </div>
 
-                  <div className="flex items-center">
-                    <Checkbox
-                      id="asset-light"
-                      checked={formData.businessModels.includes("asset-light")}
-                      onCheckedChange={(checked) =>
-                        handleCheckboxChange(
-                          Boolean(checked),
-                          "asset-light",
-                          "businessModels"
-                        )
-                      }
-                      className="mr-2 border-[#d0d5dd]"
-                    />
-                    <Label htmlFor="asset-light" className="cursor-pointer">
-                      Asset Light
-                    </Label>
-                  </div>
-
-                  <div className="flex items-center">
-                    <Checkbox
-                      id="asset-heavy"
-                      checked={formData.businessModels.includes("asset-heavy")}
-                      onCheckedChange={(checked) =>
-                        handleCheckboxChange(
-                          Boolean(checked),
-                          "asset-heavy",
-                          "businessModels"
-                        )
-                      }
-                      className="mr-2 border-[#d0d5dd]"
-                    />
-                    <Label htmlFor="asset-heavy" className="cursor-pointer">
-                      Asset Heavy
-                    </Label>
+                      <p className="text-sm mt-2 text-gray-600">
+                        This deal will be posted exclusively on CIM Amplify and no
+                        other deal sites including your own website. Feel free to
+                        market directly to buyers you do not choose on CIM
+                        Amplify.
+                      </p>
+                    </div>
+                    <div className="mt-auto">
+                      <div className="flex justify-between items-center">
+                        <div className="p-4">
+                          <div className="bg-[#3aafa9] text-white text-xs rounded-md px-3 py-3 inline-block">
+                            <span className="text-[#F4E040]">$50</span> Amazon
+                            Gift Card for posting with us PLUS $10,000 if acquired
+                            via CIM Amplify
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-
-              <div className="mb-6">
-                <label
-                  htmlFor="managementPreferences"
-                  className="block text-sm font-medium text-gray-700 mb-3"
-                >
-                  Management Preferences <RequiredStar />
-                </label>
-                <textarea
-                  id="managementPreferences"
-                  name="managementPreferences"
-                  value={formData.managementPreferences}
-                  onChange={handleInputChange}
-                  rows={4}
-                  className="block w-full rounded-md border border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2"
-                  placeholder="Enter management preferences"
-                  required
-                />
               </div>
             </div>
-          </section>
 
-          {/* Financials Section */}
-        <section className="bg-[#f9f9f9] p-6 rounded-lg">
-          <h2 className="text-xl font-semibold mb-2">Financials <RequiredStar /></h2>
-          <p className="text-sm text-gray-600 mb-6">Please use full numbers (e.g., 5,000,000 not 5M)</p>
+            {/* Overview Section */}
+            <section>
+              <h2 className="text-xl font-bold mb-2">Overview</h2>
+              <p className="text-sm font-semibold text-red-600 mb-6">Please do not include your company name or the name of your client on this form.</p>
 
-        
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-6">
                 <div>
                   <label
-                    htmlFor="trailingRevenue"
+                    htmlFor="dealTitle"
                     className="block text-sm font-medium text-gray-700 mb-1"
                   >
-                    Trailing 12 Month Revenue <RequiredStar />
+                    Deal Title <RequiredStar />
                   </label>
-                  <div className="flex">
+                  <Input
+                    id="dealTitle"
+                    name="dealTitle"
+                    value={formData.dealTitle}
+                    onChange={handleInputChange}
+                    placeholder="Add title"
+                    className="w-full"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="companyDescription"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Company Description <RequiredStar />
+                  </label>
+                  <Textarea
+                    id="companyDescription"
+                    name="companyDescription"
+                    value={formData.companyDescription}
+                    onChange={handleInputChange}
+                    placeholder="Make sure to be very specific about what the company does"
+                    className="w-full min-h-[100px]"
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Geography Selector */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Company Location <RequiredStar />
+                    </label>
+                    <div className="border border-[#d0d5dd] rounded-md p-4 h-80 flex flex-col">
+                      <div className="relative mb-4">
+                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-[#667085]" />
+                        <Input
+                          placeholder="Search "
+                          className="pl-8 border-[#d0d5dd]"
+                          value={geoSearchTerm}
+                          onChange={(e) => setGeoSearchTerm(e.target.value)}
+                        />
+                      </div>
+
+                      {formData.geographySelections.length > 0 && (
+                        <div className="mb-4">
+                          <div className="text-sm text-[#667085] mb-1">
+                            Selected{" "}
+                          </div>
+                          <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
+                            {formData.geographySelections.map(
+                              (country, index) => (
+                                <span
+                                  key={`selected-country-${index}`}
+                                  className="bg-gray-100 text-[#344054] text-xs rounded-full px-2 py-0.5 flex items-center group"
+                                >
+                                  {country}
+                                  <button
+                                    type="button"
+                                    onClick={() => removeCountry(country)}
+                                    className="ml-1 text-gray-400 hover:text-gray-600 focus:outline-none"
+                                  >
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      className="h-3 w-3"
+                                      viewBox="0 0 20 20"
+                                      fill="currentColor"
+                                    >
+                                      <path
+                                        fillRule="evenodd"
+                                        d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                        clipRule="evenodd"
+                                      />
+                                    </svg>
+                                  </button>
+                                </span>
+                              )
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex-1 overflow-y-auto">
+                        {renderGeographySelection()}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Industry Selector */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Industry Selector <RequiredStar />
+                    </label>
+                    <div className="border border-[#d0d5dd] rounded-md p-4 h-80 flex flex-col">
+                      <div className="relative mb-4">
+                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-[#667085]" />
+                        <Input
+                          placeholder="Search "
+                          className="pl-8 border-[#d0d5dd]"
+                          value={industrySearchTerm}
+                          onChange={(e) => setIndustrySearchTerm(e.target.value)}
+                        />
+                      </div>
+
+                      {formData.selectedIndustryDisplay && (
+                        <div className="mb-4">
+                          <div className="text-sm text-[#667085] mb-1">
+                            Selected{" "}
+                          </div>
+                          <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
+                            <span
+                              key="selected-industry-display"
+                              className="bg-gray-100 text-[#344054] text-xs rounded-full px-2 py-0.5 flex items-center group"
+                            >
+                              {formData.selectedIndustryDisplay}
+                              <span className="ml-1 text-gray-400 text-xs">
+                                ({formData.industrySelections.length}{" "}
+                                sub-industries)
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    industrySelections: [],
+                                    selectedIndustryDisplay: undefined,
+                                  }));
+                                }}
+                                className="ml-1 text-gray-400 hover:text-gray-600 focus:outline-none"
+                              >
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  className="h-3 w-3"
+                                  viewBox="0 0 20 20"
+                                  fill="currentColor"
+                                >
+                                  <path
+                                    fillRule="evenodd"
+                                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                    clipRule="evenodd"
+                                  />
+                                </svg>
+                              </button>
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex-1 overflow-y-auto">
+                        {renderIndustrySelection()}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="yearsInBusiness"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Number of years in business <RequiredStar />
+                  </label>
+                  <Input
+                    id="yearsInBusiness"
+                    type="number"
+                    min="0"
+                    value={formData.yearsInBusiness ?? ""}
+                    onChange={(e) => handleNumberChange(e, "yearsInBusiness")}
+                    className="w-full"
+                    required
+                  />
+                </div>
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Business Models <RequiredStar />
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="flex items-center">
+                      <Checkbox
+                        id="recurring-revenue"
+                        checked={formData.businessModels.includes(
+                          "recurring-revenue"
+                        )}
+                        onCheckedChange={(checked) =>
+                          handleCheckboxChange(
+                            Boolean(checked),
+                            "recurring-revenue",
+                            "businessModels"
+                          )
+                        }
+                        className="mr-2 border-[#d0d5dd]"
+                      />
+                      <Label
+                        htmlFor="recurring-revenue"
+                        className="cursor-pointer"
+                      >
+                        Recurring Revenue
+                      </Label>
+                    </div>
+
+                    <div className="flex items-center">
+                      <Checkbox
+                        id="project-based"
+                        checked={formData.businessModels.includes(
+                          "project-based"
+                        )}
+                        onCheckedChange={(checked) =>
+                          handleCheckboxChange(
+                            Boolean(checked),
+                            "project-based",
+                            "businessModels"
+                          )
+                        }
+                        className="mr-2 border-[#d0d5dd]"
+                      />
+                      <Label htmlFor="project-based" className="cursor-pointer">
+                        Project Based
+                      </Label>
+                    </div>
+
+                    <div className="flex items-center">
+                      <Checkbox
+                        id="asset-light"
+                        checked={formData.businessModels.includes("asset-light")}
+                        onCheckedChange={(checked) =>
+                          handleCheckboxChange(
+                            Boolean(checked),
+                            "asset-light",
+                            "businessModels"
+                          )
+                        }
+                        className="mr-2 border-[#d0d5dd]"
+                      />
+                      <Label htmlFor="asset-light" className="cursor-pointer">
+                        Asset Light
+                      </Label>
+                    </div>
+
+                    <div className="flex items-center">
+                      <Checkbox
+                        id="asset-heavy"
+                        checked={formData.businessModels.includes("asset-heavy")}
+                        onCheckedChange={(checked) =>
+                          handleCheckboxChange(
+                            Boolean(checked),
+                            "asset-heavy",
+                            "businessModels"
+                          )
+                        }
+                        className="mr-2 border-[#d0d5dd]"
+                      />
+                      <Label htmlFor="asset-heavy" className="cursor-pointer">
+                        Asset Heavy
+                      </Label>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mb-6">
+                  <label
+                    htmlFor="managementPreferences"
+                    className="block text-sm font-medium text-gray-700 mb-3"
+                  >
+                    Management Preferences <RequiredStar />
+                  </label>
+                  <textarea
+                    id="managementPreferences"
+                    name="managementPreferences"
+                    value={formData.managementPreferences}
+                    onChange={handleInputChange}
+                    rows={4}
+                    className="block w-full rounded-md border border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2"
+                    placeholder="Enter management preferences"
+                    required
+                  />
+                </div>
+              </div>
+            </section>
+
+            {/* Financials Section */}
+            <section className="bg-[#f9f9f9] p-6 rounded-lg">
+              <h2 className="text-xl font-semibold mb-2">Financials <RequiredStar /></h2>
+              <p className="text-sm text-gray-600 mb-6">Please use full numbers (e.g., 5,000,000 not 5M)</p>
+
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label
+                      htmlFor="trailingRevenue"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      Trailing 12 Month Revenue <RequiredStar />
+                    </label>
+                    <div className="flex">
+                      <Input
+                        id="trailingRevenue"
+                        type="text"
+                        value={
+                          formData.trailingRevenue
+                            ? formatNumberWithCommas(formData.trailingRevenue)
+                            : ""
+                        }
+                        onChange={(e) => {
+                          const rawValue = e.target.value.replace(/,/g, "");
+                          if (rawValue === "" || /^-?\d*$/.test(rawValue)) {
+                            const numValue = rawValue === "" ? 0 : Number.parseFloat(rawValue);
+                            handleNumberChange(
+                              {
+                                target: { value: rawValue },
+                              } as React.ChangeEvent<HTMLInputElement>,
+                              "trailingRevenue"
+                            );
+
+                            const validationErrors = validateFinancials(numValue, formData.trailingEBITDA);
+                            setRealtimeErrors((prev) => ({
+                              ...prev,
+                              trailingRevenue: validationErrors.trailingRevenue || "",
+                              trailingEBITDA: validationErrors.trailingEBITDA || "",
+                            }));
+                          }
+                        }}
+                        className="w-full"
+                        required
+                      />
+                    </div>
+                    {(fieldErrors.trailingRevenue || realtimeErrors.trailingRevenue) && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {fieldErrors.trailingRevenue || realtimeErrors.trailingRevenue}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="currency"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      Currency
+                    </label>
+                    <Select
+                      value={formData.currency}
+                      onValueChange={(value) =>
+                        handleSelectChange(value, "currency")
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select currency" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="USD($)">USD($)</SelectItem>
+                        <SelectItem value="EUR(€)">EUR(€)</SelectItem>
+                        <SelectItem value="GBP(£)">GBP(£)</SelectItem>
+                        <SelectItem value="CAD($)">CAD($)</SelectItem>
+                        <SelectItem value="AUD($)">AUD($)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label
+                      htmlFor="trailingEBITDA"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      Trailing 12 Month EBITDA(0 covers negative) <RequiredStar />
+                    </label>
                     <Input
-                      id="trailingRevenue"
+                      id="trailingEBITDA"
                       type="text"
                       value={
-                        formData.trailingRevenue
-                          ? formatNumberWithCommas(formData.trailingRevenue)
+                        formData.trailingEBITDA !== undefined &&
+                        formData.trailingEBITDA !== null
+                          ? formatNumberWithCommas(formData.trailingEBITDA)
+                          : ""
+                      }
+                      onChange={(e) => {
+                        const rawValue = e.target.value.replace(/,/g, "");
+                        if (rawValue === "" || /^-?\d*$/.test(rawValue)) {
+                          const numValue = rawValue === "" ? 0 : Number.parseFloat(rawValue);
+                          handleNumberChange(
+                            {
+                              target: { value: rawValue },
+                            } as React.ChangeEvent<HTMLInputElement>,
+                            "trailingEBITDA"
+                          );
+                          
+                          const validationErrors = validateFinancials(formData.trailingRevenue, numValue);
+                          setRealtimeErrors((prev) => ({
+                            ...prev,
+                            trailingRevenue: validationErrors.trailingRevenue || "",
+                            trailingEBITDA: validationErrors.trailingEBITDA || "",
+                          }));
+                        }
+                      }}
+                      className="w-full"
+                      required
+                    />
+                    {(fieldErrors.trailingEBITDA || realtimeErrors.trailingEBITDA) && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {fieldErrors.trailingEBITDA || realtimeErrors.trailingEBITDA}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="revenueGrowth"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      Average 3 year revenue growth in %(0 covers negative) <RequiredStar />
+                    </label>
+                    <Input
+                      id="revenueGrowth"
+                      type="text"
+                      value={
+                        formData.revenueGrowth !== undefined &&
+                        formData.revenueGrowth !== null
+                          ? formatNumberWithCommas(formData.revenueGrowth)
                           : ""
                       }
                       onChange={(e) => {
@@ -1855,7 +2091,7 @@ useEffect(() => {
                             {
                               target: { value: rawValue },
                             } as React.ChangeEvent<HTMLInputElement>,
-                            "trailingRevenue"
+                            "revenueGrowth"
                           );
                         }
                       }}
@@ -1864,49 +2100,27 @@ useEffect(() => {
                     />
                   </div>
                 </div>
-
-                <div>
-                  <label
-                    htmlFor="currency"
-                    className="block text-sm font-medium text-gray-700 mb-1"
-                  >
-                    Currency
-                  </label>
-                  <Select
-                    value={formData.currency}
-                    onValueChange={(value) =>
-                      handleSelectChange(value, "currency")
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select currency" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="USD($)">USD($)</SelectItem>
-                      <SelectItem value="EUR(€)">EUR(€)</SelectItem>
-                      <SelectItem value="GBP(£)">GBP(£)</SelectItem>
-                      <SelectItem value="CAD($)">CAD($)</SelectItem>
-                      <SelectItem value="AUD($)">AUD($)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
               </div>
+            </section>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Optional Financial Information */}
+            <section className="bg-[#f9f9f9] p-6 rounded-lg">
+              <h2 className="text-xl font-semibold mb-6">Optional Financial Information</h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>
                   <label
-                    htmlFor="trailingEBITDA"
+                    htmlFor="netIncome"
                     className="block text-sm font-medium text-gray-700 mb-1"
                   >
-                    Trailing 12 Month EBITDA(0 covers negative) <RequiredStar />
+                    Net Income
                   </label>
                   <Input
-                    id="trailingEBITDA"
+                    id="netIncome"
                     type="text"
                     value={
-                      formData.trailingEBITDA !== undefined &&
-                      formData.trailingEBITDA !== null
-                        ? formatNumberWithCommas(formData.trailingEBITDA)
+                      formData.netIncome
+                        ? formatNumberWithCommas(formData.netIncome)
                         : ""
                     }
                     onChange={(e) => {
@@ -1916,29 +2130,26 @@ useEffect(() => {
                           {
                             target: { value: rawValue },
                           } as React.ChangeEvent<HTMLInputElement>,
-                          "trailingEBITDA"
+                          "netIncome"
                         );
                       }
                     }}
                     className="w-full"
-                    required
                   />
                 </div>
-
                 <div>
                   <label
-                    htmlFor="revenueGrowth"
+                    htmlFor="t12FreeCashFlow"
                     className="block text-sm font-medium text-gray-700 mb-1"
                   >
-                    Average 3 year revenue growth in %(0 covers negative) <RequiredStar />
+                    T12 Free Cash Flow
                   </label>
                   <Input
-                    id="revenueGrowth"
+                    id="t12FreeCashFlow"
                     type="text"
                     value={
-                      formData.revenueGrowth !== undefined &&
-                      formData.revenueGrowth !== null
-                        ? formatNumberWithCommas(formData.revenueGrowth)
+                      formData.t12FreeCashFlow
+                        ? formatNumberWithCommas(formData.t12FreeCashFlow)
                         : ""
                     }
                     onChange={(e) => {
@@ -1948,455 +2159,476 @@ useEffect(() => {
                           {
                             target: { value: rawValue },
                           } as React.ChangeEvent<HTMLInputElement>,
-                          "revenueGrowth"
+                          "t12FreeCashFlow"
                         );
                       }
                     }}
                     className="w-full"
-                    required
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="t12NetIncome"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    T12 Net Income
+                  </label>
+                  <Input
+                    id="t12NetIncome"
+                    type="text"
+                    value={
+                      formData.t12NetIncome
+                        ? formatNumberWithCommas(formData.t12NetIncome)
+                        : ""
+                    }
+                    onChange={(e) => {
+                      const rawValue = e.target.value.replace(/,/g, "");
+                      if (rawValue === "" || /^-?\d*$/.test(rawValue)) {
+                        handleNumberChange(
+                          {
+                            target: { value: rawValue },
+                          } as React.ChangeEvent<HTMLInputElement>,
+                          "t12NetIncome"
+                        );
+                      }
+                    }}
+                    className="w-full"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="askingPrice"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Asking Price
+                  </label>
+                  <Input
+                    id="askingPrice"
+                    type="text"
+                    value={
+                      formData.askingPrice
+                        ? formatNumberWithCommas(formData.askingPrice)
+                        : ""
+                    }
+                    onChange={(e) => {
+                      const rawValue = e.target.value.replace(/,/g, "");
+                      if (rawValue === "" || /^-?\d*$/.test(rawValue)) {
+                        handleNumberChange(
+                          {
+                            target: { value: rawValue },
+                          } as React.ChangeEvent<HTMLInputElement>,
+                          "askingPrice"
+                        );
+                      }
+                    }}
+                    className="w-full"
                   />
                 </div>
               </div>
-            </div>
-          </section>
+            </section>
 
-          {/* Optional Financial Information */}
-          <section className="bg-[#f9f9f9] p-6 rounded-lg">
-            <h2 className="text-xl font-semibold mb-6">Optional Financial Information</h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <div>
-                <label
-                  htmlFor="netIncome"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Net Income
+            {/* Buyer Fit / Ability to Close */}
+            <section className="bg-[#f9f9f9] p-6 rounded-lg">
+              <h2 className="text-xl font-semibold mb-6">
+                Buyer Fit / Ability to Close <RequiredStar />
+              </h2>
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Capital Availability <span className="text-red-500">*</span>
                 </label>
-                <Input
-                  id="netIncome"
-                  type="text"
-                  value={
-                    formData.netIncome
-                      ? formatNumberWithCommas(formData.netIncome)
-                      : ""
-                  }
-                  onChange={(e) => {
-                    const rawValue = e.target.value.replace(/,/g, "");
-                    if (rawValue === "" || /^-?\d*$/.test(rawValue)) {
-                      handleNumberChange(
-                        {
-                          target: { value: rawValue },
-                        } as React.ChangeEvent<HTMLInputElement>,
-                        "netIncome"
-                      );
-                    }
-                  }}
-                  className="w-full"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="t12FreeCashFlow"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  T12 Free Cash Flow
-                </label>
-                <Input
-                  id="t12FreeCashFlow"
-                  type="text"
-                  value={
-                    formData.t12FreeCashFlow
-                      ? formatNumberWithCommas(formData.t12FreeCashFlow)
-                      : ""
-                  }
-                  onChange={(e) => {
-                    const rawValue = e.target.value.replace(/,/g, "");
-                    if (rawValue === "" || /^-?\d*$/.test(rawValue)) {
-                      handleNumberChange(
-                        {
-                          target: { value: rawValue },
-                        } as React.ChangeEvent<HTMLInputElement>,
-                        "t12FreeCashFlow"
-                      );
-                    }
-                  }}
-                  className="w-full"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="t12NetIncome"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  T12 Net Income
-                </label>
-                <Input
-                  id="t12NetIncome"
-                  type="text"
-                  value={
-                    formData.t12NetIncome
-                      ? formatNumberWithCommas(formData.t12NetIncome)
-                      : ""
-                  }
-                  onChange={(e) => {
-                    const rawValue = e.target.value.replace(/,/g, "");
-                    if (rawValue === "" || /^-?\d*$/.test(rawValue)) {
-                      handleNumberChange(
-                        {
-                          target: { value: rawValue },
-                        } as React.ChangeEvent<HTMLInputElement>,
-                        "t12NetIncome"
-                      );
-                    }
-                  }}
-                  className="w-full"
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="askingPrice"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Asking Price
-                </label>
-                <Input
-                  id="askingPrice"
-                  type="text"
-                  value={
-                    formData.askingPrice
-                      ? formatNumberWithCommas(formData.askingPrice)
-                      : ""
-                  }
-                  onChange={(e) => {
-                    const rawValue = e.target.value.replace(/,/g, "");
-                    if (rawValue === "" || /^-?\d*$/.test(rawValue)) {
-                      handleNumberChange(
-                        {
-                          target: { value: rawValue },
-                        } as React.ChangeEvent<HTMLInputElement>,
-                        "askingPrice"
-                      );
-                    }
-                  }}
-                  className="w-full"
-                />
-              </div>
-            </div>
-          </section>
-
-          {/* Buyer Fit / Ability to Close */}
-          <section className="bg-[#f9f9f9] p-6 rounded-lg">
-            <h2 className="text-xl font-semibold mb-6">
-              Buyer Fit / Ability to Close <RequiredStar />
-            </h2>
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Capital Availability <span className="text-red-500">*</span>
-              </label>
-              <div className="space-y-3">
-                <div className="flex items-center space-x-3">
-                  <Checkbox
-                    id="ready-capital"
-                    checked={formData.capitalAvailability.includes(
-                      CAPITAL_AVAILABILITY_OPTIONS.READY
-                    )}
-                    onCheckedChange={(checked) =>
-                      handleCapitalAvailabilityChange(
-                        Boolean(checked),
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-3">
+                    <Checkbox
+                      id="ready-capital"
+                      checked={formData.capitalAvailability.includes(
                         CAPITAL_AVAILABILITY_OPTIONS.READY
-                      )
-                    }
-                    className="border-[#d0d5dd]"
-                  />
-                  <label
-                    htmlFor="ready-capital"
-                    className="text-sm cursor-pointer"
-                  >
-                    {CAPITAL_AVAILABILITY_OPTIONS.READY}
-                  </label>
-                </div>
-
-                <div className="flex items-center space-x-3">
-                  <Checkbox
-                    id="need-raise"
-                    checked={formData.capitalAvailability.includes(
-                      CAPITAL_AVAILABILITY_OPTIONS.NEED
-                    )}
-                    onCheckedChange={(checked) =>
-                      handleCapitalAvailabilityChange(
-                        Boolean(checked),
-                        CAPITAL_AVAILABILITY_OPTIONS.NEED
-                      )
-                    }
-                    className="border-[#d0d5dd]"
-                  />
-                  <label
-                    htmlFor="need-raise"
-                    className="text-sm cursor-pointer"
-                  >
-                    {CAPITAL_AVAILABILITY_OPTIONS.NEED}
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            {/* Company Type - spans full width on md+ */}
-            <div className="md:col-span-2 w-full">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Company Type <RequiredStar />
-              </label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-between text-left h-auto min-h-11 px-3 py-2 border border-gray-300 hover:border-gray-400 focus:border-[#3aafa9] focus:ring-2 focus:ring-[#3aafa9]/20 rounded-md overflow-hidden bg-transparent"
-                  >
-                    <span
-                      className={`${
-                        Array.isArray(formData.companyType) &&
-                        formData.companyType.length > 0
-                          ? "text-gray-900"
-                          : "text-gray-500"
-                      } truncate block pr-2`}
+                      )}
+                      onCheckedChange={(checked) =>
+                        handleCapitalAvailabilityChange(
+                          Boolean(checked),
+                          CAPITAL_AVAILABILITY_OPTIONS.READY
+                        )
+                      }
+                      className="border-[#d0d5dd]"
+                    />
+                    <label
+                      htmlFor="ready-capital"
+                      className="text-sm cursor-pointer"
                     >
-                      {Array.isArray(formData.companyType) &&
-                      formData.companyType.length > 0
-                        ? formData.companyType.join(", ")
-                        : "Select company types"}
-                    </span>
-                    <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-
-                <PopoverContent
-                  align="start"
-                  sideOffset={4}
-                  className="max-w-full w-[--radix-popover-trigger-width] p-0 border border-gray-200 rounded-md shadow-lg bg-white"
-                >
-                  <div className="p-3 border-b border-gray-100 bg-gray-50">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-sm font-medium text-gray-900">
-                        Select Company Types
-                      </h3>
-                      <span className="text-xs text-gray-500">
-                        {Array.isArray(formData.companyType)
-                          ? formData.companyType.length
-                          : 0}{" "}
-                        selected
-                      </span>
-                    </div>
-
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const allOptions = [
-                            "Buy Side Mandate",
-                            "Entrepreneurship through Acquisition",
-                            "Family Office",
-                            "Holding Company",
-                            "Independent Sponsor",
-                            "Private Equity",
-                            "Single Acquisition Search",
-                            "Strategic Operating Company",
-                          ];
-                          setFormData((prev) => ({
-                            ...prev,
-                            companyType: allOptions,
-                          }));
-                        }}
-                        className="flex-1 px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded transition-colors"
-                      >
-                        Select All
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setFormData((prev) => ({ ...prev, companyType: [] }))
-                        }
-                        className="flex-1 px-2 py-1 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded transition-colors"
-                      >
-                        Clear All
-                      </button>
-                    </div>
+                      {CAPITAL_AVAILABILITY_OPTIONS.READY}
+                    </label>
                   </div>
 
-                  <div className="max-h-60 overflow-y-auto">
-                    {[
-                      "Buy Side Mandate",
-                      "Entrepreneurship through Acquisition",
-                      "Family Office",
-                      "Holding Company",
-                      "Independent Sponsor",
-                      "Private Equity",
-                      "Single Acquisition Search",
-                      "Strategic Operating Company",
-                    ].map((option) => {
-                      const isChecked =
-                        Array.isArray(formData.companyType) &&
-                        formData.companyType.includes(option);
-
-                      return (
-                        <div
-                          key={option}
-                          className={`flex items-center space-x-3 p-3 cursor-pointer transition-colors ${
-                            isChecked
-                              ? "bg-blue-50 hover:bg-blue-100"
-                              : "hover:bg-gray-50"
-                          }`}
-                          onClick={() => handleMultiSelectChange(option)}
-                        >
-                          <div className="relative">
-                            <input
-                              type="checkbox"
-                              checked={isChecked}
-                              onChange={() => {}} // Controlled by onClick above
-                              className="h-4 w-4 border-gray-300 rounded appearance-none border-2 checked:bg-[#3aafa9] checked:border-[#3aafa9] focus:ring-[#3aafa9] focus:ring-2 transition-colors"
-                            />
-                            {isChecked && (
-                              <svg
-                                className="absolute inset-0 h-4 w-4 text-white pointer-events-none"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={3}
-                                  d="M5 13l4 4L19 7"
-                                />
-                              </svg>
-                            )}
-                          </div>
-                          <label
-                            className={`text-sm cursor-pointer flex-1 select-none ${
-                              isChecked
-                                ? "font-medium text-blue-900"
-                                : "text-gray-700"
-                            }`}
-                          >
-                            {option}
-                          </label>
-                        </div>
-                      );
-                    })}
+                  <div className="flex items-center space-x-3">
+                    <Checkbox
+                      id="need-raise"
+                      checked={formData.capitalAvailability.includes(
+                        CAPITAL_AVAILABILITY_OPTIONS.NEED
+                      )}
+                      onCheckedChange={(checked) =>
+                        handleCapitalAvailabilityChange(
+                          Boolean(checked),
+                          CAPITAL_AVAILABILITY_OPTIONS.NEED
+                        )
+                      }
+                      className="border-[#d0d5dd]"
+                    />
+                    <label
+                      htmlFor="need-raise"
+                      className="text-sm cursor-pointer"
+                    >
+                      {CAPITAL_AVAILABILITY_OPTIONS.NEED}
+                    </label>
                   </div>
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            <div className="md:col-span-2">
-              <div className="flex flex-col md:flex-row w-full gap-4">
-                {/* Minimum Prior Acquisitions */}
-               
-<div className="w-full">
-                  <label
-                    htmlFor="minPriorAcquisitions"
-                    className="block text-sm font-medium text-gray-700 mb-1"
-                  >
-                    Minimum Prior Acquisitions
-                  </label>
-                  <Input
-                    id="minPriorAcquisitions"
-                    type="text"
-                    value={
-                      typeof formData.minPriorAcquisitions === 'number'
-                        ? formatNumberWithCommas(formData.minPriorAcquisitions)
-                        : ""
-                    }
-                    onChange={(e) => {
-                      const rawValue = e.target.value.replace(/,/g, "");
-                      if (rawValue === "" || /^\d*$/.test(rawValue)) {
-                        handleNumberChange(
-                          {
-                            target: { value: rawValue },
-                          } as React.ChangeEvent<HTMLInputElement>,
-                          "minPriorAcquisitions"
-                        );
-                      }
-                    }}
-                    className="w-full"
-                  />
-                </div>
-                {/* Minimum Transaction Size */}
-                <div className="w-full">
-                  <label
-                    htmlFor="minTransactionSize"
-                    className="block text-sm font-medium text-gray-700 mb-1"
-                  >
-                    Minimum Transaction Size
-                  </label>
-                  <Input
-                    id="minTransactionSize"
-                    type="text"
-                    value={
-                      typeof formData.minTransactionSize === 'number'
-                        ? formatNumberWithCommas(formData.minTransactionSize)
-                        : ""
-                    }
-                    onChange={(e) => {
-                      const rawValue = e.target.value.replace(/,/g, "");
-                      if (rawValue === "" || /^\d*$/.test(rawValue)) {
-                        handleNumberChange(
-                          {
-                            target: { value: rawValue },
-                          } as React.ChangeEvent<HTMLInputElement>,
-                          "minTransactionSize"
-                        );
-                      }
-                    }}
-                    className="w-full"
-                  />
                 </div>
               </div>
-            </div>
-          </section>
 
-         {/* Marketplace listing toggle - enhanced */}
-              <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-                <div className="flex items-start gap-3">
-                  <div className="mt-0.5 text-blue-600">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5"><path d="M3 3h18v2H3V3zm1 4h16l-1.5 12.5A2 2 0 0 1 16.51 21H7.49a2 2 0 0 1-1.99-1.5L4 7zm4 2v8h2V9H8zm6 0v8h2V9h-2z"/></svg>
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <label className="text-sm font-semibold text-gray-900">List in Marketplace</label>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-white text-blue-700 border border-blue-200">Marketplace</span>
-                        <input
-                          aria-label="List in Marketplace"
-                          type="checkbox"
-                          checked={!!formData.isPublic}
-                          onChange={(e) => setFormData((prev) => ({ ...prev, isPublic: e.target.checked }))}
-                          className="h-4 w-4 accent-teal-500"
-                        />
+              {/* Company Type - spans full width on md+ */}
+              <div className="md:col-span-2 w-full">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Company Type <RequiredStar />
+                </label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-between text-left h-auto min-h-11 px-3 py-2 border border-gray-300 hover:border-gray-400 focus:border-[#3aafa9] focus:ring-2 focus:ring-[#3aafa9]/20 rounded-md overflow-hidden bg-transparent"
+                    >
+                      <span
+                        className={`${
+                          Array.isArray(formData.companyType) &&
+                          formData.companyType.length > 0
+                            ? "text-gray-900"
+                            : "text-gray-500"
+                        } truncate block pr-2`}
+                      >
+                        {Array.isArray(formData.companyType) &&
+                        formData.companyType.length > 0
+                          ? formData.companyType.join(", ")
+                          : "Select company types"}
+                      </span>
+                      <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+
+                  <PopoverContent
+                    align="start"
+                    sideOffset={4}
+                    className="max-w-full w-[--radix-popover-trigger-width] p-0 border border-gray-200 rounded-md shadow-lg bg-white"
+                  >
+                    <div className="p-3 border-b border-gray-100 bg-gray-50">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-sm font-medium text-gray-900">
+                          Select Company Types
+                        </h3>
+                        <span className="text-xs text-gray-500">
+                          {Array.isArray(formData.companyType)
+                            ? formData.companyType.length
+                            : 0}{" "}
+                          selected
+                        </span>
+                      </div>
+
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const allOptions = [
+                              "Buy Side Mandate",
+                              "Entrepreneurship through Acquisition",
+                              "Family Office",
+                              "Holding Company",
+                              "Independent Sponsor",
+                              "Private Equity",
+                              "Single Acquisition Search",
+                              "Strategic Operating Company",
+                            ];
+                            setFormData((prev) => ({
+                              ...prev,
+                              companyType: allOptions,
+                            }));
+                          }}
+                          className="flex-1 px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded transition-colors"
+                        >
+                          Select All
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setFormData((prev) => ({ ...prev, companyType: [] }))
+                          }
+                          className="flex-1 px-2 py-1 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded transition-colors"
+                        >
+                          Clear All
+                        </button>
                       </div>
                     </div>
-              <p className="mt-1 text-xs text-blue-800">Marketplace allows all buyers on CIM Amplify to see this teaser. Buyers can request access; you’ll choose to approve or deny. We suggest that you still select and invite buyers that are perfectly matched on the next screen.</p>
-                  <p className="mt-1 text-xs text-blue-700">Note: If you turn this off later, outstanding marketplace requests will be declined automatically.</p>
+
+                    <div className="max-h-60 overflow-y-auto">
+                      {[
+                        "Buy Side Mandate",
+                        "Entrepreneurship through Acquisition",
+                        "Family Office",
+                        "Holding Company",
+                        "Independent Sponsor",
+                        "Private Equity",
+                        "Single Acquisition Search",
+                        "Strategic Operating Company",
+                      ].map((option) => {
+                        const isChecked =
+                          Array.isArray(formData.companyType) &&
+                          formData.companyType.includes(option);
+
+                        return (
+                          <div
+                            key={option}
+                            className={`flex items-center space-x-3 p-3 cursor-pointer transition-colors ${
+                              isChecked
+                                ? "bg-blue-50 hover:bg-blue-100"
+                                : "hover:bg-gray-50"
+                            }`}
+                            onClick={() => handleMultiSelectChange(option, "companyType")}
+                          >
+                            <div className="relative">
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={() => {}} // Controlled by onClick above
+                                className="h-4 w-4 border-gray-300 rounded appearance-none border-2 checked:bg-[#3aafa9] checked:border-[#3aafa9] focus:ring-[#3aafa9] focus:ring-2 transition-colors"
+                              />
+                              {isChecked && (
+                                <svg
+                                  className="absolute inset-0 h-4 w-4 text-white pointer-events-none"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={3}
+                                    d="M5 13l4 4L19 7"
+                                  />
+                                </svg>
+                              )}
+                            </div>
+                            <label
+                              className={`text-sm cursor-pointer flex-1 select-none ${
+                                isChecked
+                                  ? "font-medium text-blue-900"
+                                  : "text-gray-700"
+                              }`}
+                            >
+                              {option}
+                            </label>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <div className="md:col-span-2">
+                <div className="flex flex-col md:flex-row w-full gap-4">
+                  {/* Minimum Prior Acquisitions */}
+                  <div className="w-full">
+                    <label
+                      htmlFor="minPriorAcquisitions"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      Minimum Prior Acquisitions
+                    </label>
+                    <Input
+                      id="minPriorAcquisitions"
+                      type="text"
+                      value={
+                        typeof formData.minPriorAcquisitions === 'number'
+                          ? formatNumberWithCommas(formData.minPriorAcquisitions)
+                          : ""
+                      }
+                      onChange={(e) => {
+                        const rawValue = e.target.value.replace(/,/g, "");
+                        if (rawValue === "" || /^\d*$/.test(rawValue)) {
+                          handleNumberChange(
+                            {
+                              target: { value: rawValue },
+                            } as React.ChangeEvent<HTMLInputElement>,
+                            "minPriorAcquisitions"
+                          );
+                        }
+                      }}
+                      className="w-full"
+                    />
+                  </div>
+                  {/* Minimum Transaction Size */}
+                  <div className="w-full">
+                    <label
+                      htmlFor="minTransactionSize"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      Minimum Transaction Size
+                    </label>
+                    <Input
+                      id="minTransactionSize"
+                      type="text"
+                      value={
+                        typeof formData.minTransactionSize === 'number'
+                          ? formatNumberWithCommas(formData.minTransactionSize)
+                          : ""
+                      }
+                      onChange={(e) => {
+                        const rawValue = e.target.value.replace(/,/g, "");
+                        if (rawValue === "" || /^\d*$/.test(rawValue)) {
+                          handleNumberChange(
+                            {
+                              target: { value: rawValue },
+                            } as React.ChangeEvent<HTMLInputElement>,
+                            "minTransactionSize"
+                          );
+                        }
+                      }}
+                      className="w-full"
+                    />
                   </div>
                 </div>
               </div>
+            </section>
 
-          {/* Submit Button */}
-          <div className="flex justify-end">
-            <Button type="submit" disabled={isSaving}>
-              {isSaving ? (
-                <>
-                  Updating...
-                  <div className="animate-spin rounded-full h-4 w-4 ml-2 border-t-2 border-b-2 border-white"></div>
-                </>
-              ) : (
-                "Update Deal"
-              )}
-            </Button>
+            {/* Marketplace listing toggle - enhanced */}
+            <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 text-blue-600">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5"><path d="M3 3h18v2H3V3zm1 4h16l-1.5 12.5A2 2 0 0 1 16.51 21H7.49a2 2 0 0 1-1.99-1.5L4 7zm4 2v8h2V9H8zm6 0v8h2V9h-2z"/></svg>
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-semibold text-gray-900">List in Marketplace</label>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-white text-blue-700 border border-blue-200">Marketplace</span>
+                      <input
+                        aria-label="List in Marketplace"
+                        type="checkbox"
+                        checked={!!formData.isPublic}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, isPublic: e.target.checked }))}
+                        className="h-4 w-4 accent-teal-500"
+                      />
+                    </div>
+                  </div>
+                  <p className="mt-1 text-xs text-blue-800">Marketplace allows all buyers on CIM Amplify to see this teaser. Buyers can request access; you'll choose to approve or deny. We suggest that you still select and invite buyers that are perfectly matched on the next screen.</p>
+                  <p className="mt-1 text-xs text-blue-700">Note: If you turn this off later, outstanding marketplace requests will be declined automatically.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Submit Button */}
+            <div className="flex justify-end">
+              <Button type="submit" disabled={isSaving}>
+                {isSaving ? (
+                  <>
+                    Updating...
+                    <div className="animate-spin rounded-full h-4 w-4 ml-2 border-t-2 border-b-2 border-white"></div>
+                  </>
+                ) : (
+                  "Update Deal"
+                )}
+              </Button>
+            </div>
+          </form>
+          <Toaster />
+          <FloatingChatbot />
+        </div>
+      </SellerProtectedRoute>
+      
+      {/* Deal Guidelines Modal - Fixed with higher z-index and proper positioning */}
+      {showGuidelines && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[9999]">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden relative">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-teal-600 to-teal-700 px-6 py-4 relative">
+              <button
+                onClick={async () => {
+                  await updateSellerPreferences();
+                  setShowGuidelines(false);
+                }}
+                className="absolute top-3 right-3 text-white hover:bg-white hover:bg-opacity-20 rounded-lg p-1.5 transition-all group"
+                aria-label="Close modal"
+              >
+                <X size={20} className="transform group-hover:rotate-90 transition-transform duration-300" />
+              </button>
+              
+              <div className="flex items-center justify-center">
+                <div className="text-center">
+                  <h2 className="text-2xl font-bold text-white">Deal Guidelines</h2>
+                  <p className="text-teal-100 text-sm">Review before proceeding</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Compact Body */}
+            <div className="p-5">
+              <div className="bg-gradient-to-br from-teal-50 to-teal-100 rounded-xl p-5 border border-teal-200">
+                <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+                  <span className="w-1 h-5 bg-teal-600 rounded-full"></span>
+                  Important Notes
+                </h3>
+                
+                <div className="space-y-3">
+                  {[
+                    { icon: DollarSign, text: 'Deals must have a minimum of $1 Million in EBITDA or $5 Million in revenue' },
+                    { icon: Users, text: 'Deals must be posted by an M&A Advisor' },
+                    { icon: FileText, text: 'A Confidential Information Memorandum, or similar data, must be available' },
+                    { icon: Briefcase, text: 'Only M&A deals may be posted. No other deal type will be accepted' }
+                  ].map((item, index) => {
+                    const Icon = item.icon;
+                    return (
+                      <div 
+                        key={index} 
+                        className="flex items-start gap-3 group hover:translate-x-1 transition-transform duration-200"
+                      >
+                        <div className="flex-shrink-0 mt-0.5">
+                          <div className="bg-teal-600 rounded-lg p-1.5 group-hover:bg-teal-700 transition-colors">
+                            <Icon size={14} className="text-white" />
+                          </div>
+                        </div>
+                        <span className="text-gray-700 text-sm leading-snug">
+                          {item.text}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Compact Footer */}
+            <div className="bg-gray-50 px-5 py-4 border-t border-gray-200 flex items-center justify-between gap-4">
+              <label className="flex items-center gap-2 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={dontShowAgain}
+                  onChange={(e) => setDontShowAgain(e.target.checked)}
+                  className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-2 focus:ring-teal-500 cursor-pointer"
+                />
+                <span className="text-gray-700 text-sm font-medium group-hover:text-gray-900 select-none">
+                  Don't show this again
+                </span>
+              </label>
+
+              <button
+                onClick={async () => {
+                  await updateSellerPreferences();
+                  setShowGuidelines(false);
+                }}
+                className="px-6 py-2 bg-gradient-to-r from-teal-600 to-teal-700 text-white rounded-lg hover:from-teal-700 hover:to-teal-800 transition-all font-semibold text-sm shadow-md hover:shadow-lg transform hover:scale-105 active:scale-95"
+              >
+                OK, Got It!
+              </button>
+            </div>
           </div>
-        </form>
-        <Toaster />
-        <FloatingChatbot />
-      </div>
-    </SellerProtectedRoute>
+        </div>
+      )}
+    </>
   );
 }
