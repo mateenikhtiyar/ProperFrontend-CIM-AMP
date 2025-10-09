@@ -254,7 +254,7 @@ export default function EditDealPageFixed() {
     try {
       const token = localStorage.getItem('token');
       const sellerId = localStorage.getItem('userId');
-      const apiUrl = localStorage.getItem('apiUrl') || 'http://localhost:3001';
+      const apiUrl = localStorage.getItem('apiUrl') || 'https://api.cimamplify.com';
       
       const response = await fetch(`${apiUrl}/sellers/${sellerId}`, {
         method: 'PATCH',
