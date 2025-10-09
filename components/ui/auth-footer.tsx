@@ -24,9 +24,9 @@ export default function Footer() {
   };
 
   return (
-    <footer className="footer-background py-8" style={{ backgroundColor: '#17252A', position: 'relative', minHeight: '220px' }}>
+    <footer className="footer-background py-8 relative" style={{ backgroundColor: '#17252A', minHeight: '220px' }}>
       <div className="container mx-auto px-4 flex flex-col items-center justify-center relative">
-        <div className="flex flex-col md:flex-row justify-center items-center w-full max-w-5xl gap-24 md:gap-40">
+        <div className="flex flex-col sm:flex-row justify-center items-center w-full max-w-5xl gap-8 sm:gap-16 md:gap-40">
           {/* Quick Links */}
           <div className="footer-section flex flex-col items-center">
             <h3 className="text-lg font-semibold mb-3" style={{ color: '#3AAFA9' }}>
@@ -109,7 +109,7 @@ export default function Footer() {
                 Buyer registration
               </div>
               <a
-                href="http://localhost:3000/seller/register"
+                 onClick={() => router.push("/seller/login")}
                 target="_self"
                 rel="noopener noreferrer"
                 className="text-white hover:text-[#229273] block py-1 cursor-pointer transition-colors duration-300"
@@ -123,7 +123,7 @@ export default function Footer() {
                 Buyer Login
               </div>
               <a
-                href="http://localhost:3000/seller/login"
+                href="/seller/login"
                 target="_self"
                 rel="noopener noreferrer"
                 className="text-white hover:text-[#229273] block py-1 cursor-pointer transition-colors duration-300"
@@ -143,9 +143,9 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Copyright */}
-        <div style={{ position: 'absolute', right: 0, bottom: 0, margin: '16px' }}>
-          <p className="text-gray-400 text-sm">
+        {/* Copyright - positioned absolutely on desktop, normally on mobile/tablet */}
+        <div className="lg:absolute lg:right-4 lg:bottom-4 mt-8 lg:mt-0">
+          <p className="text-gray-400 text-sm text-center">
             © 2025 CIM Amplify. All rights reserved.
           </p>
         </div>
