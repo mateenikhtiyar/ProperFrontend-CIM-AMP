@@ -206,16 +206,27 @@ const validateFinancials = (
 ): { trailingRevenue?: string; trailingEBITDA?: string } => {
   const errors: { trailingRevenue?: string; trailingEBITDA?: string } = {};
   
-  if (revenue < 5000000) {
-    errors.trailingRevenue = "Revenue must be at least $5 million";
+  const minEBITDA = 1000000;
+  const minRevenue = 5000000;
+
+  const isEBITDAGood = ebitda >= minEBITDA;
+  const isRevenueGoodAsFallback = revenue >= minRevenue;
+
+  // The main condition for a deal to be valid is: (EBITDA >= 1M) OR (Revenue >= 5M)
+  // If this condition is NOT met, then we need to show errors.
+  if (!isEBITDAGood && !isRevenueGoodAsFallback) {
+    // Both EBITDA and Revenue are too low to satisfy the main rule.
+    // Provide specific guidance for each field.
+    errors.trailingEBITDA = `EBITDA must be at least $${formatNumberWithCommas(minEBITDA)} to qualify.`;
+    errors.trailingRevenue = `Revenue must be at least $${formatNumberWithCommas(minRevenue)} if EBITDA is below $${formatNumberWithCommas(minEBITDA)}.`;
   }
-  
-  if (ebitda < 1000000) {
-    errors.trailingEBITDA = "EBITDA must be at least $1 million";
-  }
-  
+
+  // Existing check: EBITDA must be less than Revenue
   if (revenue > 0 && ebitda >= revenue) {
-    errors.trailingEBITDA = "EBITDA must be less than Revenue";
+    // This is an independent rule, can coexist with the above.
+    errors.trailingEBITDA = errors.trailingEBITDA 
+      ? errors.trailingEBITDA + " Also, EBITDA must be less than Revenue."
+      : "EBITDA must be less than Revenue";
   }
   
   return errors;
