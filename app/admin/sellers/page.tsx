@@ -151,7 +151,7 @@ export default function SellersManagementDashboard() {
       }
     };
     fetchSellers();
-  }, [currentPage, searchTerm, sortByActiveDeals, sellersPerPage]);
+  }, [currentPage, searchTerm, sellersPerPage]);
 
   // Sort sellers based on active deals or general sorting
   const sortedSellers = useMemo(() => {
@@ -188,40 +188,7 @@ export default function SellersManagementDashboard() {
     });
   }, [sellers, sortByActiveDeals, sortOrder]);
 
-  useEffect(() => {
-    const fetchDealCounts = async () => {
-      const token = localStorage.getItem("token");
-      if (!token) return;
-      const sellersWithCounts = await Promise.all(
-        sellers.map(async (seller) => {
-          const sellerId = seller._id || seller.id;
-          if (!sellerId) return seller;
-          let activeDealsCount = 0;
-          let offMarketDealsCount = 0;
-          try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-            const activeRes = await fetch(`${apiUrl}/deals/admin/seller/${sellerId}/deals?status=active`, {
-              headers: { Authorization: `Bearer ${token}` },
-            });
-            if (activeRes.ok) {
-              const activeDeals = await activeRes.json();
-              activeDealsCount = Array.isArray(activeDeals) ? activeDeals.length : 0;
-            }
-            const offMarketRes = await fetch(`${apiUrl}/deals/admin/seller/${sellerId}/deals?status=completed`, {
-              headers: { Authorization: `Bearer ${token}` },
-            });
-            if (offMarketRes.ok) {
-              const offMarketDeals = await offMarketRes.json();
-              offMarketDealsCount = Array.isArray(offMarketDeals) ? offMarketDeals.length : 0;
-            }
-          } catch {}
-          return { ...seller, activeDealsCount, offMarketDealsCount };
-        })
-      );
-      setSellers(sellersWithCounts);
-    };
-    if (sellers.length > 0) fetchDealCounts();
-  }, [sellers]);
+  // REMOVED THE PROBLEMATIC useEffect THAT WAS CAUSING INFINITE LOOP
 
   const handleLogout = () => {
     logout();
