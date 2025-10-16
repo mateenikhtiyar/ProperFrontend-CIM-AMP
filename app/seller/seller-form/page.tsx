@@ -184,7 +184,7 @@ export default function SellerFormPage() {
     try {
       const token = localStorage.getItem('token');
       const sellerId = localStorage.getItem('userId');
-      const apiUrl = localStorage.getItem('apiUrl') || 'https://api.cimamplify.com';
+      const apiUrl = localStorage.getItem('apiUrl') || 'http://localhost:3001';
       
       const response = await fetch(`${apiUrl}/sellers/${sellerId}`, {
         method: 'PATCH',
@@ -372,7 +372,7 @@ export default function SellerFormPage() {
 
       // Fetch seller data to check hideGuidelines preference
       try {
-        const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+        const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
         const response = await fetch(`${apiUrl}/sellers/profile`, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -1636,7 +1636,7 @@ const renderGeographySelection = () => {
       console.log("Geography hierarchy data:", formData.geographyHierarchy);
       console.log("Industry hierarchy data:", formData.industryHierarchy);
 
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
 
       const multipartFormData = new FormData();
       multipartFormData.append("dealData", JSON.stringify(dealData));
@@ -1703,7 +1703,7 @@ const renderGeographySelection = () => {
   return (
     <>
       <div className="container mx-auto py-8 px-4 max-w-5xl bg-white">
-        <form onSubmit={handleSubmit} className="space-y-8">
+        <form onSubmit={handleSubmit} className="space-y-8 mb-16">
           {/* Seller Rewards */}
           <div className="bg-[#f0f7fa] p-6 rounded-lg">
             <h2 className="text-lg font-semibold mb-4">
@@ -1943,8 +1943,9 @@ const renderGeographySelection = () => {
 
                 {/* Industry Selector */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1 relative">
                     Industry Selector <RequiredStar />
+                    <FloatingChatbot/>
                   </label>
                   <div className="border border-[#d0d5dd] rounded-md p-4 h-80 flex flex-col">
                     <div className="relative mb-4">
@@ -2337,7 +2338,7 @@ const renderGeographySelection = () => {
                       );
                     }
                   }}
-                  className="w-full"
+             mb-      className="w-full"
                 />
               </div>
               <div>
@@ -2729,7 +2730,7 @@ const renderGeographySelection = () => {
                         />
                       </div>
                     </div>
-                    <p className="mt-1 text-xs text-blue-800">Marketplace allows all buyers on CIM Amplify to see this teaser. Buyers can request access; you'll choose to approve or deny. We suggest that you still select and invite buyers that are perfectly matched on the next screen.</p>
+                    <p className="mt-1 text-xs text-blue-800">Marketplace allows all buyers on CIM Amplify to see this teaser, not just the ones you invite on the next screen. Buyers can request access; you'll choose to approve or deny. We suggest that you still select and invite buyers that are perfectly matched on the next screen.</p>
                     <p className="mt-1 text-xs text-blue-700">Note: If you turn this off later, outstanding marketplace requests will be declined automatically.</p>
                   </div>
                 </div>
@@ -2761,12 +2762,12 @@ const renderGeographySelection = () => {
               className="bg-[#3aafa9] hover:bg-[#2a9d8f] text-white font-bold py-3 px-6 rounded-lg"
               disabled={isLoading}
             >
-              {isLoading ? "Submitting..." : "Submit Deal"}
+              {isLoading ? "Submitting..." : "Next -> View and Choose Matched Buyers"}
             </Button>
           </div>
           <Toaster />
         </form>
-        <FloatingChatbot />
+        {/* <FloatingChatbot/> */}
       </div>
       
       {/* Deal Guidelines Modal - Fixed with higher z-index and proper positioning */}
