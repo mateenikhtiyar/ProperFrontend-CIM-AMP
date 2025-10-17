@@ -184,7 +184,7 @@ export default function SellerFormPage() {
     try {
       const token = localStorage.getItem('token');
       const sellerId = localStorage.getItem('userId');
-      const apiUrl = localStorage.getItem('apiUrl') || 'http://localhost:3001';
+      const apiUrl = localStorage.getItem('apiUrl') || 'https://api.cimamplify.com';
       
       const response = await fetch(`${apiUrl}/sellers/${sellerId}`, {
         method: 'PATCH',
@@ -372,7 +372,7 @@ export default function SellerFormPage() {
 
       // Fetch seller data to check hideGuidelines preference
       try {
-        const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
+        const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
         const response = await fetch(`${apiUrl}/sellers/profile`, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -1636,7 +1636,7 @@ const renderGeographySelection = () => {
       console.log("Geography hierarchy data:", formData.geographyHierarchy);
       console.log("Industry hierarchy data:", formData.industryHierarchy);
 
-      const apiUrl = localStorage.getItem("apiUrl") || "http://localhost:3001";
+      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
 
       const multipartFormData = new FormData();
       multipartFormData.append("dealData", JSON.stringify(dealData));
