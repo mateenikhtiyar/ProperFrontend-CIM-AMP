@@ -92,19 +92,35 @@ export default function MasterFeeAgreement() {
           </section>
 
           <section className="mb-8">
-            <h2 className="text-2xl font-semibold mb-4 text-primary">5. Payment Terms</h2>
+            <h2 className="text-2xl font-semibold mb-4 text-primary">5. Prior Review Exception to Fee Obligation</h2>
+            <p className="text-gray-700 leading-relaxed mb-4">
+              No fee shall be payable to CIM Amplify if, after clicking <strong>"Move to Active,"</strong> you provide written notice and documentary evidence demonstrating that you were actively reviewing or had previously reviewed the Target Company prior to the date of clicking "Move to Active."<br/>
+              Acceptable Proof shall include, but is not limited to:
+            </p>
+            <ul className="list-disc pl-6 mb-4 text-gray-700 space-y-1">
+              <li>Dated correspondence (email, letter, or other written communication) between you and the Subject Company's advisor or representative regarding the Target Company;</li>
+              <li>Signed confidentiality or non-disclosure agreements with the Target Company or its advisor;</li>
+              <li>Term sheets, letters of intent, or other negotiation documents;</li>
+              <li>Internal review memoranda or investment committee materials dated prior to clicking "Move to Active."</li>
+            </ul>
+            <p className="text-gray-700 leading-relaxed mb-4">
+              <strong>Procedure:</strong> You must submit such proof to CIM Amplify at <a href="mailto:info@cimamplify.com" className="text-blue-600 hover:underline">info@cimamplify.com</a> when you become aware of the Prior Review. Failure to provide proof shall result in the full fee becoming due and payable based on Payment Terms below. CIM Amplify shall have ten (10) business days to review and accept or dispute the proof provided.
+            </p>
+          </section>
+          <section className="mb-8">
+            <h2 className="text-2xl font-semibold mb-4 text-primary">6. Payment Terms</h2>
             <p className="text-gray-700 leading-relaxed">
               Fees are due and payable within <strong>30 business days</strong> of the closing of any Transaction involving a Target Company introduced by CIM Amplify. Fees not received within the above noted 30 days will be subject to a compounding <strong>2% per 30 days</strong> interest charge.
             </p>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-2xl font-semibold mb-4 text-primary">6. Term</h2>
+            <h2 className="text-2xl font-semibold mb-4 text-primary">7. Term</h2>
             <p className="text-gray-700 leading-relaxed">This Agreement shall apply to all Transactions consummated within <strong>24 months</strong> of introduction by CIM Amplify.</p>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-2xl font-semibold mb-4 text-primary">7. Reporting Requirement</h2>
+            <h2 className="text-2xl font-semibold mb-4 text-primary">8. Reporting Requirement</h2>
             <p className="text-gray-700 leading-relaxed mb-2">
               Recipient agrees to notify CIM Amplify in writing within <strong>5 business days</strong> of closing any transaction involving a Target Company introduced by CIM Amplify. Notice shall include the closing date and Transaction Value. Notices shall be sent via email to{" "}
               <a href="mailto:team@cimamplify.com" className="text-blue-600 hover:underline">team@cimamplify.com</a>
@@ -112,7 +128,7 @@ export default function MasterFeeAgreement() {
           </section>
 
           <section className="mb-8">
-            <h2 className="text-2xl font-semibold mb-4 text-primary">8. Acknowledgment</h2>
+            <h2 className="text-2xl font-semibold mb-4 text-primary">9. Acknowledgment</h2>
             <p className="text-gray-700 leading-relaxed mb-2">Recipient acknowledges and agrees:</p>
             <ul className="list-disc pl-6 text-gray-700 space-y-1">
               <li>This Agreement is effective upon registration as a buyer on CIM Amplify;</li>
@@ -123,7 +139,7 @@ export default function MasterFeeAgreement() {
           </section>
 
           <section className="mb-8">
-            <h2 className="text-2xl font-semibold mb-4 text-primary">9. Miscellaneous</h2>
+            <h2 className="text-2xl font-semibold mb-4 text-primary">10. Miscellaneous</h2>
             <div className="text-gray-700 leading-relaxed space-y-2">
               <p><strong>Governing Law:</strong> This Agreement shall be governed by and construed in accordance with the laws of the State of New York, without regard to its conflict of laws principles.</p>
               <p><strong>Entire Agreement:</strong> This document constitutes the entire agreement between the parties regarding the subject matter.</p>
