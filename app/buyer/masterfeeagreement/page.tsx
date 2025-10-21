@@ -93,12 +93,12 @@ export default function MasterFeeAgreement() {
 
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4 text-primary">5. Prior Review Exception to Fee Obligation</h2>
-            <p className="text-gray-700 leading-relaxed mb-4">
-              No fee shall be payable to CIM Amplify if, after clicking <strong>"Move to Active,"</strong> you provide written notice and documentary evidence demonstrating that you were actively reviewing or had previously reviewed the Target Company prior to the date of clicking "Move to Active."<br/>
-              Acceptable Proof shall include, but is not limited to:
+             <p className="text-gray-700 leading-relaxed mb-4">
+              No fee shall be payable to CIM Amplify if, after clicking <strong>"Move to Active,"</strong> you provide written notice and documentary evidence demonstrating that you were actively reviewing or had previously reviewed the Target Company prior to the date of clicking <strong>"Move to Active."</strong><br/>
+              <strong>Acceptable Proof shall include, but is not limited to:</strong>
             </p>
             <ul className="list-disc pl-6 mb-4 text-gray-700 space-y-1">
-              <li>Dated correspondence (email, letter, or other written communication) between you and the Subject Company's advisor or representative regarding the Target Company;</li>
+              <li>Dated correspondence (email, letter, or other written communication) between you and the Target Company's advisor or representative regarding the Target Company;</li>
               <li>Signed confidentiality or non-disclosure agreements with the Target Company or its advisor;</li>
               <li>Term sheets, letters of intent, or other negotiation documents;</li>
               <li>Internal review memoranda or investment committee materials dated prior to clicking "Move to Active."</li>
