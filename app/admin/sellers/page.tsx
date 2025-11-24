@@ -30,6 +30,7 @@ interface Seller {
   password?: string;
   activeDealsCount: number;
   offMarketDealsCount: number;
+  allDealsCount?: number;
 }
 
 // Add AdminProfile type
@@ -73,13 +74,14 @@ export default function SellersManagementDashboard() {
     password: "",
     activeDealsCount: 0,
     offMarketDealsCount: 0,
+    allDealsCount: 0,
   });
   const [editLoading, setEditLoading] = useState(false);
   const [dataWarning, setDataWarning] = useState<string | null>(null);
   const [totalSellers, setTotalSellers] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalDeals, setModalDeals] = useState<any[]>([]);
-  const [modalStatus, setModalStatus] = useState<"active" | "completed" | null>(null);
+  const [modalStatus, setModalStatus] = useState<"active" | "completed" | "all" | null>(null);
   const [modalSeller, setModalSeller] = useState<Seller | null>(null);
   const [modalLoading, setModalLoading] = useState(false);
 
@@ -89,7 +91,7 @@ export default function SellersManagementDashboard() {
   const [adminProfile, setAdminProfile] = useState<AdminProfile | null>(null);
 
   // Define sellersPerPage before useEffect hooks
-  const sellersPerPage = 10;
+  const [sellersPerPage, setSellersPerPage] = useState(10);
 
   useEffect(() => {
     const fetchAdminProfile = async () => {
@@ -122,6 +124,11 @@ export default function SellersManagementDashboard() {
           limit: sellersPerPage.toString(),
           search: searchTerm,
         });
+        const sortParam = `name:${sortOrder}`;
+        queryParams.append("sortBy", sortParam);
+        if (sortByActiveDeals) {
+          queryParams.append("activeOnly", "true");
+        }
         const res = await fetch(`${apiUrl}/admin/sellers?${queryParams}`, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -138,6 +145,7 @@ export default function SellersManagementDashboard() {
               ...seller,
               activeDealsCount: seller.activeDealsCount ?? 0,
               offMarketDealsCount: seller.offMarketDealsCount ?? 0,
+              allDealsCount: seller.allDealsCount ?? 0,
             }))
           : [];
         setSellers(sellersData);
@@ -151,40 +159,15 @@ export default function SellersManagementDashboard() {
       }
     };
     fetchSellers();
-  }, [currentPage, searchTerm, sellersPerPage]);
+  }, [currentPage, searchTerm, sellersPerPage, sortByActiveDeals, sortOrder]);
 
   // Sort sellers based on active deals or general sorting
   const sortedSellers = useMemo(() => {
-    return [...sellers].sort((a, b) => {
-      if (sortByActiveDeals) {
-        // Sort by active deals count
-        const aCount = a.activeDealsCount || 0;
-        const bCount = b.activeDealsCount || 0;
-        
-        if (aCount !== bCount) {
-          return sortOrder === "desc" ? bCount - aCount : aCount - bCount;
-        }
-      } else {
-        // Sort by company name
-        const aName = (a.companyName || '').toLowerCase();
-        const bName = (b.companyName || '').toLowerCase();
-        
-        if (aName !== bName) {
-          return sortOrder === "asc" ? aName.localeCompare(bName) : bName.localeCompare(aName);
-        }
-      }
-      
-      // Secondary sort by company name for stability (when sorting by active deals)
+    const base = sortByActiveDeals ? sellers.filter((s) => (s.activeDealsCount || 0) > 0) : sellers;
+    return [...base].sort((a, b) => {
       const aName = (a.companyName || '').toLowerCase();
       const bName = (b.companyName || '').toLowerCase();
-      if (aName !== bName) {
-        return aName.localeCompare(bName);
-      }
-      
-      // Tertiary sort by _id for ultimate stability
-      const aId = a._id || a.id || '';
-      const bId = b._id || b.id || '';
-      return aId.toString().localeCompare(bId.toString());
+      return sortOrder === 'asc' ? aName.localeCompare(bName) : bName.localeCompare(aName);
     });
   }, [sellers, sortByActiveDeals, sortOrder]);
 
@@ -229,6 +212,7 @@ export default function SellersManagementDashboard() {
         role: seller.role,
         activeDealsCount: seller.activeDealsCount,
         offMarketDealsCount: seller.offMarketDealsCount,
+        allDealsCount: seller.allDealsCount,
       });
     }
   };
@@ -274,7 +258,7 @@ export default function SellersManagementDashboard() {
       setSellers(
         sellers.map((s) =>
           (s._id || s.id) === (updated._id || updated.id)
-            ? { ...updated, activeDealsCount: s.activeDealsCount, offMarketDealsCount: s.offMarketDealsCount }
+            ? { ...updated, activeDealsCount: s.activeDealsCount, offMarketDealsCount: s.offMarketDealsCount, allDealsCount: s.allDealsCount }
             : s
         )
       );
@@ -334,7 +318,7 @@ export default function SellersManagementDashboard() {
     }
   };
 
-  const openDealModal = async (seller: Seller, status: "active" | "completed") => {
+  const openDealModal = async (seller: Seller, status: "active" | "completed" | "all") => {
     setModalSeller(seller);
     setModalStatus(status);
     setModalLoading(true);
@@ -343,7 +327,10 @@ export default function SellersManagementDashboard() {
       const token = localStorage.getItem("token");
       if (!token) throw new Error("No authentication token found");
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      const res = await fetch(`${apiUrl}/deals/admin/seller/${seller._id || seller.id}/deals?status=${status}`, {
+      const url = status === "all"
+        ? `${apiUrl}/deals/admin/seller/${seller._id || seller.id}/deals`
+        : `${apiUrl}/deals/admin/seller/${seller._id || seller.id}/deals?status=${status}`;
+      const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error("Failed to fetch deals");
@@ -480,6 +467,7 @@ export default function SellersManagementDashboard() {
                 onClick={() => {
                   setSortByActiveDeals(!sortByActiveDeals);
                   if (!sortByActiveDeals) setSortOrder("desc");
+                  setCurrentPage(1);
                 }}
                 className={sortByActiveDeals ? "bg-[#3aafa9] hover:bg-[#359a94]" : ""}
               >
@@ -487,11 +475,29 @@ export default function SellersManagementDashboard() {
               </Button>
               <select
                 value={sortOrder}
-                onChange={(e) => setSortOrder(e.target.value as "asc" | "desc")}
+                onChange={(e) => {
+                  setSortOrder(e.target.value as "asc" | "desc");
+                  setCurrentPage(1);
+                }}
                 className="border border-gray-300 rounded px-2 py-1 text-sm ml-2"
               >
                 <option value="asc">A to Z</option>
                 <option value="desc">Z to A</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-2 mt-4 md:mt-0">
+              <span className="text-sm text-gray-700">Items per page:</span>
+              <select
+                value={sellersPerPage}
+                onChange={(e) => {
+                  setSellersPerPage(Number(e.target.value));
+                  setCurrentPage(1); // Reset to first page when changing page size
+                }}
+                className="border border-gray-300 rounded px-2 py-1 text-sm"
+              >
+                <option value="10">10</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
               </select>
             </div>
           </div>
@@ -521,6 +527,9 @@ export default function SellersManagementDashboard() {
                       </th>
                       <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm hidden lg:table-cell">
                         Off-Market Deals
+                      </th>
+                      <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm hidden lg:table-cell">
+                        All Deals
                       </th>
                       <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">Actions</th>
                     </tr>
@@ -557,20 +566,37 @@ export default function SellersManagementDashboard() {
                               ) : "-"}
                             </div>
                           </td>
-                          <td className="py-3 px-4 hidden lg:table-cell">
-                            <div
-                              className="text-gray-600 text-sm cursor-pointer hover:text-blue-600 hover:underline"
-                              onClick={() => openDealModal(seller, "active")}
-                            >
+                          <td
+                            className="py-3 px-4 hidden lg:table-cell cursor-pointer"
+                            onClick={() => openDealModal(seller, "active")}
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') openDealModal(seller, "active"); }}
+                          >
+                            <div className="text-gray-600 text-sm hover:text-blue-600 hover:underline">
                               {seller.activeDealsCount}
                             </div>
                           </td>
-                          <td className="py-3 px-4 hidden lg:table-cell">
-                            <div
-                              className="text-gray-600 text-sm cursor-pointer hover:text-blue-600 hover:underline"
-                              onClick={() => openDealModal(seller, "completed")}
-                            >
+                          <td
+                            className="py-3 px-4 hidden lg:table-cell cursor-pointer"
+                            onClick={() => openDealModal(seller, "completed")}
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') openDealModal(seller, "completed"); }}
+                          >
+                            <div className="text-gray-600 text-sm hover:text-blue-600 hover:underline">
                               {seller.offMarketDealsCount}
+                            </div>
+                          </td>
+                          <td
+                            className="py-3 px-4 hidden lg:table-cell cursor-pointer"
+                            onClick={() => openDealModal(seller, "all")}
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') openDealModal(seller, "all"); }}
+                          >
+                            <div className="text-gray-600 text-sm hover:text-blue-600 hover:underline">
+                              {seller.allDealsCount}
                             </div>
                           </td>
                           <td className="py-3 px-4">

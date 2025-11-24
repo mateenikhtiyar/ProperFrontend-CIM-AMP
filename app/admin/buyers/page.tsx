@@ -34,6 +34,9 @@ interface Buyer {
   companyProfileId?: string | { $oid: string };
   companyProfile?: CompanyProfile;
   profileId?: string;
+  activeDealsCount?: number;
+  pendingDealsCount?: number;
+  rejectedDealsCount?: number;
 }
 
 // Add AdminProfile type
@@ -81,13 +84,13 @@ export default function BuyersManagementDashboard() {
 
   const [showIncompleteOnly, setShowIncompleteOnly] = useState(false);
   const [buyerCategory, setBuyerCategory] = useState<"all" | "active" | "pending" | "rejected">("all");
+  const [buyersPerPage, setBuyersPerPage] = useState(10);
 
   const router = useRouter();
   const { logout } = useAuth();
   const [adminProfile, setAdminProfile] = useState<AdminProfile | null>(null);
 
   // Define buyersPerPage before useEffect hooks
-  const buyersPerPage = 10;
 
   useEffect(() => {
     const fetchAdminProfile = async () => {
@@ -127,6 +130,11 @@ export default function BuyersManagementDashboard() {
           search: searchTerm,
         });
         
+        // Add dealStatus parameter if filtering by deal status
+        if (buyerCategory !== "all") {
+          queryParams.append("dealStatus", buyerCategory);
+        }
+        
         const res = await fetch(`${endpoint}?${queryParams}`, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -146,7 +154,7 @@ export default function BuyersManagementDashboard() {
       }
     };
     fetchBuyers();
-  }, [currentPage, searchTerm, buyersPerPage, showIncompleteOnly]);
+  }, [currentPage, searchTerm, buyersPerPage, showIncompleteOnly, buyerCategory]);
 
   useEffect(() => {
     const fetchDealCounts = async () => {
@@ -266,24 +274,21 @@ export default function BuyersManagementDashboard() {
 
   const totalPages = Math.ceil(totalBuyers / buyersPerPage);
   
-  // Filter buyers based on category
-  const currentBuyers = buyers.filter(buyer => {
-    if (buyerCategory === "all") return true;
-    
+  const getDealCounts = (buyer: Buyer) => {
     const buyerId = String(buyer._id || buyer.id || "");
-    const dealCounts = buyerId && buyerDealCounts[buyerId] ? buyerDealCounts[buyerId] : { active: 0, pending: 0, rejected: 0 };
-    
-    switch (buyerCategory) {
-      case "active":
-        return dealCounts.active > 0;
-      case "pending":
-        return dealCounts.pending > 0;
-      case "rejected":
-        return dealCounts.rejected > 0;
-      default:
-        return true;
+    // If we're filtering by deal status, use the counts from the backend response
+    if (buyerCategory !== "all" && buyer.activeDealsCount !== undefined) {
+      return {
+        active: buyer.activeDealsCount || 0,
+        pending: buyer.pendingDealsCount || 0,
+        rejected: buyer.rejectedDealsCount || 0,
+      };
     }
-  });
+    // Otherwise, use the separate fetch
+    return buyerId && buyerDealCounts[buyerId] ? buyerDealCounts[buyerId] : { active: 0, pending: 0, rejected: 0 };
+  };
+
+  const currentBuyers = buyers;
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -381,7 +386,7 @@ export default function BuyersManagementDashboard() {
         <div className="flex-1 p-6">
           {error && <div className="text-red-500 mb-4">{error}</div>}
           {/* Page Title & Sorting */}
-          <div className="mb-6 flex items-center gap-6">
+          <div className="mb-6 flex flex-col md:flex-row md:items-center md:gap-6">
             <div className="flex items-center gap-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -401,40 +406,56 @@ export default function BuyersManagementDashboard() {
                 {showIncompleteOnly ? "Show All Buyers" : "Incomplete Profile Buyers"}
               </Button>
             </div>
-            <div>
-              <label className="mr-2 text-sm font-medium text-gray-700">Categorize by Deals:</label>
-              <select
-                value={buyerCategory}
-                onChange={(e) => setBuyerCategory(e.target.value as "all" | "active" | "pending" | "rejected")}
-                className="border border-gray-300 rounded px-2 py-1 text-sm mr-4"
-              >
-                <option value="all">All Buyers</option>
-                <option value="active">Active Deals Only</option>
-                <option value="pending">Pending Deals Only</option>
-                <option value="rejected">Rejected Deals Only</option>
-              </select>
-              <label className="mr-2 text-sm font-medium text-gray-700">Sort Order:</label>
-              <select
-                onChange={(e) => {
-                  const value = e.target.value;
-                  if (value === "name-asc" || value === "name-desc") {
-                    const order = value.split("-")[1];
-                    const sorted = [...currentBuyers].sort((a, b) => {
-                      const aName = (a.companyProfile?.companyName || a.companyName || "").toLowerCase();
-                      const bName = (b.companyProfile?.companyName || b.companyName || "").toLowerCase();
-                      return order === "asc" ? aName.localeCompare(bName) : bName.localeCompare(aName);
-                    });
-                    setBuyers(sorted);
-                  }
-                }}
-                className="border border-gray-300 rounded px-2 py-1 text-sm"
-              >
-                <option value="">Default</option>
-                <option value="name-asc">Company Name A-Z</option>
-                <option value="name-desc">Company Name Z-A</option>
-              </select>
+            <div className="flex flex-col md:flex-row md:items-center gap-4 mt-4 md:mt-0">
+              <div>
+                <label className="mr-2 text-sm font-medium text-gray-700">Categorize by Deals:</label>
+                <select
+                  value={buyerCategory}
+                  onChange={(e) => setBuyerCategory(e.target.value as "all" | "active" | "pending" | "rejected")}
+                  className="border border-gray-300 rounded px-2 py-1 text-sm mr-4"
+                >
+                  <option value="all">All Buyers</option>
+                  <option value="active">Active Deals Only</option>
+                  <option value="pending">Pending Deals Only</option>
+                  <option value="rejected">Rejected Deals Only</option>
+                </select>
+                <label className="mr-2 text-sm font-medium text-gray-700">Sort Order:</label>
+                <select
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === "name-asc" || value === "name-desc") {
+                      const order = value.split("-")[1];
+                      const sorted = [...currentBuyers].sort((a, b) => {
+                        const aName = (a.companyProfile?.companyName || a.companyName || "").toLowerCase();
+                        const bName = (b.companyProfile?.companyName || b.companyName || "").toLowerCase();
+                        return order === "asc" ? aName.localeCompare(bName) : bName.localeCompare(aName);
+                      });
+                      setBuyers(sorted);
+                    }
+                  }}
+                  className="border border-gray-300 rounded px-2 py-1 text-sm"
+                >
+                  <option value="">Default</option>
+                  <option value="name-asc">Company Name A-Z</option>
+                  <option value="name-desc">Company Name Z-A</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-700">Items per page:</span>
+                <select
+                  value={buyersPerPage}
+                  onChange={(e) => {
+                    setBuyersPerPage(Number(e.target.value));
+                    setCurrentPage(1); // Reset to first page when changing page size
+                  }}
+                  className="border border-gray-300 rounded px-2 py-1 text-sm"
+                >
+                  <option value="10">10</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
             </div>
-
           </div>
 
           {/* Buyers Table */}
@@ -463,9 +484,8 @@ export default function BuyersManagementDashboard() {
                   <tbody className="divide-y divide-gray-100">
                     {currentBuyers.map((buyer) => {
                       const buyerId = String(buyer._id || buyer.id || "");
-                      const dealCounts = buyerId && buyerDealCounts[buyerId]
-                        ? buyerDealCounts[buyerId]
-                        : { active: 0, pending: 0, rejected: 0 };
+                      const dealCounts = getDealCounts(buyer);
+                      
                       return (
                         <tr key={buyerId} className="hover:bg-gray-50 transition-colors">
                           <td className="py-3 px-4">
@@ -601,14 +621,18 @@ export default function BuyersManagementDashboard() {
                   </div>
                 </div>
               )}
-              {totalBuyers === 0 && searchTerm !== "" && !loading && (
+              {(buyerCategory !== "all" ? buyers.length === 0 : totalBuyers === 0) && searchTerm !== "" && !loading && (
                 <div className="py-12 text-center text-gray-500">
                   No buyers found matching "{searchTerm}".
                 </div>
               )}
-              {totalBuyers === 0 && searchTerm === "" && !loading && (
+              {(buyerCategory !== "all" ? buyers.length === 0 : totalBuyers === 0) && searchTerm === "" && !loading && (
                 <div className="py-12 text-center text-gray-500">
-                  {showIncompleteOnly ? "No buyers with incomplete profiles found." : "No buyers available."}
+                  {showIncompleteOnly
+                    ? "No buyers with incomplete profiles found."
+                    : buyerCategory === "all"
+                      ? "No buyers available."
+                      : "No buyers available for the selected deal filter."}
                 </div>
               )}
 
