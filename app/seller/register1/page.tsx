@@ -231,10 +231,10 @@ export default function SellerRegisterPage() {
               <p className="text-gray-700 mb-4">
                 Please contact MacInnes at{" "}
                 <a 
-                  href="mailto:johnm@cimamplify.com" 
+                  href="mailto:canotifications@amp-ven.com" 
                   className="text-blue-600 hover:underline font-medium"
                 >
-                  johnm@cimamplify.com
+                  canotifications@amp-ven.com
                 </a>
                 {" "}to begin your advisor registration process.
               </p>
