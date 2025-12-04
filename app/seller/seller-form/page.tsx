@@ -2338,7 +2338,7 @@ const renderGeographySelection = () => {
                       );
                     }
                   }}
-             mb-      className="w-full"
+                  className="w-full"
                 />
               </div>
               <div>

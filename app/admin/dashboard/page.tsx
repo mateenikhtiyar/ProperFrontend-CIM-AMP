@@ -65,10 +65,11 @@ interface Deal {
   businessModel?: BusinessModel;
   managementPreferences?: string;
   buyerFit?: BuyerFit;
-  buyersByStatus?: {
-    active: number;
-    pending: number;
-    rejected: number;
+  statusSummary?: {
+    totalTargeted: number;
+    totalActive: number;
+    totalPending: number;
+    totalRejected: number;
   };
   createdAt?: string;
 }
@@ -163,11 +164,7 @@ const BuyersActivityPopup: React.FC<{
 
   if (!isOpen) return null;
 
-  const filteredRejectedBuyers = (buyersActivity.rejected || []).filter((buyer) =>
-    buyer.interactions?.some(
-      (interaction) => interaction.metadata?.status === "active"
-    )
-  );
+  const filteredRejectedBuyers = buyersActivity.rejected || [];
 
   const buyerMap = new Map<string, Buyer>();
   [
@@ -1083,12 +1080,29 @@ export default function DealManagementDashboard() {
       const dealsWithSellers = await Promise.all(
         validDealsArray.map(async (deal: Deal) => {
           try {
+            // Fetch seller profile
             const sellerRes = await fetch(`${apiUrl}/sellers/public/${deal.seller}`);
+            let sellerProfile = null;
             if (sellerRes.ok) {
-              const sellerProfile = await sellerRes.json();
-              return { ...deal, sellerProfile };
+              sellerProfile = await sellerRes.json();
             }
-            return deal;
+
+            // Fetch status summary for each deal
+            const statusRes = await fetch(`${apiUrl}/deals/${deal._id}/status-summary`, {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+            });
+            
+            let statusSummary = null;
+            if (statusRes.ok) {
+              const statusData = await statusRes.json();
+              console.log(`Status summary for deal ${deal.title}:`, statusData.summary);
+              statusSummary = statusData.summary;
+            }
+
+            return { ...deal, sellerProfile, statusSummary };
           } catch {
             return deal;
           }
@@ -1190,6 +1204,7 @@ export default function DealManagementDashboard() {
         throw new Error(errorData.message || "Failed to fetch buyers activity");
       }
       const data = await res.json();
+      console.log(`Activity data for deal ${deal.title}:`, data);
       setBuyersActivity({
         active: data.buyersByStatus.active || [],
         pending: data.buyersByStatus.pending || [],
@@ -1535,23 +1550,20 @@ export default function DealManagementDashboard() {
                         )}
                         
                         {/* Display status badges */}
-                        {deal.buyersByStatus && (
-                          <div className="flex gap-2 mb-3">
-                            {deal.buyersByStatus.active > 0 && (
-                              <span className="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                                Active: {deal.buyersByStatus.active}
-                              </span>
-                            )}
-                            {deal.buyersByStatus.pending > 0 && (
-                              <span className="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">
-                                Pending: {deal.buyersByStatus.pending}
-                              </span>
-                            )}
-                            {deal.buyersByStatus.rejected > 0 && (
-                              <span className="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
-                                Passed: {deal.buyersByStatus.rejected}
-                              </span>
-                            )}
+                        {deal.statusSummary && (
+                          <div className="flex flex-wrap gap-2 mb-3">
+                            <span className="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+                              Total Targeted: {deal.statusSummary.totalTargeted}
+                            </span>
+                            <span className="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                              Active: {deal.statusSummary.totalActive}
+                            </span>
+                            <span className="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">
+                              Pending: {deal.statusSummary.totalPending}
+                            </span>
+                            <span className="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                              Rejected: {deal.statusSummary.totalRejected}
+                            </span>
                           </div>
                         )}
                         <h4>Seller Information</h4>
@@ -1751,21 +1763,24 @@ export default function DealManagementDashboard() {
                         )}
                         
                         {/* Display status badges */}
-                        {deal.buyersByStatus && (
+                        {deal.statusSummary && (
                           <div className="flex gap-2 mb-3">
-                            {deal.buyersByStatus.active > 0 && (
+                            <span className="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+                              Total Targeted: {deal.statusSummary.totalTargeted}
+                            </span>
+                            {deal.statusSummary.totalActive > 0 && (
                               <span className="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                                Active: {deal.buyersByStatus.active}
+                                Active: {deal.statusSummary.totalActive}
                               </span>
                             )}
-                            {deal.buyersByStatus.pending > 0 && (
+                            {deal.statusSummary.totalPending > 0 && (
                               <span className="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">
-                                Pending: {deal.buyersByStatus.pending}
+                                Pending: {deal.statusSummary.totalPending}
                               </span>
                             )}
-                            {deal.buyersByStatus.rejected > 0 && (
+                            {deal.statusSummary.totalRejected > 0 && (
                               <span className="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
-                                Passed: {deal.buyersByStatus.rejected}
+                                Rejected: {deal.statusSummary.totalRejected}
                               </span>
                             )}
                           </div>
@@ -1970,21 +1985,24 @@ export default function DealManagementDashboard() {
                         )}
                         
                         {/* Display status badges */}
-                        {deal.buyersByStatus && (
+                        {deal.statusSummary && (
                           <div className="flex gap-2 mb-3">
-                            {deal.buyersByStatus.active > 0 && (
+                            <span className="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+                              Total Targeted: {deal.statusSummary.totalTargeted}
+                            </span>
+                            {deal.statusSummary.totalActive > 0 && (
                               <span className="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                                Active: {deal.buyersByStatus.active}
+                                Active: {deal.statusSummary.totalActive}
                               </span>
                             )}
-                            {deal.buyersByStatus.pending > 0 && (
+                            {deal.statusSummary.totalPending > 0 && (
                               <span className="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">
-                                Pending: {deal.buyersByStatus.pending}
+                                Pending: {deal.statusSummary.totalPending}
                               </span>
                             )}
-                            {deal.buyersByStatus.rejected > 0 && (
+                            {deal.statusSummary.totalRejected > 0 && (
                               <span className="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
-                                Passed: {deal.buyersByStatus.rejected}
+                                Rejected: {deal.statusSummary.totalRejected}
                               </span>
                             )}
                           </div>
