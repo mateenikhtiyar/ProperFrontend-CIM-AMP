@@ -29,7 +29,7 @@ export default function VerifyEmailFailurePage() {
         Resend Verification Email
       </button>
       <p style={{ marginTop: '50px', fontSize: '0.8em', color: '#6b7280' }}>
-        © 2025 CIM Amplify. All rights reserved.
+        © 2026 CIM Amplify. All rights reserved.
       </p>
     </div>
   );

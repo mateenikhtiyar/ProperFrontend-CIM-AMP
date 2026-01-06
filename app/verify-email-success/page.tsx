@@ -376,7 +376,7 @@ export default function VerifyEmailSuccessPage() {
           {/* Footer */}
           <div className="bg-white/5 backdrop-blur-sm px-8 py-6 border-t border-white/10">
             <p className="text-center text-base text-white/60">
-              © 2025 CIM Amplify. All rights reserved.
+              © 2026 CIM Amplify. All rights reserved.
             </p>
           </div>
         </div>
