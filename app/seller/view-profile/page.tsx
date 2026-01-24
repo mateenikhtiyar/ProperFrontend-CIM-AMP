@@ -366,56 +366,64 @@ export default function ViewProfilePage() {
     setUploadError(null);
 
     try {
-      const token = sessionStorage.getItem("token");
+      // Convert file to base64
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const base64Image = e.target?.result as string;
+        
+        const token = sessionStorage.getItem("token");
+        // Get API URL from localStorage or use default
+        const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
 
-      // Get API URL from localStorage or use default
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+        // Send base64 image to backend
+        const response = await fetch(`${apiUrl}/sellers/upload-profile-picture`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ profilePicture: base64Image }),
+        });
 
-      // Create form data with 'file' as the field name
-      const formData = new FormData();
-      formData.append("file", file);
-
-      // Upload the image
-      const response = await fetch(`${apiUrl}/sellers/upload-profile-picture`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          // Handle unauthorized
-          localStorage.removeItem("token");
-          localStorage.removeItem("userId");
-          router.push("/seller/login?session=expired");
-          throw new Error("Session expired. Please log in again.");
+        if (!response.ok) {
+          if (response.status === 401) {
+            // Handle unauthorized
+            localStorage.removeItem("token");
+            localStorage.removeItem("userId");
+            router.push("/seller/login?session=expired");
+            throw new Error("Session expired. Please log in again.");
+          }
+          throw new Error(`Failed to upload profile picture: ${response.status}`);
         }
-        throw new Error(`Failed to upload profile picture: ${response.status}`);
-      }
 
-      const data = await response.json();
+        const data = await response.json();
 
-      // Update the seller profile with the new profile picture path
-      if (profile) {
-        setProfile({
-          ...profile,
-          profilePicture: data.profilePicture || profile.profilePicture,
+        if (data.error) {
+          throw new Error(data.error);
+        }
+
+        // Update the seller profile with the new profile picture
+        if (profile) {
+          setProfile({
+            ...profile,
+            profilePicture: data.profilePicture || profile.profilePicture,
+          });
+          setEditValues({
+            ...editValues,
+            profilePicture: data.profilePicture || profile.profilePicture,
+          });
+        }
+
+        toast({
+          title: "Success",
+          description: "Profile picture uploaded successfully",
         });
-        setEditValues({
-          ...editValues,
-          profilePicture: data.profilePicture || profile.profilePicture,
-        });
-      }
 
-      toast({
-        title: "Success",
-        description: "Profile picture uploaded successfully",
-      });
-
-      // Refresh the profile data to get the updated profile picture
-      fetchSellerProfile();
+        // Refresh the profile data to get the updated profile picture
+        fetchSellerProfile();
+      };
+      
+      reader.readAsDataURL(file);
     } catch (err: any) {
       console.error("Error uploading profile picture:", err);
       setUploadError(err.message || "Failed to upload profile picture");

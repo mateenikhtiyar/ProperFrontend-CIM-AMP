@@ -437,23 +437,44 @@ async function uploadProfilePicture(file: File): Promise<string> {
   const apiUrl = getApiUrl();
   const token = sessionStorage.getItem("token") || localStorage.getItem("token");
 
-  const formData = new FormData();
-  formData.append("profilePicture", file);
+  // Convert file to base64
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const base64Image = e.target?.result as string;
+        
+        const response = await fetch(`${apiUrl}/buyers/upload-profile-picture`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ profilePicture: base64Image }),
+        });
 
-  const response = await fetch(`${apiUrl}/buyers/profile/picture`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-    body: formData,
+        if (!response.ok) {
+          if (response.status === 401) {
+            handleAuthError();
+            throw new Error("UNAUTHORIZED");
+          }
+          throw new Error("Failed to upload profile picture");
+        }
+
+        const data = await response.json();
+        
+        if (data.error) {
+          throw new Error(data.error);
+        }
+        
+        resolve(data.profilePicture);
+      } catch (error) {
+        reject(error);
+      }
+    };
+    reader.onerror = () => reject(new Error("Failed to read file"));
+    reader.readAsDataURL(file);
   });
-
-  if (!response.ok) {
-    throw new Error("Failed to upload profile picture");
-  }
-
-  const data = await response.json();
-  return data.profilePicture;
 }
 
 // Custom Hooks
