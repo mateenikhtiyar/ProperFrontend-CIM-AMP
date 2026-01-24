@@ -195,15 +195,15 @@ export default function AcquireProfilePage() {
 
     if (urlToken) {
       const cleanToken = urlToken.trim();
-      localStorage.setItem("token", cleanToken);
+      sessionStorage.setItem("token", cleanToken);
       setAuthToken(cleanToken);
       console.log("Token set from URL:", cleanToken.substring(0, 10) + "...");
     } else {
-      const storedToken = localStorage.getItem("token");
+      const storedToken = sessionStorage.getItem("token");
       if (storedToken) {
         const cleanToken = storedToken.trim();
         setAuthToken(cleanToken);
-        console.log("Token set from localStorage:", cleanToken.substring(0, 10) + "...");
+        console.log("Token set from storage:", cleanToken.substring(0, 10) + "...");
       } else {
         console.warn("No token found, redirecting to login");
         toast({
@@ -218,15 +218,15 @@ export default function AcquireProfilePage() {
 
     if (urlUserId) {
       const cleanUserId = urlUserId.trim();
-      localStorage.setItem("userId", cleanUserId);
+      sessionStorage.setItem("userId", cleanUserId);
       setBuyerId(cleanUserId);
       console.log("Buyer ID set from URL:", cleanUserId);
     } else {
-      const storedUserId = localStorage.getItem("userId");
+      const storedUserId = sessionStorage.getItem("userId");
       if (storedUserId) {
         const cleanUserId = storedUserId.trim();
         setBuyerId(cleanUserId);
-        console.log("Buyer ID set from localStorage:", cleanUserId);
+        console.log("Buyer ID set from storage:", cleanUserId);
       }
     }
 
@@ -1002,8 +1002,16 @@ const validateField = (field: string, value: any): string | null => {
   const handleLogout = () => {
     console.log("Logging out");
     dismiss();
+    // Clear sessionStorage
+    sessionStorage.removeItem("token");
+    sessionStorage.removeItem("refreshToken");
+    sessionStorage.removeItem("userId");
+    sessionStorage.removeItem("userRole");
+    // Clear localStorage (legacy)
     localStorage.removeItem("token");
+    localStorage.removeItem("refreshToken");
     localStorage.removeItem("userId");
+    localStorage.removeItem("userRole");
     router.push("/buyer/login");
   };
 

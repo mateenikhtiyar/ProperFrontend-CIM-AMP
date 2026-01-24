@@ -61,7 +61,7 @@ export default function RegisterPage() {
     }
 
     // Check if already logged in
-    const storedToken = localStorage.getItem("token")
+    const storedToken = sessionStorage.getItem('token')
     if (storedToken) {
       console.log("Register page - Token found in localStorage, redirecting to acquireprofile")
       router.push("/buyer/acquireprofile")
@@ -109,8 +109,8 @@ export default function RegisterPage() {
 
     if (!formData.website.trim()) {
       newErrors.website = "Company website is required"
-    } else if (!/^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/.test(formData.website)) {
-      newErrors.website = "Invalid website URL"
+    } else if (!/^(https?:\/\/)?(www\.)?[a-zA-Z0-9][-a-zA-Z0-9]*(\.[a-zA-Z0-9][-a-zA-Z0-9]*)+\/?.*$/.test(formData.website.trim())) {
+      newErrors.website = "Invalid website URL (e.g., www.example.com or https://example.com)"
     }
 
     setErrors(newErrors)

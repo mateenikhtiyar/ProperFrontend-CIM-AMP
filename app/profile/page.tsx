@@ -82,7 +82,7 @@ export default function ProfilePage() {
       setAuthToken(cleanToken)
       console.log("Profile page - Token set from URL:", cleanToken.substring(0, 10) + "...")
     } else {
-      const storedToken = localStorage.getItem("token")
+      const storedToken = sessionStorage.getItem('token')
       if (storedToken) {
         const cleanToken = storedToken.trim()
         setAuthToken(cleanToken)
