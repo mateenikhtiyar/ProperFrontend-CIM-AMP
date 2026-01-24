@@ -4,6 +4,12 @@ import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 
+// Helper to set auth in both storages
+const setAuthStorage = (key: string, value: string) => {
+  sessionStorage.setItem(key, value)
+  localStorage.setItem(key, value)
+}
+
 export default function AuthCallbackPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -24,8 +30,9 @@ export default function AuthCallbackPage() {
           const cleanToken = token.trim()
           const cleanUserId = userId.trim()
 
-          localStorage.setItem("token", cleanToken)
-          localStorage.setItem("userId", cleanUserId)
+          setAuthStorage("token", cleanToken)
+          setAuthStorage("userId", cleanUserId)
+          setAuthStorage("userRole", "buyer")
 
           console.log("Auth callback - Token set from URL:", cleanToken.substring(0, 10) + "...")
           console.log("Auth callback - User ID set from URL:", cleanUserId)
@@ -67,26 +74,33 @@ export default function AuthCallbackPage() {
 
         const data = await response.json()
 
-        // Store token and user ID
-        if (data.token) {
-          const cleanToken = data.token.trim()
-          localStorage.setItem("token", cleanToken)
+        // Store token, refresh token, and user ID
+        if (data.token || data.access_token) {
+          const cleanToken = (data.token || data.access_token).trim()
+          setAuthStorage("token", cleanToken)
           console.log("Auth callback - Token set from response:", cleanToken.substring(0, 10) + "...")
+
+          // Store refresh token if provided
+          if (data.refresh_token || data.refreshToken) {
+            const cleanRefreshToken = (data.refresh_token || data.refreshToken).trim()
+            setAuthStorage("refreshToken", cleanRefreshToken)
+            console.log("Auth callback - Refresh token set from response")
+          }
 
           // Also set the userRole if it's in the response
           if (data.role) {
-            localStorage.setItem("userRole", data.role)
+            setAuthStorage("userRole", data.role)
             console.log("Auth callback - User role set from response:", data.role)
           } else {
             // Default to buyer role if not specified
-            localStorage.setItem("userRole", "buyer")
+            setAuthStorage("userRole", "buyer")
             console.log("Auth callback - Default user role set to buyer")
           }
         }
 
         if (data.userId) {
           const cleanUserId = data.userId.trim()
-          localStorage.setItem("userId", cleanUserId)
+          setAuthStorage("userId", cleanUserId)
           console.log("Auth callback - User ID set from response:", cleanUserId)
         }
 
@@ -109,7 +123,7 @@ export default function AuthCallbackPage() {
 
         // Redirect to login after error with a more informative query parameter
         setTimeout(() => {
-          router.push(`/login?error=${encodeURIComponent(error.message || "Authentication failed")}`)
+          router.push(`/buyer/login?error=${encodeURIComponent(error.message || "Authentication failed")}`)
         }, 3000)
       }
     }

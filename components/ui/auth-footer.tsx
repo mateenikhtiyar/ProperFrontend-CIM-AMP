@@ -128,7 +128,7 @@ export default function Footer() {
                 rel="noopener noreferrer"
                 className="text-white hover:text-[#229273] block py-1 cursor-pointer transition-colors duration-300"
               >
-                Seller Login
+                Advisor Login
               </a>
             </div>
             <div className="mt-6">

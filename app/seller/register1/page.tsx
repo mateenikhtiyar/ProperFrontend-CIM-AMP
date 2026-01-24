@@ -80,7 +80,7 @@ export default function SellerRegisterPage() {
     }
 
     // Check if already logged in
-    const storedToken = localStorage.getItem("token");
+    const storedToken = sessionStorage.getItem("token");
     if (storedToken) {
       console.log(
         "Register page - Token found in localStorage, redirecting to dashboard"
@@ -254,7 +254,7 @@ export default function SellerRegisterPage() {
                 }}
                 onClick={()=>{router.push("/seller/register")}}
               >
-                Seller Registration
+                Advisor Registration
               </Button>
             </div>
           </div>
