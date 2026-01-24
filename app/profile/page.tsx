@@ -204,6 +204,11 @@ export default function ProfilePage() {
   const getProfilePictureUrl = (path: string | null) => {
     if (!path) return null
 
+    // If it's a base64 image, return as-is
+    if (path.startsWith("data:image/")) {
+      return path
+    }
+
     const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
 
     // If the path already has http/https, return it as is
@@ -218,7 +223,7 @@ export default function ProfilePage() {
     return `${apiUrl}/${formattedPath.startsWith("/") ? formattedPath.substring(1) : formattedPath}`
   }
 
-  // Update the handleProfilePictureUpload function to use 'file' as the form field name
+  // Update the handleProfilePictureUpload function to use base64 encoding
   const handleProfilePictureUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file || !authToken) return
@@ -247,50 +252,59 @@ export default function ProfilePage() {
     setUploadError(null)
 
     try {
-      // Get API URL from localStorage or use default
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
+      // Convert file to base64
+      const reader = new FileReader()
+      reader.onload = async (e) => {
+        const base64Image = e.target?.result as string
+        
+        // Get API URL from localStorage or use default
+        const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
 
-      // Create form data with 'file' as the field name
-      const formData = new FormData()
-      formData.append("file", file)
-
-      // Upload the image
-      const response = await fetch(`${apiUrl}/buyers/upload-profile-picture`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${authToken}`,
-        },
-        body: formData,
-      })
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          // Handle unauthorized
-          localStorage.removeItem("token")
-          localStorage.removeItem("userId")
-          router.push("/login?session=expired")
-          throw new Error("Session expired. Please log in again.")
-        }
-        throw new Error(`Failed to upload profile picture: ${response.status}`)
-      }
-
-      const data = await response.json()
-
-      // Update the buyer profile with the new profile picture path
-      if (buyerProfile) {
-        setBuyerProfile({
-          ...buyerProfile,
-          profilePicture: data.profilePicture || buyerProfile.profilePicture,
+        // Send base64 image to backend
+        const response = await fetch(`${apiUrl}/buyers/upload-profile-picture`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ profilePicture: base64Image }),
         })
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            // Handle unauthorized
+            localStorage.removeItem("token")
+            localStorage.removeItem("userId")
+            router.push("/login?session=expired")
+            throw new Error("Session expired. Please log in again.")
+          }
+          throw new Error(`Failed to upload profile picture: ${response.status}`)
+        }
+
+        const data = await response.json()
+
+        if (data.error) {
+          throw new Error(data.error)
+        }
+
+        // Update the buyer profile with the new profile picture
+        if (buyerProfile) {
+          setBuyerProfile({
+            ...buyerProfile,
+            profilePicture: data.profilePicture || buyerProfile.profilePicture,
+          })
+        }
+
+        toast({
+          title: "Success",
+          description: "Profile picture uploaded successfully",
+        })
+
+        // Refresh the profile data to get the updated profile picture
+        fetchBuyerProfile()
       }
-
-      toast({
-        title: "Success",
-        description: "Profile picture uploaded successfully",
-      })
-
-      // Refresh the profile data to get the updated profile picture
-      fetchBuyerProfile()
+      
+      reader.readAsDataURL(file)
     } catch (err: any) {
       console.error("Error uploading profile picture:", err)
       setUploadError(err.message || "Failed to upload profile picture")

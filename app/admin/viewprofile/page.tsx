@@ -169,8 +169,8 @@ useEffect(() => {
         // Send to backend
         const token = sessionStorage.getItem('token');
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.cimamplify.com";
-    const res = await fetch(`${apiUrl}/admin/profile`, {
-          method: "PATCH",
+        const res = await fetch(`${apiUrl}/admin/upload-profile-picture`, {
+          method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
