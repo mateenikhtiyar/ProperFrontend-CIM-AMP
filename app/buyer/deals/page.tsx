@@ -264,7 +264,6 @@ export default function DealsPage() {
 
       return mappedDeals;
     } catch (error) {
-      console.error(`Error fetching ${status} deals:`, error);
       return [];
     }
   };
@@ -287,7 +286,6 @@ export default function DealsPage() {
       const allDeals = [...pendingDeals, ...activeDeals, ...passedDeals];
       setDeals(allDeals);
     } catch (error) {
-      console.error("Error fetching all deals:", error);
       setApiError("Failed to load deals. Please try again later.");
     } finally {
       setLoading(false);
@@ -401,7 +399,6 @@ export default function DealsPage() {
       await fetchAllDeals(true);
       return true;
     } catch (error) {
-      console.error(`Error updating deal status:`, error);
       setApiError(`Failed to update deal status. Please try again.`);
       return false;
     }
@@ -522,7 +519,7 @@ export default function DealsPage() {
       const data: CompanyProfileData = await response.json();
       setShowProfileIncompleteWarning(!isProfileComplete(data));
     } catch (error) {
-      console.error("Error checking profile:", error);
+      // Error checking profile
     }
   };
 
@@ -556,7 +553,7 @@ export default function DealsPage() {
       const data = await response.json();
       setBuyerProfile(data);
     } catch (error) {
-      console.error("Error fetching buyer profile:", error);
+      // Error fetching buyer profile
     }
   };
 

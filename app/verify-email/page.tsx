@@ -59,7 +59,7 @@ function VerifyEmailContent() {
           localStorage.setItem("userRole", role || decoded.role)
         }
       } catch (error) {
-        console.error("Failed to decode token:", error)
+        // Failed to decode token
       }
     }
 

@@ -1207,7 +1207,7 @@ export default function DealManagementDashboard() {
         return transformedBuyers;
       }
     } catch (error) {
-      console.error("Error fetching ever active buyers:", error);
+      // Error fetching buyers
     }
     return [];
   };
@@ -2200,7 +2200,7 @@ export default function DealManagementDashboard() {
                                   fetchDeals(activeCurrentPage, dealsPerPage, "active", searchTerm);
                                 }
                               } catch (error) {
-                                console.error("Failed to revive deal:", error);
+                                // Failed to revive deal
                               }
                             }}
                           >

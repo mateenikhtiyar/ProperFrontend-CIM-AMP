@@ -189,21 +189,14 @@ export default function CompanyProfilePage() {
       const cleanToken = urlToken.trim();
       localStorage.setItem("token", cleanToken);
       setAuthToken(cleanToken);
-      console.log(
-        "Company Profile - Token set from URL:",
-        cleanToken.substring(0, 10) + "..."
-      );
+     
     } else {
       const storedToken = sessionStorage.getItem("token");
       if (storedToken) {
         const cleanToken = storedToken.trim();
         setAuthToken(cleanToken);
-        console.log(
-          "Company Profile - Token set from localStorage:",
-          cleanToken.substring(0, 10) + "..."
-        );
+       
       } else {
-        console.warn("Company Profile - No token found, redirecting to login");
         toast({
           title: "Authentication Required",
           description: "Please log in to access this page.",
@@ -219,16 +212,11 @@ export default function CompanyProfilePage() {
       const cleanUserId = urlUserId.trim();
       localStorage.setItem("userId", cleanUserId);
       setBuyerId(cleanUserId);
-      console.log("Company Profile - Buyer ID set from URL:", cleanUserId);
     } else {
       const storedUserId = localStorage.getItem("userId");
       if (storedUserId) {
         const cleanUserId = storedUserId.trim();
         setBuyerId(cleanUserId);
-        console.log(
-          "Company Profile - Buyer ID set from localStorage:",
-          cleanUserId
-        );
       }
     }
 
@@ -256,7 +244,6 @@ export default function CompanyProfilePage() {
         await fetchUserProfile();
         await fetchBuyerProfile();
       } catch (error) {
-        console.error("Error fetching data:", error);
         toast({
           title: "Data Loading Error",
           description: "Failed to load geography and industry data.",
@@ -277,8 +264,6 @@ useEffect(() => {
     const firstContact = formData.contacts[0];
     
     if (!firstContact.name && !firstContact.email && !firstContact.phone) {
-      console.log("Populating contact with buyer profile data");
-      
       setFormData(prevData => ({
         ...prevData,
         contacts: [
@@ -356,7 +341,6 @@ const fetchUserProfile = async () => {
 
     if (!response.ok) {
       if (response.status === 404) {
-        console.log("No existing profile found, showing empty form");
         return;
       }
 
@@ -476,7 +460,6 @@ const fetchUserProfile = async () => {
         }
       }
     } catch (error) {
-      console.error("Error fetching profile:", error);
     } finally {
       setIsSubmitting(false);
     }
@@ -490,7 +473,6 @@ const fetchUserProfile = async () => {
     try {
       const token = sessionStorage.getItem("token");
       if (!token) {
-        console.warn("Company Profile - Missing token for profile fetch");
         return;
       }
 
@@ -514,9 +496,7 @@ const fetchUserProfile = async () => {
 
       const data = await response.json();
       setBuyerProfile(data);
-      console.log("Company Profile - Buyer profile fetched:", data);
     } catch (error) {
-      console.error("Error fetching buyer profile:", error);
     }
   };
 
@@ -1342,16 +1322,6 @@ const fetchUserProfile = async () => {
         ...formData,
       };
 
-      console.log(
-        "Company Profile - Updating profile at:",
-        `${apiUrl}/company-profiles/${profileId}`
-      );
-      console.log(
-        "Company Profile - Using token:",
-        authToken.substring(0, 10) + "..."
-      );
-      console.log("Company Profile - Profile ID:", profileId);
-
       const updateData = { ...profileData };
       // Normalize website to include protocol for backend IsUrl validation
       const ensureProtocol = (url: string | undefined) => {
@@ -1372,11 +1342,6 @@ const fetchUserProfile = async () => {
       if (updateData.agreements && (updateData.agreements as any).agreementsAcceptedAt) {
         delete (updateData.agreements as any).agreementsAcceptedAt;
       }
-
-      console.log(
-        "Company Profile - Update data:",
-        JSON.stringify(updateData, null, 2)
-      );
 
       let response: Response;
       if (!profileId) {
@@ -1401,11 +1366,8 @@ const fetchUserProfile = async () => {
         });
       }
 
-      console.log("Company Profile - Response status:", response.status);
-
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error("API Error Response:", errorData);
 
         if (response.status === 401) {
           localStorage.removeItem("token");
@@ -1429,7 +1391,6 @@ const fetchUserProfile = async () => {
       }
 
       const result = await response.json();
-      console.log("Company Profile - Update successful:", result);
 
       setSubmitStatus("success");
 
@@ -1438,7 +1399,6 @@ const fetchUserProfile = async () => {
         router.push("/buyer/deals");
       }, 2000);
     } catch (error: any) {
-      console.error("Update error:", error);
       setSubmitStatus("error");
       setErrorMessage(
         error.message || "An error occurred while updating your profile."
@@ -1661,7 +1621,6 @@ const fetchUserProfile = async () => {
   const handleLogout = () => {
     if (!isClient) return;
 
-    console.log("Company Profile - Logging out");
     dismiss();
     localStorage.removeItem("token");
     localStorage.removeItem("userId");

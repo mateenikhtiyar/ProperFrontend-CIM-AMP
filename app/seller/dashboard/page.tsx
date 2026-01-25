@@ -550,7 +550,6 @@ export default function SellerDashboardPage() {
 
       if (!closeResponse.ok) {
         const errorText = await closeResponse.text()
-        console.error("Error response:", errorText)
         throw new Error(`Failed to complete deal: ${closeResponse.statusText}`)
       }
 
@@ -564,7 +563,6 @@ export default function SellerDashboardPage() {
         description: "The deal has been marked as completed and removed from your active deals",
       })
     } catch (error: any) {
-      console.error("Error completing deal:", error)
       toast({
         title: "Error completing deal",
         description: error.message || "Failed to complete deal. Please try again.",
@@ -619,7 +617,6 @@ export default function SellerDashboardPage() {
 
       if (!closeResponse.ok) {
         const errorText = await closeResponse.text()
-        console.error("Error response:", errorText)
         throw new Error(`Failed to close deal: ${closeResponse.statusText}`)
       }
 
@@ -634,7 +631,6 @@ export default function SellerDashboardPage() {
         duration: 4000
       })
     } catch (error: any) {
-      console.error("Error closing deal:", error)
       toast({
         title: "Error closing deal",
         description: error.message || "Failed to close deal. Please try again.",
@@ -677,7 +673,6 @@ export default function SellerDashboardPage() {
 
       if (!closeResponse.ok) {
         const errorText = await closeResponse.text()
-        console.error("Error response:", errorText)
         throw new Error(`Failed to close deal: ${closeResponse.statusText}`)
       }
 
@@ -692,7 +687,6 @@ export default function SellerDashboardPage() {
         duration: 4000
       })
     } catch (error: any) {
-      console.error("Error closing deal:", error)
       toast({
         title: "Error closing deal",
         description: error.message || "Failed to close deal. Please try again.",
@@ -818,7 +812,7 @@ export default function SellerDashboardPage() {
         return transformedBuyers
       }
     } catch (error) {
-      console.error("Error fetching ever active buyers:", error)
+      // Error fetching buyers
     }
     return []
   }

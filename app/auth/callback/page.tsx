@@ -34,9 +34,6 @@ export default function AuthCallbackPage() {
           setAuthStorage("userId", cleanUserId)
           setAuthStorage("userRole", "buyer")
 
-          console.log("Auth callback - Token set from URL:", cleanToken.substring(0, 10) + "...")
-          console.log("Auth callback - User ID set from URL:", cleanUserId)
-
           setStatus("success")
 
           // Redirect to acquireprofile
@@ -57,7 +54,7 @@ export default function AuthCallbackPage() {
         // Get API URL from localStorage or use default
         const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com"
 
-        console.log("Auth callback - Exchanging code for token at:", `${apiUrl}/buyers/google/callback?code=${code}`)
+        
 
         // Exchange the code for tokens
         const response = await fetch(`${apiUrl}/buyers/google/callback?code=${code}`, {
@@ -78,30 +75,30 @@ export default function AuthCallbackPage() {
         if (data.token || data.access_token) {
           const cleanToken = (data.token || data.access_token).trim()
           setAuthStorage("token", cleanToken)
-          console.log("Auth callback - Token set from response:", cleanToken.substring(0, 10) + "...")
+         
 
           // Store refresh token if provided
           if (data.refresh_token || data.refreshToken) {
             const cleanRefreshToken = (data.refresh_token || data.refreshToken).trim()
             setAuthStorage("refreshToken", cleanRefreshToken)
-            console.log("Auth callback - Refresh token set from response")
+            
           }
 
           // Also set the userRole if it's in the response
           if (data.role) {
             setAuthStorage("userRole", data.role)
-            console.log("Auth callback - User role set from response:", data.role)
+           
           } else {
             // Default to buyer role if not specified
             setAuthStorage("userRole", "buyer")
-            console.log("Auth callback - Default user role set to buyer")
+            
           }
         }
 
         if (data.userId) {
           const cleanUserId = data.userId.trim()
           setAuthStorage("userId", cleanUserId)
-          console.log("Auth callback - User ID set from response:", cleanUserId)
+          
         }
 
         setStatus("success")
@@ -111,14 +108,11 @@ export default function AuthCallbackPage() {
           router.push("/buyer/acquireprofile")
         }, 1500)
       } catch (error: any) {
-        console.error("Authentication callback error:", error)
         setStatus("error")
         setErrorMessage(error.message || "Authentication failed. Please try again.")
 
         // Add more detailed logging for debugging
         if (error.response) {
-          console.error("Error response data:", error.response.data)
-          console.error("Error response status:", error.response.status)
         }
 
         // Redirect to login after error with a more informative query parameter

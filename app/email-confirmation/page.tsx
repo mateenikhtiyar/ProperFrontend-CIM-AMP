@@ -86,7 +86,6 @@ function EmailConfirmationContent() {
       });
     } catch (error) {
       // Continue even if the notification fails - user should still see the help page
-      console.error("Failed to report email issue:", error);
     }
 
     // Navigate to help page
