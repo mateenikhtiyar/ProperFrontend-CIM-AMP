@@ -153,21 +153,15 @@ export default function ViewProfilePage() {
 
         const token = sessionStorage.getItem("token");
         if (!token) {
-          console.error(
-            "View Profile - No authentication token found, redirecting to login"
-          );
           router.push("/seller/login?error=no_token");
           return;
         }
 
-        console.log("View Profile - Attempting to fetch profile");
         const data = await getSellerProfile();
-        console.log("Profile data:", data);
         setProfile(data);
         setEditValues(data);
         setError(null);
       } catch (err: any) {
-        console.error("Error fetching profile:", err);
         setError(err.message || "Failed to load profile");
         toast({
           title: "Error",
@@ -180,9 +174,6 @@ export default function ViewProfilePage() {
           err.message === "No authentication token found" ||
           err.message === "Failed to fetch profile: 403"
         ) {
-          console.log(
-            "View Profile - Authentication error, redirecting to login"
-          );
           router.push("/seller/login?error=auth_failed");
         }
       } finally {
@@ -252,7 +243,6 @@ export default function ViewProfilePage() {
         description: "Profile updated successfully",
       });
     } catch (error: any) {
-      console.error("Error updating profile:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to update profile",
@@ -325,7 +315,6 @@ export default function ViewProfilePage() {
         description: "Password changed successfully",
       });
     } catch (error: any) {
-      console.error("Error changing password:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to change password",
@@ -425,7 +414,6 @@ export default function ViewProfilePage() {
       
       reader.readAsDataURL(file);
     } catch (err: any) {
-      console.error("Error uploading profile picture:", err);
       setUploadError(err.message || "Failed to upload profile picture");
       toast({
         title: "Error",
@@ -444,7 +432,7 @@ export default function ViewProfilePage() {
       setProfile(data);
       setEditValues(data);
     } catch (err) {
-      console.error("Error fetching seller profile:", err);
+      // Error fetching seller profile
     }
   };
 

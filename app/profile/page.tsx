@@ -80,15 +80,15 @@ export default function ProfilePage() {
       const cleanToken = urlToken.trim()
       localStorage.setItem("token", cleanToken)
       setAuthToken(cleanToken)
-      console.log("Profile page - Token set from URL:", cleanToken.substring(0, 10) + "...")
+
     } else {
       const storedToken = sessionStorage.getItem('token')
       if (storedToken) {
         const cleanToken = storedToken.trim()
         setAuthToken(cleanToken)
-        console.log("Profile page - Token set from localStorage:", cleanToken.substring(0, 10) + "...")
+
       } else {
-        console.warn("Profile page - No token found, redirecting to login")
+
         router.push("/login")
         return
       }
@@ -99,13 +99,13 @@ export default function ProfilePage() {
       const cleanUserId = urlUserId.trim()
       localStorage.setItem("userId", cleanUserId)
       setBuyerId(cleanUserId)
-      console.log("Profile page - Buyer ID set from URL:", cleanUserId)
+
     } else {
       const storedUserId = localStorage.getItem("userId")
       if (storedUserId) {
         const cleanUserId = storedUserId.trim()
         setBuyerId(cleanUserId)
-        console.log("Profile page - Buyer ID set from localStorage:", cleanUserId)
+
       }
     }
   }, [searchParams, router])
@@ -152,7 +152,7 @@ export default function ProfilePage() {
 
         // If 404, it means the user hasn't created a company profile yet
         if (companyResponse.status === 404) {
-          console.log("No company profile found")
+
           setCompanyProfile(null)
         } else if (!companyResponse.ok) {
           if (companyResponse.status === 401) {
@@ -168,7 +168,7 @@ export default function ProfilePage() {
           setCompanyProfile(companyData)
         }
       } catch (err: any) {
-        console.error("Error fetching profiles:", err)
+
         setError(err.message || "Failed to load profile data")
         toast({
           title: "Error",
@@ -184,7 +184,7 @@ export default function ProfilePage() {
   }, [authToken, router])
 
   const handleLogout = () => {
-    console.log("Profile page - Logging out")
+
     localStorage.removeItem("token")
     localStorage.removeItem("userId")
     router.push("/login")
@@ -306,7 +306,7 @@ export default function ProfilePage() {
       
       reader.readAsDataURL(file)
     } catch (err: any) {
-      console.error("Error uploading profile picture:", err)
+
       setUploadError(err.message || "Failed to upload profile picture")
       toast({
         title: "Error",
@@ -344,7 +344,7 @@ export default function ProfilePage() {
       const buyerData = await buyerResponse.json()
       setBuyerProfile(buyerData)
     } catch (err) {
-      console.error("Error fetching buyer profile:", err)
+
     }
   }
 

@@ -483,7 +483,7 @@ export default function LOIDealsPage() {
         return transformedBuyers
       }
     } catch (error) {
-      console.error("Error fetching ever active buyers:", error)
+      // Error fetching active buyers
     }
     return []
   }

@@ -164,7 +164,7 @@ const fetchStats = async (): Promise<DashboardStats> => {
 
 const fetchActiveDeals = async (): Promise<{ data: DealSummary[]; total: number }> => {
   const token = sessionStorage.getItem('token');
-  const res = await fetch(`${API_URL}/deals/admin?page=1&limit=10&excludeStatus=completed`, {
+  const res = await fetch(`${API_URL}/deals/admin?page=1&limit=10&status=active`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) throw new Error("Failed to fetch active deals");
@@ -304,19 +304,18 @@ export default function AdminOverviewPage() {
     return allDealsData.data.filter((deal: DealSummary) => deal.isPublic === true).length;
   }, [allDealsData]);
 
-  const totalDealValue = React.useMemo(() => {
+  const totalRevenueSize = React.useMemo(() => {
     if (!allDealsData?.data) return 0;
     return allDealsData.data.reduce((sum: number, deal: DealSummary) => {
-      return sum + (deal.financialDetails?.askingPrice || 0);
+      return sum + (deal.financialDetails?.trailingRevenueAmount || 0);
     }, 0);
   }, [allDealsData]);
 
-  const avgDealSize = React.useMemo(() => {
-    if (!allDealsData?.data || allDealsData.data.length === 0) return 0;
-    const dealsWithPrice = allDealsData.data.filter((d: DealSummary) => d.financialDetails?.askingPrice);
-    if (dealsWithPrice.length === 0) return 0;
-    const total = dealsWithPrice.reduce((sum: number, deal: DealSummary) => sum + (deal.financialDetails?.askingPrice || 0), 0);
-    return total / dealsWithPrice.length;
+  const totalEbitdaSize = React.useMemo(() => {
+    if (!allDealsData?.data) return 0;
+    return allDealsData.data.reduce((sum: number, deal: DealSummary) => {
+      return sum + (deal.financialDetails?.trailingEBITDAAmount || 0);
+    }, 0);
   }, [allDealsData]);
 
   // Chart data for Deal Status Distribution (Pie Chart)
@@ -809,12 +808,12 @@ export default function AdminOverviewPage() {
               <CardContent>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center p-2 bg-gradient-to-r from-teal-50 to-white rounded-lg">
-                    <span className="text-xs text-gray-600">Total Deal Value</span>
-                    <span className="text-sm font-bold text-teal-600">{formatCurrency(totalDealValue)}</span>
+                    <span className="text-xs text-gray-600">Total Revenue Size</span>
+                    <span className="text-sm font-bold text-teal-600">{formatCurrency(totalRevenueSize)}</span>
                   </div>
                   <div className="flex justify-between items-center p-2 bg-gradient-to-r from-blue-50 to-white rounded-lg">
-                    <span className="text-xs text-gray-600">Avg Deal Size</span>
-                    <span className="text-sm font-bold text-blue-600">{formatCurrency(avgDealSize)}</span>
+                    <span className="text-xs text-gray-600">Total EBITDA Size</span>
+                    <span className="text-sm font-bold text-blue-600">{formatCurrency(totalEbitdaSize)}</span>
                   </div>
                   <div className="flex justify-between items-center p-2 bg-gradient-to-r from-purple-50 to-white rounded-lg">
                     <span className="text-xs text-gray-600">Marketplace</span>
@@ -896,8 +895,8 @@ export default function AdminOverviewPage() {
                     <div className="text-xs text-white/80">Response Rate</div>
                   </div>
                   <div className="text-center p-3 bg-white/10 rounded-lg backdrop-blur-sm">
-                    <div className="text-2xl font-bold">{formatCurrency(avgDealSize)}</div>
-                    <div className="text-xs text-white/80">Avg Deal Size</div>
+                    <div className="text-2xl font-bold">{formatCurrency(totalEbitdaSize)}</div>
+                    <div className="text-xs text-white/80">Total EBITDA</div>
                   </div>
                   <div className="text-center p-3 bg-white/10 rounded-lg backdrop-blur-sm">
                     <div className="text-2xl font-bold">{stats?.totalBuyers || 0}</div>
@@ -928,10 +927,10 @@ export default function AdminOverviewPage() {
               <CardContent className="pt-4">
                 <ScrollArea className="h-[320px] pr-3">
                   <div className="space-y-3">
-                    {!activeDealsData?.data || activeDealsData.data.filter((d) => d.status === "active").length === 0 ? (
+                    {!activeDealsData?.data || activeDealsData.data.length === 0 ? (
                       <div className="text-center py-6 text-gray-500 text-sm">No active deals yet</div>
                     ) : (
-                      activeDealsData.data.filter((d) => d.status === "active").slice(0, 10).map((deal) => (
+                      activeDealsData.data.slice(0, 10).map((deal) => (
                         <Link
                           key={deal._id}
                           href={`/admin/dashboard?tab=active&search=${encodeURIComponent(deal.title)}`}

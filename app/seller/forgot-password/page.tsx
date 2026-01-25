@@ -34,7 +34,6 @@ export default function SellerForgotPasswordPage() {
         description: response.data?.message,
       })
     } catch (err: any) {
-      console.error(err)
       let errorMessage = "Unable to send reset email. Please try again.";
       
       if (err?.response?.data?.message) {

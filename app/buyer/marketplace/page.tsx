@@ -221,21 +221,15 @@ export default function MarketPlace() {
       const cleanToken = urlToken.trim();
       localStorage.setItem("token", cleanToken);
       setAuthToken(cleanToken);
-      console.log(
-        "Company Profile - Token set from URL:",
-        cleanToken.substring(0, 10) + "..."
-      );
+
     } else {
       const storedToken = sessionStorage.getItem("token");
       if (storedToken) {
         const cleanToken = storedToken.trim();
         setAuthToken(cleanToken);
-        console.log(
-          "Company Profile - Token set from localStorage:",
-          cleanToken.substring(0, 10) + "..."
-        );
+
       } else {
-        console.warn("Company Profile - No token found, redirecting to login");
+
         toast({
           title: "Authentication Required",
           description: "Please log in to access this page.",
@@ -251,16 +245,13 @@ export default function MarketPlace() {
       const cleanUserId = urlUserId.trim();
       localStorage.setItem("userId", cleanUserId);
       setBuyerId(cleanUserId);
-      console.log("Company Profile - Buyer ID set from URL:", cleanUserId);
+
     } else {
       const storedUserId = localStorage.getItem("userId");
       if (storedUserId) {
         const cleanUserId = storedUserId.trim();
         setBuyerId(cleanUserId);
-        console.log(
-          "Company Profile - Buyer ID set from localStorage:",
-          cleanUserId
-        );
+
       }
     }
 
@@ -299,7 +290,7 @@ export default function MarketPlace() {
         }
         setDealsLoading(false);
       } catch (error) {
-        console.error("Error fetching data:", error);
+
         toast({
           title: "Data Loading Error",
           description: "Failed to load geography and industry data.",
@@ -428,7 +419,7 @@ export default function MarketPlace() {
 
       if (!response.ok) {
         if (response.status === 404) {
-          console.log("No existing profile found, showing empty form");
+  
           return;
         }
 
@@ -439,11 +430,11 @@ export default function MarketPlace() {
       }
 
       const profileData = await response.json();
-      console.log("Existing profile loaded:", profileData);
+
 
       if (profileData && profileData._id) {
         setProfileId(profileData._id);
-        console.log("Company Profile ID stored for updates:", profileData._id);
+
       }
 
       if (profileData) {
@@ -544,7 +535,7 @@ export default function MarketPlace() {
         }
       }
     } catch (error) {
-      console.error("Error fetching profile:", error);
+      // Error fetching profile
     } finally {
       setIsSubmitting(false);
     }
@@ -557,7 +548,7 @@ export default function MarketPlace() {
     try {
       const token = sessionStorage.getItem("token");
       if (!token) {
-        console.warn("Company Profile - Missing token for profile fetch");
+
         return;
       }
 
@@ -581,9 +572,8 @@ export default function MarketPlace() {
 
       const data = await response.json();
       setBuyerProfile(data);
-      console.log("Company Profile - Buyer profile fetched:", data);
     } catch (error) {
-      console.error("Error fetching buyer profile:", error);
+
     }
   };
 
@@ -1417,15 +1407,7 @@ export default function MarketPlace() {
         ...formData,
       };
 
-      console.log(
-        "Company Profile - Updating profile at:",
-        `${apiUrl}/company-profiles/${profileId}`
-      );
-      console.log(
-        "Company Profile - Using token:",
-        authToken.substring(0, 10) + "..."
-      );
-      console.log("Company Profile - Profile ID:", profileId);
+
 
       const updateData = { ...profileData };
       delete (updateData as any)._id;
@@ -1435,10 +1417,7 @@ export default function MarketPlace() {
       delete (updateData as any).buyer;
       delete (updateData as any).agreementsAcceptedAt; // <-- Prevent sending this field
 
-      console.log(
-        "Company Profile - Update data:",
-        JSON.stringify(updateData, null, 2)
-      );
+
 
       const response = await fetch(`${apiUrl}/company-profiles/${profileId}`, {
         method: "PATCH",
@@ -1449,11 +1428,11 @@ export default function MarketPlace() {
         body: JSON.stringify(updateData),
       });
 
-      console.log("Company Profile - Response status:", response.status);
+
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error("API Error Response:", errorData);
+
 
         if (response.status === 401) {
           localStorage.removeItem("token");
@@ -1477,7 +1456,7 @@ export default function MarketPlace() {
       }
 
       const result = await response.json();
-      console.log("Company Profile - Update successful:", result);
+
 
       setSubmitStatus("success");
 
@@ -1486,7 +1465,7 @@ export default function MarketPlace() {
         router.push("/buyer/deals");
       }, 2000);
     } catch (error: any) {
-      console.error("Update error:", error);
+
       setSubmitStatus("error");
       setErrorMessage(
         error.message || "An error occurred while updating your profile."
@@ -1734,7 +1713,7 @@ export default function MarketPlace() {
   const handleLogout = () => {
     if (!isClient) return;
 
-    console.log("Company Profile - Logging out");
+
     localStorage.removeItem("token");
     localStorage.removeItem("userId");
     router.push("/buyer/login");

@@ -168,7 +168,6 @@ export default function LoginPage() {
         router.push("/deals")
       }, 1000)
     } catch (err: any) {
-      console.error("Login error:", err)
       setError(err.message || "Login failed. Please check your credentials.")
       toast({
         title: "Login Failed",

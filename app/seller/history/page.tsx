@@ -210,7 +210,7 @@ export default function DealsHistoryPage() {
           setSellerProfile(data)
         }
       } catch (error) {
-        console.error("Error fetching seller profile:", error)
+        // Error fetching seller profile
       }
     }
     fetchSellerProfile()
@@ -273,7 +273,6 @@ export default function DealsHistoryPage() {
           setDealsError("Failed to fetch deals")
         }
       } catch (error) {
-        console.error("Error fetching deals:", error)
         setDealsError("Error loading deals")
       } finally {
         setIsLoadingDeals(false)

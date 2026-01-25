@@ -40,15 +40,11 @@ export default function VerifyEmailSuccessPage() {
         localStorage.setItem('userId', userId);
         localStorage.setItem('userRole', role);
 
-        console.log('VerifyEmailSuccess - Stored token and userId:', token.substring(0, 10) + '...', userId);
-
         setTimeout(() => setIsLoading(false), 800);
       } catch (error) {
-        console.error('VerifyEmailSuccess - Failed to decode token:', error);
         router.push('/verify-email-failure');
       }
     } else {
-      console.warn('VerifyEmailSuccess - Missing token or role, redirecting to failure');
       router.push('/verify-email-failure');
     }
   }, [token, role, refreshToken, router]);

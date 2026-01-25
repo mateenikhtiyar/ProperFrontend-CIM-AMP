@@ -201,10 +201,7 @@ export default function SellerFormPage() {
       if (!response.ok) {
         throw new Error(`Failed to update preferences: ${response.status}`);
       }
-      
-      console.log('Seller preferences updated successfully');
     } catch (error) {
-      console.error('Failed to update seller preferences:', error);
       toast({
         title: "Warning",
         description: "Failed to save preference. Modal may appear again next time.",
@@ -354,7 +351,6 @@ export default function SellerFormPage() {
         setIndustryData(industryResponse);
         setFlatIndustryData(flattenIndustryData(industryResponse.sectors));
       } catch (error) {
-        console.error("Error fetching data:", error);
         toast({
           title: "Error",
           description: "Failed to load form data. Please refresh the page.",
@@ -386,7 +382,6 @@ export default function SellerFormPage() {
           setShowGuidelines(!seller.hideGuidelines);
         }
       } catch (error) {
-        console.error("Error fetching seller data:", error);
         setShowGuidelines(true); // Default to showing guidelines if fetch fails
       }
     };
@@ -566,8 +561,6 @@ export default function SellerFormPage() {
       geographySelections: [name],
       geographyHierarchy: hierarchyData,
     }));
-
-    console.log("Geography hierarchy data to send to backend:", hierarchyData);
   };
 
   const clearGeographySelection = () => {
@@ -649,9 +642,6 @@ export default function SellerFormPage() {
       selectedIndustryDisplay: industryName,
       industryHierarchy: hierarchyData,
     }));
-
-    console.log(`Selected ${selectedIndustryType}: ${industryName}`);
-    console.log("Industry hierarchy data to send to backend:", hierarchyData);
   };
 
   const toggleSector = (sector: Sector) => {
@@ -1712,14 +1702,9 @@ const renderGeographySelection = () => {
         };
       }
 
-      console.log("Documents to upload:", formData.documents.length);
-      console.log("NDA document:", formData.ndaDocument ? formData.ndaDocument.name : "None");
-      console.log("Geography hierarchy data:", formData.geographyHierarchy);
-      console.log("Industry hierarchy data:", formData.industryHierarchy);
 
       const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
 
-      // Send as JSON directly (file uploads are disabled on the backend)
       const response = await fetch(`${apiUrl}/deals`, {
         method: "POST",
         headers: {
@@ -1744,7 +1729,6 @@ const renderGeographySelection = () => {
       }
 
       const result = await response.json();
-      console.log("Deal created successfully:", result);
 
       toast({
         title: "Success",
@@ -1756,7 +1740,6 @@ const renderGeographySelection = () => {
         router.push(`/seller/deal?id=${result._id}&newDeal=true`);
       }, 2000);
     } catch (error: any) {
-      console.error("Form submission error:", error);
       toast({
         title: "Submission Failed",
         description:

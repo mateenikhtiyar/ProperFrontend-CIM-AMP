@@ -150,7 +150,7 @@ export default function SellerRegisterPage() {
     setIsSubmitting(true);
 
     try {
-      console.log("Register page - Submitting registration");
+
 
       // Use the API service
       const response = await sellerRegister({

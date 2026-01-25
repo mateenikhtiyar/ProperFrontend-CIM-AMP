@@ -287,10 +287,7 @@ export default function EditDealPageFixed() {
       if (!response.ok) {
         throw new Error(`Failed to update preferences: ${response.status}`);
       }
-      
-      console.log('Seller preferences updated successfully');
     } catch (error) {
-      console.error('Failed to update seller preferences:', error);
       toast({
         title: "Warning",
         description: "Failed to save preference. Modal may appear again next time.",
@@ -532,7 +529,6 @@ export default function EditDealPageFixed() {
       toast({ title: 'Deal updated', description: 'Your changes have been saved.' });
       router.push('/seller/dashboard');
     } catch (err: any) {
-      console.error('Update deal failed:', err);
       toast({ title: 'Update failed', description: err.message || 'Please try again.', variant: 'destructive' });
     } finally {
       setIsSaving(false);
@@ -696,7 +692,6 @@ export default function EditDealPageFixed() {
         setShowGuidelines(!seller.hideGuidelines);
       }
     } catch (error) {
-      console.error('Error fetching seller data:', error);
       setShowGuidelines(true);
     }
 
@@ -744,7 +739,6 @@ export default function EditDealPageFixed() {
       }
     }
   } catch (error: any) {
-    console.error("Error fetching deal:", error);
     toast({
       title: "Error",
       description: error.message || "Failed to load deal data",
@@ -1248,12 +1242,6 @@ export default function EditDealPageFixed() {
         subIndustryNames.length > 0 ? subIndustryNames : [industryName],
       selectedIndustryDisplay: industryName,
     }));
-
-    console.log(`Selected ${selectedIndustryType}: ${industryName}`);
-    console.log(
-      `Sending ${subIndustryNames.length} sub-industries to backend:`,
-      subIndustryNames
-    );
   };
 
   const renderIndustrySelection = () => {
@@ -1540,7 +1528,6 @@ useEffect(() => {
       await fetchDealData();
       
     } catch (error) {
-      console.error("Error fetching data:", error);
       toast({
         title: "Error",
         description: "Failed to load form data. Please refresh the page.",

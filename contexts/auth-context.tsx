@@ -132,10 +132,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Redirect to appropriate login page
     const loginPage = getLoginPageForRole(currentRole)
 
-    if (reason) {
-      console.log(`Force logout: ${reason}`)
-    }
-
     router.push(loginPage)
   }, [userRole, router])
 
@@ -149,7 +145,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (isLoggedIn) {
       inactivityTimeoutRef.current = setTimeout(() => {
-        console.log("Session expired due to inactivity")
         forceLogout("Session expired due to inactivity")
       }, INACTIVITY_TIMEOUT)
     }
@@ -199,7 +194,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isRefreshingRef.current = false
       return true
     } catch (error) {
-      console.error("Error refreshing token:", error)
       isRefreshingRef.current = false
       return false
     }
@@ -287,7 +281,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUserRole(null)
         }
       } catch (error) {
-        console.error("Error checking authentication:", error)
         setIsLoggedIn(false)
         setUserId(null)
         setUserRole(null)
@@ -390,7 +383,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Reset inactivity timer
       resetInactivityTimer()
     } catch (error) {
-      console.error("Error during login:", error)
+      // Error during login
     }
   }
 
@@ -425,7 +418,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         router.push(loginPage)
       }
     } catch (error) {
-      console.error("Error during logout:", error)
+      // Error during logout
     }
   }, [userRole, router])
 
@@ -454,7 +447,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         userId: storedUserId || null,
       }
     } catch (error) {
-      console.error("Error checking authentication:", error)
       return { authenticated: false, role: null, userId: null }
     }
   }, [])

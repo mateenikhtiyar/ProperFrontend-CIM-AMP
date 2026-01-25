@@ -516,7 +516,7 @@ const [showAllCountries, setShowAllCountries] = useState(false);
           });
         }
       } catch (error) {
-        console.error("Error fetching seller profile:", error);
+        // Error fetching seller profile
       }
     };
     fetchSellerProfile();
@@ -553,7 +553,6 @@ const [showAllCountries, setShowAllCountries] = useState(false);
         setDeal(data);
         setError(null);
       } catch (err: any) {
-        console.error("Error fetching deal details:", err);
         setError(err.message || "Failed to load deal details");
         if (
           err.message.includes("Authentication") ||
@@ -581,11 +580,9 @@ const [showAllCountries, setShowAllCountries] = useState(false);
         const companyData = await response.json();
         setSelectedCompanyProfile(companyData);
       } else {
-        console.error("Failed to fetch company profile:", response.status);
         setSelectedCompanyProfile(null);
       }
     } catch (error) {
-      console.error("Error fetching company profile:", error);
       setSelectedCompanyProfile(null);
     } finally {
       setLoadingCompanyProfile(false);
@@ -621,14 +618,9 @@ const [showAllCountries, setShowAllCountries] = useState(false);
                 const buyerInfo = await buyerResponse.json();
                 return buyerInfo;
               } else {
-                console.error(
-                  `Failed to fetch buyer ${buyerId}:`,
-                  buyerResponse.status
-                );
                 return null;
               }
             } catch (error) {
-              console.error(`Error fetching buyer ${buyerId}:`, error);
               return null;
             }
           });
@@ -645,7 +637,6 @@ const [showAllCountries, setShowAllCountries] = useState(false);
           if (companyProfilesResponse.ok) {
             allCompanyProfiles = await companyProfilesResponse.json();
           } else {
-            console.error("Failed to fetch all company profiles:", companyProfilesResponse.status);
           }
 
           for (let i = 0; i < buyerIds.length; i++) {
@@ -710,10 +701,8 @@ const [showAllCountries, setShowAllCountries] = useState(false);
         };
         setStatusSummary(updatedData);
       } else {
-        console.error("Failed to fetch status summary:", response.status);
       }
     } catch (error) {
-      console.error("Error fetching status summary:", error);
     } finally {
       setLoadingBuyers(false);
     }
@@ -751,7 +740,6 @@ const [showAllCountries, setShowAllCountries] = useState(false);
             setMatchedBuyers([]);
           }
         } catch (error) {
-          console.error("Error fetching matching buyers:", error);
           setMatchedBuyers([]);
         } finally {
           setLoadingBuyers(false);
@@ -914,7 +902,7 @@ const [showAllCountries, setShowAllCountries] = useState(false);
         return transformedBuyers;
       }
     } catch (error) {
-      console.error("Error fetching ever active buyers:", error);
+      // Error fetching ever active buyers
     }
     return [];
   };
@@ -1185,7 +1173,6 @@ const [showAllCountries, setShowAllCountries] = useState(false);
       // Always re-fetch matching buyers after sending invites
       await handleInviteBuyersClick();
     } catch (error: any) {
-      console.error("Error sending invites:", error);
       toast({
         title: "Error sending invites",
         description:
@@ -1221,7 +1208,6 @@ const [showAllCountries, setShowAllCountries] = useState(false);
           setMatchedBuyers([]);
         }
       } catch (error) {
-        console.error("Error fetching matching buyers:", error);
         setMatchedBuyers([]);
       } finally {
         setLoadingBuyers(false);
