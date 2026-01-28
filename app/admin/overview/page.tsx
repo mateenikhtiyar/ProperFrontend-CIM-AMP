@@ -164,7 +164,7 @@ const fetchStats = async (): Promise<DashboardStats> => {
 
 const fetchActiveDeals = async (): Promise<{ data: DealSummary[]; total: number }> => {
   const token = sessionStorage.getItem('token');
-  const res = await fetch(`${API_URL}/deals/admin?page=1&limit=10&status=active`, {
+  const res = await fetch(`${API_URL}/deals/admin?page=1&limit=10&status=active&buyerResponse=accepted`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) throw new Error("Failed to fetch active deals");
@@ -301,7 +301,9 @@ export default function AdminOverviewPage() {
 
   const marketplaceDeals = React.useMemo(() => {
     if (!allDealsData?.data) return 0;
-    return allDealsData.data.filter((deal: DealSummary) => deal.isPublic === true).length;
+    return allDealsData.data.filter((deal: DealSummary) => 
+      deal.isPublic === true && deal.status === "active"
+    ).length;
   }, [allDealsData]);
 
   const totalRevenueSize = React.useMemo(() => {
@@ -508,8 +510,8 @@ export default function AdminOverviewPage() {
                     <Activity className="h-4 w-4 text-emerald-600" />
                   </div>
                 </div>
-                <div className="text-2xl font-bold text-gray-900">{formatNumber(stats?.activeDeals || 0)}</div>
-                <div className="text-xs text-emerald-600 mt-1">Currently on buyers Active Tab</div>
+                <div className="text-2xl font-bold text-gray-900">{formatNumber(activeDealsData?.total || 0)}</div>
+                <div className="text-xs text-emerald-600 mt-1">With buyer responses accepted</div>
               </CardContent>
             </Card>
 
