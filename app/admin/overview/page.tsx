@@ -63,6 +63,7 @@ interface DashboardStats {
   totalSellers: number;
   dealsThisMonth: number;
   dealsLastMonth: number;
+  marketplaceDeals: number;
 }
 
 interface DealSummary {
@@ -297,13 +298,6 @@ export default function AdminOverviewPage() {
       }
     });
     return levels;
-  }, [allDealsData]);
-
-  const marketplaceDeals = React.useMemo(() => {
-    if (!allDealsData?.data) return 0;
-    return allDealsData.data.filter((deal: DealSummary) => 
-      deal.isPublic === true && deal.status === "active"
-    ).length;
   }, [allDealsData]);
 
   const totalRevenueSize = React.useMemo(() => {
@@ -821,7 +815,7 @@ export default function AdminOverviewPage() {
                     <span className="text-xs text-gray-600">Marketplace</span>
                     <div className="flex items-center gap-1">
                       <Globe className="h-3 w-3 text-purple-500" />
-                      <span className="text-sm font-bold text-purple-600">{marketplaceDeals}</span>
+                      <span className="text-sm font-bold text-purple-600">{stats?.marketplaceDeals || 0}</span>
                     </div>
                   </div>
                   <div className="flex justify-between items-center p-2 bg-gradient-to-r from-amber-50 to-white rounded-lg">
