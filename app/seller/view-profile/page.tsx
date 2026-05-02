@@ -1,28 +1,23 @@
-"use client";
+﻿"use client";
 
 import type React from "react";
 
 import { useState, useEffect, useRef } from "react";
-import Image from "next/image";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getSellerProfile } from "@/services/api";
+import { buildApiUrl } from "@/lib/api-config";
 import {
   Pencil,
-  HandshakeIcon,
-  History,
-  LogOut,
   Eye,
   EyeOff,
   Camera,
   Loader2,
-  FileText,
-  Clock,
   Menu,
+  Bell,
 } from "lucide-react";
-import { triggerNavigationProgress } from "@/components/navigation-progress";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/components/ui/use-toast";
 import { Toaster } from "@/components/ui/toaster";
@@ -37,7 +32,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/auth-context";
 import SellerProtectedRoute from "@/components/seller/protected-route";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { AmplifyVenturesBox } from "@/components/seller/amplify-ventures-box";
+import { SellerNav } from "@/components/seller/seller-nav";
 
 interface SellerProfile {
   id: string;
@@ -49,6 +44,9 @@ interface SellerProfile {
   website?: string;
   location?: string;
   profilePicture?: string;
+  preferences?: {
+    receiveDealEmails?: boolean;
+  };
 }
 
 // Define which fields are editable based on backend DTO
@@ -216,9 +214,15 @@ export default function ViewProfilePage() {
         phoneNumber: editValues.phoneNumber?.trim() || "",
         website: editValues.website?.trim() || "",
         title: editValues.title?.trim() || "",
+        preferences: {
+          receiveDealEmails:
+            editValues.preferences?.receiveDealEmails ??
+            profile?.preferences?.receiveDealEmails ??
+            true,
+        },
       };
 
-      const response = await fetch("https://api.cimamplify.com/sellers/me", {
+      const response = await fetch(buildApiUrl("/sellers/me"), {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -228,7 +232,7 @@ export default function ViewProfilePage() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || "Failed to update profile");
       }
 
@@ -289,7 +293,7 @@ export default function ViewProfilePage() {
         password: passwordData.newPassword,
       };
 
-      const response = await fetch("https://api.cimamplify.com/sellers/me", {
+      const response = await fetch(buildApiUrl("/sellers/me"), {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -299,7 +303,7 @@ export default function ViewProfilePage() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || "Failed to change password");
       }
 
@@ -444,96 +448,12 @@ export default function ViewProfilePage() {
     logout(); // logout() from useAuth already handles redirect
   };
 
-  // Navigation component for reuse
-  const NavigationContent = ({ onNavigate }: { onNavigate?: () => void }) => (
-    <>
-      <div className="mb-8">
-        <Link href="/seller/dashboard" onClick={onNavigate}>
-          <Image
-            src="/logo.svg"
-            alt="CIM Amplify Logo"
-            width={150}
-            height={50}
-            className="h-auto"
-          />
-        </Link>
-      </div>
-
-      <nav className="flex-1 space-y-6">
-        <Button
-          variant="ghost"
-          className="w-full justify-start gap-3 font-normal"
-          data-navigate="/seller/dashboard"
-          onClick={() => {
-            triggerNavigationProgress();
-            onNavigate?.();
-            router.push("/seller/dashboard");
-          }}
-        >
-          <HandshakeIcon className="h-5 w-5" />
-          <span>MyDeals</span>
-        </Button>
-
-        <Button
-          variant="ghost"
-          className="w-full justify-start gap-3 font-normal"
-          data-navigate="/seller/loi-deals"
-          onClick={() => {
-            triggerNavigationProgress();
-            onNavigate?.();
-            router.push("/seller/loi-deals");
-          }}
-        >
-          <FileText className="h-5 w-5" />
-          <span>LOI - Deals</span>
-        </Button>
-
-        <Button
-          variant="ghost"
-          className="w-full justify-start gap-3 font-normal"
-          data-navigate="/seller/history"
-          onClick={() => {
-            triggerNavigationProgress();
-            onNavigate?.();
-            router.push("/seller/history");
-          }}
-        >
-          <Clock className="h-5 w-5" />
-          <span>Off Market</span>
-        </Button>
-
-        <Button
-          variant="secondary"
-          className="w-full justify-start gap-3 font-normal bg-teal-100 text-teal-700 hover:bg-teal-200"
-          onClick={onNavigate}
-        >
-          <Eye className="h-5 w-5" />
-          <span>View Profile</span>
-        </Button>
-
-        <Button
-          variant="ghost"
-          className="w-full justify-start gap-3 font-normal text-red-600 hover:text-red-700 hover:bg-red-50 mt-auto"
-          onClick={() => {
-            onNavigate?.();
-            handleLogout();
-          }}
-        >
-          <LogOut className="h-5 w-5" />
-          <span>Sign Out</span>
-        </Button>
-      </nav>
-
-      <AmplifyVenturesBox />
-    </>
-  );
-
   return (
     <SellerProtectedRoute>
       <div className="flex min-h-screen bg-gray-50">
         {/* Desktop Sidebar */}
         <div className="hidden md:flex w-64 bg-white border-r border-gray-200 p-6 flex-col">
-          <NavigationContent />
+          <SellerNav activePage="view-profile" onLogout={handleLogout} />
         </div>
 
         {/* Main content */}
@@ -554,7 +474,7 @@ export default function ViewProfilePage() {
                     <SheetTitle>Menu</SheetTitle>
                   </SheetHeader>
                   <div className="mt-6 flex-1 overflow-y-auto pb-6">
-                    <NavigationContent onNavigate={() => setMobileMenuOpen(false)} />
+                    <SellerNav activePage="view-profile" onLogout={handleLogout} onNavigate={() => setMobileMenuOpen(false)} />
                   </div>
                 </SheetContent>
               </Sheet>
@@ -903,6 +823,46 @@ export default function ViewProfilePage() {
                           )}{" "}
                         </span>
                       )}
+                    </div>
+
+                    <div className="mt-2">
+                      <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                        <div className="flex items-center justify-between gap-4">
+                          <div>
+                            <Label className="text-gray-700 text-sm flex items-center gap-2">
+                              <Bell className="h-4 w-4" />
+                              Receive Deal Emails
+                            </Label>
+                            <p className="text-xs text-gray-500 mt-1">
+                              Buyer interest and deal activity notifications.
+                            </p>
+                          </div>
+                          {editMode ? (
+                            <Switch
+                              checked={
+                                editValues.preferences?.receiveDealEmails ??
+                                profile?.preferences?.receiveDealEmails ??
+                                true
+                              }
+                              onCheckedChange={(checked) =>
+                                setEditValues((prev) => ({
+                                  ...prev,
+                                  preferences: {
+                                    ...(prev.preferences || {}),
+                                    receiveDealEmails: checked,
+                                  },
+                                }))
+                              }
+                            />
+                          ) : (
+                            <span className="text-xs font-medium text-gray-500">
+                              {(profile?.preferences?.receiveDealEmails ?? true)
+                                ? "On"
+                                : "Off"}
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
 
                     <div className="mt-4">

@@ -4,12 +4,14 @@ import type React from "react";
 import { useState, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
+import { BuyerProtectedRoute } from "@/components/buyer/protected-route";
 import {
-  Search, LogOut, Briefcase, Store, User, Settings, Menu,
-  ChevronDown, ChevronUp, Building2, MapPin, TrendingUp,
+  Search, Briefcase, User, Menu,
+  ChevronDown, ChevronUp, Building2, MapPin,
   DollarSign, Loader2, CheckCircle2, XCircle,
   ArrowRight, RefreshCw, AlertTriangle, Phone, Mail
 } from "lucide-react";
+import { BuyerNav } from "@/components/buyer/buyer-nav";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -26,7 +28,7 @@ interface Deal {
   yearsInBusiness: number;
   trailingRevenue: number;
   trailingEbitda: number;
-  averageGrowth: number;
+  averageGrowth?: number;
   netIncome: number;
   askingPrice: number;
   businessModel: string;
@@ -43,6 +45,8 @@ interface Deal {
   askingPriceCurrency?: string;
   managementPreferences?: string;
   isLoi?: boolean;
+  flaggedInactive?: boolean;
+  invitationResponse?: "requested" | "pending" | "accepted" | "rejected";
 }
 
 interface Document {
@@ -129,6 +133,15 @@ const getCurrencyLabel = (currency?: string, fallback?: string) => {
   return "USD($)";
 };
 
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || "").trim().replace(/\/$/, "");
+
+const getApiBaseUrl = () => {
+  if (!API_BASE_URL) {
+    throw new Error("NEXT_PUBLIC_API_URL is not configured.");
+  }
+  return API_BASE_URL;
+};
+
 export default function DealsPage() {
   const [activeTab, setActiveTab] = useState("pending");
   const [selectedDealId, setSelectedDealId] = useState<string | null>(null);
@@ -190,7 +203,7 @@ export default function DealsPage() {
         return [];
       }
 
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+      const apiUrl = getApiBaseUrl();
 
       let endpoint = "";
       switch (status) {
@@ -231,19 +244,19 @@ export default function DealsPage() {
       }
 
       const data = await response.json();
+      const currentBuyerId = sessionStorage.getItem("userId");
 
       const mappedDeals = data.map((deal: any) => ({
         id: deal._id,
         sellerId: typeof deal.seller === "string" ? deal.seller : deal.seller?._id,
         title: deal.title,
-        status: status,
         companyDescription: deal.companyDescription,
         industry: deal.industrySector,
         geography: deal.geographySelection,
         yearsInBusiness: deal.yearsInBusiness,
         trailingRevenue: deal.financialDetails?.trailingRevenueAmount || 0,
         trailingEbitda: deal.financialDetails?.trailingEBITDAAmount || 0,
-        averageGrowth: deal.financialDetails?.avgRevenueGrowth || 0,
+
         netIncome: deal.financialDetails?.netIncome || 0,
         askingPrice: deal.financialDetails?.askingPrice || 0,
         businessModel: getBusinessModelString(deal.businessModel),
@@ -260,9 +273,21 @@ export default function DealsPage() {
         askingPriceCurrency: deal.financialDetails?.askingPriceCurrency || "$",
         managementPreferences: deal.managementPreferences || deal.managementFuturePreferences || '',
         isLoi: deal.status === 'loi' || deal.isLoi === true,
+        flaggedInactive: !!(currentBuyerId && (
+          (deal.invitationStatus instanceof Object && (deal.invitationStatus as any)[currentBuyerId]?.flaggedInactive) ||
+          (deal.invitationStatus?.[currentBuyerId]?.flaggedInactive)
+        )),
+        invitationResponse: currentBuyerId
+          ? (deal.invitationStatus instanceof Object && (deal.invitationStatus as any)[currentBuyerId]?.response) ||
+            deal.invitationStatus?.[currentBuyerId]?.response ||
+            undefined
+          : undefined,
       }));
 
-      return mappedDeals;
+      return mappedDeals.map((deal: Deal) => ({
+        ...deal,
+        status: deal.flaggedInactive && deal.invitationResponse !== "accepted" ? "passed" : status,
+      }));
     } catch (error) {
       return [];
     }
@@ -318,7 +343,7 @@ export default function DealsPage() {
         profile.targetCriteria.revenueMin === undefined || profile.targetCriteria.revenueMax === undefined ||
         profile.targetCriteria.ebitdaMin === undefined || profile.targetCriteria.ebitdaMax === undefined ||
         profile.targetCriteria.transactionSizeMin === undefined || profile.targetCriteria.transactionSizeMax === undefined ||
-        profile.targetCriteria.revenueGrowth === undefined || profile.targetCriteria.minYearsInBusiness === undefined ||
+        profile.targetCriteria.minYearsInBusiness === undefined ||
         !profile.targetCriteria.preferredBusinessModels || profile.targetCriteria.preferredBusinessModels.length === 0 ||
         !profile.targetCriteria.description) {
       return false;
@@ -334,7 +359,7 @@ export default function DealsPage() {
       setApiError(null);
       const token = sessionStorage.getItem("token");
       const currentBuyerId = sessionStorage.getItem("userId");
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+      const apiUrl = getApiBaseUrl();
 
       if (!token || !currentBuyerId) {
         setApiError("Authentication required. Please log in again.");
@@ -416,6 +441,8 @@ export default function DealsPage() {
       if (storedToken) {
         setAuthToken(storedToken.trim());
       } else {
+        const currentPath = `${window.location.pathname}${window.location.search}`;
+        localStorage.setItem("buyerAuthReturnUrl", currentPath);
         router.push("/buyer/login");
         return false;
       }
@@ -489,6 +516,32 @@ export default function DealsPage() {
   }, [isInitialized, searchParams]);
 
   useEffect(() => {
+    if (!isInitialized) return;
+
+    const requestedTab = searchParams?.get("tab");
+    const requestedDealId = searchParams?.get("dealId");
+    const validTabs = ["pending", "active", "passed"];
+
+    if (requestedTab && validTabs.includes(requestedTab)) {
+      setActiveTab(requestedTab);
+    } else if (requestedDealId && deals.length > 0) {
+      const matchedDeal = deals.find((deal) => deal.id === requestedDealId);
+      if (matchedDeal) setActiveTab(matchedDeal.status);
+    }
+
+    if (!requestedDealId || loading) return;
+
+    const scrollTimer = window.setTimeout(() => {
+      document.getElementById(`deal-${requestedDealId}`)?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }, 150);
+
+    return () => window.clearTimeout(scrollTimer);
+  }, [isInitialized, searchParams, deals, loading]);
+
+  useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden && isInitialized) {
         fetchAllDeals(true);
@@ -505,7 +558,7 @@ export default function DealsPage() {
       const userId = sessionStorage.getItem("userId");
       if (!token || !userId) return;
 
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+      const apiUrl = getApiBaseUrl();
       const response = await fetch(`${apiUrl}/company-profiles/my-profile`, {
         method: "GET",
         headers: { Authorization: `Bearer ${token}` },
@@ -528,7 +581,7 @@ export default function DealsPage() {
       const token = sessionStorage.getItem("token") || sessionStorage.getItem("token");
       if (!token) return;
 
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+      const apiUrl = getApiBaseUrl();
       const response = await fetch(`${apiUrl}/buyers/profile`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -575,7 +628,7 @@ export default function DealsPage() {
       const token = sessionStorage.getItem("token");
       if (!token) return;
 
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+      const apiUrl = getApiBaseUrl();
       const response = await fetch(`${apiUrl}/deals/${deal.id}/seller-contact`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -634,20 +687,18 @@ export default function DealsPage() {
   };
 
   const handleLogout = () => {
+    authLogout();
     toast({
       title: "Logged Out",
       description: "You have been successfully logged out.",
       duration: 3000,
     });
-    setTimeout(() => {
-      authLogout();
-    }, 500);
   };
 
   const getProfilePictureUrl = (path: string | null) => {
     if (!path) return null;
     if (path.startsWith("data:image")) return path;
-    const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+    const apiUrl = getApiBaseUrl();
     if (path.startsWith("http://") || path.startsWith("https://")) return path;
     const formattedPath = path.replace(/\\/g, "/");
     return `${apiUrl}/${formattedPath.startsWith("/") ? formattedPath.substring(1) : formattedPath}`;
@@ -655,18 +706,22 @@ export default function DealsPage() {
 
   const fetchSellerInfo = async (sellerId: string) => {
     try {
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
-      const response = await fetch(`${apiUrl}/sellers/public/${sellerId}`);
+      const apiUrl = getApiBaseUrl();
+      const response = await fetch(`${apiUrl}/sellers/bulk`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sellerIds: [sellerId] }),
+      });
       if (!response.ok) throw new Error("Failed to fetch seller info");
-      const data = await response.json();
+      const [data] = await response.json();
       setSellerInfoMap(prev => ({
         ...prev,
         [sellerId]: {
-          name: data.fullName || "N/A",
-          email: data.email || "N/A",
-          phoneNumber: data.phoneNumber || "N/A",
-          companyName: data.companyName || "N/A",
-          website: data.website || "N/A",
+          name: data?.fullName || "N/A",
+          email: data?.email || "N/A",
+          phoneNumber: data?.phoneNumber || "N/A",
+          companyName: data?.companyName || "N/A",
+          website: data?.website || "N/A",
         },
       }));
     } catch {
@@ -691,33 +746,44 @@ export default function DealsPage() {
       }
 
       setSellerInfoLoading(true);
-      const token = sessionStorage.getItem("token");
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+      const apiUrl = getApiBaseUrl();
+      try {
+        const response = await fetch(`${apiUrl}/sellers/bulk`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sellerIds: uniqueSellerIds }),
+        });
 
-      for (const sellerId of uniqueSellerIds) {
-        try {
-          const response = await fetch(`${apiUrl}/sellers/public/${sellerId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          if (response.ok) {
-            const data = await response.json();
-            setSellerInfoMap(prev => ({
-              ...prev,
-              [sellerId]: {
-                name: data.fullName || "N/A",
-                email: data.email || "N/A",
-                phoneNumber: data.phoneNumber || "N/A",
-                companyName: data.companyName || "N/A",
-                website: data.website || "N/A",
-              },
-            }));
-          }
-        } catch {
-          setSellerInfoMap(prev => ({
-            ...prev,
-            [sellerId]: { name: "N/A", email: "N/A", phoneNumber: "N/A" },
-          }));
+        if (!response.ok) {
+          throw new Error("Failed to fetch seller bulk info");
         }
+
+        const sellers = await response.json();
+        const nextMap: SellerInfoMap = {};
+        for (const seller of sellers) {
+          if (!seller?.id) continue;
+          nextMap[seller.id] = {
+            name: seller.fullName || "N/A",
+            email: seller.email || "N/A",
+            phoneNumber: seller.phoneNumber || "N/A",
+            companyName: seller.companyName || "N/A",
+            website: seller.website || "N/A",
+          };
+        }
+
+        for (const sellerId of uniqueSellerIds) {
+          if (!nextMap[sellerId]) {
+            nextMap[sellerId] = { name: "N/A", email: "N/A", phoneNumber: "N/A", companyName: "N/A", website: "N/A" };
+          }
+        }
+
+        setSellerInfoMap(prev => ({ ...prev, ...nextMap }));
+      } catch {
+        const fallbackMap: SellerInfoMap = {};
+        for (const sellerId of uniqueSellerIds) {
+          fallbackMap[sellerId] = { name: "N/A", email: "N/A", phoneNumber: "N/A", companyName: "N/A", website: "N/A" };
+        }
+        setSellerInfoMap(prev => ({ ...prev, ...fallbackMap }));
       }
       setSellerInfoLoading(false);
     };
@@ -741,6 +807,7 @@ export default function DealsPage() {
   }
 
   return (
+    <BuyerProtectedRoute>
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-lg border-b border-gray-100 sticky top-0 z-50">
@@ -759,47 +826,7 @@ export default function DealsPage() {
                     <img src="/logo.svg" alt="CIM Amplify" className="h-10" />
                   </Link>
                 </div>
-                <nav className="flex flex-col p-4">
-                  <Link
-                    href="/buyer/deals"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="mb-2 flex items-center rounded-md bg-teal-500 px-4 py-3 text-white hover:bg-teal-600 transition-colors"
-                  >
-                    <Briefcase className="mr-3 h-5 w-5" />
-                    <span>All Deals</span>
-                  </Link>
-                  <Link
-                    href="/buyer/marketplace"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="mb-2 flex items-center rounded-md px-4 py-3 text-gray-700 hover:bg-gray-100 transition-colors"
-                  >
-                    <Store className="mr-3 h-5 w-5" />
-                    <span>Marketplace</span>
-                  </Link>
-                  <Link
-                    href="/buyer/company-profile"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="mb-2 flex items-center rounded-md px-4 py-3 text-gray-700 hover:bg-gray-100 transition-colors"
-                  >
-                    <Settings className="mr-3 h-5 w-5" />
-                    <span>Company Profile</span>
-                  </Link>
-                  <Link
-                    href="/buyer/profile"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="mb-2 flex items-center rounded-md px-4 py-3 text-gray-700 hover:bg-gray-100 transition-colors"
-                  >
-                    <User className="mr-3 h-5 w-5" />
-                    <span>My Profile</span>
-                  </Link>
-                  <button
-                    onClick={() => { setMobileMenuOpen(false); handleLogout(); }}
-                    className="mt-4 flex items-center rounded-md px-4 py-3 text-red-600 hover:bg-red-50 transition-colors"
-                  >
-                    <LogOut className="mr-3 h-5 w-5" />
-                    <span>Sign Out</span>
-                  </button>
-                </nav>
+                <BuyerNav activePage="deals" onLogout={handleLogout} onNavigate={() => setMobileMenuOpen(false)} />
               </SheetContent>
             </Sheet>
 
@@ -871,44 +898,8 @@ export default function DealsPage() {
 
       <div className="flex">
         {/* Sidebar */}
-        <aside className="hidden md:block md:w-56 border-r border-gray-200 bg-white min-h-[calc(100vh-4rem)]">
-          <nav className="flex flex-col p-4">
-            <Link
-              href="/buyer/deals"
-              className="mb-2 flex items-center rounded-md bg-teal-500 px-4 py-3 text-white hover:bg-teal-600 transition-colors"
-            >
-              <Briefcase className="mr-3 h-5 w-5" />
-              <span>All Deals</span>
-            </Link>
-            <Link
-              href="/buyer/marketplace"
-              className="mb-2 flex items-center rounded-md px-4 py-3 text-gray-700 hover:bg-gray-100 transition-colors"
-            >
-              <Store className="mr-3 h-5 w-5" />
-              <span>Marketplace</span>
-            </Link>
-            <Link
-              href="/buyer/company-profile"
-              className="mb-2 flex items-center rounded-md px-4 py-3 text-gray-700 hover:bg-gray-100 transition-colors"
-            >
-              <Settings className="mr-3 h-5 w-5" />
-              <span>Company Profile</span>
-            </Link>
-            <Link
-              href="/buyer/profile"
-              className="mb-2 flex items-center rounded-md px-4 py-3 text-gray-700 hover:bg-gray-100 transition-colors"
-            >
-              <User className="mr-3 h-5 w-5" />
-              <span>My Profile</span>
-            </Link>
-            <button
-              onClick={handleLogout}
-              className="mt-4 flex items-center rounded-md px-4 py-3 text-red-600 hover:bg-red-50 transition-colors"
-            >
-              <LogOut className="mr-3 h-5 w-5" />
-              <span>Sign Out</span>
-            </button>
-          </nav>
+        <aside className="hidden md:block md:w-56 border-r border-gray-200 bg-white h-[calc(100vh-4rem)] sticky top-[4rem] overflow-y-auto flex-shrink-0">
+          <BuyerNav activePage="deals" onLogout={handleLogout} />
         </aside>
 
         {/* Main Content */}
@@ -954,24 +945,34 @@ export default function DealsPage() {
           {/* Tab Navigation */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <div className="flex flex-wrap items-center gap-2">
-              {["pending", "active", "passed"].map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`px-4 py-2 rounded-md font-medium text-sm transition-colors ${
-                    activeTab === tab
-                      ? 'bg-teal-500 text-white hover:bg-teal-600'
-                      : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-100'
-                  }`}
-                >
-                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                  <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
-                    activeTab === tab ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
-                  }`}>
-                    {dealCounts[tab as keyof typeof dealCounts]}
-                  </span>
-                </button>
-              ))}
+              {["pending", "active", "passed"].map((tab) => {
+                const isLoadingCounts = loading || !initialLoadComplete;
+                return (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`px-4 py-2 rounded-md font-medium text-sm transition-colors ${
+                      activeTab === tab
+                        ? 'bg-teal-500 text-white hover:bg-teal-600'
+                        : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-100'
+                    }`}
+                  >
+                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                    <span className={`ml-2 inline-flex items-center justify-center min-w-[24px] h-5 px-2 py-0.5 rounded-full text-xs ${
+                      activeTab === tab ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
+                    }`}>
+                      {isLoadingCounts ? (
+                        <span
+                          className="inline-block w-3 h-3 rounded-full bg-current opacity-40 animate-pulse"
+                          aria-label="Loading"
+                        />
+                      ) : (
+                        dealCounts[tab as keyof typeof dealCounts]
+                      )}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
 
             {searchQuery && (
@@ -1025,7 +1026,7 @@ export default function DealsPage() {
                 {searchQuery
                   ? `No deals match "${searchQuery}". Try adjusting your search terms.`
                   : activeTab === 'pending'
-                  ? "We'll send you an email when a deal matches your criteria.Check out Marketplace to see deals that are posted by Advisors to all members."
+                  ? "We'll send you an email when a deal matches your criteria. Check out Marketplace to see deals that are posted by Advisors to all members."
                   : activeTab === 'active'
                   ? "Move deals from Pending to start working on them."
                   : "Deals you've passed on that are still on the market will appear here."}
@@ -1034,6 +1035,8 @@ export default function DealsPage() {
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {filteredDeals.map((deal) => {
+                const isCurrentlyFlagged = deal.flaggedInactive && deal.invitationResponse !== "accepted";
+                const isLinkedDeal = searchParams?.get("dealId") === deal.id;
                 const sellerIdStr = typeof deal.sellerId === "string" ? deal.sellerId : undefined;
                 const sellerInfo = sellerIdStr && sellerInfoMap[sellerIdStr]
                   ? sellerInfoMap[sellerIdStr]
@@ -1042,8 +1045,13 @@ export default function DealsPage() {
                 return (
                   <div
                     key={deal.id}
+                    id={`deal-${deal.id}`}
                     className={`bg-white rounded-2xl border overflow-hidden transition-all duration-300 hover:shadow-xl ${
-                      deal.isLoi
+                      isLinkedDeal
+                        ? "border-teal-400 ring-2 ring-teal-200 shadow-xl"
+                        : isCurrentlyFlagged
+                        ? "border-red-200 bg-gradient-to-br from-red-50/60 to-white"
+                        : deal.isLoi
                         ? "border-amber-200 bg-gradient-to-br from-amber-50/50 to-white"
                         : "border-gray-100 hover:border-teal-200"
                     }`}
@@ -1055,6 +1063,16 @@ export default function DealsPage() {
                           <AlertTriangle className="w-4 h-4 text-amber-600" />
                           <p className="text-sm font-medium text-amber-800">
                             Under LOI - We&apos;ll notify you if available again
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    {isCurrentlyFlagged && (
+                      <div className="px-5 py-3 bg-gradient-to-r from-red-100 to-red-50 border-b border-red-200">
+                        <div className="flex items-center gap-2">
+                          <AlertTriangle className="w-4 h-4 text-red-600" />
+                          <p className="text-sm font-medium text-red-800">
+                           The advisor indicated you are inactive on this deal. Reactivate to re-engage.
                           </p>
                         </div>
                       </div>
@@ -1111,24 +1129,18 @@ export default function DealsPage() {
                           <p className="text-xs text-gray-400">{getCurrencyLabel(deal.trailingEbitdaCurrency)}</p>
                           <p className="text-lg font-bold text-gray-900">{formatCurrency(deal.trailingEbitda)}</p>
                         </div>
-                        <div className="bg-white rounded-xl p-3 border border-gray-100">
-                          <p className="text-xs text-gray-500 mb-1 flex items-center gap-1">
-                            <TrendingUp className="w-3 h-3 text-green-500" />
-                            Avg Growth
-                          </p>
-                          <p className="text-xs text-gray-400">Percentage (%)</p>
-                          <p className="text-lg font-bold text-gray-900">{deal.averageGrowth}%</p>
-                        </div>
-                        <div className="bg-white rounded-xl p-3 border border-gray-100">
-                          <p className="text-xs text-gray-500 mb-1 flex items-center gap-1">
-                            <DollarSign className="w-3 h-3 text-blue-500" />
-                            Asking Price
-                          </p>
-                          <p className="text-xs text-gray-400">{getCurrencyLabel(deal.askingPriceCurrency, deal.trailingRevenueCurrency)}</p>
-                          <p className="text-lg font-bold text-gray-900">
-                            {deal.askingPrice ? formatCurrency(deal.askingPrice) : <span className="text-gray-400 text-sm">N/A</span>}
-                          </p>
-                        </div>
+
+
+                        {deal.askingPrice !== undefined && deal.askingPrice !== 0 && (
+                          <div className="bg-white rounded-xl p-3 border border-gray-100">
+                            <p className="text-xs text-gray-500 mb-1 flex items-center gap-1">
+                              <DollarSign className="w-3 h-3 text-blue-500" />
+                              Asking Price
+                            </p>
+                            <p className="text-xs text-gray-400">{getCurrencyLabel(deal.askingPriceCurrency, deal.trailingRevenueCurrency)}</p>
+                            <p className="text-lg font-bold text-gray-900">{formatCurrency(deal.askingPrice)}</p>
+                          </div>
+                        )}
                         {deal.t12FreeCashFlow !== undefined && deal.t12FreeCashFlow !== 0 && (
                           <div className="bg-white rounded-xl p-3 border border-gray-100">
                             <p className="text-xs text-gray-500 mb-1">T12 Free Cash Flow</p>
@@ -1247,7 +1259,7 @@ export default function DealsPage() {
                           )}
                         </Button>
                       )}
-                      {deal.status !== "passed" && !deal.isLoi && (
+                      {deal.status !== "passed" && !deal.isLoi && !isCurrentlyFlagged && (
                         <Button
                           variant="outline"
                           className="bg-white border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 rounded-xl"
@@ -1267,6 +1279,18 @@ export default function DealsPage() {
                           )}
                         </Button>
                       )}
+                      {isCurrentlyFlagged && (
+                        <div className="w-full text-right space-y-2">
+                          <p className="text-sm font-medium text-red-600">
+                            Flagged by advisor for this deal
+                          </p>
+                          {activeTab === "passed" && (
+                            <p className="text-xs text-red-500">
+                              You can reactivate it if you want to continue engaging.
+                            </p>
+                          )}
+                        </div>
+                      )}
                       {activeTab === "passed" && !deal.isLoi && (
                         <Button
                           className="bg-teal-500 hover:bg-teal-600 text-white rounded-xl shadow-lg shadow-teal-200"
@@ -1281,7 +1305,7 @@ export default function DealsPage() {
                           ) : (
                             <>
                               <RefreshCw className="h-4 w-4 mr-2" />
-                              Reactivate
+                              Reactivate Deal
                             </>
                           )}
                         </Button>
@@ -1301,5 +1325,7 @@ export default function DealsPage() {
         </main>
       </div>
     </div>
+    </BuyerProtectedRoute>
   );
 }
+

@@ -6,6 +6,8 @@ import { useToast, toast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/sonner";
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useAuth } from "@/contexts/auth-context";
+import { BuyerProtectedRoute } from "@/components/buyer/protected-route";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -46,6 +48,7 @@ import {
 } from "@/lib/industry-data";
 import GeographySelector from "@/components/GeographySelector";
 import { Country, State } from "country-state-city";
+import { API_BASE_URL } from "@/lib/api-config";
 
 // Define the CompanyProfile type to match formData structure
 interface CompanyProfile {
@@ -77,6 +80,8 @@ interface CompanyProfile {
     description: string;
   };
   agreements: {
+    termsAndConditionsAccepted: boolean;
+    ndaAccepted: boolean;
     feeAgreementAccepted: boolean;
   };
   selectedCurrency: string;
@@ -115,15 +120,14 @@ const BUSINESS_MODELS = [
   "Asset Heavy",
 ];
 
-const DEFAULT_API_URL = "https://api.cimamplify.com";
-
 export default function AcquireProfilePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { logout: authLogout } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
-  const [apiUrl, setApiUrl] = useState(DEFAULT_API_URL);
+  const apiUrl = API_BASE_URL;
   const [authToken, setAuthToken] = useState("");
   const [buyerId, setBuyerId] = useState("");
   const [geoData, setGeoData] = useState<GeoData | null>(null);
@@ -146,6 +150,18 @@ export default function AcquireProfilePage() {
   const [industrySearchTerm, setIndustrySearchTerm] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const CURRENCIES = ["USD", "EUR", "GBP", "CAD", "AUD"];
+
+  useEffect(() => {
+    const prevBodyOverflow = document.body.style.overflow;
+    const prevHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = prevBodyOverflow;
+      document.documentElement.style.overflow = prevHtmlOverflow;
+    };
+  }, []);
 
   // Form state with proper initialization
   const [formData, setFormData] = useState<CompanyProfile>({
@@ -170,13 +186,15 @@ export default function AcquireProfilePage() {
       ebitdaMax: undefined,
       transactionSizeMin: undefined,
       transactionSizeMax: undefined,
-      revenueGrowth: undefined,
+
       minStakePercent: undefined,
       minYearsInBusiness: undefined,
       preferredBusinessModels: [], // Ensure this is always an array
       description: "",
     },
     agreements: {
+      termsAndConditionsAccepted: false,
+      ndaAccepted: false,
       feeAgreementAccepted: false,
     },
     selectedCurrency: "USD",
@@ -186,6 +204,12 @@ export default function AcquireProfilePage() {
   const formatNumberWithCommas = (value: number | undefined) => {
     if (value === undefined) return "";
     return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  };
+
+  const getCurrencySymbol = (currency?: string) => {
+    if (currency === "EUR") return "€";
+    if (currency === "GBP") return "£";
+    return "$";
   };
 
   // Check for token and userId on mount
@@ -226,10 +250,6 @@ export default function AcquireProfilePage() {
       }
     }
 
-    const storedApiUrl = localStorage.getItem("apiUrl");
-    if (storedApiUrl) {
-      setApiUrl(storedApiUrl);
-    }
   }, [searchParams, router]);
 
   // Fetch data and initialize industrySelection
@@ -277,8 +297,6 @@ export default function AcquireProfilePage() {
       return;
     }
     try {
-      const apiUrl = localStorage.getItem("apiUrl") || DEFAULT_API_URL;
-
       const buyerRes = await fetch(`${apiUrl}/buyers/me`, {
         headers: { Authorization: `Bearer ${authToken}` },
       });
@@ -354,7 +372,7 @@ export default function AcquireProfilePage() {
             ebitdaMax: profileData.targetCriteria?.ebitdaMax || undefined,
             transactionSizeMin: profileData.targetCriteria?.transactionSizeMin || undefined,
             transactionSizeMax: profileData.targetCriteria?.transactionSizeMax || undefined,
-            revenueGrowth: profileData.targetCriteria?.revenueGrowth || undefined,
+
             minStakePercent: profileData.targetCriteria?.minStakePercent || undefined,
             minYearsInBusiness: profileData.targetCriteria?.minYearsInBusiness || undefined,
             preferredBusinessModels, // Use the ensured array
@@ -390,11 +408,7 @@ export default function AcquireProfilePage() {
         throw new Error(`Failed to fetch company profile: ${profileRes.status} ${profileRes.statusText}`);
       }
     } catch (error) {
-      console.error("Profile fetch error:", {
-        apiUrl: localStorage.getItem("apiUrl") || DEFAULT_API_URL,
-        authToken: authToken?.substring(0, 10) + "...",
-        buyerId,
-      });
+      console.error("PROFILE_FETCH_FAILED");
       toast({ title: "Error", description: "Failed to load your profile. Please try again.", variant: "destructive" });
     }
   };
@@ -446,8 +460,7 @@ const validateField = (field: string, value: any): string | null => {
       return value === undefined || value === "" ? "Minimum transaction size is required" : null;
     case "targetCriteria.transactionSizeMax":
       return value === undefined || value === "" ? "Maximum transaction size is required" : null;
-    case "targetCriteria.revenueGrowth":
-      return value === undefined || value === "" ? "Minimum 3 Year Average Revenue Growth is required" : null;
+
     case "targetCriteria.minYearsInBusiness":
       return value === undefined || value === "" ? "Minimum years in business is required" : null;
     case "targetCriteria.minStakePercent":
@@ -865,7 +878,7 @@ const validateField = (field: string, value: any): string | null => {
     "targetCriteria.ebitdaMax",
     "targetCriteria.transactionSizeMin",
     "targetCriteria.transactionSizeMax",
-    "targetCriteria.revenueGrowth",
+
     "targetCriteria.minYearsInBusiness",
     "targetCriteria.preferredBusinessModels",
     "targetCriteria.description",
@@ -894,7 +907,7 @@ const validateField = (field: string, value: any): string | null => {
     
   
     
-    const element = document.getElementById(elementId);
+    const element = document.getElementById(elementId) as HTMLInputElement | null;
     if (element) {
       element.scrollIntoView({ behavior: "smooth", block: "center" });
       // Focus the element after a short delay
@@ -976,21 +989,8 @@ const validateField = (field: string, value: any): string | null => {
     }
   };
 
-  const { dismiss } = useToast();
   const handleLogout = () => {
-   
-    dismiss();
-    // Clear sessionStorage
-    sessionStorage.removeItem("token");
-    sessionStorage.removeItem("refreshToken");
-    sessionStorage.removeItem("userId");
-    sessionStorage.removeItem("userRole");
-    // Clear localStorage (legacy)
-    localStorage.removeItem("token");
-    localStorage.removeItem("refreshToken");
-    localStorage.removeItem("userId");
-    localStorage.removeItem("userRole");
-    router.push("/buyer/login");
+    authLogout();
   };
 
   // Filter industry data based on search term
@@ -1075,7 +1075,7 @@ const validateField = (field: string, value: any): string | null => {
   errors["targetCriteria.ebitdaMax"] = validateField("targetCriteria.ebitdaMax", formData.targetCriteria.ebitdaMax) || "";
   errors["targetCriteria.transactionSizeMin"] = validateField("targetCriteria.transactionSizeMin", formData.targetCriteria.transactionSizeMin) || "";
   errors["targetCriteria.transactionSizeMax"] = validateField("targetCriteria.transactionSizeMax", formData.targetCriteria.transactionSizeMax) || "";
-  errors["targetCriteria.revenueGrowth"] = validateField("targetCriteria.revenueGrowth", formData.targetCriteria.revenueGrowth) || "";
+
   errors["targetCriteria.minYearsInBusiness"] = validateField("targetCriteria.minYearsInBusiness", formData.targetCriteria.minYearsInBusiness) || "";
   errors["targetCriteria.minStakePercent"] = validateField("targetCriteria.minStakePercent", formData.targetCriteria.minStakePercent) || "";
   errors["targetCriteria.countries"] = validateField("targetCriteria.countries", formData.targetCriteria.countries) || "";
@@ -1178,7 +1178,7 @@ const handleSubmit = async (e: React.FormEvent) => {
         ebitdaMax: formData.targetCriteria.ebitdaMax,
         transactionSizeMin: formData.targetCriteria.transactionSizeMin,
         transactionSizeMax: formData.targetCriteria.transactionSizeMax,
-        revenueGrowth: formData.targetCriteria.revenueGrowth,
+
         minStakePercent: formData.targetCriteria.minStakePercent,
         minYearsInBusiness: formData.targetCriteria.minYearsInBusiness,
         preferredBusinessModels: formData.targetCriteria.preferredBusinessModels,
@@ -1231,6 +1231,14 @@ const handleSubmit = async (e: React.FormEvent) => {
         variant: "default",
       });
       setTimeout(() => {
+        const storedReturnUrl = localStorage.getItem("buyerAuthReturnUrl");
+        if (storedReturnUrl?.startsWith("/buyer/")) {
+          const redirectUrl = new URL(storedReturnUrl, window.location.origin);
+          redirectUrl.searchParams.set("profileSubmitted", "true");
+          localStorage.removeItem("buyerAuthReturnUrl");
+          router.push(`${redirectUrl.pathname}${redirectUrl.search}`);
+          return;
+        }
         router.push("/buyer/deals?profileSubmitted=true");
       }, 1000);
     } catch (error: any) {
@@ -1250,6 +1258,15 @@ const handleSubmit = async (e: React.FormEvent) => {
   const renderIndustrySelection = () => {
     const filteredData = filterIndustryData();
     if (!filteredData || !industryData) return <div>Loading industry data...</div>;
+
+    const hasSelectedIndustriesInGroup = (group: IndustryGroup) =>
+      group.industries.some((industry) => !!industrySelection.industries[industry.id]);
+
+    const hasSelectedDescendantsInSector = (sector: Sector) =>
+      sector.industryGroups.some((group) =>
+        !!industrySelection.industryGroups[group.id] || hasSelectedIndustriesInGroup(group)
+      );
+
     return (
       <div className="space-y-2">
         {filteredData.sectors.map((sector) => (
@@ -1258,8 +1275,9 @@ const handleSubmit = async (e: React.FormEvent) => {
               <Checkbox
                 id={`sector-${sector.id}`}
                 checked={industrySelection.sectors[sector.id] || false}
+                indeterminate={hasSelectedDescendantsInSector(sector) && !industrySelection.sectors[sector.id]}
                 onCheckedChange={() => toggleSector(sector)}
-                className="mr-2 border-[#d0d5dd] data-[state=checked]:bg-[#3aafa9] data-[state=checked]:border-[#3aafa9] focus:ring-[#3aafa9]"
+                className="mr-2 border-[#d0d5dd] data-[state=checked]:bg-[#3aafa9] data-[state=checked]:border-[#3aafa9] data-[state=indeterminate]:bg-[#3aafa9] data-[state=indeterminate]:border-[#3aafa9] data-[state=checked]:text-white data-[state=indeterminate]:text-white focus:ring-[#3aafa9]"
               />
               <div
                 className="flex items-center cursor-pointer flex-1"
@@ -1286,8 +1304,9 @@ const handleSubmit = async (e: React.FormEvent) => {
                       <Checkbox
                         id={`group-${group.id}`}
                         checked={industrySelection.industryGroups[group.id] || false}
+                        indeterminate={hasSelectedIndustriesInGroup(group) && !industrySelection.industryGroups[group.id]}
                         onCheckedChange={() => toggleIndustryGroup(group, sector)}
-                        className="mr-2 border-[#d0d5dd] data-[state=checked]:bg-[#3aafa9] data-[state=checked]:border-[#3aafa9] focus:ring-[#3aafa9]"
+                        className="mr-2 border-[#d0d5dd] data-[state=checked]:bg-[#3aafa9] data-[state=checked]:border-[#3aafa9] data-[state=indeterminate]:bg-[#3aafa9] data-[state=indeterminate]:border-[#3aafa9] data-[state=checked]:text-white data-[state=indeterminate]:text-white focus:ring-[#3aafa9]"
                       />
                       <div
                         className="flex items-center cursor-pointer flex-1"
@@ -1344,83 +1363,147 @@ const handleSubmit = async (e: React.FormEvent) => {
     );
   };
 
-  // Render hierarchical geography selection
+  // Toggle a single state value in the buyer's countries array
+  const toggleGeoValue = (value: string) => {
+    setFormData((prev) => {
+      const current = prev.targetCriteria.countries || [];
+      const exists = current.includes(value);
+      return {
+        ...prev,
+        targetCriteria: {
+          ...prev.targetCriteria,
+          countries: exists ? current.filter((c) => c !== value) : [...current, value],
+        },
+      };
+    });
+  };
+
+  // Toggle a country — selects/deselects the country AND all its states
+  const toggleCountryWithStates = (countryName: string, countryCode: string) => {
+    const states = State.getStatesOfCountry(countryCode);
+    const stateValues = states.map((s) => `${countryName} > ${s.name}`);
+
+    setFormData((prev) => {
+      const current = prev.targetCriteria.countries || [];
+      const isSelected = current.includes(countryName);
+
+      let next: string[];
+      if (isSelected) {
+        const toRemove = new Set([countryName, ...stateValues]);
+        next = current.filter((c) => !toRemove.has(c));
+      } else {
+        next = [...new Set([...current, countryName, ...stateValues])];
+      }
+
+      return {
+        ...prev,
+        targetCriteria: { ...prev.targetCriteria, countries: next },
+      };
+    });
+  };
+
+  // Render hierarchical geography selection with states (multi-select checkboxes)
   const renderGeographySelection = () => {
+    const search = countrySearchTerm.trim().toLowerCase();
     const allCountries = Country.getAllCountries();
+
+    const filtered = allCountries.filter((country) => {
+      if (!search) return true;
+      if (country.name.toLowerCase().includes(search)) return true;
+      const states = State.getStatesOfCountry(country.isoCode);
+      return states.some((s) => s.name.toLowerCase().includes(search));
+    });
+
+    const priorityCodes = ["CA", "US", "MX"];
+    const priority = filtered.filter((c) => priorityCodes.includes(c.isoCode));
+    const rest = filtered.filter((c) => !priorityCodes.includes(c.isoCode));
+    priority.sort((a, b) => priorityCodes.indexOf(a.isoCode) - priorityCodes.indexOf(b.isoCode));
+    rest.sort((a, b) => a.name.localeCompare(b.name));
+    const sorted = [...priority, ...rest];
+
+    const selectedCountries = formData.targetCriteria.countries || [];
+
     return (
-      <div className="space-y-2 font-poppins">
-        {allCountries.map((country) => (
-          <div key={country.isoCode} className="border-b border-gray-100 pb-1">
-            <div className="flex items-center">
-              <input
-                type="radio"
-                id={`geo-${country.isoCode}`}
-                name="geography"
-                checked={(formData.targetCriteria.countries || []).includes(country.name)}
-                onChange={() => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    targetCriteria: { ...prev.targetCriteria, countries: [country.name] },
-                  }));
-                }}
-                className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9] checked:bg-[#3aafa9] checked:border-[#3aafa9]"
-              />
-              <div
-                className="flex items-center cursor-pointer flex-1"
-                onClick={() => setExpandedCountries((prev) => ({ ...prev, [country.isoCode]: !prev[country.isoCode] }))}
-              >
-                {expandedCountries[country.isoCode] ? (
-                  <ChevronDown className="h-4 w-4 mr-1 text-gray-500" />
-                ) : (
-                  <ChevronRight className="h-4 w-4 mr-1 text-gray-500" />
-                )}
-                <Label htmlFor={`geo-${country.isoCode}`} className="text-[#344054] cursor-pointer font-medium">
-                  {country.name}
-                </Label>
-              </div>
-            </div>
-            {expandedCountries[country.isoCode] && (
-              <div className="ml-6 mt-1 space-y-1">
-                {getStates(country.isoCode).map((state) => (
-                  <div key={state.isoCode} className="pl-2">
-                    <div className="flex items-center">
-                      <input
-                        type="radio"
-                        id={`geo-${country.isoCode}-${state.isoCode}`}
-                        name="geography"
-                        checked={(formData.targetCriteria.countries || []).includes(`${country.name} > ${state.name}`)}
-                        onChange={() => {
-                          setFormData((prev) => ({
-                            ...prev,
-                            targetCriteria: { ...prev.targetCriteria, countries: [`${country.name} > ${state.name}`] },
-                          }));
-                        }}
-                        className="mr-2 h-4 w-4 text-[#3aafa9] focus:ring-[#3aafa9] checked:bg-[#3aafa9] checked:border-[#3aafa9]"
-                      />
-                      <Label
-                        htmlFor={`geo-${country.isoCode}-${state.isoCode}`}
-                        className="text-[#344054] cursor-pointer"
-                      >
-                        {state.name}
-                      </Label>
-                    </div>
+      <>
+        
+        <div className="space-y-2 font-poppins">
+          {sorted.map((country) => {
+            const states = State.getStatesOfCountry(country.isoCode);
+            const hasStates = states.length > 0;
+            const hasSelectedDescendants = selectedCountries.some((value) =>
+              value.startsWith(`${country.name} > `)
+            );
+
+            return (
+              <div key={country.isoCode} className="border-b border-gray-100 pb-1">
+                <div className="flex items-center">
+                  <Checkbox
+                    id={`geo-${country.isoCode}`}
+                    checked={selectedCountries.includes(country.name)}
+                    indeterminate={hasSelectedDescendants && !selectedCountries.includes(country.name)}
+                    onCheckedChange={() => toggleCountryWithStates(country.name, country.isoCode)}
+                    className="mr-2 border-[#d0d5dd] data-[state=checked]:bg-[#3aafa9] data-[state=checked]:border-[#3aafa9] data-[state=indeterminate]:bg-[#3aafa9] data-[state=indeterminate]:border-[#3aafa9] data-[state=checked]:text-white data-[state=indeterminate]:text-white focus:ring-[#3aafa9]"
+                  />
+                  <div
+                    className="flex items-center cursor-pointer flex-1"
+                    onClick={() => {
+                      if (hasStates) {
+                        setExpandedContinents((prev) => ({
+                          ...prev,
+                          [country.isoCode]: !prev[country.isoCode],
+                        }));
+                      }
+                    }}
+                  >
+                    {hasStates ? (
+                      expandedContinents[country.isoCode] ? (
+                        <ChevronDown className="h-4 w-4 mr-1 text-gray-500" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4 mr-1 text-gray-500" />
+                      )
+                    ) : null}
+                    <Label htmlFor={`geo-${country.isoCode}`} className="text-[#344054] cursor-pointer font-medium">
+                      {country.name}
+                    </Label>
                   </div>
-                ))}
+                </div>
+                {hasStates && expandedContinents[country.isoCode] && (
+                  <div className="ml-6 mt-1 space-y-1">
+                    {states.map((state) => {
+                      const stateValue = `${country.name} > ${state.name}`;
+                      return (
+                        <div key={state.isoCode} className="pl-2">
+                          <div className="flex items-center">
+                            <Checkbox
+                              id={`geo-${country.isoCode}-${state.isoCode}`}
+                              checked={selectedCountries.includes(stateValue)}
+                              onCheckedChange={() => toggleGeoValue(stateValue)}
+                              className="mr-2 border-[#d0d5dd] data-[state=checked]:bg-[#3aafa9] data-[state=checked]:border-[#3aafa9] data-[state=checked]:text-white focus:ring-[#3aafa9]"
+                            />
+                            <Label
+                              htmlFor={`geo-${country.isoCode}-${state.isoCode}`}
+                              className="text-[#344054] cursor-pointer"
+                            >
+                              {state.name}
+                            </Label>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        ))}
-      </div>
+            );
+          })}
+        </div>
+      </>
     );
   };
 
-  // Helper to load states for a country
-  const getStates = (countryCode: string) => {
-    return State.getStatesOfCountry(countryCode);
-  };
-
   return (
-    <div className="min-h-screen bg-[#f0f4f8] py-8 px-4 font-poppins">
+    <BuyerProtectedRoute>
+    <div className="h-[100dvh] bg-[#f0f4f8]  font-poppins">
+      <div className="h-full overflow-y-auto py-8 px-4">
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-semibold text-[#2f2b43] font-poppins">
@@ -1625,9 +1708,8 @@ const handleSubmit = async (e: React.FormEvent) => {
                 {formData.contacts.map((contact, index) => (
                   <div key={index} className="mb-4">
                     {index > 0 && <div className="h-px bg-gray-200 my-4"></div>}
-                    <div className="flex justify-between items-center mb-2">
-                      <h3 className="text-sm font-medium">Contact {index + 1}</h3>
-                      {index > 0 && (
+                    {index > 0 && (
+                      <div className="flex justify-end items-center mb-2">
                         <Button
                           type="button"
                           variant="ghost"
@@ -1638,8 +1720,8 @@ const handleSubmit = async (e: React.FormEvent) => {
                           <Trash2 className="h-4 w-4 mr-1" />
                           Remove
                         </Button>
-                      )}
-                    </div>
+                      </div>
+                    )}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <Label htmlFor={`contact-name-${index}`} className="text-[#667085] text-sm mb-1.5 block">
@@ -1727,57 +1809,10 @@ const handleSubmit = async (e: React.FormEvent) => {
         onChange={e => setCountrySearchTerm(e.target.value)}
       />
     </div>
-    {/* Pills block below search bar */}
-    {/* {formData.targetCriteria.countries.length > 0 && (
-      <div className="mb-4">
-        <div className="text-sm text-[#667085] mb-1">Selected</div>
-        <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
-          {formData.targetCriteria.countries.map((country, index) => (
-            <span
-              key={`selected-country-${index}`}
-              className="bg-gray-100 text-[#344054] text-xs rounded-full px-2 py-0.5 flex items-center group"
-            >
-              {country}
-              <button
-                type="button"
-                onClick={() =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    targetCriteria: {
-                      ...prev.targetCriteria,
-                      countries: prev.targetCriteria.countries.filter((c, i) => i !== index),
-                    },
-                  }))
-                }
-                className="ml-1 text-gray-400 hover:text-gray-600 focus:outline-none"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-3 w-3"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </button>
-            </span>
-          ))}
-        </div>
-      </div>
-    )} */}
-    {/* Dropdown (GeographySelector) */}
-    <GeographySelector
-      selectedCountries={formData.targetCriteria.countries}
-      onChange={countries => setFormData(prev => ({
-        ...prev,
-        targetCriteria: { ...prev.targetCriteria, countries },
-      }))}
-      searchTerm={countrySearchTerm}
-    />
+    {/* Country + State selection */}
+    <div className="flex-1 overflow-y-auto min-h-0">
+      {renderGeographySelection()}
+    </div>
     {fieldErrors["targetCriteria.countries"] && (
   <p className="text-red-500 text-sm mt-1">
     {fieldErrors["targetCriteria.countries"]}
@@ -1888,43 +1923,35 @@ const handleSubmit = async (e: React.FormEvent) => {
                     >
                       Min <span className="text-red-500">*</span>
                     </Label>
-                    <div className="relative flex-1">
-                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500">
-                        {formData.selectedCurrency === "USD"
-                          ? "$"
-                          : formData.selectedCurrency === "EUR"
-                          ? "€"
-                          : formData.selectedCurrency === "GBP"
-                          ? "£"
-                          : formData.selectedCurrency}
+                    <div className="flex-1">
+                      <div className="relative">
+                        <div className="absolute left-0 top-1/2 z-10 -translate-y-1/2 flex items-center pl-3 pointer-events-none text-gray-500">
+                          {getCurrencySymbol(formData.selectedCurrency)}
+                        </div>
+                        <Input
+                          id="revenueMin"
+                          type="text"
+                          className={`border-[#d0d5dd] pl-7 ${
+                            fieldErrors["targetCriteria.revenueMin"]
+                              ? "border-red-500 focus-visible:ring-red-500"
+                              : ""
+                          }`}
+                          value={formatNumberWithCommas(
+                            formData.targetCriteria.revenueMin
+                          )}
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/,/g, "");
+                            if (value === "" || /^\d+$/.test(value)) {
+                              handleNestedChange(
+                                "targetCriteria",
+                                "revenueMin",
+                                value ? Number(value) : undefined
+                              );
+                            }
+                          }}
+                          required
+                        />
                       </div>
-                      <Input
-                        id="revenueMin"
-                        type="text"
-                        className={`border-[#d0d5dd] ${
-                          formData.selectedCurrency.length > 2
-                            ? "pl-12"
-                            : "pl-8"
-                        } ${
-                          fieldErrors["targetCriteria.revenueMin"]
-                            ? "border-red-500 focus-visible:ring-red-500"
-                            : ""
-                        }`}
-                        value={formatNumberWithCommas(
-                          formData.targetCriteria.revenueMin
-                        )}
-                        onChange={(e) => {
-                          const value = e.target.value.replace(/,/g, "");
-                          if (value === "" || /^\d+$/.test(value)) {
-                            handleNestedChange(
-                              "targetCriteria",
-                              "revenueMin",
-                              value ? Number(value) : undefined
-                            );
-                          }
-                        }}
-                        required
-                      />
                       {fieldErrors["targetCriteria.revenueMin"] && (
                         <p className="text-red-500 text-sm mt-1">
                           {fieldErrors["targetCriteria.revenueMin"]}
@@ -1939,43 +1966,35 @@ const handleSubmit = async (e: React.FormEvent) => {
                     >
                       Max <span className="text-red-500">*</span>
                     </Label>
-                    <div className="relative flex-1">
-                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500">
-                        {formData.selectedCurrency === "USD"
-                          ? "$"
-                          : formData.selectedCurrency === "EUR"
-                          ? "€"
-                          : formData.selectedCurrency === "GBP"
-                          ? "£"
-                          : formData.selectedCurrency}
+                    <div className="flex-1">
+                      <div className="relative">
+                        <div className="absolute left-0 top-1/2 z-10 -translate-y-1/2 flex items-center pl-3 pointer-events-none text-gray-500">
+                          {getCurrencySymbol(formData.selectedCurrency)}
+                        </div>
+                        <Input
+                          id="revenueMax"
+                          type="text"
+                          className={`border-[#d0d5dd] pl-7 ${
+                            fieldErrors["targetCriteria.revenueMax"]
+                              ? "border-red-500 focus-visible:ring-red-500"
+                              : ""
+                          }`}
+                          value={formatNumberWithCommas(
+                            formData.targetCriteria.revenueMax
+                          )}
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/,/g, "");
+                            if (value === "" || /^\d+$/.test(value)) {
+                              handleNestedChange(
+                                "targetCriteria",
+                                "revenueMax",
+                                value ? Number(value) : undefined
+                              );
+                            }
+                          }}
+                          required
+                        />
                       </div>
-                      <Input
-                        id="revenueMax"
-                        type="text"
-                        className={`border-[#d0d5dd] ${
-                          formData.selectedCurrency.length > 2
-                            ? "pl-12"
-                            : "pl-8"
-                        } ${
-                          fieldErrors["targetCriteria.revenueMax"]
-                            ? "border-red-500 focus-visible:ring-red-500"
-                            : ""
-                        }`}
-                        value={formatNumberWithCommas(
-                          formData.targetCriteria.revenueMax
-                        )}
-                        onChange={(e) => {
-                          const value = e.target.value.replace(/,/g, "");
-                          if (value === "" || /^\d+$/.test(value)) {
-                            handleNestedChange(
-                              "targetCriteria",
-                              "revenueMax",
-                              value ? Number(value) : undefined
-                            );
-                          }
-                        }}
-                        required
-                      />
                       {fieldErrors["targetCriteria.revenueMax"] && (
                         <p className="text-red-500 text-sm mt-1">
                           {fieldErrors["targetCriteria.revenueMax"]}
@@ -2006,43 +2025,35 @@ const handleSubmit = async (e: React.FormEvent) => {
                     >
                       Min <span className="text-red-500">*</span>
                     </Label>
-                    <div className="relative flex-1">
-                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500">
-                        {formData.selectedCurrency === "USD"
-                          ? "$"
-                          : formData.selectedCurrency === "EUR"
-                          ? "€"
-                          : formData.selectedCurrency === "GBP"
-                          ? "£"
-                          : formData.selectedCurrency}
+                    <div className="flex-1">
+                      <div className="relative">
+                        <div className="absolute left-0 top-1/2 z-10 -translate-y-1/2 flex items-center pl-3 pointer-events-none text-gray-500">
+                          {getCurrencySymbol(formData.selectedCurrency)}
+                        </div>
+                        <Input
+                          id="ebitdaMin"
+                          type="text"
+                          className={`border-[#d0d5dd] pl-7 ${
+                            fieldErrors["targetCriteria.ebitdaMin"]
+                              ? "border-red-500 focus-visible:ring-red-500"
+                              : ""
+                          }`}
+                          value={formatNumberWithCommas(
+                            formData.targetCriteria.ebitdaMin
+                          )}
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/,/g, "");
+                            if (value === "" || /^\d+$/.test(value)) {
+                              handleNestedChange(
+                                "targetCriteria",
+                                "ebitdaMin",
+                                value ? Number(value) : undefined
+                              );
+                            }
+                          }}
+                          required
+                        />
                       </div>
-                      <Input
-                        id="ebitdaMin"
-                        type="text"
-                        className={`border-[#d0d5dd] ${
-                          formData.selectedCurrency.length > 2
-                            ? "pl-12"
-                            : "pl-8"
-                        } ${
-                          fieldErrors["targetCriteria.ebitdaMin"]
-                            ? "border-red-500 focus-visible:ring-red-500"
-                            : ""
-                        }`}
-                        value={formatNumberWithCommas(
-                          formData.targetCriteria.ebitdaMin
-                        )}
-                        onChange={(e) => {
-                          const value = e.target.value.replace(/,/g, "");
-                          if (value === "" || /^\d+$/.test(value)) {
-                            handleNestedChange(
-                              "targetCriteria",
-                              "ebitdaMin",
-                              value ? Number(value) : undefined
-                            );
-                          }
-                        }}
-                        required
-                      />
                       {fieldErrors["targetCriteria.ebitdaMin"] && (
                         <p className="text-red-500 text-sm mt-1">
                           {fieldErrors["targetCriteria.ebitdaMin"]}
@@ -2057,44 +2068,35 @@ const handleSubmit = async (e: React.FormEvent) => {
                     >
                       Max <span className="text-red-500">*</span>
                     </Label>
-                    <div className="relative flex-1">
-                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500">
-                        {formData.selectedCurrency === "USD"
-                          ? "$"
-                          : formData.selectedCurrency === "EUR"
-                          ? "€"
-                          : formData.selectedCurrency === "GBP"
-                          ? "£"
-                          : formData.selectedCurrency}
+                    <div className="flex-1">
+                      <div className="relative">
+                        <div className="absolute left-0 top-1/2 z-10 -translate-y-1/2 flex items-center pl-3 pointer-events-none text-gray-500">
+                          {getCurrencySymbol(formData.selectedCurrency)}
+                        </div>
+                        <Input
+                          id="ebitdaMax"
+                          required
+                          type="text"
+                          className={`border-[#d0d5dd] pl-7 ${
+                            fieldErrors["targetCriteria.ebitdaMax"]
+                              ? "border-red-500 focus-visible:ring-red-500"
+                              : ""
+                          }`}
+                          value={formatNumberWithCommas(
+                            formData.targetCriteria.ebitdaMax
+                          )}
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/,/g, "");
+                            if (value === "" || /^\d+$/.test(value)) {
+                              handleNestedChange(
+                                "targetCriteria",
+                                "ebitdaMax",
+                                value ? Number(value) : undefined
+                              );
+                            }
+                          }}
+                        />
                       </div>
-                      <Input
-                        id="ebitdaMax"
-                        required
-                        type="text"
-                        className={`border-[#d0d5dd] ${
-                          formData.selectedCurrency.length > 2
-                            ? "pl-12"
-                            : "pl-8"
-                        } ${
-                          fieldErrors["targetCriteria.ebitdaMax"]
-                            ? "border-red-500 focus-visible:ring-red-500"
-                            : ""
-                        }`}
-                        value={formatNumberWithCommas(
-                          formData.targetCriteria.ebitdaMax
-                        )}
-                        onChange={(e) => {
-                          const value = e.target.value.replace(/,/g, "");
-                          if (value === "" || /^\d+$/.test(value)) {
-                            handleNestedChange(
-                              "targetCriteria",
-                              "ebitdaMax",
-                              value ? Number(value) : undefined
-                            );
-                          }
-                        }}
-                        required
-                      />
                       {fieldErrors["targetCriteria.ebitdaMax"] && (
                         <p className="text-red-500 text-sm mt-1">
                           {fieldErrors["targetCriteria.ebitdaMax"]}
@@ -2125,43 +2127,35 @@ const handleSubmit = async (e: React.FormEvent) => {
                     >
                       Min <span className="text-red-500">*</span>
                     </Label>
-                    <div className="relative flex-1">
-                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500">
-                        {formData.selectedCurrency === "USD"
-                          ? "$"
-                          : formData.selectedCurrency === "EUR"
-                          ? "€"
-                          : formData.selectedCurrency === "GBP"
-                          ? "£"
-                          : formData.selectedCurrency}
+                    <div className="flex-1">
+                      <div className="relative">
+                        <div className="absolute left-0 top-1/2 z-10 -translate-y-1/2 flex items-center pl-3 pointer-events-none text-gray-500">
+                          {getCurrencySymbol(formData.selectedCurrency)}
+                        </div>
+                        <Input
+                          id="transactionSizeMin"
+                          type="text"
+                          className={`border-[#d0d5dd] pl-7 ${
+                            fieldErrors["targetCriteria.transactionSizeMin"]
+                              ? "border-red-500 focus-visible:ring-red-500"
+                              : ""
+                          }`}
+                          value={formatNumberWithCommas(
+                            formData.targetCriteria.transactionSizeMin
+                          )}
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/,/g, "");
+                            if (value === "" || /^\d+$/.test(value)) {
+                              handleNestedChange(
+                                "targetCriteria",
+                                "transactionSizeMin",
+                                value ? Number(value) : undefined
+                              );
+                            }
+                          }}
+                          required
+                        />
                       </div>
-                      <Input
-                        id="transactionSizeMin"
-                        type="text"
-                        className={`border-[#d0d5dd] ${
-                          formData.selectedCurrency.length > 2
-                            ? "pl-12"
-                            : "pl-8"
-                        } ${
-                          fieldErrors["targetCriteria.transactionSizeMin"]
-                            ? "border-red-500 focus-visible:ring-red-500"
-                            : ""
-                        }`}
-                        value={formatNumberWithCommas(
-                          formData.targetCriteria.transactionSizeMin
-                        )}
-                        onChange={(e) => {
-                          const value = e.target.value.replace(/,/g, "");
-                          if (value === "" || /^\d+$/.test(value)) {
-                            handleNestedChange(
-                              "targetCriteria",
-                              "transactionSizeMin",
-                              value ? Number(value) : undefined
-                            );
-                          }
-                        }}
-                        required
-                      />
                       {fieldErrors["targetCriteria.transactionSizeMin"] && (
                         <p className="text-red-500 text-sm mt-1">
                           {fieldErrors["targetCriteria.transactionSizeMin"]}
@@ -2176,44 +2170,35 @@ const handleSubmit = async (e: React.FormEvent) => {
                     >
                       Max <span className="text-red-500">*</span>
                     </Label>
-                    <div className="relative flex-1">
-                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500">
-                        {formData.selectedCurrency === "USD"
-                          ? "$"
-                          : formData.selectedCurrency === "EUR"
-                          ? "€"
-                          : formData.selectedCurrency === "GBP"
-                          ? "£"
-                          : formData.selectedCurrency}
+                    <div className="flex-1">
+                      <div className="relative">
+                        <div className="absolute left-0 top-1/2 z-10 -translate-y-1/2 flex items-center pl-3 pointer-events-none text-gray-500">
+                          {getCurrencySymbol(formData.selectedCurrency)}
+                        </div>
+                        <Input
+                          id="transactionSizeMax"
+                          required
+                          type="text"
+                          className={`border-[#d0d5dd] pl-7 ${
+                            fieldErrors["targetCriteria.transactionSizeMax"]
+                              ? "border-red-500 focus-visible:ring-red-500"
+                              : ""
+                          }`}
+                          value={formatNumberWithCommas(
+                            formData.targetCriteria.transactionSizeMax
+                          )}
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/,/g, "");
+                            if (value === "" || /^\d+$/.test(value)) {
+                              handleNestedChange(
+                                "targetCriteria",
+                                "transactionSizeMax",
+                                value ? Number(value) : undefined
+                              );
+                            }
+                          }}
+                        />
                       </div>
-                      <Input
-                        id="transactionSizeMax"
-                        required
-                        type="text"
-                        className={`border-[#d0d5dd] ${
-                          formData.selectedCurrency.length > 2
-                            ? "pl-12"
-                            : "pl-8"
-                        } ${
-                          fieldErrors["targetCriteria.transactionSizeMax"]
-                            ? "border-red-500 focus-visible:ring-red-500"
-                            : ""
-                        }`}
-                        value={formatNumberWithCommas(
-                          formData.targetCriteria.transactionSizeMax
-                        )}
-                        onChange={(e) => {
-                          const value = e.target.value.replace(/,/g, "");
-                          if (value === "" || /^\d+$/.test(value)) {
-                            handleNestedChange(
-                              "targetCriteria",
-                              "transactionSizeMax",
-                              value ? Number(value) : undefined
-                            );
-                          }
-                        }}
-                        required
-                      />
                       {fieldErrors["targetCriteria.transactionSizeMax"] && (
                         <p className="text-red-500 text-sm mt-1">
                           {fieldErrors["targetCriteria.transactionSizeMax"]}
@@ -2233,29 +2218,8 @@ const handleSubmit = async (e: React.FormEvent) => {
                   )}
               </div>
 
-              <div>
-                <Label className="text-[#667085] text-sm mb-1.5 block">
-                  Minimum 3 Year Average Revenue Growth (%) <span className="text-red-500">*</span>
-                </Label>
-                <div className="flex items-center">
-                  <Input
-                    id="revenueGrowth"
-                    type="text"
-                    className={`border-[#d0d5dd] ${fieldErrors["targetCriteria.revenueGrowth"] ? "border-red-500 focus-visible:ring-red-500" : ""}`}
-                    value={formatNumberWithCommas(formData.targetCriteria.revenueGrowth)}
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/,/g, "");
-                      if (value === "" || /^\d+$/.test(value)) {
-                        handleNestedChange("targetCriteria", "revenueGrowth", value ? Number(value) : undefined);
-                      }
-                    }}
-                    required
-                  />
-                </div>
-                {fieldErrors["targetCriteria.revenueGrowth"] && (
-                  <p className="text-red-500 text-sm mt-1">{fieldErrors["targetCriteria.revenueGrowth"]}</p>
-                )}
-              </div>
+
+
 
               <div>
                 <Label
@@ -2412,7 +2376,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                   }
                 />
                 <Label htmlFor="allowBuyerLikeDeals" className="text-[#344054]">
-                  Allow buy side fee deals (charged by seller above CIM Amplify
+                  Allow buy side fee deals (charged by advisor above CIM Amplify
                   Fees)
                 </Label>
               </div>
@@ -2484,7 +2448,13 @@ const handleSubmit = async (e: React.FormEvent) => {
           </div>
         </form>
       </div>
+      </div>
       <Toaster />
     </div>
+    </BuyerProtectedRoute>
   );
 }
+
+
+
+

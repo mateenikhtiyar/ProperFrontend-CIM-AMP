@@ -1,14 +1,14 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useAuth } from "@/contexts/auth-context";
+import { BuyerProtectedRoute } from "@/components/buyer/protected-route";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Briefcase,
-  Store,
-  LogOut,
   Settings,
   User,
   Camera,
@@ -16,6 +16,7 @@ import {
   Phone,
   Globe,
   Building,
+  Bell,
   Save,
   X,
   Edit2,
@@ -23,6 +24,7 @@ import {
   Loader2,
   Menu,
 } from "lucide-react";
+import { BuyerNav } from "@/components/buyer/buyer-nav";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +38,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "@/components/ui/use-toast";
+import { Switch } from "@/components/ui/switch";
 import {
   useBuyerProfile,
   useUpdateBuyerProfile,
@@ -44,6 +47,7 @@ import {
 
 export default function BuyerProfilePage() {
   const router = useRouter();
+  const { logout: authLogout } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: profile, isLoading, error, refetch } = useBuyerProfile();
@@ -57,6 +61,9 @@ export default function BuyerProfilePage() {
     companyName: "",
     phoneNumber: "",
     website: "",
+    preferences: {
+      receiveDealEmails: true,
+    },
   });
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -72,6 +79,9 @@ export default function BuyerProfilePage() {
         companyName: profile.companyName || "",
         phoneNumber: profile.phoneNumber || "",
         website: profile.website || "",
+        preferences: {
+          receiveDealEmails: profile.preferences?.receiveDealEmails ?? true,
+        },
       });
     }
   }, [profile]);
@@ -103,15 +113,26 @@ export default function BuyerProfilePage() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("userId");
-    router.push("/buyer/login");
+    authLogout();
   };
 
   const handleInputChange = (field: string, value: string) => {
     setEditedProfile((prev) => ({
       ...prev,
       [field]: value,
+    }));
+  };
+
+  const handlePreferenceChange = (
+    field: "receiveDealEmails",
+    value: boolean,
+  ) => {
+    setEditedProfile((prev) => ({
+      ...prev,
+      preferences: {
+        ...prev.preferences,
+        [field]: value,
+      },
     }));
   };
 
@@ -141,6 +162,9 @@ export default function BuyerProfilePage() {
         companyName: profile.companyName || "",
         phoneNumber: profile.phoneNumber || "",
         website: profile.website || "",
+        preferences: {
+          receiveDealEmails: profile.preferences?.receiveDealEmails ?? true,
+        },
       });
     }
     setIsEditing(false);
@@ -205,6 +229,7 @@ export default function BuyerProfilePage() {
   }
 
   return (
+    <BuyerProtectedRoute>
     <div className="min-h-screen bg-white">
       {/* Header */}
       <header className="border-b border-gray-200 bg-white sticky top-0 z-40">
@@ -228,50 +253,7 @@ export default function BuyerProfilePage() {
                     <Image src="/logo.svg" width={150} height={40} alt="CIM Amplify" className="h-10 w-auto" />
                   </Link>
                 </div>
-                <nav className="flex flex-col space-y-2">
-                  <Link
-                    href="/buyer/deals"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center rounded-md px-4 py-3 text-gray-700 hover:bg-gray-100 transition-colors"
-                  >
-                    <Briefcase className="mr-3 h-5 w-5" />
-                    <span>All Deals</span>
-                  </Link>
-                  <Link
-                    href="/buyer/marketplace"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center rounded-md px-4 py-3 text-gray-700 hover:bg-gray-100 transition-colors"
-                  >
-                    <Store className="mr-3 h-5 w-5" />
-                    <span>MarketPlace</span>
-                  </Link>
-                  <Link
-                    href="/buyer/company-profile"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center rounded-md px-4 py-3 text-gray-700 hover:bg-gray-100 transition-colors"
-                  >
-                    <Settings className="mr-3 h-5 w-5" />
-                    <span>Company Profile</span>
-                  </Link>
-                  <Link
-                    href="/buyer/profile"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center rounded-md bg-teal-500 px-4 py-3 text-white hover:bg-teal-600 transition-colors"
-                  >
-                    <User className="mr-3 h-5 w-5" />
-                    <span>My Profile</span>
-                  </Link>
-                  <button
-                    onClick={() => {
-                      setMobileMenuOpen(false);
-                      handleLogout();
-                    }}
-                    className="flex items-center rounded-md px-4 py-3 text-red-600 hover:text-red-700 hover:bg-red-50 text-left w-full transition-colors"
-                  >
-                    <LogOut className="mr-3 h-5 w-5" />
-                    <span>Sign Out</span>
-                  </button>
-                </nav>
+                <BuyerNav activePage="profile" onLogout={handleLogout} onNavigate={() => setMobileMenuOpen(false)} />
               </SheetContent>
             </Sheet>
 
@@ -312,44 +294,8 @@ export default function BuyerProfilePage() {
 
       <div className="flex flex-col md:flex-row">
         {/* Sidebar */}
-        <aside className="hidden md:block md:w-56 border-r border-gray-200 bg-white min-h-[calc(100vh-4rem)]">
-          <nav className="flex flex-col p-4">
-            <Link
-              href="/buyer/deals"
-              className="mb-2 flex items-center rounded-md px-4 py-3 text-gray-700 hover:bg-gray-100 transition-colors"
-            >
-              <Briefcase className="mr-3 h-5 w-5" />
-              <span>All Deals</span>
-            </Link>
-            <Link
-              href="/buyer/marketplace"
-              className="mb-2 flex items-center rounded-md px-4 py-3 text-gray-700 hover:bg-gray-100 transition-colors"
-            >
-              <Store className="mr-3 h-5 w-5" />
-              <span>MarketPlace</span>
-            </Link>
-            <Link
-              href="/buyer/company-profile"
-              className="mb-2 flex items-center rounded-md px-4 py-3 text-gray-700 hover:bg-gray-100 transition-colors"
-            >
-              <Settings className="mr-3 h-5 w-5" />
-              <span>Company Profile</span>
-            </Link>
-            <Link
-              href="/buyer/profile"
-              className="mb-2 flex items-center rounded-md bg-teal-500 px-4 py-3 text-white hover:bg-teal-600 transition-colors"
-            >
-              <User className="mr-3 h-5 w-5" />
-              <span>My Profile</span>
-            </Link>
-            <button
-              onClick={handleLogout}
-              className="flex items-center rounded-md px-4 py-3 text-red-600 hover:text-red-700 hover:bg-red-50 text-left w-full transition-colors"
-            >
-              <LogOut className="mr-3 h-5 w-5" />
-              <span>Sign Out</span>
-            </button>
-          </nav>
+        <aside className="hidden md:block md:w-56 border-r border-gray-200 bg-white h-[calc(100vh-4rem)] sticky top-[4rem] overflow-y-auto flex-shrink-0">
+          <BuyerNav activePage="profile" onLogout={handleLogout} />
         </aside>
 
         {/* Main Content */}
@@ -567,6 +513,34 @@ export default function BuyerProfilePage() {
                         </p>
                       )}
                     </div>
+
+                    <div className="sm:col-span-2">
+                      <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                        <div className="flex items-center justify-between gap-4">
+                          <div>
+                            <Label className="text-gray-600 text-sm flex items-center gap-2">
+                              <Bell className="h-4 w-4" />
+                              Receive Deal Emails
+                            </Label>
+                            <p className="text-xs text-gray-500 mt-1">
+                              Deal invites and marketplace notifications.
+                            </p>
+                          </div>
+                          {isEditing ? (
+                            <Switch
+                              checked={editedProfile.preferences.receiveDealEmails}
+                              onCheckedChange={(checked) =>
+                                handlePreferenceChange("receiveDealEmails", checked)
+                              }
+                            />
+                          ) : (
+                            <span className="text-xs font-medium text-gray-500">
+                              {profile?.preferences?.receiveDealEmails ? "On" : "Off"}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -659,5 +633,6 @@ export default function BuyerProfilePage() {
         </DialogContent>
       </Dialog>
     </div>
+    </BuyerProtectedRoute>
   );
 }

@@ -1,11 +1,8 @@
-"use client"
+﻿"use client"
 
 import { useState, useEffect } from "react"
-import Image from "next/image"
-import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Eye, Clock, LogOut, Plus, FileText, Menu, PauseCircle, Loader2, TrendingUp, Building2, MapPin, Search, ChevronRight, Sparkles } from 'lucide-react'
-import { triggerNavigationProgress } from "@/components/navigation-progress"
+import { Plus, Menu, PauseCircle, Loader2, TrendingUp, Building2, MapPin, Search, ChevronRight, Sparkles } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -16,9 +13,9 @@ import SellerProtectedRoute from "@/components/seller/protected-route"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
-import { AmplifyVenturesBox } from "@/components/seller/amplify-ventures-box"
 import { useSellerDeals, useSellerProfile, usePauseDealForLOI } from "@/hooks/use-seller-deals"
 import { useQueryClient } from "@tanstack/react-query"
+import { SellerNav } from "@/components/seller/seller-nav"
 
 // Helper to get API URL - uses environment variable with localStorage fallback
 const getApiUrl = () => {
@@ -138,9 +135,9 @@ function DealCard({
     const currencySymbol = currency.includes("USD")
       ? "$"
       : currency.includes("EUR")
-        ? "€"
+        ? "â‚¬"
         : currency.includes("GBP")
-          ? "£"
+          ? "Â£"
           : "$"
     return `${currencySymbol}${amount.toLocaleString()}`
   }
@@ -199,12 +196,12 @@ function DealCard({
       {/* Financial Section */}
       <div className="p-5 sm:p-6 bg-gradient-to-br from-gray-50/50 via-white to-teal-50/30">
         <div className="grid grid-cols-2 gap-4">
-          <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+          <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm min-w-0">
             <div className="flex items-center gap-1.5 mb-2">
               <TrendingUp className="w-3.5 h-3.5 text-teal-500" />
               <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide">T12 Revenue</p>
             </div>
-            <p className="text-lg sm:text-xl font-bold text-gray-900 tabular-nums">
+            <p className="text-base lg:text-xl font-bold text-gray-900 tabular-nums break-words">
               {deal.financialDetails?.trailingRevenueAmount
                 ? formatCurrency(
                     deal.financialDetails.trailingRevenueAmount,
@@ -213,12 +210,12 @@ function DealCard({
                 : "N/A"}
             </p>
           </div>
-          <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+          <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm min-w-0">
             <div className="flex items-center gap-1.5 mb-2">
               <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
               <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide">T12 EBITDA</p>
             </div>
-            <p className="text-lg sm:text-xl font-bold text-gray-900 tabular-nums">
+            <p className="text-base lg:text-xl font-bold text-gray-900 tabular-nums break-words">
               {deal.financialDetails?.trailingEBITDAAmount
                 ? formatCurrency(
                     deal.financialDetails.trailingEBITDAAmount,
@@ -246,7 +243,7 @@ function DealCard({
         </Button>
         <Button
           variant="outline"
-          className="py-2.5 text-xs sm:text-sm font-semibold bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 hover:border-amber-300 hover:text-amber-800 whitespace-nowrap disabled:opacity-70 transition-all duration-200 rounded-xl shadow-sm hover:shadow"
+          className="py-2.5 text-xs sm:text-[11px] font-semibold bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 hover:border-amber-300 hover:text-amber-800 whitespace-nowrap disabled:opacity-70 transition-all duration-200 rounded-xl shadow-sm hover:shadow"
           onClick={() => handlePauseForLOI(deal)}
           disabled={isPausingLOI}
           aria-label="Pause deal for Letter of Intent"
@@ -255,7 +252,7 @@ function DealCard({
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
           ) : (
             <>
-              <PauseCircle className="hidden xl:inline-block h-4 w-4 mr-1 flex-shrink-0" aria-hidden="true" />
+              <PauseCircle className="hidden xl:inline-block h-1 w-1  flex-shrink-0" aria-hidden="true" />
               <span>Pause for LOI</span>
             </>
           )}
@@ -297,8 +294,10 @@ export default function SellerDashboardPage() {
   const [searchTerm, setSearchTerm] = useState("")
 
   const [offMarketDialogOpen, setOffMarketDialogOpen] = useState(false)
+  const [loiDialogOpen, setLoiDialogOpen] = useState(false)
   const [currentDialogStep, setCurrentDialogStep] = useState(1)
   const [selectedDealForOffMarket, setSelectedDealForOffMarket] = useState<Deal | null>(null)
+  const [selectedDealForLoi, setSelectedDealForLoi] = useState<Deal | null>(null)
   const [offMarketData, setOffMarketData] = useState({
     dealSold: null as boolean | null,
     transactionValue: "",
@@ -420,28 +419,37 @@ export default function SellerDashboardPage() {
   }
 
   const handlePauseForLOI = async (deal: Deal) => {
-    setPausingDealId(deal._id)
+    setSelectedDealForLoi(deal)
+    setSelectedWinningBuyer("")
+    setBuyerActivity([])
+    setLoiDialogOpen(true)
+  }
+
+  const handlePauseForLOISubmit = async (isCimBuyer: boolean) => {
+    if (!selectedDealForLoi) return
+    setPausingDealId(selectedDealForLoi._id)
     try {
       const token = sessionStorage.getItem("token")
       const apiUrl = getApiUrl()
+      const body = isCimBuyer && selectedWinningBuyer ? { loiBuyerId: selectedWinningBuyer } : {}
 
-      const response = await fetch(`${apiUrl}/deals/${deal._id}/pause-for-loi`, {
+      const response = await fetch(`${apiUrl}/deals/${selectedDealForLoi._id}/pause-for-loi`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
+        body: JSON.stringify(body),
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
+        const errorData = await response.json().catch(() => ({}))
         throw new Error(errorData.message || "Failed to pause deal for LOI")
       }
 
-      // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ["seller-deals"] })
       queryClient.invalidateQueries({ queryKey: ["seller-loi-deals"] })
-
+      setLoiDialogOpen(false)
       toast({
         title: "Deal Paused for LOI",
         description: "The deal has been moved to LOI - Deals. You can find it in the LOI - Deals section.",
@@ -479,7 +487,7 @@ export default function SellerDashboardPage() {
                 Authorization: `Bearer ${token}`,
                 "Content-Type": "application/json",
               },
-              body: JSON.stringify({}),
+              body: JSON.stringify({ buyerFromCIM: false }),
             })
             if (!response.ok) {
               const errorText = await response.text()
@@ -545,6 +553,7 @@ export default function SellerDashboardPage() {
         body: JSON.stringify({
           finalSalePrice: Number.parseFloat(completionData.finalSalePrice),
           winningBuyerId: selectedWinningBuyer, // Use the selected buyer ID
+          buyerFromCIM: true,
         }),
       })
 
@@ -572,7 +581,7 @@ export default function SellerDashboardPage() {
   }
 
   // Replace the handleOffMarketSubmit function with this updated version
-  const handleOffMarketSubmit = async () => {
+  const handleOffMarketSubmit = async (buyerFromCIMOverride?: boolean) => {
     if (!selectedDealForOffMarket || !offMarketData.transactionValue) {
       toast({
         title: "Missing information",
@@ -582,8 +591,11 @@ export default function SellerDashboardPage() {
       return
     }
 
+    const effectiveBuyerFromCIM =
+      typeof buyerFromCIMOverride === "boolean" ? buyerFromCIMOverride : offMarketData.buyerFromCIM
+
     // If buyer is from CIM, ensure a buyer is selected
-    if (offMarketData.buyerFromCIM === true && !selectedWinningBuyer) {
+    if (effectiveBuyerFromCIM === true && !selectedWinningBuyer) {
       toast({
         title: "Buyer required",
         description: "Please select a buyer from the list",
@@ -600,8 +612,9 @@ export default function SellerDashboardPage() {
       // Prepare winningBuyerId: only send if buyerFromCIM is true
       const body: any = {
         finalSalePrice: Number.parseFloat(offMarketData.transactionValue),
+        buyerFromCIM: effectiveBuyerFromCIM === true,
       }
-      if (offMarketData.buyerFromCIM === true) {
+      if (effectiveBuyerFromCIM === true) {
         body.winningBuyerId = selectedWinningBuyer
       }
 
@@ -626,7 +639,7 @@ export default function SellerDashboardPage() {
 
       setOffMarketDialogOpen(false)
       toast({
-        title: "✅ Deal closed successfully",
+        title: "âœ… Deal closed successfully",
         description: "The deal has been marked as closed and removed from your active deals",
         duration: 4000
       })
@@ -661,6 +674,7 @@ export default function SellerDashboardPage() {
       if (offMarketData.transactionValue) {
         body.finalSalePrice = Number.parseFloat(offMarketData.transactionValue)
       }
+      body.buyerFromCIM = false
 
       const closeResponse = await fetch(`${apiUrl}/deals/${selectedDealForOffMarket._id}/close`, {
         method: "POST",
@@ -682,7 +696,7 @@ export default function SellerDashboardPage() {
 
       setOffMarketDialogOpen(false)
       toast({
-        title: "✅ Deal closed successfully",
+        title: "âœ… Deal closed successfully",
         description: "The deal has been marked as closed and removed from your active deals",
         duration: 4000
       })
@@ -829,6 +843,15 @@ export default function SellerDashboardPage() {
     }
   }, [offMarketDialogOpen, selectedDealForOffMarket, currentDialogStep])
 
+  useEffect(() => {
+    if (loiDialogOpen && selectedDealForLoi) {
+      setBuyerActivity([])
+      setSelectedWinningBuyer("")
+      setBuyerActivityLoading(true)
+      fetchEverActiveBuyers(selectedDealForLoi._id).finally(() => setBuyerActivityLoading(false))
+    }
+  }, [loiDialogOpen, selectedDealForLoi])
+
   // Update the useEffect for complete deal dialog:
   useEffect(() => {
     if (completeDealDialogOpen && selectedDealForCompletion) {
@@ -845,111 +868,13 @@ export default function SellerDashboardPage() {
     return num.toLocaleString()
   }
 
-  // Navigation component to avoid duplication
-  const NavigationContent = ({ onNavigate }: { onNavigate?: () => void }) => (
-    <>
-      <div className="mb-8">
-        <Link href="https://cimamplify.com/" onClick={onNavigate} className="block transition-transform hover:scale-105 duration-200">
-          <Image src="/logo.svg" alt="CIM Amplify Logo" width={150} height={50} className="h-auto" />
-        </Link>
-      </div>
-
-      <nav className="flex-1 space-y-2">
-        <Button
-          variant="secondary"
-          className="w-full justify-start gap-3 font-semibold bg-gradient-to-r from-teal-50 to-teal-100 text-teal-700 hover:from-teal-100 hover:to-teal-150 border border-teal-200/50 shadow-sm rounded-xl transition-all duration-200"
-          onClick={onNavigate}
-        >
-          <div className="p-1.5 bg-teal-500 rounded-lg">
-            <svg className="h-4 w-4 text-white" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path
-                d="M16.5 6L12 1.5L7.5 6M3.75 8.25H20.25M5.25 8.25V19.5C5.25 19.9142 5.58579 20.25 6 20.25H18C18.4142 20.25 18.75 19.9142 18.75 19.5V8.25"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </div>
-          <span>MyDeals</span>
-        </Button>
-
-        <Button
-          variant="ghost"
-          className="w-full justify-start gap-3 font-medium text-gray-600 hover:text-teal-700 hover:bg-teal-50/50 rounded-xl transition-all duration-200 group"
-          data-navigate="/seller/loi-deals"
-          onClick={() => {
-            triggerNavigationProgress()
-            onNavigate?.()
-            router.push("/seller/loi-deals")
-          }}
-        >
-          <div className="p-1.5 bg-gray-100 group-hover:bg-amber-100 rounded-lg transition-colors duration-200">
-            <FileText className="h-4 w-4 text-gray-500 group-hover:text-amber-600 transition-colors duration-200" />
-          </div>
-          <span>LOI - Deals</span>
-        </Button>
-
-        <Button
-          variant="ghost"
-          className="w-full justify-start gap-3 font-medium text-gray-600 hover:text-teal-700 hover:bg-teal-50/50 rounded-xl transition-all duration-200 group"
-          data-navigate="/seller/history"
-          onClick={() => {
-            triggerNavigationProgress()
-            onNavigate?.()
-            router.push("/seller/history")
-          }}
-        >
-          <div className="p-1.5 bg-gray-100 group-hover:bg-teal-100 rounded-lg transition-colors duration-200">
-            <Clock className="h-4 w-4 text-gray-500 group-hover:text-teal-600 transition-colors duration-200" />
-          </div>
-          <span>Off Market</span>
-        </Button>
-
-        <Button
-          variant="ghost"
-          className="w-full justify-start gap-3 font-medium text-gray-600 hover:text-teal-700 hover:bg-teal-50/50 rounded-xl transition-all duration-200 group"
-          data-navigate="/seller/view-profile"
-          onClick={() => {
-            triggerNavigationProgress()
-            onNavigate?.()
-            router.push("/seller/view-profile")
-          }}
-        >
-          <div className="p-1.5 bg-gray-100 group-hover:bg-blue-100 rounded-lg transition-colors duration-200">
-            <Eye className="h-4 w-4 text-gray-500 group-hover:text-blue-600 transition-colors duration-200" />
-          </div>
-          <span>View Profile</span>
-        </Button>
-
-        <div className="pt-4 mt-4 border-t border-gray-100">
-          <Button
-            variant="ghost"
-            className="w-full justify-start gap-3 font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all duration-200"
-            onClick={() => {
-              onNavigate?.()
-              handleLogout()
-            }}
-          >
-            <div className="p-1.5 bg-red-100 rounded-lg">
-              <LogOut className="h-4 w-4 text-red-600" />
-            </div>
-            <span>Sign Out</span>
-          </Button>
-        </div>
-      </nav>
-
-      <AmplifyVenturesBox />
-    </>
-  )
-
   return (
     <SellerProtectedRoute>
       <div className="flex min-h-screen bg-gradient-to-br from-gray-50 via-white to-teal-50/20">
         {/* Desktop Sidebar - Sticky */}
         <div className="hidden md:block w-64 flex-shrink-0">
           <div className="sticky top-0 h-screen bg-white/80 backdrop-blur-sm border-r border-gray-100 p-6 flex flex-col overflow-y-auto shadow-sm">
-            <NavigationContent />
+            <SellerNav activePage="dashboard" onLogout={handleLogout} />
           </div>
         </div>
 
@@ -971,7 +896,7 @@ export default function SellerDashboardPage() {
                     <SheetTitle className="text-gray-800">Menu</SheetTitle>
                   </SheetHeader>
                   <div className="mt-6 flex-1 overflow-y-auto pb-6">
-                    <NavigationContent onNavigate={() => setMobileMenuOpen(false)} />
+                    <SellerNav activePage="dashboard" onLogout={handleLogout} onNavigate={() => setMobileMenuOpen(false)} />
                   </div>
                 </SheetContent>
               </Sheet>
@@ -1196,6 +1121,102 @@ export default function SellerDashboardPage() {
             </div>
           </div>
         </div>
+        {/* LOI Dialog */}
+        <Dialog open={loiDialogOpen} onOpenChange={setLoiDialogOpen}>
+          <DialogContent className="sm:max-w-md rounded-2xl border-0 shadow-2xl">
+            <DialogHeader className="text-center pb-2">
+              <div className="w-14 h-14 mx-auto mb-4 bg-gradient-to-br from-teal-100 to-cyan-50 rounded-2xl flex items-center justify-center">
+                <svg className="w-7 h-7 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </div>
+              <DialogTitle className="text-xl font-bold text-gray-900">Select The Buyer</DialogTitle>
+              <p className="text-gray-500">Choose the LOI buyer for this deal</p>
+            </DialogHeader>
+            <div className="space-y-4 mt-4">
+              <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                {buyerActivityLoading ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-gray-500">
+                    <div className="w-10 h-10 rounded-full border-3 border-teal-200 border-t-teal-500 animate-spin mb-3" />
+                    <span className="text-sm font-medium">Loading buyers...</span>
+                  </div>
+                ) : activeBuyerOptions.length > 0 ? (
+                  activeBuyerOptions.map((buyer) => (
+                    <div
+                      key={buyer.buyerId}
+                      className={`flex items-center justify-between p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 ${
+                        selectedWinningBuyer === buyer.buyerId
+                          ? "border-teal-400 bg-teal-50 shadow-md shadow-teal-100"
+                          : "border-gray-100 hover:border-gray-200 hover:bg-gray-50"
+                      }`}
+                      onClick={() => setSelectedWinningBuyer(buyer.buyerId)}
+                    >
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="font-medium text-sm truncate">{buyer.buyerName || "Unknown Buyer"}</div>
+                          {buyer.flaggedInactive && (
+                            <span className="inline-flex items-center rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-700">
+                              Flagged
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs text-gray-500 truncate">{buyer.companyName || "Unknown Company"}</div>
+                      </div>
+                      {selectedWinningBuyer === buyer.buyerId && (
+                        <div className="w-6 h-6 bg-teal-500 rounded-full flex items-center justify-center flex-shrink-0 ml-3">
+                          <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="w-14 h-14 mx-auto mb-3 bg-gray-100 rounded-2xl flex items-center justify-center">
+                      <svg className="w-7 h-7 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                    </div>
+                    <p className="text-gray-500 text-sm">No buyers have interacted with this deal yet</p>
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-col gap-3 pt-2">
+                <Button
+                  onClick={() => handlePauseForLOISubmit(true)}
+                  disabled={!selectedWinningBuyer || !!pausingDealId}
+                  className="w-full py-3 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 rounded-xl font-semibold shadow-lg shadow-teal-200/50 transition-all duration-200 disabled:opacity-70"
+                >
+                  {pausingDealId ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    "Pause for LOI"
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => handlePauseForLOISubmit(false)}
+                  disabled={!!pausingDealId}
+                  className="w-full py-3 border-2 border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 rounded-xl font-medium transition-all duration-200 disabled:opacity-70"
+                >
+                  {pausingDealId ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    "No, not from CIM Amplify"
+                  )}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
         {/* Off Market Dialog */}
         <Dialog open={offMarketDialogOpen} onOpenChange={setOffMarketDialogOpen}>
           <DialogContent className="sm:max-w-md rounded-2xl border-0 shadow-2xl">
@@ -1340,7 +1361,7 @@ export default function SellerDashboardPage() {
                     <Button
                       onClick={() => {
                         setOffMarketData((prev) => ({ ...prev, buyerFromCIM: true }))
-                        handleOffMarketSubmit()
+                        handleOffMarketSubmit(true)
                       }}
                       className="w-full py-3 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 rounded-xl font-semibold shadow-lg shadow-teal-200/50 transition-all duration-200 disabled:opacity-70"
                       disabled={!selectedWinningBuyer || isSubmittingOffMarket}

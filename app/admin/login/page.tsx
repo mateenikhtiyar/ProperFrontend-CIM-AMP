@@ -157,9 +157,6 @@ export default function AdminLoginPage() {
             </div>
           )}
 
-          {/* Google login button */}
-    
-      
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label

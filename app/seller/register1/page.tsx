@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import type React from "react";
 import Image from "next/image";
@@ -152,12 +152,10 @@ export default function SellerRegisterPage() {
 
       toast({
         title: "Registration Successful",
-        description:
-          "Please check your email to verify your account before logging in.",
+        description: "Your account has been created. You can now log in.",
       });
 
-      // Redirect to dashboard page
-      router.push("/registration-pending-verification");
+      router.push("/seller/login");
     } catch (error: any) {
 
       setErrors({
@@ -176,12 +174,6 @@ export default function SellerRegisterPage() {
       setIsSubmitting(false);
     }
   };
-
-  // Handle Google OAuth login
-  const handleGoogleLogin = () => {
-
-    window.location.href = "https://api.cimamplify.com/sellers/google/callback"
-  }
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-[#C3C6BE] to-[#828673]">

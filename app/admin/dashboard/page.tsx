@@ -1,8 +1,8 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect, useRef } from "react";
 import { Textarea } from "@/components/ui/textarea";
-import { FileText, Download, Search, X, Building2, ChevronDown, ChevronUp, Users, Mail, Briefcase, Calendar } from "lucide-react";
+import { FileText, Download, Search, X, Building2, ChevronDown, ChevronUp, Users, Mail, Briefcase, Calendar, Loader2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -68,6 +68,10 @@ interface Deal {
   closedWithBuyer?: string;
   closedWithBuyerCompany?: string;
   closedWithBuyerEmail?: string;
+  closedWithCimAmplify?: boolean;
+  loiWithBuyer?: string;
+  loiWithBuyerCompany?: string;
+  loiWithBuyerEmail?: string;
   wasLOIDeal?: boolean;
   businessModel?: BusinessModel;
   managementPreferences?: string;
@@ -102,6 +106,9 @@ interface Buyer {
     metadata?: any;
   }>;
   status: string;
+  flaggedInactive?: boolean;
+  flaggedInactiveAt?: string | null;
+  flaggedInactiveBy?: string | null;
 }
 
 interface BuyersActivity {
@@ -174,12 +181,45 @@ const COMPANY_TYPE_OPTIONS = [
   "Strategic Operating Company",
 ];
 
+const normalizeId = (value: any): string => {
+  if (!value) return "";
+  if (typeof value === "string") return value.trim();
+  if (typeof value === "object") {
+    if (typeof value._id === "string") return value._id.trim();
+    if (typeof value.id === "string") return value.id.trim();
+    if (typeof value.toString === "function") {
+      const converted = value.toString();
+      if (converted && converted !== "[object Object]") return converted.trim();
+    }
+  }
+  return "";
+};
+
+const hasCimAmplifyBuyer = (deal: Deal): boolean => {
+  return Boolean(
+    (deal as any).closedWithCimAmplify === true ||
+    normalizeId((deal as any).closedWithBuyer) ||
+    (deal as any).closedWithBuyerCompany ||
+    (deal as any).closedWithBuyerEmail
+  );
+};
+
+const hasLoiCimAmplifyBuyer = (deal: Deal): boolean => {
+  return Boolean(
+    normalizeId((deal as any).loiWithBuyer) ||
+    (deal as any).loiWithBuyerCompany ||
+    (deal as any).loiWithBuyerEmail
+  );
+};
+
 const BuyersActivityPopup: React.FC<{
   isOpen: boolean;
   onClose: () => void;
   buyersActivity: BuyersActivity;
   dealTitle: string;
-}> = ({ isOpen, onClose, buyersActivity, dealTitle }) => {
+  loading?: boolean;
+  error?: string | null;
+}> = ({ isOpen, onClose, buyersActivity, dealTitle, loading = false, error = null }) => {
   const [selectedBuyer, setSelectedBuyer] = useState<Buyer | null>(null);
 
   if (!isOpen) return null;
@@ -256,22 +296,63 @@ const BuyersActivityPopup: React.FC<{
         {/* Summary Stats */}
         <div className="grid grid-cols-3 gap-3 p-4 bg-gray-50 border-b border-gray-100">
           <div className="text-center p-2 bg-white rounded-lg border border-gray-100">
-            <p className="text-xl font-bold text-green-600">{buyersActivity.active?.length || 0}</p>
+            {loading ? (
+              <div className="h-7 w-6 mx-auto bg-gray-200 rounded animate-pulse" />
+            ) : (
+              <p className="text-xl font-bold text-green-600">{buyersActivity.active?.length || 0}</p>
+            )}
             <p className="text-xs text-gray-500">Active</p>
           </div>
           <div className="text-center p-2 bg-white rounded-lg border border-gray-100">
-            <p className="text-xl font-bold text-amber-600">{buyersActivity.pending?.length || 0}</p>
+            {loading ? (
+              <div className="h-7 w-6 mx-auto bg-gray-200 rounded animate-pulse" />
+            ) : (
+              <p className="text-xl font-bold text-amber-600">{buyersActivity.pending?.length || 0}</p>
+            )}
             <p className="text-xs text-gray-500">Pending</p>
           </div>
           <div className="text-center p-2 bg-white rounded-lg border border-gray-100">
-            <p className="text-xl font-bold text-red-600">{filteredRejectedBuyers.length}</p>
+            {loading ? (
+              <div className="h-7 w-6 mx-auto bg-gray-200 rounded animate-pulse" />
+            ) : (
+              <p className="text-xl font-bold text-red-600">{filteredRejectedBuyers.length}</p>
+            )}
             <p className="text-xs text-gray-500">Rejected</p>
           </div>
         </div>
 
         {/* Buyers List */}
         <div className="p-4 overflow-y-auto max-h-[calc(90vh-220px)]">
-          {allBuyers.length === 0 ? (
+          {loading ? (
+            <div className="space-y-2">
+              {[0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-4 p-3 bg-gray-50 border border-gray-100 rounded-lg"
+                >
+                  <div className="h-11 w-11 rounded-full bg-gray-200 animate-pulse flex-shrink-0" />
+                  <div className="flex-1 min-w-0 space-y-2">
+                    <div className="h-3.5 w-1/3 bg-gray-200 rounded animate-pulse" />
+                    <div className="h-3 w-1/2 bg-gray-200 rounded animate-pulse" />
+                    <div className="h-2.5 w-1/4 bg-gray-200 rounded animate-pulse" />
+                  </div>
+                  <div className="h-6 w-16 rounded-full bg-gray-200 animate-pulse" />
+                </div>
+              ))}
+              <div className="flex items-center justify-center gap-2 pt-2 text-gray-500 text-sm">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading buyer activityâ€¦
+              </div>
+            </div>
+          ) : error ? (
+            <div className="py-8 text-center">
+              <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-red-50 flex items-center justify-center">
+                <X className="h-6 w-6 text-red-500" />
+              </div>
+              <p className="text-gray-700 font-medium">Could not load buyer activity</p>
+              <p className="text-gray-400 text-sm mt-1">{error}</p>
+            </div>
+          ) : allBuyers.length === 0 ? (
             <div className="py-8 text-center">
               <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-gray-100 flex items-center justify-center">
                 <Users className="h-6 w-6 text-gray-400" />
@@ -311,14 +392,28 @@ const BuyersActivityPopup: React.FC<{
                     )}
                   </div>
                   <div className="flex flex-col items-end gap-1">
-                    <span
-                      className={`px-2.5 py-1 text-xs font-medium rounded-full ${getStatusColor(
-                        buyer.status
-                      )}`}
-                    >
-                      {buyer.status.charAt(0).toUpperCase() +
-                        buyer.status.slice(1)}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      {buyer.flaggedInactive && (
+                        <span
+                          className="px-2 py-1 text-[11px] font-medium rounded-full bg-rose-100 text-rose-700 border border-rose-200"
+                          title={
+                            buyer.flaggedInactiveAt
+                              ? `Flagged inactive by advisor on ${new Date(buyer.flaggedInactiveAt).toLocaleDateString()}`
+                              : 'Flagged inactive by advisor'
+                          }
+                        >
+                          Flagged
+                        </span>
+                      )}
+                      <span
+                        className={`px-2.5 py-1 text-xs font-medium rounded-full ${getStatusColor(
+                          buyer.status
+                        )}`}
+                      >
+                        {buyer.status.charAt(0).toUpperCase() +
+                          buyer.status.slice(1)}
+                      </span>
+                    </div>
                     {buyer.lastInteraction && (
                       <span className="text-xs text-gray-400">
                         {new Date(buyer.lastInteraction).toLocaleDateString()}
@@ -334,7 +429,9 @@ const BuyersActivityPopup: React.FC<{
         {/* Footer */}
         <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-between items-center">
           <span className="text-xs text-gray-400">
-            {allBuyers.length} {allBuyers.length === 1 ? "buyer" : "buyers"} total
+            {loading
+              ? "Loadingâ€¦"
+              : `${allBuyers.length} ${allBuyers.length === 1 ? "buyer" : "buyers"} total`}
           </span>
           <Button variant="outline" size="sm" onClick={onClose}>
             Close
@@ -363,9 +460,23 @@ const BuyersActivityPopup: React.FC<{
                   <h3 className="font-semibold text-gray-800">
                     {selectedBuyer.buyerName || "Unknown"}
                   </h3>
-                  <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded-full mt-0.5 ${getStatusColor(selectedBuyer.status)}`}>
-                    {selectedBuyer.status.charAt(0).toUpperCase() + selectedBuyer.status.slice(1)}
-                  </span>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded-full ${getStatusColor(selectedBuyer.status)}`}>
+                      {selectedBuyer.status.charAt(0).toUpperCase() + selectedBuyer.status.slice(1)}
+                    </span>
+                    {selectedBuyer.flaggedInactive && (
+                      <span
+                        className="inline-block px-2 py-0.5 text-[11px] font-medium rounded-full bg-rose-100 text-rose-700 border border-rose-200"
+                        title={
+                          selectedBuyer.flaggedInactiveAt
+                            ? `Flagged inactive by advisor on ${new Date(selectedBuyer.flaggedInactiveAt).toLocaleDateString()}`
+                            : 'Flagged inactive by advisor'
+                        }
+                      >
+                        Flagged
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
               <button
@@ -491,7 +602,7 @@ const AdminEditDealForm: React.FC<{
         trailingRevenueAmount: deal.financialDetails?.trailingRevenueAmount || 0,
         trailingEBITDACurrency: deal.financialDetails?.trailingEBITDACurrency || "USD($)",
         trailingEBITDAAmount: deal.financialDetails?.trailingEBITDAAmount || 0,
-        avgRevenueGrowth: deal.financialDetails?.avgRevenueGrowth || 0,
+
         netIncome: deal.financialDetails?.netIncome || 0,
         askingPrice: deal.financialDetails?.askingPrice || 0,
         t12FreeCashFlow: deal.financialDetails?.t12FreeCashFlow || 0,
@@ -746,25 +857,8 @@ const AdminEditDealForm: React.FC<{
             }}
           />
         </div>
-        <div>
-          <Label>Average 3-Year Revenue Growth (%)</Label>
-          <Input
-            type="text"
-            value={
-              form.financialDetails.avgRevenueGrowth
-                ? formatNumberWithCommas(form.financialDetails.avgRevenueGrowth)
-                : ""
-            }
-            onChange={(e) => {
-              const rawValue = e.target.value.replace(/,/g, "");
-              handleNumberChange(
-                { target: { value: rawValue } } as React.ChangeEvent<HTMLInputElement>,
-                "avgRevenueGrowth",
-                "financialDetails"
-              );
-            }}
-          />
-        </div>
+
+
         <div>
           <Label>Net Income</Label>
           <Input
@@ -1037,6 +1131,14 @@ export default function DealManagementDashboard() {
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(initialSearch);
   const [searchLoading, setSearchLoading] = useState(false);
   const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const dealsAbortRef = useRef<Record<"active" | "offMarket" | "allDeals" | "loi", AbortController | null>>({
+    active: null,
+    offMarket: null,
+    allDeals: null,
+    loi: null,
+  });
+  const tabCountsAbortRef = useRef<AbortController | null>(null);
+  const recentDealsRequestRef = useRef<Map<string, number>>(new Map());
   const [activeTab, setActiveTab] = useState(initialTab);
 
   const [activeDeals, setActiveDeals] = useState<Deal[]>([]);
@@ -1046,6 +1148,7 @@ export default function DealManagementDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activityError, setActivityError] = useState<string | null>(null);
+  const [activityLoading, setActivityLoading] = useState(false);
   const [showBuyersActivity, setShowBuyersActivity] = useState(false);
   const [selectedDealForActivity, setSelectedDealForActivity] = useState<Deal | null>(null);
   const [buyersActivity, setBuyersActivity] = useState<BuyersActivity>({
@@ -1091,6 +1194,15 @@ export default function DealManagementDashboard() {
   const [selectedWinningBuyer, setSelectedWinningBuyer] = useState("");
   const [buyerActivityLoading, setBuyerActivityLoading] = useState(false);
   const [isSubmittingOffMarket, setIsSubmittingOffMarket] = useState(false);
+
+  // LOI dialog state
+  const [loiDialogOpen, setLoiDialogOpen] = useState(false);
+  const [selectedDealForLoi, setSelectedDealForLoi] = useState<Deal | null>(null);
+  const [selectedLoiBuyer, setSelectedLoiBuyer] = useState("");
+  const [loiBuyerActivity, setLoiBuyerActivity] = useState<any[]>([]);
+  const [loiBuyerActivityLoading, setLoiBuyerActivityLoading] = useState(false);
+  const [isSubmittingLoi, setIsSubmittingLoi] = useState(false);
+
   const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
 
   const toggleDescription = (dealId: string) => {
@@ -1188,14 +1300,14 @@ export default function DealManagementDashboard() {
 
         // Transform to match the expected format
         const transformedBuyers = buyers.map((buyer: any) => ({
-          buyerId: buyer._id,
+          buyerId: normalizeId(buyer?._id || buyer?.id),
           buyerName: buyer.fullName || "Unknown Buyer",
           companyName: buyer.companyName || "Unknown Company",
           buyerEmail: buyer.email || "",
           status: "active", // Mark all as active since they were ever active
           currentStatus: buyer.currentStatus,
           isCurrentlyActive: buyer.isCurrentlyActive,
-        }));
+        })).filter((buyer: any) => !!buyer.buyerId);
 
         setBuyerActivity(transformedBuyers);
 
@@ -1237,7 +1349,7 @@ export default function DealManagementDashboard() {
                   Authorization: `Bearer ${token}`,
                   "Content-Type": "application/json",
                 },
-                body: JSON.stringify({}),
+                body: JSON.stringify({ buyerFromCIM: false }),
               }
             );
             if (!response.ok) {
@@ -1275,10 +1387,11 @@ export default function DealManagementDashboard() {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
       const body: any = {
         finalSalePrice: Number.parseFloat(offMarketData.transactionValue),
+        buyerFromCIM: offMarketData.buyerFromCIM === true,
       };
       // Only add winningBuyerId if buyer is from CIM Amplify AND a buyer is selected
       if (offMarketData.buyerFromCIM === true && selectedWinningBuyer) {
-        body.winningBuyerId = selectedWinningBuyer;
+        body.winningBuyerId = normalizeId(selectedWinningBuyer);
       }
       const closeResponse = await fetch(
         `${apiUrl}/deals/${selectedDealForOffMarketDialog._id}/close`,
@@ -1330,6 +1443,71 @@ export default function DealManagementDashboard() {
     }
   }, [offMarketDialogOpen, selectedDealForOffMarketDialog, offMarketData.buyerFromCIM]);
 
+  // LOI dialog handlers
+  const handleAdminPauseForLOI = (deal: Deal) => {
+    setSelectedDealForLoi(deal);
+    setSelectedLoiBuyer("");
+    setLoiBuyerActivity([]);
+    setLoiDialogOpen(true);
+  };
+
+  const handleAdminPauseForLOISubmit = async (isCimBuyer: boolean) => {
+    if (!selectedDealForLoi) return;
+    setIsSubmittingLoi(true);
+    try {
+      const token = sessionStorage.getItem('token');
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.cimamplify.com";
+      const body = isCimBuyer && selectedLoiBuyer ? { loiBuyerId: selectedLoiBuyer } : {};
+
+      const response = await fetch(`${apiUrl}/deals/${selectedDealForLoi._id}/pause-for-loi`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        setLoiDialogOpen(false);
+        return;
+      }
+
+      // Refresh all tabs
+      await Promise.all([
+        fetchDeals(activeCurrentPage, dealsPerPage, "active", debouncedSearchTerm),
+        fetchDeals(allDealsCurrentPage, dealsPerPage, "allDeals", debouncedSearchTerm),
+        fetchDeals(loiCurrentPage, dealsPerPage, "loi", debouncedSearchTerm),
+      ]);
+
+      setLoiDialogOpen(false);
+      setSelectedDealForLoi(null);
+      setSelectedLoiBuyer("");
+      setLoiBuyerActivity([]);
+    } catch (error) {
+      setLoiDialogOpen(false);
+    } finally {
+      setIsSubmittingLoi(false);
+    }
+  };
+
+  // Fetch ever-active buyers when LOI dialog opens
+  useEffect(() => {
+    if (loiDialogOpen && selectedDealForLoi) {
+      setLoiBuyerActivity([]);
+      setSelectedLoiBuyer("");
+      setLoiBuyerActivityLoading(true);
+      fetchEverActiveBuyers(selectedDealForLoi._id)
+        .then((buyers) => {
+          setLoiBuyerActivity(buyers);
+          if (buyers.length > 0) {
+            setSelectedLoiBuyer(buyers[0].buyerId);
+          }
+        })
+        .finally(() => setLoiBuyerActivityLoading(false));
+    }
+  }, [loiDialogOpen, selectedDealForLoi]);
+
   useEffect(() => {
     const fetchAdminProfile = async () => {
       const token = sessionStorage.getItem('token');
@@ -1351,6 +1529,43 @@ export default function DealManagementDashboard() {
     status: "active" | "offMarket" | "allDeals" | "loi",
     searchTerm: string = ""
   ) => {
+    const token = sessionStorage.getItem("token");
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.cimamplify.com";
+    if (!token) {
+      setLoading(false);
+      setSearchLoading(false);
+      return;
+    }
+
+    // Deduplicate ultra-close identical calls (common in React StrictMode DEV).
+    const requestKey = `${status}|${page}|${limit}|${searchTerm}`;
+    const now = Date.now();
+    const lastRequestAt = recentDealsRequestRef.current.get(requestKey) || 0;
+    if (now - lastRequestAt < 500) return;
+    recentDealsRequestRef.current.set(requestKey, now);
+
+    // Abort any in-flight request for the same tab/status before starting a new one.
+    if (dealsAbortRef.current[status]) {
+      dealsAbortRef.current[status]?.abort();
+    }
+    const controller = new AbortController();
+    dealsAbortRef.current[status] = controller;
+
+    const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+    const fetchWith429Retry = async (url: string, init: RequestInit, retries = 2): Promise<Response> => {
+      let attempt = 0;
+      while (true) {
+        const res = await fetch(url, init);
+        if (res.status !== 429 || attempt >= retries) return res;
+        const retryAfter = Number(res.headers.get("retry-after"));
+        const backoffMs = Number.isFinite(retryAfter) && retryAfter > 0
+          ? retryAfter * 1000
+          : 400 * Math.pow(2, attempt);
+        attempt += 1;
+        await wait(backoffMs);
+      }
+    };
+
     // Set page loading state
     if (status === "active") setActivePageLoading(true);
     else if (status === "offMarket") setOffMarketPageLoading(true);
@@ -1358,8 +1573,6 @@ export default function DealManagementDashboard() {
     else if (status === "loi") setLoiPageLoading(true);
 
     try {
-      const token = sessionStorage.getItem('token');
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
       // Properly encode the search term to handle special characters
       const encodedSearchTerm = encodeURIComponent(searchTerm);
       let endpoint;
@@ -1376,49 +1589,32 @@ export default function DealManagementDashboard() {
       if (!endpoint) {
         throw new Error("Invalid deal status provided");
       }
-      const response = await fetch(endpoint, {
+      const response = await fetchWith429Retry(endpoint, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
+        signal: controller.signal,
       });
 
-      if (!response.ok) throw new Error(`Failed to fetch ${status} deals`);
+      if (!response.ok) {
+        const error: any = new Error(`Failed to fetch ${status} deals`);
+        error.status = response.status;
+        throw error;
+      }
       const data = await response.json();
       const dealsArray = Array.isArray(data.data) ? data.data : [data.data];
 
       const validDealsArray = dealsArray.filter((deal: Deal) => deal !== null && deal !== undefined);
 
-      const dealsWithSellers = await Promise.all(
-        validDealsArray.map(async (deal: Deal) => {
-          try {
-            // Fetch seller profile
-            const sellerRes = await fetch(`${apiUrl}/sellers/public/${deal.seller}`);
-            let sellerProfile = null;
-            if (sellerRes.ok) {
-              sellerProfile = await sellerRes.json();
-            }
-
-            // Fetch status summary for each deal
-            const statusRes = await fetch(`${apiUrl}/deals/${deal._id}/status-summary`, {
-              headers: {
-                Authorization: `Bearer ${token}`,
-                "Content-Type": "application/json",
-              },
-            });
-
-            let statusSummary = null;
-            if (statusRes.ok) {
-              const statusData = await statusRes.json();
-              statusSummary = statusData.summary;
-            }
-
-            return { ...deal, sellerProfile, statusSummary };
-          } catch {
-            return deal;
-          }
-        })
-      );
+      const dealsWithSellers = validDealsArray.map((deal: Deal) => {
+        let sellerProfile = (deal as any).sellerProfile || null;
+        if (Array.isArray(sellerProfile)) {
+          sellerProfile = sellerProfile[0] || null;
+        }
+        const statusSummary = (deal as any).statusSummary || null;
+        return { ...deal, sellerProfile, statusSummary };
+      });
 
       if (status === "active") {
         setActiveDeals(dealsWithSellers);
@@ -1439,6 +1635,15 @@ export default function DealManagementDashboard() {
       }
       setError(null);
     } catch (error: any) {
+      if (error?.name === "AbortError") {
+        return;
+      }
+
+      if (error?.status === 429) {
+        setError("Too many requests. Please wait a moment and try again.");
+        return;
+      }
+
       if (status === "active") {
         setActiveDeals([]);
         setActiveTotalDeals(0);
@@ -1458,7 +1663,49 @@ export default function DealManagementDashboard() {
       }
       setError(error.message);
     } finally {
+      if (dealsAbortRef.current[status] === controller) {
+        dealsAbortRef.current[status] = null;
+      }
       setLoading(false);
+    }
+  };
+
+  const fetchAllTabCounts = async (search: string) => {
+    const token = sessionStorage.getItem("token");
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.cimamplify.com";
+    if (!token) return;
+
+    if (tabCountsAbortRef.current) {
+      tabCountsAbortRef.current.abort();
+    }
+    const controller = new AbortController();
+    tabCountsAbortRef.current = controller;
+
+    const encodedSearchTerm = encodeURIComponent(search);
+
+    try {
+      const res = await fetch(`${apiUrl}/deals/admin/tab-counts?search=${encodedSearchTerm}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        signal: controller.signal,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setActiveTotalDeals(Number(data?.active || 0));
+        setOffMarketTotalDeals(Number(data?.offMarket || 0));
+        setAllDealsTotalDeals(Number(data?.allDeals || 0));
+        setLoiTotalDeals(Number(data?.loi || 0));
+      }
+    } catch (error: any) {
+      if (error?.name !== "AbortError") {
+        // keep existing counters on count-fetch failure
+      }
+    } finally {
+      if (tabCountsAbortRef.current === controller) {
+        tabCountsAbortRef.current = null;
+      }
     }
   };
 
@@ -1478,34 +1725,44 @@ export default function DealManagementDashboard() {
     };
   }, [searchTerm]);
 
-  useEffect(() => {
-    const fetchAllDeals = async () => {
-      await Promise.all([
-        fetchDeals(activeCurrentPage, dealsPerPage, "active", debouncedSearchTerm),
-        fetchDeals(offMarketCurrentPage, dealsPerPage, "offMarket", debouncedSearchTerm),
-        fetchDeals(allDealsCurrentPage, dealsPerPage, "allDeals", debouncedSearchTerm),
-        fetchDeals(loiCurrentPage, dealsPerPage, "loi", debouncedSearchTerm),
-      ]);
-      setSearchLoading(false);
-    };
-    fetchAllDeals();
-  }, [activeCurrentPage, offMarketCurrentPage, allDealsCurrentPage, loiCurrentPage, debouncedSearchTerm]);
+  const currentTabPage =
+    activeTab === "active"
+      ? activeCurrentPage
+      : activeTab === "offMarket"
+      ? offMarketCurrentPage
+      : activeTab === "allDeals"
+      ? allDealsCurrentPage
+      : loiCurrentPage;
 
   useEffect(() => {
-    if (activeTab === "active") {
-      setActiveCurrentPage(1);
-      fetchDeals(1, dealsPerPage, "active", debouncedSearchTerm);
-    } else if (activeTab === "offMarket") {
-      setOffMarketCurrentPage(1);
-      fetchDeals(1, dealsPerPage, "offMarket", debouncedSearchTerm);
-    } else if (activeTab === "allDeals") {
-      setAllDealsCurrentPage(1);
-      fetchDeals(1, dealsPerPage, "allDeals", debouncedSearchTerm);
-    } else if (activeTab === "loi") {
-      setLoiCurrentPage(1);
-      fetchDeals(1, dealsPerPage, "loi", debouncedSearchTerm);
-    }
-  }, [activeTab]);
+    const fetchCurrentTabDeals = async () => {
+      if (activeTab === "active") {
+        await fetchDeals(currentTabPage, dealsPerPage, "active", debouncedSearchTerm);
+      } else if (activeTab === "offMarket") {
+        await fetchDeals(currentTabPage, dealsPerPage, "offMarket", debouncedSearchTerm);
+      } else if (activeTab === "allDeals") {
+        await fetchDeals(currentTabPage, dealsPerPage, "allDeals", debouncedSearchTerm);
+      } else if (activeTab === "loi") {
+        await fetchDeals(currentTabPage, dealsPerPage, "loi", debouncedSearchTerm);
+      }
+      setSearchLoading(false);
+    };
+    fetchCurrentTabDeals();
+  }, [activeTab, currentTabPage, debouncedSearchTerm]);
+
+  useEffect(() => {
+    fetchAllTabCounts(debouncedSearchTerm);
+  }, [debouncedSearchTerm]);
+
+  useEffect(() => {
+    return () => {
+      dealsAbortRef.current.active?.abort();
+      dealsAbortRef.current.offMarket?.abort();
+      dealsAbortRef.current.allDeals?.abort();
+      dealsAbortRef.current.loi?.abort();
+      tabCountsAbortRef.current?.abort();
+    };
+  }, []);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
@@ -1535,6 +1792,7 @@ export default function DealManagementDashboard() {
       },
     });
     setActivityError(null);
+    setActivityLoading(true);
     setShowBuyersActivity(true);
     try {
       const token = sessionStorage.getItem('token');
@@ -1578,6 +1836,8 @@ export default function DealManagementDashboard() {
           totalRejected: 0,
         },
       });
+    } finally {
+      setActivityLoading(false);
     }
   };
 
@@ -1854,7 +2114,7 @@ export default function DealManagementDashboard() {
                         )}
 
                         {/* Two Column Layout - Seller & Financial side by side */}
-                        <div className="grid grid-cols-2 gap-4 mb-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
                           {/* Seller Information */}
                           <div className="bg-gray-50 rounded-lg p-2.5">
                             <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">Seller Information</h4>
@@ -1923,7 +2183,7 @@ export default function DealManagementDashboard() {
                         </div>
 
                         {/* Action Buttons - Enhanced styling */}
-                        <div className="flex gap-2 justify-end pt-3 border-t border-gray-100">
+                        <div className="flex flex-wrap gap-2 justify-end pt-3 border-t border-gray-100">
                           <Button
                             size="sm"
                             className="bg-teal-500 hover:bg-teal-600 h-8 px-4 text-xs"
@@ -1933,6 +2193,17 @@ export default function DealManagementDashboard() {
                             }}
                           >
                             Activity
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="bg-amber-50 text-amber-600 border border-amber-200 hover:bg-amber-100 h-8 px-3 text-xs"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAdminPauseForLOI(deal);
+                            }}
+                            disabled={deal.status === "loi"}
+                          >
+                            Pause for LOI
                           </Button>
                           <Button
                             size="sm"
@@ -2084,6 +2355,46 @@ export default function DealManagementDashboard() {
                       </div>
 
                       <div className="px-4 py-3">
+                        {/* LOI Information - mirrors Off Market sale info, without transaction value */}
+                        <div className="mb-3 p-3 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg">
+                          <h4 className="text-[10px] font-bold text-amber-800 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                            LOI Information
+                          </h4>
+                          <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-xs">
+                            <div className="flex justify-between">
+                              <span className="text-gray-500">Date Paused for LOI:</span>
+                              <span className="font-medium text-gray-700">
+                                {deal.timeline?.updatedAt
+                                  ? new Date(deal.timeline.updatedAt).toLocaleDateString()
+                                  : "N/A"}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-500">Buyer From CIM Amplify:</span>
+                              <span className={`font-medium ${hasLoiCimAmplifyBuyer(deal) ? "text-green-600" : "text-gray-600"}`}>
+                                {hasLoiCimAmplifyBuyer(deal) ? "Yes" : "No"}
+                              </span>
+                            </div>
+                            {deal.loiWithBuyerCompany && (
+                              <div className="flex justify-between">
+                                <span className="text-gray-500">Buyer Company:</span>
+                                <span className="font-medium text-gray-700 truncate ml-1" title={deal.loiWithBuyerCompany}>
+                                  {deal.loiWithBuyerCompany}
+                                </span>
+                              </div>
+                            )}
+                            {deal.loiWithBuyerEmail && (
+                              <div className="flex col-span-2">
+                                <span className="text-gray-500 shrink-0">Buyer Email:</span>
+                                <span className="font-medium text-gray-700 truncate ml-2" title={deal.loiWithBuyerEmail}>
+                                  {deal.loiWithBuyerEmail}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
                         {/* Status Badges */}
                         {deal.statusSummary && (
                           <div className="flex flex-wrap gap-1.5 mb-3">
@@ -2103,7 +2414,7 @@ export default function DealManagementDashboard() {
                         )}
 
                         {/* Two Column Layout - Seller & Financial */}
-                        <div className="grid grid-cols-2 gap-4 mb-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
                           {/* Seller Information */}
                           <div className="bg-gray-50 rounded-lg p-2.5">
                             <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">Seller Information</h4>
@@ -2168,7 +2479,7 @@ export default function DealManagementDashboard() {
                         </div>
 
                         {/* Action Buttons - Enhanced styling matching Active Deals */}
-                        <div className="flex gap-2 justify-end pt-3 border-t border-gray-100">
+                        <div className="flex flex-wrap gap-2 justify-end pt-3 border-t border-gray-100">
                           <Button
                             size="sm"
                             className="bg-teal-500 hover:bg-teal-600 h-8 px-4 text-xs"
@@ -2278,7 +2589,7 @@ export default function DealManagementDashboard() {
                 </div>
               )}
               {!offMarketPageLoading && (
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
                 {currentOffMarketDeals.map((deal) => (
                   deal && (
                     <div
@@ -2342,18 +2653,12 @@ export default function DealManagementDashboard() {
                                   : "N/A"}
                               </span>
                             </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-500">Avg Revenue Growth:</span>
-                              <span className="font-medium text-gray-700">
-                                {deal.financialDetails?.avgRevenueGrowth != null
-                                  ? `${deal.financialDetails.avgRevenueGrowth}%`
-                                  : "N/A"}
-                              </span>
-                            </div>
+
+
                             <div className="flex justify-between">
                               <span className="text-gray-500">Buyer From CIM Amplify:</span>
-                              <span className={`font-medium ${deal.closedWithBuyer && deal.closedWithBuyer !== "false" && deal.closedWithBuyer !== "" ? "text-green-600" : "text-gray-600"}`}>
-                                {deal.closedWithBuyer && deal.closedWithBuyer !== "false" && deal.closedWithBuyer !== "" ? "Yes" : "No"}
+                              <span className={`font-medium ${hasCimAmplifyBuyer(deal) ? "text-green-600" : "text-gray-600"}`}>
+                                {hasCimAmplifyBuyer(deal) ? "Yes" : "No"}
                               </span>
                             </div>
                             {deal.closedWithBuyerCompany && (
@@ -2400,7 +2705,7 @@ export default function DealManagementDashboard() {
                         )}
 
                         {/* Two Column Layout - Seller & Financial side by side */}
-                        <div className="grid grid-cols-2 gap-4 mb-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
                           {/* Seller Information */}
                           <div className="bg-gray-50 rounded-lg p-2.5">
                             <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">Seller Information</h4>
@@ -2469,7 +2774,7 @@ export default function DealManagementDashboard() {
                         </div>
 
                         {/* Action Buttons - Enhanced styling */}
-                        <div className="flex gap-2 justify-end pt-3 border-t border-gray-100">
+                        <div className="flex flex-wrap gap-2 justify-end pt-3 border-t border-gray-100">
                           <Button
                             size="sm"
                             className="bg-teal-500 hover:bg-teal-600 h-8 px-4 text-xs"
@@ -2634,7 +2939,7 @@ export default function DealManagementDashboard() {
                         )}
 
                         {/* Two Column Layout - Seller & Financial side by side */}
-                        <div className="grid grid-cols-2 gap-4 mb-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
                           {/* Seller Information */}
                           <div className="bg-gray-50 rounded-lg p-2.5">
                             <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">Seller Information</h4>
@@ -2721,7 +3026,7 @@ export default function DealManagementDashboard() {
                         )}
 
                         {/* Action Buttons - Enhanced styling */}
-                        <div className="flex gap-2 justify-end pt-3 border-t border-gray-100">
+                        <div className="flex flex-wrap gap-2 justify-end pt-3 border-t border-gray-100">
                           <Button
                             size="sm"
                             className="bg-teal-500 hover:bg-teal-600 h-8 px-4 text-xs"
@@ -2732,6 +3037,18 @@ export default function DealManagementDashboard() {
                           >
                             Activity
                           </Button>
+                          {deal.status !== "loi" && (
+                            <Button
+                              size="sm"
+                              className="bg-amber-50 text-amber-600 border border-amber-200 hover:bg-amber-100 h-8 px-3 text-xs"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleAdminPauseForLOI(deal);
+                              }}
+                            >
+                              Pause for LOI
+                            </Button>
+                          )}
                           <Button
                             size="sm"
                             className="bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 h-8 px-3 text-xs"
@@ -2828,6 +3145,8 @@ export default function DealManagementDashboard() {
           onClose={() => setShowBuyersActivity(false)}
           buyersActivity={buyersActivity}
           dealTitle={selectedDealForActivity?.title || ""}
+          loading={activityLoading}
+          error={activityError}
         />
 
       {editDeal && (
@@ -2906,6 +3225,103 @@ export default function DealManagementDashboard() {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* LOI Dialog */}
+      <Dialog
+        open={loiDialogOpen}
+        onOpenChange={() => {
+          setLoiDialogOpen(false);
+          setSelectedDealForLoi(null);
+          setSelectedLoiBuyer("");
+          setLoiBuyerActivity([]);
+        }}
+      >
+        <DialogContent className="sm:max-w-md rounded-2xl border-0 shadow-2xl">
+          <DialogHeader className="text-center pb-2">
+            <div className="w-14 h-14 mx-auto mb-4 bg-gradient-to-br from-teal-100 to-cyan-50 rounded-2xl flex items-center justify-center">
+              <svg className="w-7 h-7 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+            </div>
+            <DialogTitle className="text-xl font-bold text-gray-900">Select The Buyer</DialogTitle>
+            <p className="text-gray-500">Choose the LOI buyer for this deal</p>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+              {loiBuyerActivityLoading ? (
+                <div className="flex flex-col items-center justify-center py-8 text-gray-500">
+                  <div className="w-10 h-10 rounded-full border-3 border-teal-200 border-t-teal-500 animate-spin mb-3" />
+                  <span className="text-sm font-medium">Loading buyers...</span>
+                </div>
+              ) : loiBuyerActivity.length > 0 ? (
+                loiBuyerActivity.map((buyer: any) => (
+                  <div
+                    key={buyer.buyerId}
+                    className={`flex items-center justify-between p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 ${
+                      selectedLoiBuyer === buyer.buyerId
+                        ? "border-teal-400 bg-teal-50 shadow-md shadow-teal-100"
+                        : "border-gray-100 hover:border-gray-200 hover:bg-gray-50"
+                    }`}
+                    onClick={() => setSelectedLoiBuyer(buyer.buyerId)}
+                  >
+                    <div className="min-w-0">
+                      <div className="font-medium text-sm truncate">{buyer.buyerName || "Unknown Buyer"}</div>
+                      <div className="text-xs text-gray-500 truncate">{buyer.companyName || "Unknown Company"}</div>
+                    </div>
+                    {selectedLoiBuyer === buyer.buyerId && (
+                      <div className="w-6 h-6 bg-teal-500 rounded-full flex items-center justify-center flex-shrink-0 ml-3">
+                        <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8">
+                  <div className="w-14 h-14 mx-auto mb-3 bg-gray-100 rounded-2xl flex items-center justify-center">
+                    <svg className="w-7 h-7 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                  </div>
+                  <p className="text-gray-500 text-sm">No buyers have interacted with this deal yet</p>
+                </div>
+              )}
+            </div>
+            <div className="flex flex-col gap-3 pt-2">
+              <Button
+                onClick={() => handleAdminPauseForLOISubmit(true)}
+                disabled={!selectedLoiBuyer || isSubmittingLoi}
+                className="w-full py-3 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 rounded-xl font-semibold shadow-lg shadow-teal-200/50 transition-all duration-200 disabled:opacity-70"
+              >
+                {isSubmittingLoi ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  "Pause for LOI"
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => handleAdminPauseForLOISubmit(false)}
+                disabled={isSubmittingLoi}
+                className="w-full py-3 border-2 border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 rounded-xl font-medium transition-all duration-200 disabled:opacity-70"
+              >
+                {isSubmittingLoi ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  "No, not from CIM Amplify"
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {selectedDealForOffMarketDialog && (
         <Dialog

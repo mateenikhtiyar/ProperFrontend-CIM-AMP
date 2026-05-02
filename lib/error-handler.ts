@@ -266,7 +266,7 @@ export async function fetchWithAuthErrorHandling(
 
     return response
   } catch (error) {
-    console.error("Fetch error:", error)
+    console.error("AUTH_FETCH_FAILED")
     throw error
   }
 }
