@@ -1,14 +1,12 @@
-"use client"
+﻿"use client"
 
 import type React from "react"
 import { useState, useEffect } from "react"
-import { Search, Eye, Clock, LogOut, FileText, Loader2, Menu } from "lucide-react"
+import { Search, FileText, Loader2, Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle } from "@/components/ui/dialog"
-import Image from "next/image"
-import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "@/components/ui/use-toast"
 import { Toaster } from "@/components/ui/toaster"
@@ -17,10 +15,9 @@ import SellerProtectedRoute from "@/components/seller/protected-route"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { useLOIDeals, useSellerProfile } from "@/hooks/use-seller-deals"
 import { useQueryClient } from "@tanstack/react-query"
-import { triggerNavigationProgress } from "@/components/navigation-progress"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
-import { AmplifyVenturesBox } from "@/components/seller/amplify-ventures-box"
 import { Skeleton } from "@/components/ui/skeleton"
+import { SellerNav } from "@/components/seller/seller-nav"
 
 interface Deal {
   _id: string
@@ -112,9 +109,9 @@ function LOIDealCard({
     const currencySymbol = currency.includes("USD")
       ? "$"
       : currency.includes("EUR")
-        ? "€"
+        ? "â‚¬"
         : currency.includes("GBP")
-          ? "£"
+          ? "Â£"
           : "$"
     return `${currencySymbol}${amount.toLocaleString()}`
   }
@@ -163,9 +160,9 @@ function LOIDealCard({
 
         {/* Financial Info - Side by side boxes */}
         <div className="grid grid-cols-2 gap-2.5 sm:gap-4 mb-3 sm:mb-4">
-          <div className="border border-gray-100 rounded-lg sm:rounded-xl p-2.5 sm:p-3 bg-gray-50/50">
+          <div className="border border-gray-100 rounded-lg sm:rounded-xl p-2.5 sm:p-3 bg-gray-50/50 min-w-0">
             <p className="text-xs text-gray-500 mb-0.5 sm:mb-1">T12 Revenue</p>
-            <p className="text-sm sm:text-lg font-bold text-gray-900">
+            <p className="text-sm lg:text-lg font-bold text-gray-900 break-words">
               {deal.financialDetails?.trailingRevenueAmount
                 ? formatCurrency(
                     deal.financialDetails.trailingRevenueAmount,
@@ -174,9 +171,9 @@ function LOIDealCard({
                 : "N/A"}
             </p>
           </div>
-          <div className="border border-gray-100 rounded-lg sm:rounded-xl p-2.5 sm:p-3 bg-gray-50/50">
+          <div className="border border-gray-100 rounded-lg sm:rounded-xl p-2.5 sm:p-3 bg-gray-50/50 min-w-0">
             <p className="text-xs text-gray-500 mb-0.5 sm:mb-1">T12 EBITDA</p>
-            <p className="text-sm sm:text-lg font-bold text-gray-900">
+            <p className="text-sm lg:text-lg font-bold text-gray-900 break-words">
               {deal.financialDetails?.trailingEBITDAAmount
                 ? formatCurrency(
                     deal.financialDetails.trailingEBITDAAmount,
@@ -187,8 +184,8 @@ function LOIDealCard({
           </div>
         </div>
 
-        {/* Action Buttons - responsive grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        {/* Action Buttons - 2-up at narrow widths so labels never collide */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
           <Button
             variant="outline"
             size="sm"
@@ -379,7 +376,7 @@ export default function LOIDealsPage() {
                   Authorization: `Bearer ${token}`,
                   "Content-Type": "application/json",
                 },
-                body: JSON.stringify({}),
+                body: JSON.stringify({ buyerFromCIM: false }),
               }
             )
             if (!response.ok) {
@@ -407,9 +404,11 @@ export default function LOIDealsPage() {
     }
   }
 
-  const handleOffMarketSubmit = async () => {
+  const handleOffMarketSubmit = async (buyerFromCIMOverride?: boolean) => {
     if (!selectedDealForOffMarket || !offMarketData.transactionValue) return
-    if (offMarketData.buyerFromCIM === true && !selectedWinningBuyer) return
+    const effectiveBuyerFromCIM =
+      typeof buyerFromCIMOverride === "boolean" ? buyerFromCIMOverride : offMarketData.buyerFromCIM
+    if (effectiveBuyerFromCIM === true && !selectedWinningBuyer) return
 
     setIsSubmittingOffMarket(true)
     try {
@@ -417,8 +416,9 @@ export default function LOIDealsPage() {
       const apiUrl = getApiUrl()
       const body: any = {
         finalSalePrice: Number.parseFloat(offMarketData.transactionValue),
+        buyerFromCIM: effectiveBuyerFromCIM === true,
       }
-      if (offMarketData.buyerFromCIM === true) {
+      if (effectiveBuyerFromCIM === true) {
         body.winningBuyerId = selectedWinningBuyer
       }
       const closeResponse = await fetch(
@@ -488,96 +488,13 @@ export default function LOIDealsPage() {
     return []
   }
 
-  // Navigation component to avoid duplication
-  const NavigationContent = ({ onNavigate }: { onNavigate?: () => void }) => (
-    <>
-      <div className="mb-8">
-        <Link href="https://cimamplify.com/" onClick={onNavigate} className="block">
-          <Image src="/logo.svg" alt="CIM Amplify Logo" width={150} height={50} className="h-auto" />
-        </Link>
-      </div>
-
-      <nav className="flex-1 space-y-2">
-        <Button
-          variant="ghost"
-          className="w-full justify-start gap-3 font-normal text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-          onClick={() => {
-            triggerNavigationProgress()
-            onNavigate?.()
-            router.push("/seller/dashboard")
-          }}
-        >
-          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path
-              d="M16.5 6L12 1.5L7.5 6M3.75 8.25H20.25M5.25 8.25V19.5C5.25 19.9142 5.58579 20.25 6 20.25H18C18.4142 20.25 18.75 19.9142 18.75 19.5V8.25"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-          <span>MyDeals</span>
-        </Button>
-
-        <Button
-          variant="secondary"
-          className="w-full justify-start gap-3 font-normal bg-amber-100 text-amber-700 hover:bg-amber-200"
-          onClick={onNavigate}
-        >
-          <FileText className="h-5 w-5" />
-          <span>LOI - Deals</span>
-        </Button>
-
-        <Button
-          variant="ghost"
-          className="w-full justify-start gap-3 font-normal text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-          onClick={() => {
-            triggerNavigationProgress()
-            onNavigate?.()
-            router.push("/seller/history")
-          }}
-        >
-          <Clock className="h-5 w-5" />
-          <span>Off Market</span>
-        </Button>
-
-        <Button
-          variant="ghost"
-          className="w-full justify-start gap-3 font-normal text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-          onClick={() => {
-            triggerNavigationProgress()
-            onNavigate?.()
-            router.push("/seller/view-profile")
-          }}
-        >
-          <Eye className="h-5 w-5" />
-          <span>View Profile</span>
-        </Button>
-
-        <Button
-          variant="ghost"
-          className="w-full justify-start gap-3 font-normal text-red-600 hover:text-red-700 hover:bg-red-50"
-          onClick={() => {
-            onNavigate?.()
-            handleLogout()
-          }}
-        >
-          <LogOut className="h-5 w-5" />
-          <span>Sign Out</span>
-        </Button>
-      </nav>
-
-      <AmplifyVenturesBox />
-    </>
-  )
-
   return (
     <SellerProtectedRoute>
       <div className="flex min-h-screen bg-gray-50">
         {/* Desktop Sidebar */}
         <div className="hidden md:block w-64 flex-shrink-0">
           <div className="sticky top-0 h-screen bg-white border-r border-gray-200 p-6 flex flex-col overflow-y-auto">
-            <NavigationContent />
+            <SellerNav activePage="loi-deals" onLogout={handleLogout} />
           </div>
         </div>
 
@@ -599,7 +516,7 @@ export default function LOIDealsPage() {
                     <SheetTitle className="text-gray-800">Menu</SheetTitle>
                   </SheetHeader>
                   <div className="mt-6 flex-1 overflow-y-auto pb-6">
-                    <NavigationContent onNavigate={() => setMobileMenuOpen(false)} />
+                    <SellerNav activePage="loi-deals" onLogout={handleLogout} onNavigate={() => setMobileMenuOpen(false)} />
                   </div>
                 </SheetContent>
               </Sheet>
@@ -705,7 +622,7 @@ export default function LOIDealsPage() {
                 <p className="text-gray-500 text-sm sm:text-base max-w-sm mx-auto">When you pause a deal for Letter of Intent negotiations, it will appear here</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 md:gap-6">
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 sm:gap-4 md:gap-6">
                 {filteredDeals.map((deal) => (
                   <LOIDealCard
                     key={deal._id}
@@ -845,7 +762,14 @@ export default function LOIDealsPage() {
                               {(buyer.buyerName || "B").charAt(0).toUpperCase()}
                             </div>
                             <div>
-                              <div className="font-semibold text-sm text-gray-900">{buyer.buyerName || "Unknown Buyer"}</div>
+                              <div className="flex items-center gap-2">
+                                <div className="font-semibold text-sm text-gray-900">{buyer.buyerName || "Unknown Buyer"}</div>
+                                {buyer.flaggedInactive && (
+                                  <span className="inline-flex items-center rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-700">
+                                    Flagged
+                                  </span>
+                                )}
+                              </div>
                               <div className="text-xs text-gray-500">{buyer.companyName || "Unknown Company"}</div>
                             </div>
                           </div>
@@ -889,6 +813,7 @@ export default function LOIDealsPage() {
                               body: JSON.stringify({
                                 finalSalePrice: Number.parseFloat(offMarketData.transactionValue),
                                 winningBuyerId: selectedWinningBuyer,
+                                buyerFromCIM: true,
                               }),
                             }
                           )
@@ -947,6 +872,7 @@ export default function LOIDealsPage() {
                               },
                               body: JSON.stringify({
                                 finalSalePrice: Number.parseFloat(offMarketData.transactionValue),
+                                buyerFromCIM: false,
                               }),
                             }
                           )

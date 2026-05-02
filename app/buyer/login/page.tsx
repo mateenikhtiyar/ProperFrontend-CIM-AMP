@@ -14,6 +14,7 @@ import Link from "next/link";
 import Header from "@/components/ui/auth-header";
 import Footer from "@/components/ui/auth-footer";
 import { ErrorHandler } from "@/lib/error-handler";
+import { API_BASE_URL } from "@/lib/api-config";
 
 export default function BuyerLoginPage() {
   const [email, setEmail] = useState("");
@@ -99,8 +100,13 @@ export default function BuyerLoginPage() {
       sessionStorage.setItem("userId", cleanUserId);
       sessionStorage.setItem("userRole", "buyer");
 
-      // Step 3: Redirect to deals page
-      router.replace("/buyer/deals");
+      // Step 3: Redirect to the page the buyer originally requested
+      const storedReturnUrl = localStorage.getItem("buyerAuthReturnUrl");
+      const redirectPath = storedReturnUrl?.startsWith("/buyer/")
+        ? storedReturnUrl
+        : "/buyer/deals";
+      localStorage.removeItem("buyerAuthReturnUrl");
+      router.replace(redirectPath);
       return;
     }
 
@@ -109,7 +115,12 @@ export default function BuyerLoginPage() {
     const storedRole = sessionStorage.getItem("userRole");
 
     if (storedToken && storedRole === "buyer") {
-      router.push("/buyer/deals");
+      const storedReturnUrl = localStorage.getItem("buyerAuthReturnUrl");
+      const redirectPath = storedReturnUrl?.startsWith("/buyer/")
+        ? storedReturnUrl
+        : "/buyer/deals";
+      localStorage.removeItem("buyerAuthReturnUrl");
+      router.push(redirectPath);
     }
   }, [searchParams, router]);
 
@@ -132,8 +143,7 @@ export default function BuyerLoginPage() {
     setIsLoading(true);
 
     try {
-      // Get API URL from localStorage or use default
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
+      const apiUrl = API_BASE_URL;
 
       // Use fetch directly for more control
       const response = await fetch(`${apiUrl}/auth/login`, {
@@ -168,17 +178,42 @@ export default function BuyerLoginPage() {
       // Extract refresh token if available
       const refreshToken = data.refresh_token;
 
+      // Check if user is a team member
+      const user = data.user || {}
+      const isTeamMemberLogin = user.isTeamMember === true
+      const role = user.role || "buyer"
+
       // Use auth context login function to store tokens and set up auto-refresh
-      login(token, userId || "", "buyer", refreshToken);
+      login(
+        token,
+        userId || "",
+        role,
+        refreshToken,
+        isTeamMemberLogin ? {
+          isTeamMember: true,
+          ownerId: user.ownerId,
+          ownerType: user.ownerType,
+          permissions: user.permissions || [],
+          isTemporaryPassword: user.isTemporaryPassword || false,
+        } : undefined,
+      );
 
       toast({
         title: "Login Successful",
         description: "You have been successfully logged in.",
       });
 
-      // Redirect to deals page
+      // Redirect: team members with temp password go to profile, otherwise deals
+      const storedReturnUrl = localStorage.getItem("buyerAuthReturnUrl");
+      const redirectPath = isTeamMemberLogin && user.isTemporaryPassword
+        ? "/buyer/member-profile"
+        : storedReturnUrl?.startsWith("/buyer/")
+        ? storedReturnUrl
+        : "/buyer/deals"
+      localStorage.removeItem("buyerAuthReturnUrl");
+
       setTimeout(() => {
-        router.push("/buyer/deals");
+        router.push(redirectPath);
       }, 1000);
     } catch (err: any) {
       const errorMessage = ErrorHandler.getAuthErrorMessage(err);
@@ -190,26 +225,6 @@ export default function BuyerLoginPage() {
       });
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  // Handle Google OAuth login
-  const handleGoogleLogin = () => {
-    try {
-      // Get API URL from localStorage or use default
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
-
-      // Store the current page as the return URL
-      localStorage.setItem("authReturnUrl", "/buyer/deals");
-
-      // Redirect to Google OAuth endpoint
-      window.location.href = `${apiUrl}/buyers/google`;
-    } catch {
-      toast({
-        title: "Login Error",
-        description: "Failed to initiate Google login. Please try again.",
-        variant: "destructive",
-      });
     }
   };
 
@@ -239,10 +254,6 @@ export default function BuyerLoginPage() {
                 {error}
               </div>
             )}
-
-            {/* Google login button */}
-
-            {/* Divider */}
 
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Email Field */}

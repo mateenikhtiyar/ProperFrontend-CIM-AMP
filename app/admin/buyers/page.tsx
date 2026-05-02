@@ -1,11 +1,18 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
-import { Search, Edit, Trash2, Building2, User, Mail, Phone, Globe, Briefcase, Calendar, CheckCircle, XCircle, Users, Loader2, Handshake, Eye, ExternalLink } from "lucide-react";
+import { Search, Edit, Trash2, Building2, User, Mail, Phone, Globe, Briefcase, Calendar, CheckCircle, XCircle, Users, Loader2, Handshake, Eye, EyeOff, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import {
   Dialog,
@@ -43,10 +50,9 @@ interface Buyer {
   pendingDealsCount?: number;
   rejectedDealsCount?: number;
   referralSource?: string;
+  signUpForSms?: boolean;
   profilePicture?: string | null;
   website?: string;
-  isEmailVerified?: boolean;
-  isGoogleAccount?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -90,7 +96,6 @@ export default function BuyersManagementDashboard() {
   const [buyers, setBuyers] = useState<Buyer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [buyerDealCounts, setBuyerDealCounts] = useState<Record<string, BuyerDealStatusCounts>>({});
   const [totalBuyers, setTotalBuyers] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalDeals, setModalDeals] = useState<any[]>([]);
@@ -104,8 +109,10 @@ export default function BuyersManagementDashboard() {
 
   const [showIncompleteOnly, setShowIncompleteOnly] = useState(false);
   const [buyerCategory, setBuyerCategory] = useState<"all" | "active" | "pending" | "rejected">("all");
+  const [buyerSort, setBuyerSort] = useState<"default" | "name-asc" | "name-desc">("default");
   const [buyersPerPage, setBuyersPerPage] = useState(10);
   const [pageLoading, setPageLoading] = useState(false);
+  const [showEditPassword, setShowEditPassword] = useState(false);
 
   // Edit buyer modal state
   const [editBuyer, setEditBuyer] = useState<Buyer | null>(null);
@@ -192,39 +199,6 @@ export default function BuyersManagementDashboard() {
     };
     fetchBuyers();
   }, [currentPage, searchTerm, buyersPerPage, showIncompleteOnly, buyerCategory]);
-
-  useEffect(() => {
-    const fetchDealCounts = async () => {
-      const token = sessionStorage.getItem('token');
-      if (!token) return;
-      const counts: Record<string, BuyerDealStatusCounts> = {};
-      await Promise.all(
-        buyers.map(async (buyer) => {
-          const buyerId = buyer._id || buyer.id;
-          if (!buyerId) return;
-          try {
-            const res = await fetch(
-              `${process.env.NEXT_PUBLIC_API_URL}/deals/admin/buyer/${buyerId}/status-counts`,
-              {
-                headers: { Authorization: `Bearer ${token}` },
-              }
-            );
-            if (!res.ok) throw new Error("Failed to fetch deal status counts");
-            const data = await res.json();
-            counts[buyerId] = {
-              active: data.active || 0,
-              pending: data.pending || 0,
-              rejected: data.rejected || 0,
-            };
-          } catch {
-            counts[buyerId] = { active: 0, pending: 0, rejected: 0 };
-          }
-        })
-      );
-      setBuyerDealCounts(counts);
-    };
-    if (buyers.length > 0) fetchDealCounts();
-  }, [buyers]);
 
   const openDealModal = async (buyer: Buyer, status: "active" | "pending" | "rejected") => {
     setModalBuyer(buyer);
@@ -384,17 +358,13 @@ export default function BuyersManagementDashboard() {
   const totalPages = Math.ceil(totalBuyers / buyersPerPage);
   
   const getDealCounts = (buyer: Buyer) => {
-    const buyerId = String(buyer._id || buyer.id || "");
-    // If we're filtering by deal status, use the counts from the backend response
-    if (buyerCategory !== "all" && buyer.activeDealsCount !== undefined) {
-      return {
-        active: buyer.activeDealsCount || 0,
-        pending: buyer.pendingDealsCount || 0,
-        rejected: buyer.rejectedDealsCount || 0,
-      };
-    }
-    // Otherwise, use the separate fetch
-    return buyerId && buyerDealCounts[buyerId] ? buyerDealCounts[buyerId] : { active: 0, pending: 0, rejected: 0 };
+    // Counts come from the main /admin/buyers response (denormalized backend fields).
+    // This avoids N+1 requests and keeps table performance stable at high page sizes.
+    return {
+      active: buyer.activeDealsCount || 0,
+      pending: buyer.pendingDealsCount || 0,
+      rejected: buyer.rejectedDealsCount || 0,
+    };
   };
 
   const currentBuyers = buyers;
@@ -462,14 +432,14 @@ export default function BuyersManagementDashboard() {
       <div className="flex-1 p-3 sm:p-4 lg:p-6 overflow-auto">
           {error && <div className="text-red-500 mb-4">{error}</div>}
           {/* Page Title & Sorting */}
-          <div className="mb-6 flex flex-col gap-4">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
+          <div className="mb-6 flex flex-col gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <div className="relative w-full sm:w-auto">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
                   type="search"
                   placeholder="Search"
-                  className="pl-10 w-full sm:w-64 bg-white border border-gray-200"
+                  className="pl-10 w-full sm:w-52 lg:w-56 bg-white border border-gray-200 h-9 text-xs sm:text-sm"
                   value={searchTerm}
                   onChange={handleSearch}
                 />
@@ -477,31 +447,37 @@ export default function BuyersManagementDashboard() {
               <Button
                 variant={showIncompleteOnly ? "default" : "outline"}
                 onClick={() => setShowIncompleteOnly(!showIncompleteOnly)}
-                className={`text-xs sm:text-sm px-2 sm:px-4 ${showIncompleteOnly ? "bg-[#3aafa9] hover:bg-[#359a94]" : ""}`}
+                className={`h-9 text-xs sm:text-sm px-2 sm:px-3 ${showIncompleteOnly ? "bg-[#3aafa9] hover:bg-[#359a94]" : ""}`}
               >
                 <span className="hidden sm:inline">{showIncompleteOnly ? "Show All Buyers" : "Incomplete Profile Buyers"}</span>
                 <span className="sm:hidden">{showIncompleteOnly ? "All" : "Incomplete"}</span>
               </Button>
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                <label className="text-xs sm:text-sm font-medium text-gray-700 whitespace-nowrap">Categorize:</label>
-                <select
+              <div className="flex items-center gap-1">
+                <label className="text-xs sm:text-sm font-medium text-gray-700 whitespace-nowrap">Category:</label>
+                <Select
                   value={buyerCategory}
-                  onChange={(e) => setBuyerCategory(e.target.value as "all" | "active" | "pending" | "rejected")}
-                  className="border border-gray-300 rounded px-2 py-1 text-xs sm:text-sm"
+                  onValueChange={(value) => {
+                    setBuyerCategory(value as "all" | "active" | "pending" | "rejected");
+                    setCurrentPage(1);
+                  }}
                 >
-                  <option value="all">All</option>
-                  <option value="active">Active Deals</option>
-                  <option value="pending">Pending Deals</option>
-                  <option value="rejected">Rejected Deals</option>
-                </select>
+                  <SelectTrigger className="h-9 w-[135px] sm:w-[145px] text-xs sm:text-sm">
+                    <SelectValue placeholder="Categorize" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="active">Active Deals</SelectItem>
+                    <SelectItem value="pending">Pending Deals</SelectItem>
+                    <SelectItem value="rejected">Rejected Deals</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+              <div className="flex items-center gap-1">
                 <label className="text-xs sm:text-sm font-medium text-gray-700 whitespace-nowrap">Sort:</label>
-                <select
-                  onChange={(e) => {
-                    const value = e.target.value;
+                <Select
+                  value={buyerSort}
+                  onValueChange={(value) => {
+                    setBuyerSort(value as "default" | "name-asc" | "name-desc");
                     if (value === "name-asc" || value === "name-desc") {
                       const order = value.split("-")[1];
                       const sorted = [...currentBuyers].sort((a, b) => {
@@ -512,27 +488,35 @@ export default function BuyersManagementDashboard() {
                       setBuyers(sorted);
                     }
                   }}
-                  className="border border-gray-300 rounded px-2 py-1 text-xs sm:text-sm"
                 >
-                  <option value="">Default</option>
-                  <option value="name-asc">Company Name A-Z</option>
-                  <option value="name-desc">Company Name Z-A</option>
-                </select>
+                  <SelectTrigger className="h-9 w-[150px] sm:w-[165px] text-xs sm:text-sm">
+                    <SelectValue placeholder="Default" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="default">Default</SelectItem>
+                    <SelectItem value="name-asc">Company Name A-Z</SelectItem>
+                    <SelectItem value="name-desc">Company Name Z-A</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+              <div className="flex items-center gap-1">
                 <span className="text-xs sm:text-sm text-gray-700 whitespace-nowrap">Per page:</span>
-                <select
-                  value={buyersPerPage}
-                  onChange={(e) => {
-                    setBuyersPerPage(Number(e.target.value));
+                <Select
+                  value={String(buyersPerPage)}
+                  onValueChange={(value) => {
+                    setBuyersPerPage(Number(value));
                     setCurrentPage(1); // Reset to first page when changing page size
                   }}
-                  className="border border-gray-300 rounded px-2 py-1 text-xs sm:text-sm"
                 >
-                  <option value="10">10</option>
-                  <option value="50">50</option>
-                  <option value="100">100</option>
-                </select>
+                  <SelectTrigger className="h-9 w-[95px] sm:w-[105px] text-xs sm:text-sm">
+                    <SelectValue placeholder="Per page" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>
@@ -567,6 +551,7 @@ export default function BuyersManagementDashboard() {
                         Phone
                       </th>
                       <th className="text-left py-3.5 px-4 font-semibold text-gray-700 text-xs uppercase tracking-wider hidden md:table-cell">Referral</th>
+                      <th className="text-center py-3.5 px-3 font-semibold text-gray-700 text-xs uppercase tracking-wider hidden md:table-cell">SMS</th>
                       <th className="text-center py-3.5 px-3 font-semibold text-gray-700 text-xs uppercase tracking-wider">Active</th>
                       <th className="text-center py-3.5 px-3 font-semibold text-gray-700 text-xs uppercase tracking-wider">Pending</th>
                       <th className="text-center py-3.5 px-3 font-semibold text-gray-700 text-xs uppercase tracking-wider">Rejected</th>
@@ -604,9 +589,6 @@ export default function BuyersManagementDashboard() {
                               <div className="text-gray-600 text-sm truncate max-w-[160px]" title={buyer.email || "N/A"}>
                                 {buyer.email || "N/A"}
                               </div>
-                              {buyer.isEmailVerified && (
-                                <CheckCircle className="h-3.5 w-3.5 text-green-500 flex-shrink-0" title="Verified" />
-                              )}
                             </div>
                           </td>
                           <td className="py-3 px-4 hidden sm:table-cell">
@@ -616,6 +598,15 @@ export default function BuyersManagementDashboard() {
                             <div className="text-gray-500 text-xs bg-gray-100 px-2 py-1 rounded-full inline-block truncate max-w-[100px]" title={buyer.referralSource || "-"}>
                               {buyer.referralSource || "-"}
                             </div>
+                          </td>
+                          <td className="py-3 px-3 text-center hidden md:table-cell">
+                            {buyer.signUpForSms === undefined ? (
+                              <span className="text-gray-500 text-xs bg-gray-100 px-2 py-1 rounded-full inline-block">-</span>
+                            ) : buyer.signUpForSms ? (
+                              <span className="inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-700">Yes</span>
+                            ) : (
+                              <span className="inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full bg-gray-100 text-gray-600">No</span>
+                            )}
                           </td>
                           <td className="py-3 px-3 text-center">
                             <button
@@ -708,7 +699,7 @@ export default function BuyersManagementDashboard() {
                     disabled={currentPage === 1}
                     className="px-2.5 py-1 text-sm h-8 min-w-[32px] border-gray-200 hover:bg-teal-50 hover:border-teal-200 hover:text-teal-600 transition-colors rounded-lg disabled:opacity-50"
                   >
-                    ‹
+                    â€¹
                   </Button>
                   {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
                     if (
@@ -750,7 +741,7 @@ export default function BuyersManagementDashboard() {
                     disabled={currentPage === totalPages}
                     className="px-2.5 py-1 text-sm h-8 min-w-[32px] border-gray-200 hover:bg-teal-50 hover:border-teal-200 hover:text-teal-600 transition-colors rounded-lg disabled:opacity-50"
                   >
-                    ›
+                    â€º
                   </Button>
                 </div>
                 )}
@@ -803,7 +794,7 @@ export default function BuyersManagementDashboard() {
                     : "Deals"}
                 </DialogTitle>
                 <DialogDescription className="text-sm text-gray-500">
-                  {modalBuyer?.fullName} • {modalBuyer?.companyProfile?.companyName || modalBuyer?.companyName || "N/A"}
+                  {modalBuyer?.fullName} â€¢ {modalBuyer?.companyProfile?.companyName || modalBuyer?.companyName || "N/A"}
                 </DialogDescription>
               </div>
             </div>
@@ -931,9 +922,6 @@ export default function BuyersManagementDashboard() {
                     <p className="text-xs text-gray-500">Email</p>
                     <p className="text-sm font-medium text-gray-900 truncate">{selectedBuyer.email || "N/A"}</p>
                   </div>
-                  {selectedBuyer.isEmailVerified && (
-                    <CheckCircle className="h-4 w-4 text-green-500" title="Email Verified" />
-                  )}
                 </div>
 
                 <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
@@ -972,6 +960,16 @@ export default function BuyersManagementDashboard() {
                     <p className="text-sm font-medium text-gray-900">{selectedBuyer.referralSource || "N/A"}</p>
                   </div>
                 </div>
+
+                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                  <Phone className="h-4 w-4 text-gray-400" />
+                  <div className="flex-1">
+                    <p className="text-xs text-gray-500">Sign up for SMS</p>
+                    <p className="text-sm font-medium text-gray-900">
+                      {selectedBuyer.signUpForSms === undefined ? "-" : selectedBuyer.signUpForSms ? "Yes" : "No"}
+                    </p>
+                  </div>
+                </div>
               </div>
 
               {/* Deal Statistics */}
@@ -996,12 +994,6 @@ export default function BuyersManagementDashboard() {
                   <Calendar className="h-3 w-3" />
                   <span>Joined: {selectedBuyer.createdAt ? new Date(selectedBuyer.createdAt).toLocaleDateString() : "N/A"}</span>
                 </div>
-                {selectedBuyer.isGoogleAccount && (
-                  <span className="flex items-center gap-1 text-blue-600">
-                    <svg className="h-3 w-3" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-                    Google Account
-                  </span>
-                )}
               </div>
 
               {/* Action Buttons */}
@@ -1104,15 +1096,24 @@ export default function BuyersManagementDashboard() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                <Input
-                  name="password"
-                  type="password"
-                  value={editForm.password}
-                  onChange={handleEditFormChange}
-                  placeholder="Leave blank to keep unchanged"
-                  autoComplete="new-password"
-                  className="border-gray-200 focus:border-teal-500 focus:ring-teal-500"
-                />
+                <div className="relative">
+                  <Input
+                    name="password"
+                    type={showEditPassword ? "text" : "password"}
+                    value={editForm.password}
+                    onChange={handleEditFormChange}
+                    placeholder="Leave blank to keep unchanged"
+                    autoComplete="new-password"
+                    className="border-gray-200 focus:border-teal-500 focus:ring-teal-500 pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowEditPassword(!showEditPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showEditPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
                 <p className="text-xs text-gray-400 mt-1">Only fill if you want to change the password</p>
               </div>
               {error && <div className="text-red-500 text-sm bg-red-50 p-2 rounded">{error}</div>}

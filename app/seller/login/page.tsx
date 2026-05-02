@@ -14,6 +14,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { sellerLogin } from "@/services/api";
 import Footer from "@/components/ui/auth-footer";
 import Header from "@/components/ui/auth-header";
+import { API_BASE_URL } from "@/lib/api-config";
 
 export default function SellerLoginPage() {
   const [email, setEmail] = useState("");
@@ -142,12 +143,24 @@ export default function SellerLoginPage() {
       // Extract refresh token if available
       const refreshToken = data.refresh_token;
 
+      // Check if user is a team member
+      const user = data.user || {}
+      const isTeamMemberLogin = user.isTeamMember === true
+      const role = user.role || "seller"
+
       // Use the auth context to login with refresh token support
       login(
         data.token || data.access_token,
         data.userId || data.user?.id || data.id,
-        "seller",
-        refreshToken
+        role,
+        refreshToken,
+        isTeamMemberLogin ? {
+          isTeamMember: true,
+          ownerId: user.ownerId,
+          ownerType: user.ownerType,
+          permissions: user.permissions || [],
+          isTemporaryPassword: user.isTemporaryPassword || false,
+        } : undefined,
       );
 
       toast({
@@ -155,9 +168,13 @@ export default function SellerLoginPage() {
         description: "You have been successfully logged in.",
       });
 
-      // Redirect to dashboard page
+      // Redirect: team members with temp password go to profile, otherwise dashboard
+      const redirectPath = isTeamMemberLogin && user.isTemporaryPassword
+        ? "/seller/member-profile"
+        : "/seller/dashboard"
+
       setTimeout(() => {
-        router.push("/seller/dashboard");
+        router.push(redirectPath);
       }, 1000);
     } catch (err: any) {
       let errorMessage = "Invalid email or password. Please check your credentials and try again.";
@@ -176,26 +193,6 @@ export default function SellerLoginPage() {
       });
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  // Handle Google OAuth login
-  const handleGoogleLogin = () => {
-    try {
-      // Get API URL from localStorage or use default
-      const apiUrl = localStorage.getItem("apiUrl") || "https://api.cimamplify.com";
-
-      // Store the current page as the return URL
-      localStorage.setItem("authReturnUrl", "/seller/dashboard");
-
-      // Redirect to Google OAuth endpoint
-      window.location.href = `${apiUrl}/sellers/google`;
-    } catch {
-      toast({
-        title: "Login Error",
-        description: "Failed to initiate Google login. Please try again.",
-        variant: "destructive",
-      });
     }
   };
 
@@ -225,8 +222,6 @@ export default function SellerLoginPage() {
                 {error}
               </div>
             )}
-
-            {/* Google login button */}
 
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Email Field */}

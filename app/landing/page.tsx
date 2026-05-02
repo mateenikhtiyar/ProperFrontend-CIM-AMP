@@ -24,11 +24,12 @@ import { useRouter } from "next/navigation";
 import { Linkedin } from "lucide-react";
 import Header from "@/components/ui/auth-header";
 import Footer from "@/components/ui/auth-footer";
+import { ga4Events } from "@/lib/ga4";
 
 export default function Component() {
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
-  const [isVisible, setIsVisible] = useState({});
-  const [expandedFAQ, setExpandedFAQ] = useState(null);
+  const [isVisible, setIsVisible] = useState<Record<string, boolean>>({});
+  const [expandedFAQ, setExpandedFAQ] = useState<number | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const router = useRouter();
 
@@ -285,7 +286,7 @@ export default function Component() {
     );
   };
 
-  const toggleFAQ = (index) => {
+  const toggleFAQ = (index: number) => {
     setExpandedFAQ(expandedFAQ === index ? null : index);
   };
 
@@ -755,6 +756,7 @@ export default function Component() {
               </ul>
               <Button
                 onClick={() => {
+                  ga4Events.formStartBuyer();
                   router.push("/buyer/register");
                 }}
                 className="mt-4 sm:mt-6 w-full sm:w-auto bg-teal-500 hover:bg-primary transition-colors text-white text-sm sm:text-base"
@@ -794,8 +796,8 @@ export default function Component() {
                 ))}
               </ul>
               <Button
-                onClick={() => router.push("/seller/register")}
-                className="mt-4 sm:mt-6 bg-teal-500 hover:bg-primary transition-colors text-white rounded px-4 sm:px-6 py-2 sm:py-3 inline-block text-center font-medium text-sm sm:text-base w-full sm:w-auto"
+                onClick={() => { ga4Events.formStartSeller(); router.push("/seller/register"); }}
+                className="mt-4 sm:mt-6 bg-teal-500 hover:bg-primary transition-colors text-white rounded px-4 sm:px-6 py-2 sm:py-3 font-medium text-sm sm:text-base w-full sm:w-auto"
               >
                 Add A Deal
               </Button>
@@ -892,8 +894,8 @@ export default function Component() {
                 </div>
               </div>
               <Button
-                onClick={() => router.push("/seller/register")}
-                className="mt-4 sm:mt-6 bg-teal-500 hover:bg-primary transition-colors text-white rounded px-4 sm:px-6 py-2 sm:py-3 inline-block text-center font-medium text-sm sm:text-base"
+                onClick={() => { ga4Events.formStartSeller(); router.push("/seller/register"); }}
+                className="mt-4 sm:mt-6 bg-teal-500 hover:bg-primary transition-colors text-white rounded px-4 sm:px-6 py-2 sm:py-3 font-medium text-sm sm:text-base"
               >
                 Add a Deal
               </Button>
@@ -987,15 +989,15 @@ export default function Component() {
             </div>
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 text-center justify-center">
               <Button
-                onClick={() => router.push("/seller/register")}
-                className="bg-teal-500 hover:bg-primary transition-colors text-white rounded px-4 sm:px-6 py-2 sm:py-3 inline-block text-center font-medium text-sm sm:text-base w-full sm:w-auto"
+                onClick={() => { ga4Events.formStartSeller(); router.push("/seller/register"); }}
+                className="bg-teal-500 hover:bg-primary transition-colors text-white rounded px-4 sm:px-6 py-2 sm:py-3 font-medium text-sm sm:text-base w-full sm:w-auto"
               >
                 Add A Deal
               </Button>
               <Button
                 variant="outline"
                 className="bg-teal-500 hover:bg-primary transition-colors text-white hover:text-white w-full sm:w-auto text-sm sm:text-base"
-                onClick={() => router.push("/buyer/register")}
+                onClick={() => { ga4Events.formStartBuyer(); router.push("/buyer/register"); }}
               >
                 Join the Buyer's List
               </Button>

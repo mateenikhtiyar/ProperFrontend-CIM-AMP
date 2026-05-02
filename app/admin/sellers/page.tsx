@@ -3,9 +3,16 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
-import { Search, Edit, Trash2, AlertTriangle, Building2, User, Mail, Phone, Globe, Briefcase, Calendar, CheckCircle, XCircle, Eye, Handshake, ExternalLink } from "lucide-react";
+import { Search, Edit, Trash2, AlertTriangle, Building2, User, Mail, Phone, Globe, Briefcase, Calendar, CheckCircle, XCircle, Eye, EyeOff, Handshake, ExternalLink } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -16,6 +23,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { AdminProtectedRoute } from "@/components/admin/protected-route";
+import { API_BASE_URL } from "@/lib/api-config";
 
 // Seller interface
 interface Seller {
@@ -34,9 +42,8 @@ interface Seller {
   loiDealsCount?: number;
   allDealsCount?: number;
   referralSource?: string;
+  signUpForSms?: boolean;
   profilePicture?: string | null;
-  isEmailVerified?: boolean;
-  isGoogleAccount?: boolean;
   managementPreferences?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -68,8 +75,8 @@ function getProfilePictureUrl(path: string | null | undefined) {
     return path;
   }
   const apiUrl = typeof window !== 'undefined'
-    ? (localStorage.getItem("apiUrl") || process.env.NEXT_PUBLIC_API_URL || "https://api.cimamplify.com")
-    : (process.env.NEXT_PUBLIC_API_URL || "https://api.cimamplify.com");
+    ? API_BASE_URL
+    : API_BASE_URL;
   const formattedPath = path.replace(/\\/g, "/");
   return `${apiUrl}/${formattedPath.startsWith("/") ? formattedPath.slice(1) : formattedPath}`;
 }
@@ -116,6 +123,7 @@ export default function SellersManagementDashboard() {
   // Define sellersPerPage before useEffect hooks
   const [sellersPerPage, setSellersPerPage] = useState(10);
   const [pageLoading, setPageLoading] = useState(false);
+  const [showEditPassword, setShowEditPassword] = useState(false);
 
   useEffect(() => {
     const fetchAdminProfile = async () => {
@@ -445,14 +453,14 @@ export default function SellersManagementDashboard() {
           )}
 
           {/* Page Title and Search */}
-          <div className="mb-6 flex flex-col gap-4">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
+          <div className="mb-6 flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <div className="relative w-full sm:w-auto">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
                   type="search"
                   placeholder="Search"
-                  className="pl-10 w-full sm:w-64 bg-white border border-gray-200"
+                  className="pl-10 w-full sm:w-52 lg:w-56 bg-white border border-gray-200 h-9 text-xs sm:text-sm"
                   value={searchTerm}
                   onChange={handleSearch}
                 />
@@ -464,37 +472,45 @@ export default function SellersManagementDashboard() {
                   if (!sortByActiveDeals) setSortOrder("desc");
                   setCurrentPage(1);
                 }}
-                className={`text-xs sm:text-sm px-2 sm:px-4 ${sortByActiveDeals ? "bg-[#3aafa9] hover:bg-[#359a94]" : ""}`}
+                className={`h-9 text-xs sm:text-sm px-2 sm:px-3 ${sortByActiveDeals ? "bg-[#3aafa9] hover:bg-[#359a94]" : ""}`}
               >
                 <span className="hidden sm:inline">{sortByActiveDeals ? "Sorted by Active Deals" : "Sort by Active Deals"}</span>
                 <span className="sm:hidden">{sortByActiveDeals ? "Active ✓" : "Sort Active"}</span>
               </Button>
-              <select
+              <Select
                 value={sortOrder}
-                onChange={(e) => {
-                  setSortOrder(e.target.value as "asc" | "desc");
+                onValueChange={(value) => {
+                  setSortOrder(value as "asc" | "desc");
                   setCurrentPage(1);
                 }}
-                className="border border-gray-300 rounded px-2 py-1 text-xs sm:text-sm"
               >
-                <option value="asc">A to Z</option>
-                <option value="desc">Z to A</option>
-              </select>
+                <SelectTrigger className="h-9 w-[105px] text-xs sm:text-sm">
+                  <SelectValue placeholder="Sort" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="asc">A to Z</SelectItem>
+                  <SelectItem value="desc">Z to A</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+            <div className="flex items-center gap-1">
               <span className="text-xs sm:text-sm text-gray-700 whitespace-nowrap">Per page:</span>
-              <select
-                value={sellersPerPage}
-                onChange={(e) => {
-                  setSellersPerPage(Number(e.target.value));
+              <Select
+                value={String(sellersPerPage)}
+                onValueChange={(value) => {
+                  setSellersPerPage(Number(value));
                   setCurrentPage(1); // Reset to first page when changing page size
                 }}
-                className="border border-gray-300 rounded px-2 py-1 text-xs sm:text-sm"
               >
-                <option value="10">10</option>
-                <option value="50">50</option>
-                <option value="100">100</option>
-              </select>
+                <SelectTrigger className="h-9 w-[95px] sm:w-[105px] text-xs sm:text-sm">
+                  <SelectValue placeholder="Per page" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
@@ -532,6 +548,9 @@ export default function SellersManagementDashboard() {
                       </th>
                       <th className="text-left py-3.5 px-4 font-semibold text-gray-700 text-xs uppercase tracking-wider hidden md:table-cell">
                         Referral
+                      </th>
+                      <th className="text-center py-3.5 px-3 font-semibold text-gray-700 text-xs uppercase tracking-wider hidden md:table-cell">
+                        SMS
                       </th>
                       <th className="text-center py-3.5 px-3 font-semibold text-gray-700 text-xs uppercase tracking-wider hidden lg:table-cell">
                         Active
@@ -577,9 +596,6 @@ export default function SellersManagementDashboard() {
                               <div className="text-gray-600 text-sm truncate max-w-[160px]" title={seller.email || "N/A"}>
                                 {seller.email || "N/A"}
                               </div>
-                              {seller.isEmailVerified && (
-                                <CheckCircle className="h-3.5 w-3.5 text-green-500 flex-shrink-0" title="Verified" />
-                              )}
                             </div>
                           </td>
                           <td className="py-3 px-4 hidden sm:table-cell">
@@ -604,6 +620,15 @@ export default function SellersManagementDashboard() {
                             <div className="text-gray-500 text-xs bg-gray-100 px-2 py-1 rounded-full inline-block truncate max-w-[100px]" title={seller.referralSource || "-"}>
                               {seller.referralSource || "-"}
                             </div>
+                          </td>
+                          <td className="py-3 px-3 text-center hidden md:table-cell">
+                            {seller.signUpForSms === undefined ? (
+                              <span className="text-gray-500 text-xs bg-gray-100 px-2 py-1 rounded-full inline-block">-</span>
+                            ) : seller.signUpForSms ? (
+                              <span className="inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-700">Yes</span>
+                            ) : (
+                              <span className="inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full bg-gray-100 text-gray-600">No</span>
+                            )}
                           </td>
                           <td className="py-3 px-3 text-center hidden lg:table-cell">
                             <button
@@ -837,15 +862,24 @@ export default function SellersManagementDashboard() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
-                <Input
-                  name="password"
-                  type="password"
-                  value={editForm.password}
-                  onChange={handleEditFormChange}
-                  placeholder="Leave blank to keep unchanged"
-                  autoComplete="new-password"
-                  className="border-gray-200 focus:border-teal-500 focus:ring-teal-500"
-                />
+                <div className="relative">
+                  <Input
+                    name="password"
+                    type={showEditPassword ? "text" : "password"}
+                    value={editForm.password}
+                    onChange={handleEditFormChange}
+                    placeholder="Leave blank to keep unchanged"
+                    autoComplete="new-password"
+                    className="border-gray-200 focus:border-teal-500 focus:ring-teal-500 pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowEditPassword(!showEditPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showEditPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
                 <p className="text-xs text-gray-400 mt-1">Only fill if you want to change the password</p>
               </div>
               {error && <div className="text-red-500 text-sm bg-red-50 p-2 rounded">{error}</div>}
@@ -1028,9 +1062,6 @@ export default function SellersManagementDashboard() {
                     <p className="text-xs text-gray-500">Email</p>
                     <p className="text-sm font-medium text-gray-900 truncate">{selectedSeller.email || "N/A"}</p>
                   </div>
-                  {selectedSeller.isEmailVerified && (
-                    <CheckCircle className="h-4 w-4 text-green-500" title="Email Verified" />
-                  )}
                 </div>
 
                 <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
@@ -1065,6 +1096,16 @@ export default function SellersManagementDashboard() {
                   <div className="flex-1">
                     <p className="text-xs text-gray-500">Referral Source</p>
                     <p className="text-sm font-medium text-gray-900">{selectedSeller.referralSource || "N/A"}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                  <Phone className="h-4 w-4 text-gray-400" />
+                  <div className="flex-1">
+                    <p className="text-xs text-gray-500">Sign up for SMS</p>
+                    <p className="text-sm font-medium text-gray-900">
+                      {selectedSeller.signUpForSms === undefined ? "-" : selectedSeller.signUpForSms ? "Yes" : "No"}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -1107,12 +1148,6 @@ export default function SellersManagementDashboard() {
                   <Calendar className="h-3 w-3" />
                   <span>Joined: {selectedSeller.createdAt ? new Date(selectedSeller.createdAt).toLocaleDateString() : "N/A"}</span>
                 </div>
-                {selectedSeller.isGoogleAccount && (
-                  <span className="flex items-center gap-1 text-blue-600">
-                    <svg className="h-3 w-3" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-                    Google Account
-                  </span>
-                )}
               </div>
 
               {/* Action Buttons */}

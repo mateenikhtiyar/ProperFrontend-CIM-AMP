@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import type React from "react";
 import Image from "next/image";
@@ -13,6 +13,7 @@ import { toast } from "@/components/ui/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 import { sellerRegister } from "@/services/api";
 import Header from "@/components/ui/auth-header";
+import { ga4Events } from "@/lib/ga4";
 import Footer from "@/components/ui/auth-footer";
 
 interface RegisterFormData {
@@ -25,6 +26,7 @@ interface RegisterFormData {
   phoneNumber: string;
   website: string;
   referralSource: string;
+  signUpForSms: boolean;
 }
 
 const REFERRAL_SOURCES = [
@@ -50,6 +52,7 @@ export default function SellerRegisterPage() {
     phoneNumber: "",
     website: "",
     referralSource: "",
+    signUpForSms: false,
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -162,6 +165,7 @@ export default function SellerRegisterPage() {
         phoneNumber: formData.phoneNumber,
         website: formData.website,
         referralSource: formData.referralSource,
+        signUpForSms: formData.signUpForSms,
       });
 
       // Store token and user info if returned from registration
@@ -173,26 +177,23 @@ export default function SellerRegisterPage() {
       }
       localStorage.setItem("userRole", "seller");
 
+      ga4Events.formEndSeller();
+
       toast({
         title: "Welcome to CIM Amplify!",
-        description:
-          "Your account has been created. We've sent you a welcome email.",
+        description: "Your account has been created.",
       });
 
-      // Redirect to email confirmation page with user details
-      const params = new URLSearchParams({
-        email: formData.email.trim(),
-        fullName: formData.fullName.trim(),
-        role: "seller",
-      });
-      if (response?.userId) params.set("userId", response.userId);
-      if (response?._id) params.set("userId", response._id);
-      if (response?.token) params.set("token", response.token);
-      if (formData.companyName.trim()) params.set("companyName", formData.companyName.trim());
-      if (formData.phoneNumber.trim()) params.set("phone", formData.phoneNumber.trim());
-      if (formData.website.trim()) params.set("website", formData.website.trim());
+      // Persist auth so the seller dashboard treats them as logged in.
+      if (response?.token) {
+        sessionStorage.setItem("token", response.token);
+      }
+      const sellerId = response?.userId || response?._id;
+      if (sellerId) {
+        sessionStorage.setItem("userId", sellerId);
+      }
 
-      router.push(`/email-confirmation?${params.toString()}`);
+      router.push("/seller/dashboard");
     } catch (error: any) {
       let errorMessage = "Registration failed. Please try again.";
       
@@ -218,11 +219,6 @@ export default function SellerRegisterPage() {
       setIsSubmitting(false);
     }
   };
-
-  // Handle Google OAuth login
-  const handleGoogleLogin = () => {
-    window.location.href = "https://api.cimamplify.com/sellers/google/callback"
-  }
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-[#C3C6BE] to-[#828673]">
@@ -252,8 +248,6 @@ export default function SellerRegisterPage() {
                 {errors.general}
               </div>
             )}
-
-            {/* Google signup button */}
 
             <form onSubmit={handleSubmit} className="space-y-5">
               {/* Email Field */}
@@ -493,6 +487,28 @@ export default function SellerRegisterPage() {
                     {errors.referralSource}
                   </p>
                 )}
+              </div>
+
+              {/* Sign up for SMS */}
+              <div className="space-y-1.5">
+                <label htmlFor="signUpForSms" className="flex items-start gap-2 cursor-pointer">
+                  <input
+                    id="signUpForSms"
+                    name="signUpForSms"
+                    type="checkbox"
+                    checked={formData.signUpForSms}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, signUpForSms: e.target.checked }))
+                    }
+                    className="mt-1 h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                  />
+                  <span className="text-sm text-gray-700">
+                    <span className="font-medium">Sign up for SMS</span>
+                    <span className="block text-xs text-gray-500 mt-0.5">
+You agree to receive automated transactional messages including 4 digit identity verification and, if appropriate, new deal invitations.Â  Text and data rates may apply.Â  Reply  STOP to end or HELP for help.
+                    </span>
+                  </span>
+                </label>
               </div>
 
               {/* Password Field */}
