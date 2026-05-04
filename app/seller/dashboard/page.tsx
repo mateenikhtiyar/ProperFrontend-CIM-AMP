@@ -135,7 +135,7 @@ function DealCard({
     const currencySymbol = currency.includes("USD")
       ? "$"
       : currency.includes("EUR")
-        ? "â‚¬"
+        ? "€"
         : currency.includes("GBP")
           ? "Â£"
           : "$"

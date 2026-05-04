@@ -699,7 +699,7 @@ export default function BuyersManagementDashboard() {
                     disabled={currentPage === 1}
                     className="px-2.5 py-1 text-sm h-8 min-w-[32px] border-gray-200 hover:bg-teal-50 hover:border-teal-200 hover:text-teal-600 transition-colors rounded-lg disabled:opacity-50"
                   >
-                    â€¹
+                    ‹
                   </Button>
                   {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
                     if (
@@ -741,7 +741,7 @@ export default function BuyersManagementDashboard() {
                     disabled={currentPage === totalPages}
                     className="px-2.5 py-1 text-sm h-8 min-w-[32px] border-gray-200 hover:bg-teal-50 hover:border-teal-200 hover:text-teal-600 transition-colors rounded-lg disabled:opacity-50"
                   >
-                    â€º
+                    ›
                   </Button>
                 </div>
                 )}
@@ -794,7 +794,7 @@ export default function BuyersManagementDashboard() {
                     : "Deals"}
                 </DialogTitle>
                 <DialogDescription className="text-sm text-gray-500">
-                  {modalBuyer?.fullName} â€¢ {modalBuyer?.companyProfile?.companyName || modalBuyer?.companyName || "N/A"}
+                  {modalBuyer?.fullName} • {modalBuyer?.companyProfile?.companyName || modalBuyer?.companyName || "N/A"}
                 </DialogDescription>
               </div>
             </div>

@@ -255,8 +255,8 @@ export default function AdminOverviewPage() {
     });
   };
 
-  // React Query hooks. Dashboard data doesn't need sub-minute freshness â€” backend
-  // caches responses for 30â€“60s, and refetching every 30s from many tabs was
+  // React Query hooks. Dashboard data doesn't need sub-minute freshness — backend
+  // caches responses for 30–60s, and refetching every 30s from many tabs was
   // saturating the global rate-limiter.
   // staleTime: 2min, refetchInterval: 5min, no refetch on window focus.
   const DASHBOARD_STALE_TIME = 2 * 60 * 1000;
@@ -836,7 +836,7 @@ export default function AdminOverviewPage() {
                   </div>
                 </div>
                 <p className="text-[10px] text-gray-500 mt-3">
-                  Active metrics include only deals with <span className="font-medium">status = active</span>. Total metrics include all deal statuses.
+                  Active metrics cover the same deals as the Accepted Deals tile (not <span className="font-medium">completed</span> or <span className="font-medium">loi</span>, with at least one accepted buyer). Total metrics include all deal statuses.
                 </p>
               </CardContent>
             </Card>
@@ -1269,7 +1269,7 @@ export default function AdminOverviewPage() {
             </div>
             <div className="p-3 rounded-lg bg-teal-50 border border-teal-100">
               <p className="font-medium text-teal-800">Revenue / EBITDA Metrics</p>
-              <p><span className="font-medium">Active Deals Revenue/EBITDA</span>: sums for deals where <code>status = active</code>.</p>
+              <p><span className="font-medium">Active Deals Revenue/EBITDA</span>: sums across the same set the Accepted Deals tile counts: <code>status</code> not <code>completed</code> or <code>loi</code>, and at least one buyer has accepted the invitation.</p>
               <p><span className="font-medium">Total Revenue/EBITDA (All Deals)</span>: sums across all deal statuses in the system.</p>
             </div>
             <div className="p-3 rounded-lg bg-amber-50 border border-amber-100">
