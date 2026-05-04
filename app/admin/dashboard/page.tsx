@@ -341,7 +341,7 @@ const BuyersActivityPopup: React.FC<{
               ))}
               <div className="flex items-center justify-center gap-2 pt-2 text-gray-500 text-sm">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Loading buyer activityâ€¦
+                Loading buyer activity…
               </div>
             </div>
           ) : error ? (
@@ -430,7 +430,7 @@ const BuyersActivityPopup: React.FC<{
         <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-between items-center">
           <span className="text-xs text-gray-400">
             {loading
-              ? "Loadingâ€¦"
+              ? "Loading…"
               : `${allBuyers.length} ${allBuyers.length === 1 ? "buyer" : "buyers"} total`}
           </span>
           <Button variant="outline" size="sm" onClick={onClose}>

@@ -34,12 +34,14 @@ export interface Deal {
   dealType: string
   status: string
   visibility: string
+  industry?: string
   industrySector: string
   geography: string
   yearsInBusiness: number
   financialDetails: DealFinancialDetails
-  businessModel: DealBusinessModel
-  managementPreferences: DealManagementPreferences
+  businessModel?: string
+  businessMode?: string
+  managementPreferences?: string
   buyerFit: DealBuyerFit
   targetedBuyers?: string[]
   tags?: string[]
@@ -50,8 +52,10 @@ export interface Deal {
   trailingRevenueCurrency?: string
   trailingRevenue: number
   trailingEbitda: number
+  trailingEBITDA?: number
   trailingEbitdaCurrency?: string
   averageGrowth: number
+  revenueGrowth?: number
   netIncome: number
   askingPrice: number
 }

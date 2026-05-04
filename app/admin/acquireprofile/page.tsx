@@ -2494,7 +2494,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                         {formData.selectedCurrency === "USD"
                           ? "$"
                           : formData.selectedCurrency === "EUR"
-                          ? "â‚¬"
+                          ? "€"
                           : formData.selectedCurrency === "GBP"
                           ? "Â£"
                           : formData.selectedCurrency}
@@ -2544,7 +2544,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                         {formData.selectedCurrency === "USD"
                           ? "$"
                           : formData.selectedCurrency === "EUR"
-                          ? "â‚¬"
+                          ? "€"
                           : formData.selectedCurrency === "GBP"
                           ? "Â£"
                           : formData.selectedCurrency}
@@ -2610,7 +2610,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                         {formData.selectedCurrency === "USD"
                           ? "$"
                           : formData.selectedCurrency === "EUR"
-                          ? "â‚¬"
+                          ? "€"
                           : formData.selectedCurrency === "GBP"
                           ? "Â£"
                           : formData.selectedCurrency}
@@ -2660,7 +2660,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                         {formData.selectedCurrency === "USD"
                           ? "$"
                           : formData.selectedCurrency === "EUR"
-                          ? "â‚¬"
+                          ? "€"
                           : formData.selectedCurrency === "GBP"
                           ? "Â£"
                           : formData.selectedCurrency}
@@ -2726,7 +2726,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                         {formData.selectedCurrency === "USD"
                           ? "$"
                           : formData.selectedCurrency === "EUR"
-                          ? "â‚¬"
+                          ? "€"
                           : formData.selectedCurrency === "GBP"
                           ? "Â£"
                           : formData.selectedCurrency}
@@ -2776,7 +2776,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                         {formData.selectedCurrency === "USD"
                           ? "$"
                           : formData.selectedCurrency === "EUR"
-                          ? "â‚¬"
+                          ? "€"
                           : formData.selectedCurrency === "GBP"
                           ? "Â£"
                           : formData.selectedCurrency}
