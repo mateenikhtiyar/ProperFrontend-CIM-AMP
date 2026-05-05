@@ -269,7 +269,7 @@ const BuyersActivityPopup: React.FC<{
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-2xl">
+      <div className="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-slate-50">
           <div className="flex items-center gap-3">
@@ -322,7 +322,7 @@ const BuyersActivityPopup: React.FC<{
         </div>
 
         {/* Buyers List */}
-        <div className="p-4 overflow-y-auto max-h-[calc(90vh-220px)]">
+        <div className="p-4 overflow-y-auto flex-1 min-h-0">
           {loading ? (
             <div className="space-y-2">
               {[0, 1, 2].map((i) => (
