@@ -410,6 +410,36 @@ export default function SellerRegisterPage() {
                 )}
               </div>
 
+              {/* Sign up for SMS */}
+              <div className="space-y-1.5">
+                <label htmlFor="signUpForSms" className="flex items-start gap-2 cursor-pointer">
+                  <input
+                    id="signUpForSms"
+                    name="signUpForSms"
+                    type="checkbox"
+                    checked={formData.signUpForSms}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, signUpForSms: e.target.checked }))
+                    }
+                    className="mt-1 h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                  />
+                  <span className="text-sm text-gray-700">
+                    <span className="font-medium">Sign up for SMS</span>
+                    <span className="block text-xs text-gray-500 mt-0.5">
+                      By checking this box, you consent to receive text messages from CIM Amplify. Reply STOP to opt out. Reply HELP for assistance. Standard message and data rates may apply. Message frequency may vary. Your mobile information will not be sold or shared with third parties for promotional or marketing purposes. Terms and privacy policy can be found at{" "}
+                      <a
+                        href="https://cimamplify.com/privacy-policy/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-teal-600 hover:text-teal-700 underline"
+                      >
+                        https://cimamplify.com/privacy-policy/
+                      </a>
+                    </span>
+                  </span>
+                </label>
+              </div>
+
               {/* Website Field */}
               <div className="space-y-1.5">
                 <label
@@ -487,28 +517,6 @@ export default function SellerRegisterPage() {
                     {errors.referralSource}
                   </p>
                 )}
-              </div>
-
-              {/* Sign up for SMS */}
-              <div className="space-y-1.5">
-                <label htmlFor="signUpForSms" className="flex items-start gap-2 cursor-pointer">
-                  <input
-                    id="signUpForSms"
-                    name="signUpForSms"
-                    type="checkbox"
-                    checked={formData.signUpForSms}
-                    onChange={(e) =>
-                      setFormData((prev) => ({ ...prev, signUpForSms: e.target.checked }))
-                    }
-                    className="mt-1 h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
-                  />
-                  <span className="text-sm text-gray-700">
-                    <span className="font-medium">Sign up for SMS</span>
-                    <span className="block text-xs text-gray-500 mt-0.5">
-You agree to receive automated transactional messages including 4 digit identity verification and, if appropriate, new deal invitations.Â  Text and data rates may apply.Â  Reply  STOP to end or HELP for help.
-                    </span>
-                  </span>
-                </label>
               </div>
 
               {/* Password Field */}
