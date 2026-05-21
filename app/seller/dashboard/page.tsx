@@ -539,6 +539,9 @@ export default function SellerDashboardPage() {
       return
     }
 
+    if (isSubmittingOffMarket) return
+
+    setIsSubmittingOffMarket(true)
     try {
       const token = sessionStorage.getItem("token")
       const apiUrl = getApiUrl()
@@ -577,6 +580,8 @@ export default function SellerDashboardPage() {
         description: error.message || "Failed to complete deal. Please try again.",
         variant: "destructive",
       })
+    } finally {
+      setIsSubmittingOffMarket(false)
     }
   }
 
@@ -1502,9 +1507,9 @@ export default function SellerDashboardPage() {
                 <Button
                   onClick={handleCompleteDealSubmit}
                   className="flex-1 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 rounded-xl font-semibold shadow-lg shadow-green-200/50 transition-all duration-200"
-                  disabled={!completionData.finalSalePrice || !selectedWinningBuyer}
+                  disabled={!completionData.finalSalePrice || !selectedWinningBuyer || isSubmittingOffMarket}
                 >
-                  Complete Deal
+                  {isSubmittingOffMarket ? "Completing..." : "Complete Deal"}
                 </Button>
               </div>
             </div>
