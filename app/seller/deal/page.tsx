@@ -1316,8 +1316,8 @@ export default function DealDetailsPage() {
       }
       const result = await response.json();
       toast({
-        title: "Invites sent successfully",
-        description: `Sent invites to ${actualBuyerIds.length} buyer(s)`,
+        title: "Invites sent",
+        description: `${actualBuyerIds.length} buyer(s) will receive the invitation email shortly.`,
       });
       setShowBuyersForNewDeal(false);
       setSelectedBuyers([]);
