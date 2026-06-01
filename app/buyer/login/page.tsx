@@ -15,6 +15,7 @@ import Header from "@/components/ui/auth-header";
 import Footer from "@/components/ui/auth-footer";
 import { ErrorHandler } from "@/lib/error-handler";
 import { API_BASE_URL } from "@/lib/api-config";
+import { ga4Events } from "@/lib/ga4";
 
 export default function BuyerLoginPage() {
   const [email, setEmail] = useState("");
@@ -197,6 +198,9 @@ export default function BuyerLoginPage() {
           isTemporaryPassword: user.isTemporaryPassword || false,
         } : undefined,
       );
+
+      // GA4: buyer login conversion
+      ga4Events.login("buyer")
 
       toast({
         title: "Login Successful",

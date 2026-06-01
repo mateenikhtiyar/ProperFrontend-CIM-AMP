@@ -178,6 +178,8 @@ export default function SellerRegisterPage() {
       localStorage.setItem("userRole", "seller");
 
       ga4Events.formEndSeller();
+      // GA4: standard seller signup conversion
+      ga4Events.signUpSeller();
 
       toast({
         title: "Welcome to CIM Amplify!",

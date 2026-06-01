@@ -10,8 +10,12 @@ import { QueryProvider } from "@/lib/query-client"
 import { NavigationProgress } from "@/components/navigation-progress"
 import ErrorBoundary from "@/components/error-boundary"
 import { Toaster } from "@/components/ui/toaster"
+import { PageViewTracker } from "@/components/analytics/page-view-tracker"
 
-const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID || ""
+// Shared GA4 Measurement ID with the marketing site (cimamplify.com).
+// Override via NEXT_PUBLIC_GA4_MEASUREMENT_ID if needed for a staging stream.
+const GA_MEASUREMENT_ID =
+  process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID || "G-F8R0BW67TD"
 
 // const inter = Inter({ subsets: ["latin"] })
 
@@ -49,10 +53,15 @@ export default function RootLayout({
               {`
                 window.dataLayer = window.dataLayer || [];
                 function gtag(){dataLayer.push(arguments);}
+                window.gtag = gtag;
                 gtag('js', new Date());
-                gtag('config', '${GA_MEASUREMENT_ID}');
+                gtag('config', '${GA_MEASUREMENT_ID}', {
+                  send_page_view: false,
+                  linker: { domains: ['cimamplify.com', 'app.cimamplify.com'] }
+                });
               `}
             </Script>
+            <PageViewTracker />
           </>
         )}
         <QueryProvider>

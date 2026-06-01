@@ -16,6 +16,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useToast } from "@/components/ui/use-toast";
+import { ga4Events } from "@/lib/ga4";
 
 interface Deal {
   id: string;
@@ -410,6 +411,11 @@ export default function DealsPage() {
           return false;
         }
         throw new Error(`Failed to update deal status`);
+      }
+
+      // GA4: buyer expresses interest in a deal
+      if (action === "activate") {
+        ga4Events.dealInterest(dealId);
       }
 
       toast({

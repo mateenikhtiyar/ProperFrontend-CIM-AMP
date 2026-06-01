@@ -11,6 +11,7 @@ import { EyeIcon, EyeOffIcon } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 import { sellerRegister } from "@/services/api";
+import { ga4Events } from "@/lib/ga4";
 import Header from "@/components/ui/auth-header";
 import Footer from "@/components/ui/auth-footer";
 
@@ -149,6 +150,9 @@ export default function SellerRegisterPage() {
         phoneNumber: formData.phoneNumber,
         website: formData.website,
       });
+
+      // GA4: standard seller signup conversion
+      ga4Events.signUpSeller();
 
       toast({
         title: "Registration Successful",

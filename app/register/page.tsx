@@ -11,6 +11,7 @@ import { EyeIcon, EyeOffIcon } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import { Toaster } from "@/components/ui/toaster"
 import { API_BASE_URL } from "@/lib/api-config";
+import { ga4Events } from "@/lib/ga4";
 
 interface RegisterFormData {
   fullName: string
@@ -149,6 +150,9 @@ export default function RegisterPage() {
 
       const data = await response.json()
 
+      // GA4: buyer signup conversion
+      ga4Events.signUpBuyer()
+
       // The backend should return the user data and we'll generate a login token
       if (data) {
         // After successful registration, log the user in
@@ -186,6 +190,9 @@ export default function RegisterPage() {
         } else {
           // UserId not found in login response
         }
+
+        // GA4: auto-login after registration counts as a login event
+        ga4Events.login("buyer")
 
         toast({
           title: "Registration Successful",

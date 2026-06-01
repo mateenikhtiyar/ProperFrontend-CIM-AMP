@@ -12,6 +12,7 @@ import { Toaster } from "@/components/ui/toaster";
 import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
 import { sellerLogin } from "@/services/api";
+import { ga4Events } from "@/lib/ga4";
 import Footer from "@/components/ui/auth-footer";
 import Header from "@/components/ui/auth-header";
 import { API_BASE_URL } from "@/lib/api-config";
@@ -162,6 +163,9 @@ export default function SellerLoginPage() {
           isTemporaryPassword: user.isTemporaryPassword || false,
         } : undefined,
       );
+
+      // GA4: seller login conversion
+      ga4Events.login("seller");
 
       toast({
         title: "Login Successful",

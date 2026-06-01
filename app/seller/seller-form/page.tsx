@@ -12,6 +12,7 @@ import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import FloatingChatbot from "@/components/seller/FloatingChatbot";
 import { API_BASE_URL } from "@/lib/api-config";
+import { ga4Events } from "@/lib/ga4";
 import SellerProtectedRoute from "@/components/seller/protected-route";
 // Helper for required field star
 const RequiredStar = () => <span className="text-red-500">*</span>;
@@ -1761,6 +1762,11 @@ const renderGeographySelection = () => {
       }
 
       const result = await response.json();
+
+      // GA4: deal added conversion
+      if (result?._id) {
+        ga4Events.dealAdded(String(result._id));
+      }
 
       toast({
         title: "Success",
